@@ -440,8 +440,10 @@ public class Tengu extends Mob {
 						boolean result = act(enemyInFOV, justAlerted);
 						recursing = false;
 						return result;
+					}else if(enemy == null && oldEnemy!=null){
+						target = oldEnemy.pos;
 					}
-					target = enemy.pos;
+
 				}
 				
 				//attempt to use an ability, even if enemy can't be decided
@@ -480,6 +482,8 @@ public class Tengu extends Mob {
 		if (HP > HT/2) return false;
 		
 		if (abilitiesUsed >= targetAbilityUses()){
+			return false;
+		}else if(enemy == null){
 			return false;
 		} else {
 			

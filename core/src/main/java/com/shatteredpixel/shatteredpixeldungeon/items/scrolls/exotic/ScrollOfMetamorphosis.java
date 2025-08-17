@@ -27,8 +27,10 @@ import static com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent.getCle
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Transmuting;
@@ -38,13 +40,25 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
+import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
+import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingGridPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.TalentIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentsPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndHeroInfo;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournalItem;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
@@ -52,6 +66,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+
+import javax.swing.Icon;
 
 public class ScrollOfMetamorphosis extends ExoticScroll {
 	
@@ -75,6 +91,36 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 			identifiedByUse = false;
 		}
 		GameScene.show(new WndMetamorphChoose());
+	}
+	public  static final String[] NAME_IDS = {
+			"attack",
+			"magic",
+			"effect",
+			"resource",
+			"spell",
+			"assist",
+			"other"
+	};
+	public  static int getType(String name){
+		switch (name){
+			case"attack": default:
+				return Talent.ATTACK;
+			case"magic":
+				return Talent.MAGIC;
+			case"effect":
+				return Talent.EFFECT;
+			case"resource":
+				return Talent.RESOURCE;
+			case"spell":
+				return Talent.SPELL;
+			case"assist":
+				return Talent.ASSIST;
+			case"other":
+				return Talent.OTHER;
+
+
+		}
+
 	}
 
 	public static void onMetamorph( Talent oldTalent, Talent newTalent ){
@@ -352,4 +398,156 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 			}
 		}
 	}
+
+	public static class WndType extends Window {
+
+		private static final int WIDTH		= 120;
+		private static final int TTL_HEIGHT = 16;
+		private static final int BTN_HEIGHT = 16;
+		private static final int GAP        = 1;
+		protected static final int MARGIN 		= 2;
+		protected static final int BUTTON_HEIGHT	= 18;
+
+		private boolean editable;
+		private ArrayList<RedButton> boxes;
+
+		public WndType( int tier,Talent talent ) {
+
+			super();
+
+			float pos = 0;
+
+			IconTitle tfTitle = new IconTitle(new TalentIcon( talent ), Messages.get(ScrollOfMetamorphosis.class, "type_name"));
+			tfTitle.setRect(0, pos, WIDTH, 0);
+			add(tfTitle);
+
+			pos = tfTitle.bottom() + 2*MARGIN;
+
+			RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
+			tfMesage.text(Messages.get(ScrollOfMetamorphosis.class, "type_desc"), WIDTH);
+			tfMesage.setPos( 0, pos );
+			add( tfMesage );
+
+			pos = tfMesage.bottom() + 2*MARGIN;
+
+			boxes = new ArrayList<>();
+
+			for (int i=0; i < 7 ; i++) {
+
+				final String name = ScrollOfMetamorphosis.NAME_IDS[i];
+
+				RedButton cb = new RedButton( Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, name)) ){
+					@Override
+					protected void onClick() {
+						hide();
+						GameScene.show(new ScrollOfMetamorphosis.WndMetamorphReplace(talent, tier,ScrollOfMetamorphosis.getType(name)));
+					}
+				};
+
+				if (i > 0) {
+					pos += GAP;
+				}
+				cb.setRect( 0, pos, WIDTH-16, BTN_HEIGHT );
+
+				add( cb );
+				boxes.add( cb );
+
+				IconButton info = new IconButton(Icons.get(Icons.INFO)){
+					@Override
+					protected void onClick() {
+						super.onClick();
+						GameScene.show(new ScrollOfMetamorphosis.WndShowTalent(tier-1,ScrollOfMetamorphosis.getType(name),talent));
+					}
+				};
+				info.setRect(cb.right(), pos, 16, BTN_HEIGHT);
+				add(info);
+
+				pos = cb.bottom();
+			}
+
+			resize( WIDTH, (int)pos );
+		}
+
+		@Override
+		public void onBackPressed() {
+			super.onBackPressed();
+		}
+	}
+
+	public static class WndShowTalent extends Window{
+		private static final int WIDTH		= 100;
+		private static final int TTL_HEIGHT = 16;
+		private static final int BUTTON_HEIGHT = 26;
+		private static final int GAP        = 1;
+		protected static final int MARGIN 		= 2;
+		protected static final int BUTTON_WIDTH	= 20;
+
+		private boolean editable;
+		private ArrayList<RedButton> boxes;
+
+
+		public WndShowTalent(int tier, int type,Talent talent0){
+			super();
+
+			float pos = 0;
+
+			IconTitle tfTitle = new IconTitle(new TalentIcon( talent0 ), Messages.get(ScrollOfMetamorphosis.class, ScrollOfMetamorphosis.NAME_IDS[type]));
+			tfTitle.setRect(0, pos, WIDTH, 0);
+			add(tfTitle);
+
+			pos = tfTitle.bottom() + 2*MARGIN;
+
+			RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
+			tfMesage.text(Messages.get(ScrollOfMetamorphosis.class, "intype"), WIDTH);
+			tfMesage.setPos( 0, pos );
+			add( tfMesage );
+
+
+			pos = tfMesage.bottom() + 2*MARGIN;
+			resize( WIDTH, (int)pos+80);
+			ArrayList<Talent> talents = Talent.typeTalent.get(tier).get(type);
+			float x = 0;
+			/*
+			for (Talent talent : talents){
+				TalentButton gridItem = new TalentButton(tier,talent,0,TalentButton.Mode.INFO);
+
+				gridItem.setPos(x,pos);
+				add(gridItem);
+				x += BUTTON_HEIGHT;
+				if(x > WIDTH){
+					x=0;
+					pos+=BUTTON_HEIGHT;
+				}
+			}
+			resize( WIDTH, (int)pos+BUTTON_HEIGHT + 5 );
+			 */
+			//Component content=new Component();
+			//ScrollPane pane = new ScrollPane(content);
+			ScrollingGridPane pane = new ScrollingGridPane();
+			add(pane);
+			pane.setRect(0, pos,WIDTH,80);
+			Component content = pane.content();
+			pos = 2 ;
+			for (Talent talent : talents){
+
+				TalentButton gridItem = new TalentButton(tier,talent,0,TalentButton.Mode.INFO);
+				//content.add(gridItem);
+				content.add(gridItem);
+				gridItem.setPos(x,pos);
+				x += BUTTON_WIDTH;
+				if(x >= WIDTH){
+					x=0;
+					pos+=BUTTON_HEIGHT;
+				}
+			}
+			content.setRect(0,0,WIDTH, pos+BUTTON_HEIGHT);
+			pane.update();
+		}
+		@Override
+		public void onBackPressed() {
+			super.onBackPressed();
+		}
+	}
+
+
 }

@@ -21,20 +21,28 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.blobs;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldBoss;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SparkParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -58,7 +66,7 @@ public class Electricity extends Blob {
 		for (int i = area.left-1; i <= area.right; i++) {
 			for (int j = area.top-1; j <= area.bottom; j++) {
 				cell = i + j*Dungeon.level.width();
-				
+
 				if (cur[cell] > 0) {
 					spreadFromCell(cell, cur[cell]);
 				}
@@ -70,6 +78,19 @@ public class Electricity extends Blob {
 			for (int j = area.top-1; j <= area.bottom; j++) {
 				cell = i + j*Dungeon.level.width();
 				if (cur[cell] > 0) {
+					int c = Dungeon.level.map[cell];
+					if(hero!=null && hero.hasTalent(Talent.LIGHT_CROP)){
+						if(c==Terrain.GRASS){
+							Level.set( cell, Terrain.HIGH_GRASS);
+							GameScene.updateMap( cell );
+							CellEmitter.get(cell).burst(LeafParticle.LEVEL_SPECIFIC, 2);
+						}
+						if (c == Terrain.EMPTY || c == Terrain.EMBERS || c == Terrain.EMPTY_DECO) {
+							Level.set( cell, Terrain.GRASS);
+							GameScene.updateMap( cell );
+							CellEmitter.get(cell).burst(LeafParticle.LEVEL_SPECIFIC, 2);
+						}
+					}
 					Char ch = Actor.findChar( cell );
 					if (ch != null && (!ch.isImmune(this.getClass()) && !(ch instanceof GoldBoss))) {
 						if (ch.buff(Paralysis.class) == null){
@@ -77,7 +98,7 @@ public class Electricity extends Blob {
 						}
 						if (cur[cell] % 2 == 1) {
 							ch.damage(Math.round(Random.Float(2 + Dungeon.scalingDepth() / 5f)), this);
-							if (!ch.isAlive() && ch == Dungeon.hero){
+							if (!ch.isAlive() && ch == hero){
 								Dungeon.fail( this );
 								GLog.n( Messages.get(this, "ondeath") );
 							}

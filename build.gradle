@@ -10,7 +10,7 @@ buildscript {
         //gradle version packaged with AGP 8.5 causes crashes on Android 4.4-
         //this won't be needed once the bundled R8 version is 8.7.11+ (should happen with AGP 8.6)
         classpath 'com.android.tools:r8:8.7.11'
-        classpath 'com.android.tools.build:gradle:8.1.1'
+        classpath 'com.android.tools.build:gradle:8.1.0'
     }
 }
 
@@ -24,7 +24,7 @@ allprojects {
         appVersionCode = 1001
         //appVersionName = '2.5.4'
         //appVersionName = 'happy.birthday2.16'
-        appVersionName = '0.2.5fix4'
+        appVersionName = '0.2.5fix6'
         appJavaCompatibility = JavaVersion.VERSION_1_8
 
         appAndroidCompileSDK = 33 //compile SDK is still 33 atm as we're sticking with AGP 8.0.2

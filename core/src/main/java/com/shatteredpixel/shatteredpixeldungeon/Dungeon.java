@@ -1001,7 +1001,12 @@ public class Dungeon {
 		if (WndResurrect.instance == null) {
 			updateLevelExplored();
 			Statistics.gameWon = false;
-			Rankings.INSTANCE.submit( false, cause );
+			if(Dungeon.isChallenged(Challenges.TEST_MODE)){
+
+			}else{
+				Rankings.INSTANCE.submit( false, cause );
+			}
+
 		}
 	}
 	
@@ -1011,8 +1016,12 @@ public class Dungeon {
 		Statistics.gameWon = true;
 
 		hero.belongings.identify();
+		if(Dungeon.isChallenged(Challenges.TEST_MODE)){
 
-		Rankings.INSTANCE.submit( true, cause );
+		}else{
+			Rankings.INSTANCE.submit( true, cause );
+		}
+
 	}
 
 	public static void updateLevelExplored(){

@@ -317,7 +317,7 @@ abstract public class MissileWeapon extends Weapon {
 		if (parent != null) parent.cursedKnown = true;
 
 		//instant ID with the right talent
-		if (attacker == Dungeon.hero && Dungeon.hero.pointsInTalent(Talent.SURVIVALISTS_INTUITION) == 2){
+		if (attacker == Dungeon.hero && Dungeon.hero.pointsInTalent(Talent.HUNTING_INTUITION) == 2){
 			usesLeftToID = Math.min(usesLeftToID, 0);
 			availableUsesToID =  Math.max(usesLeftToID, 0);
 		}
@@ -412,7 +412,8 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public float castDelay(Char user, int cell) {
 		if (Actor.findChar(cell) != null && Actor.findChar(cell) != user){
-			return delayFactor( user );
+			if (user instanceof Hero && ((Hero) user).justMoved && ((Hero) user).hasTalent(Talent.SURPRISE_THROW))  return 0;
+			else                                                    return delayFactor( user );
 		} else {
 			return super.castDelay(user, cell);
 		}

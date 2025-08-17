@@ -32,7 +32,6 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.SparseArray;
 
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 
 public abstract class Actor implements Bundlable {
 	
@@ -92,7 +91,6 @@ public abstract class Actor implements Bundlable {
 	}
 
 	public void clearTime() {
-		//time = 0;
 		spendConstant(-Actor.now());
 		if (this instanceof Char){
 			for (Buff b : ((Char) this).buffs()){

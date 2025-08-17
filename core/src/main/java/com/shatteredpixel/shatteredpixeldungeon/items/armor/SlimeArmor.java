@@ -17,7 +17,7 @@ public class SlimeArmor extends Armor {
         //image = ItemSpriteSheet.ARMOR_CLOTH;
 
         bones = false; //Finding them in bones would be semi-frequent and disappointing.
-        unique = false;
+        unique = true;
     }
 
     public SlimeArmor() {

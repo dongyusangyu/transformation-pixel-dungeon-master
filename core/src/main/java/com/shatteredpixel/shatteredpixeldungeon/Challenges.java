@@ -79,6 +79,7 @@ public class Challenges {
 		for (int ch : Challenges.MASKS){
 			if ((Dungeon.challenges & ch) != 0) chCount++;
 		}
+
 		return chCount;
 	}
 

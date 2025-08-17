@@ -134,7 +134,9 @@ public enum Icons {
 	CUBE_CODE,
 	PURIGRO,
 	ARCNOR,
-	TPX;
+	TPX,
+	RED_ENVELOPE,
+	TEST_MODE;
 
 	public Image get() {
 		return get( this );
@@ -432,6 +434,12 @@ public enum Icons {
 				break;
 			case TPX:
 				icon.frame( icon.texture.uvRectBySize( 153, 0, 16, 16 ) );
+				break;
+			case RED_ENVELOPE:
+				icon.frame( icon.texture.uvRectBySize( 25, 80, 7, 7 ) );
+				break;
+			case TEST_MODE:
+				icon.frame( icon.texture.uvRectBySize( 17, 112, 7, 7 ) );
 				break;
 
 		}

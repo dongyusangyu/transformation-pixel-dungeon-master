@@ -41,16 +41,19 @@ public class WndSupportPrompt extends Window {
 
 		int width = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
 
-		IconTitle title = new IconTitle(Icons.get(Icons.SHPX), Messages.get(WndSupportPrompt.class, "title"));
+		IconTitle title = new IconTitle(Icons.get(Icons.TPX), Messages.get(WndSupportPrompt.class, "title"));
 		title.setRect( 0, 0, width, 0 );
 		add(title);
 
 		String message = Messages.get(WndSupportPrompt.class, "intro");
 		message += "\n\n" + Messages.get(SupporterScene.class, "patreon_msg");
+		/*
 		if (Messages.lang() != Languages.ENGLISH) {
 			message += "\n" + Messages.get(SupporterScene.class, "patreon_english");
 		}
-		message += "\n- Evan";
+
+		 */
+		message += "\n- 东隅桑榆";
 
 		RenderedTextBlock text = PixelScene.renderTextBlock( 6 );
 		text.text( message, width );
@@ -61,11 +64,15 @@ public class WndSupportPrompt extends Window {
 			@Override
 			protected void onClick() {
 				super.onClick();
+				/*
 				String link = "https://www.patreon.com/ShatteredPixel";
 				//tracking codes, so that the website knows where this pageview came from
 				link += "?utm_source=shatteredpd";
 				link += "&utm_medium=supporter_prompt";
 				link += "&utm_campaign=ingame_link";
+
+				 */
+				String link = "https://qm.qq.com/q/FmNw25jGUg";
 				ShatteredPixelDungeon.platform.openURI(link);
 				SPDSettings.supportNagged(true);
 				WndSupportPrompt.super.hide();

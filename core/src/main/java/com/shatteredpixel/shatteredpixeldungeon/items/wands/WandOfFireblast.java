@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -31,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -64,12 +67,14 @@ public class WandOfFireblast extends DamageWand {
 
 	//1/2/3 base damage with 1/2/3 scaling based on charges used
 	public int min(int lvl){
-		return (1+lvl) * chargesPerCast();
+		int charge= (int) GameMath.gate(1, (int)Math.ceil(curCharges*0.3f), 3);
+		return (1+lvl) * charge;
 	}
 
 	//2/8/18 base damage with 2/4/6 scaling based on charges used
 	public int max(int lvl){
-		switch (chargesPerCast()){
+		int charge= (int) GameMath.gate(1, (int)Math.ceil(curCharges*0.3f), 3);
+		switch (charge){
 			case 1: default:
 				return 2 + 2*lvl;
 			case 2:
@@ -86,6 +91,11 @@ public class WandOfFireblast extends DamageWand {
 
 		ArrayList<Char> affectedChars = new ArrayList<>();
 		ArrayList<Integer> adjacentCells = new ArrayList<>();
+		int charge= (int) GameMath.gate(1, (int)Math.ceil(curCharges*0.3f), 3);
+		int vol =1+charge;
+		if(hero!=null && hero.pointsInTalent(Talent.DEVIL_FLAME)>2){
+			vol++;
+		}
 		for( int cell : cone.cells ){
 
 			//ignore caster cell
@@ -109,7 +119,7 @@ public class WandOfFireblast extends DamageWand {
 				}
 			} else {
 
-				GameScene.add( Blob.seed( cell, 1+chargesPerCast(), Fire.class ) );
+				GameScene.add( Blob.seed( cell, vol, Fire.class ) );
 			}
 
 			Char ch = Actor.findChar( cell );
@@ -130,17 +140,21 @@ public class WandOfFireblast extends DamageWand {
 				if (Dungeon.level.trueDistance(cell+i, bolt.collisionPos) < Dungeon.level.trueDistance(cell, bolt.collisionPos)
 						&& Dungeon.level.flamable[cell+i]
 						&& Fire.volumeAt(cell+i, Fire.class) == 0){
-					GameScene.add( Blob.seed( cell+i, 1+chargesPerCast(), Fire.class ) );
+					GameScene.add( Blob.seed( cell+i, vol, Fire.class ) );
 				}
 			}
 		}
 
 		for ( Char ch : affectedChars ){
-			wandProc(ch, chargesPerCast());
-			ch.damage(damageRoll(), this);
+			wandProc(ch, charge);
+			int dmg=damageRoll();
+			if(hero!=null && hero.pointsInTalent(Talent.DEVIL_FLAME)>2){
+				dmg=(int)(dmg*1.2f);
+			}
+			ch.damage(dmg, this);
 			if (ch.isAlive()) {
 				Buff.affect(ch, Burning.class).reignite(ch);
-				switch (chargesPerCast()) {
+				switch (charge) {
 					case 1:
 						break; //no effects
 					case 2:
@@ -262,7 +276,13 @@ public class WandOfFireblast extends DamageWand {
 			return 1;
 		}
 		//consumes 30% of current charges, rounded up, with a min of 1 and a max of 3.
-		return (int) GameMath.gate(1, (int)Math.ceil(curCharges*0.3f), 3);
+		int charge= (int) GameMath.gate(1, (int)Math.ceil(curCharges*0.3f), 3);
+		if(hero != null && hero.pointsInTalent(Talent.DEVIL_FLAME)>1 && charge>1){
+			charge--;
+		}else if(hero != null && hero.pointsInTalent(Talent.DEVIL_FLAME)>0 && charge>2){
+			charge--;
+		}
+		return charge;
 	}
 
 	@Override

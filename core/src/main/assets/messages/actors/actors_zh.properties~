@@ -922,7 +922,7 @@ actors.hero.talent.runic_transference.meta_desc=_如果这个天赋被其它英�
 actors.hero.talent.lethal_momentum.title=手起刀落
 actors.hero.talent.lethal_momentum.desc=_+1：_战士使用物理武器击杀敌人的一击有_67%的概率_不消耗回合数。\n\n_+2：_战士使用物理武器击杀敌人的一击有_100%的概率_不消耗回合数。\n\n天赋类型：_物攻类_。
 actors.hero.talent.improvised_projectiles.title=即兴投掷
-actors.hero.talent.improvised_projectiles.desc=_+1：_战士向敌人扔出非投掷武器的物品时会对其造成_2回合_的致盲效果。这个天赋有20回合的冷却时间。\n\n_+2：_战士向敌人扔出非投掷武器的物品时会对其造成_3回合_的致盲效果。这个天赋有20回合的冷却时间。\n\n天赋类型：_物攻类_。
+actors.hero.talent.improvised_projectiles.desc=_+1：_战士向敌人扔出非投掷武器的物品时会对其造成_2回合_的致盲效果。这个天赋有50回合的冷却时间。\n\n_+2：_战士向敌人扔出非投掷武器的物品时会对其造成_3回合_的致盲效果。这个天赋有50回合的冷却时间。\n\n天赋类型：_物攻类_。
 
 actors.hero.talent.hold_fast.title=不动如山
 actors.hero.talent.hold_fast.desc=_+1：_当战士等待时，他可获得_1~2点护甲_并将连击和护盾的衰减速度减缓_50%_，直至他移动为止。\n\n_+2：_当战士等待时，他可获得_2~4点护甲_并将连击和护盾的衰减速度减缓_75%_，直至他移动为止。\n\n_+3：_当战士等待时，他可获得_3~6点护甲_并将连击和护盾的衰减速度减缓_100%_，直至他移动为止。\n\n天赋类型：_辅助类_。
@@ -978,7 +978,7 @@ actors.hero.talent.backup_barrier.meta_desc=_如果这个天赋被其它英雄�
 actors.hero.talent.energizing_meal.title=充能一餐
 actors.hero.talent.energizing_meal.desc=_+1：_法师进食只花费1回合，并获得_5回合的法杖充能_。\n\n_+2：_法师进食只花费1回合，并获得_8回合的法杖充能_。\n\n天赋类型：_法伤类_。
 actors.hero.talent.inscribed_power.title=卷藏秘能
-actors.hero.talent.inscribed_power.desc=_+1：_当法师阅读卷轴或使用法术结晶后，他接下来的_2次法杖施法_提升2级。\n\n_+2：_当法师阅读卷轴或使用法术结晶后，他接下来的_3次法杖施法_提升2级。\n\n天赋类型：_法伤类_。\n\n如果使用的是升级卷轴、嬗变卷轴或须用前述卷轴炼制的炼金物品，则法杖的强化施法次数翻倍。\n\n对产量较高的炼金物品(如大多数结晶)，这项天赋会基于该物品的单次产出数量概率触发。\n\n该天赋可以通过阅读无序魔典触发。
+actors.hero.talent.inscribed_power.desc=_+1：_当法师阅读卷轴或使用法术结晶后，他接下来的_2次法杖施法_提升2级。\n\n_+2：_当法师阅读卷轴或使用法术结晶后，他接下来的_3次法杖施法_提升2级。\n\n天赋类型：_法伤类_。\n\n如果使用的是升级卷轴、嬗变卷轴或须用前述卷轴炼制的炼金物品，则法杖的强化施法次数翻倍。\n\n对产量较高的炼金物品(如大多数结晶)，这项天赋会基于该物品的单次产出数量概率触发。
 actors.hero.talent.wand_preservation.title=法杖回收
 actors.hero.talent.wand_preservation.desc=_+1：_当法师将新的法杖注入魔杖时，会以0级状态回收先前灌注的法杖，_但此回收只能进行一次_。\n\n_+2：_当法师将新的法杖注入魔杖时，会以0级状态回收先前灌注的法杖，_此回收可以重复进行，但会有一级英雄等级的冷却_。\n\n天赋类型：_资源类_。
 actors.hero.talent.wand_preservation.meta_desc=_如果这个天赋被其它英雄获得_，那么它会增加法杖于炼金釜中转化为奥术树脂的数量。+1时法杖转化的树脂数量增加1，+2时则增加2。
@@ -1040,7 +1040,7 @@ actors.hero.talent.protective_shadows.desc=_+1：_盗贼在隐形时，每_2回�
 actors.hero.talent.mystical_meal.title=秘术祭食
 actors.hero.talent.mystical_meal.desc=_+1：_盗贼进食只花费1回合(食用备用口粮不花费回合)，并获得_3回合的神器充能_。\n\n_+2：_盗贼进食只花费1回合(食用备用口粮不花费回合)，并获得_5回合的神器充能_。\n\n天赋类型：_特效类_。\n\n这项天赋不能使丰饶之角对其本身充能。
 actors.hero.talent.inscribed_stealth.title=卷藏匿影
-actors.hero.talent.inscribed_stealth.desc=_+1：_盗贼阅读卷轴或使用法术结晶后会获得_3回合_的隐形。\n\n_+2：_盗贼阅读卷轴或使用法术结晶后会获得_5回合_的隐形。\n\n天赋类型：_特效类_。\n\n如果使用的是升级卷轴、嬗变卷轴或须用前述卷轴炼制的炼金物品，则获得的隐形效果时长翻倍。\n\n对产量较高的炼金物品(如大多数结晶)，这项天赋会基于该物品的单次产出数量概率触发。\n\n该天赋可以通过阅读无序魔典触发。
+actors.hero.talent.inscribed_stealth.desc=_+1：_盗贼阅读卷轴或使用法术结晶后会获得_3回合_的隐形。\n\n_+2：_盗贼阅读卷轴或使用法术结晶后会获得_5回合_的隐形。\n\n天赋类型：_特效类_。\n\n如果使用的是升级卷轴、嬗变卷轴或须用前述卷轴炼制的炼金物品，则获得的隐形效果时长翻倍。\n\n对产量较高的炼金物品(如大多数结晶)，这项天赋会基于该物品的单次产出数量概率触发。
 actors.hero.talent.wide_search.title=广域搜索
 actors.hero.talent.wide_search.desc=_+1：_盗贼的搜索范围由方形5x5增幅至_圆形7x7_。\n\n_+2：_盗贼的搜索范围由方形5x5增幅至_方形7x7_。\n\n天赋类型：_辅助类_。
 actors.hero.talent.wide_search.meta_desc=_如果这个天赋被其它英雄获得_，那么它会在+1时增幅搜索范围至5x5的圆形，+2时增幅至5x5的方形。
@@ -1235,7 +1235,7 @@ actors.hero.talent.recall_inscription.title=符文复制
 actors.hero.talent.recall_inscription.refunded=你的物品已被返还！
 actors.hero.talent.recall_inscription.desc=_+1：_圣典可以施放法术_符文复制_，以再次触发_10回合_内最近一次使用的符石或卷轴效果。\n\n_+2：_圣典可以施放法术_符文复制_，以再次触发_300回合_内最近一次使用的符石或卷轴效果。\n\n天赋类型：_法术类_。\n\n符文复制不能复制升级卷轴，充能消耗根据最近一次使用的物品变化而变化：符石2点充能、卷轴3点充能、秘卷4点充能。复制嬗变卷轴或嬗变/升级卷轴的符石/秘卷时，充能消耗还会翻倍。
 actors.hero.talent.sunray.title=阳炎射线
-actors.hero.talent.sunray.desc=_+1：_圣典可以施放法术_阳炎射线_，消耗1点充能造成_4~8_点伤害并使目标失明_4回合_。\n\n_+2：_圣典可以施放法术_阳炎射线_，消耗1点充能造成_6~12_点伤害并使目标失明_6回合_。\n\n天赋类型：_法术类_。\n\n阳炎射线只能致盲目标一次，但若目标已被阳炎射线致盲则会以麻痹代之。阳炎射线必定对_亡灵和恶魔属性_的敌人造成最大伤害。
+actors.hero.talent.sunray.desc=_+1：_圣典可以施放法术_阳炎射线_，消耗1点充能造成_4~8_点伤害并使目标失明_4回合_。\n\n_+2：_圣典可以施放法术_阳炎射线_，消耗1点充能造成_6~12_点伤害并使目标失明_6回合_。\n\n天赋类型：_法术类_。\n\n阳炎射线只能致盲目标一次，但若目标已被阳炎射线致盲则会以麻痹代之。阳炎射线必定对恶魔和亡灵敌人造成最大伤害。
 actors.hero.talent.divine_sense.title=神圣感知
 actors.hero.talent.divine_sense.desc=_+1：_圣典可以施放法术_神圣感知_，消耗2点充能以获得持续50回合，_8格范围_的灵视感知。\n\n_+2：_圣典可以施放法术_神圣感知_，消耗2点充能以获得持续50回合，_12格范围_的灵视感知。\n\n天赋类型：_法术类_。
 #actors.hero.talent.divine_sense.meta_desc=_如果这个天赋被其它英雄获得_，那么它会在+1/+2等级时使英雄在使用法杖或神器后获得3/5格内的灵视感知。
@@ -1251,7 +1251,7 @@ actors.hero.talent.light_reading.desc=_+1：_牧师不装备圣典也能使用�
 #actors.hero.talent.light_reading.meta_desc=_如果这个天赋被其它英雄获得_，那么它会在+1/+2/+3等级时提高7/13/20%的所有法杖充能速度。
 
 actors.hero.talent.holy_lance.title=神圣标枪
-actors.hero.talent.holy_lance.desc=_+1：_祭司可以施放法术_神圣标枪_，消耗4点充能以造成致命的_30~55点伤害_。\n\n_+2：_祭司可以施放法术_神圣标枪_，消耗4点充能以造成致命的_45~83点伤害_。\n\n_+3：_祭司可以施放法术_神圣标枪_，消耗4点充能以造成致命的_60~110点伤害_。\n\n圣枪必定对_亡灵和恶魔属性_的敌人造成最大伤害。圣枪有30回合的冷却，之后才能再次施放。
+actors.hero.talent.holy_lance.desc=_+1：_祭司可以施放法术_神圣标枪_，消耗4点充能以造成致命的_30~55点伤害_。\n\n_+2：_祭司可以施放法术_神圣标枪_，消耗4点充能以造成致命的_45~83点伤害_。\n\n_+3：_祭司可以施放法术_神圣标枪_，消耗4点充能以造成致命的_60~110点伤害_。\n\n圣枪必定对恶魔和亡灵敌人造成最大伤害。圣枪有30回合的冷却，之后才能再次施放。
 actors.hero.talent.hallowed_ground.title=神圣领域
 actors.hero.talent.hallowed_ground.desc=_+1：_祭司可以施放法术_神圣领域_，消耗2点充能以创造_3x3范围_，持续20回合的神圣领域。\n\n_+2：_祭司可以施放法术_神圣领域_，消耗2点充能以创造_5x5范围_，持续20回合的神圣领域。\n\n_+3：_祭司可以施放法术_神圣领域_，消耗2点充能以创造_7x7范围_，持续20回合的神圣领域。\n\n施放时，法术会立即治疗盟友15点生命值，短暂缠绕敌人并扩散矮草。之后，神圣领域会缓慢治疗盟友、残疾敌人并随机催生高草。神圣领域会为祭司提供护盾而非治疗，并且神圣领域会被火焰摧毁。
 actors.hero.talent.mnemonic_prayer.title=祈愿诗篇
@@ -1852,7 +1852,7 @@ actors.char.immune=免疫
 
 
 actors.hero.talent.aquatic_recover.title=水灵回复
-actors.hero.talent.aquatic_recover.desc=_+1：_在水面上每_10回合_恢复_1点生命_。\n\n_+2：_在水面上每_5回合_恢复_1点生命_。
+actors.hero.talent.aquatic_recover.desc=_+1：_在水面上每_10回合_额外恢复_1点生命_。\n\n_+2：_在水面上每_5回合_额外恢复_1点生命_。
 
 actors.hero.talent.pump_attack.title=蓄力攻击
 actors.hero.talent.pump_attack.desc=_+1：_近战攻击有_20%概率_造成_2倍伤害_。\n\n_+2：_近战攻击有_20%概率_造成_3倍伤害_。
@@ -1969,10 +1969,10 @@ actors.hero.talent.amazing_eyesight.title=眼力惊人
 actors.hero.talent.amazing_eyesight.desc=_+1：_对_3格及以外距离_的敌人的近战伤害提高_20%_，命中增加_50%_。\n\n_+2：_对_2格及以外距离_的敌人的近战伤害提高_20%_，命中增加_50%_。\n\n天赋类型：_物攻类_。
 
 actors.hero.talent.light_application.title=轻甲运用
-actors.hero.talent.light_application.desc=_+1：_基础闪避增加_5-护甲阶数_。\n\n_+2：_在+1的基础上，效果_翻倍_。\n\n天赋类型：_辅助类_。\n\n不穿防具无效。\n\n“其实是色诱术。”
+actors.hero.talent.light_application.desc=_+1：_基础闪避增加_5-护甲阶数_。\n\n_+2：_在+1的基础上，效果_翻倍_。\n\n天赋类型：_辅助类_。\n\n不穿护甲无效。\n\n“其实是色诱术。”
 
 actors.hero.talent.heavy_application.title=重甲运用
-actors.hero.talent.heavy_application.desc=_+1：_最大护甲增加_护甲阶数_。\n\n_+2：_在+1的基础上，效果_翻倍_。\n\n天赋类型：_辅助类_。\n\n不穿防具无效。
+actors.hero.talent.heavy_application.desc=_+1：_最大护甲增加_护甲阶数_。\n\n_+2：_在+1的基础上，效果_翻倍_。\n\n天赋类型：_辅助类_。\n\n不穿护甲无效。
 
 actors.hero.talent.bless_meal.title=赐福圣餐
 actors.hero.talent.bless_meal.desc=_+1：_进食只花费1回合并获得_5回合赐福_效果。\n\n_+2：_进食只花费1回合并获得_8回合赐福_效果。\n\n天赋类型：_特效类_。
@@ -1993,7 +1993,7 @@ actors.hero.talent.martial_train.title=武技训练
 actors.hero.talent.martial_train.desc=_+1：_非决斗家获得该天赋可以使用武技，充能上限为_1点_。\n\n_+2：_非决斗家获得该天赋可以使用武技，充能上限为_2点_。\n\n_+3：_非决斗家获得该天赋可以使用武技，充能上限为_3点_。\n\n天赋类型：_物攻类_。\n\n决斗家获得该天赋后武技充能上限增加_1/2/3点_。\n非决斗家的武技充能速度为_150回合1点_。
 
 actors.hero.talent.thickened_armor.title=加厚护甲
-actors.hero.talent.thickened_armor.desc=_+1：_防具提供的_最高护甲+1_。\n\n_+2：_防具提供的_最高护甲+2_。\n\n不穿防具无效。\n\n天赋类型：_辅助类_。
+actors.hero.talent.thickened_armor.desc=_+1：_玩家护甲提高_1点_。\n\n_+2：_玩家护甲提高_2点_。\n\n不穿护甲无效。\n\n天赋类型：_辅助类_。
 
 actors.hero.talent.powerful_calculations.title=算无遗策
 actors.hero.talent.powerful_calculations.desc=_+1：_每当有敌人死于视野之外，将恢复_1点生命_。\n\n_+2：_每当有敌人死于视野之外，将恢复_2点生命_。\n\n天赋类型：_特效类_。
@@ -2038,10 +2038,10 @@ actors.hero.talent.gold_formation.title=金币法阵
 actors.hero.talent.gold_formation.desc=_+1：_当玩家捡起金币时，若背包内金币高于500，则_自动消耗500金币_在旁边触发_1次低级掉落_。\n\n_+2：_当玩家捡起金币时，若背包内金币高于1000，则_自动消耗1000金币_在旁边触发_1次中级掉落_。\n\n_+3：_当玩家捡起金币时，若背包内金币高于2000，则_自动消耗2000金币_在旁边触发_1次高级掉落_。\n\n天赋类型：_资源类_。
 
 actors.hero.talent.strengthen_chain.title=强化锁链
-actors.hero.talent.strengthen_chain.desc=_+1：_当虚空锁链将敌人拉近时，给予敌人_10回合残废_。\n\n_+2：_在+1的基础上，拉近敌人不再消耗回合，虚空锁链_充能消耗-1_(单次最低消耗不小于1点充能，该天赋_不改变使用时的充能阈值_)。\n\n天赋类型：_法术类_。
+actors.hero.talent.strengthen_chain.desc=_+1：_当锁链将敌人拉近时，给予敌人_10回合残废_。\n\n_+2：_在+1的基础上，拉近敌人不再消耗回合，锁链_充能消耗-1_(单次最低消耗不小于1点充能，该天赋_不改变使用时的充能阈值_)。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.strengthen_chalice.title=强化圣杯
-actors.hero.talent.strengthen_chalice.desc=_+1：_蓄血圣杯给予的_生命恢复效果加强50%_。\n\n_+2：_蓄血圣杯给予的_生命恢复效果加强100%_。\n\n天赋类型：_法术类_。
+actors.hero.talent.strengthen_chalice.desc=_+1：_圣杯给予的_生命恢复效果加强50%_。\n\n_+2：_圣杯给予的_生命恢复效果加强100%_。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.savage_physique.title=野蛮体魄
 actors.hero.talent.savage_physique.desc=_+1：_生命值上限提高_10点_。\n\n_+2：_生命值上限提高_15点_。\n\n天赋类型：_辅助类_。
@@ -2137,7 +2137,7 @@ actors.hero.talent.secret_stash.title=私房钱
 actors.hero.talent.secret_stash.desc=_+1：_立即获得_1000金币_。\n\n_+2：_立即获得_1000金币_。\n\n_+3：_立即获得_1000金币_。\n\n天赋类型：_资源类_。\n\n通过升级并蜕变这类天赋直接获取资源的次数_限制为16次_(绅士为_29次_)。
 
 actors.hero.talent.earth_meal.title=大地一餐
-actors.hero.talent.earth_meal.desc=_+1：_进食获得_英雄等级33%的树肤_。\n\n_+2：_进食获得_英雄等级66%的树肤_。\n\n_+3：_进食获得_英雄等级100%的树肤_。\n\n天赋类型：_特效类_。
+actors.hero.talent.earth_meal.desc=_+1：_进食获得_等级的33%的植被护甲_。\n\n_+2：_进食获得_等级的66%的植被护甲_。\n\n_+3：_进食获得_等级的100%的植被护甲_。\n\n天赋类型：_特效类_。
 
 actors.hero.talent.eaten_slowly.title=细嚼慢咽
 actors.hero.talent.eaten_slowly.desc=_+1：_进食_额外消耗10回合_，食物回复饱食度增加_30%_。\n\n_+2：_进食_额外消耗10回合_，食物回复饱食度增加_60%_，食用馅饼额外获得_饱腹_效果。\n\n天赋类型：_特效类_。\n\n该天赋对丰饶之角无效。
@@ -2201,7 +2201,7 @@ actors.hero.talent.wulei_zhengfa.title=五雷正法
 actors.hero.talent.wulei_zhengfa.desc=_+1：_获得_1根雷霆法杖_，使用雷霆法杖电击到自己时会_恢复少量生命_。\n\n_+2：_在+1的基础上，雷霆法杖的伤害增加_30%_。\n\n天赋类型：_法伤类_。
 
 actors.hero.talent.magic_girl.title=马猴烧酒
-actors.hero.talent.magic_girl.desc=_+1：_使用卷轴获得_30回合伪装_效果，在伪装效果下获得_20%法杖增伤_。\n\n_+2：_使用卷轴获得_45回合伪装_和_10回合发光_效果，在伪装效果下获得_40%法杖增伤_。\n\n天赋类型：_法伤类_。\n\n该天赋可以通过阅读无序魔典触发。\n\n注意，马猴烧酒变装_比较消耗时间_(非游戏回合)，请耐心等待。
+actors.hero.talent.magic_girl.desc=_+1：_使用卷轴获得_30回合伪装_效果，在伪装效果下获得_20%法杖增伤_。\n\n_+2：_使用卷轴获得_45回合伪装_和_10回合发光_效果，在伪装效果下获得_40%法杖增伤_。\n\n天赋类型：_法伤类_。\n\n注意，马猴烧酒变装_比较消耗时间_(非游戏回合)，请耐心等待。
 
 actors.hero.talent.wide_knowledge.title=知识渊博
 actors.hero.talent.wide_knowledge.desc=_+1：_捡到物品_立即了解_其是否有诅咒。\n\n_+2：_捡到物品_立即鉴定_该物品。\n\n_+3：_在+2的基础上，捡到的物品被鉴定时获得_3回合法杖充能_。\n\n天赋类型：_辅助类_。
@@ -2219,7 +2219,7 @@ actors.hero.talent.ash_ledger.title=灰烬账簿
 actors.hero.talent.ash_ledger.desc=_+1：_敌人死亡时获得_2点护盾_。\n\n_+2：_敌人死亡时获得_4点护盾_。\n\n天赋类型：_特效类_。
 
 actors.hero.talent.secret_lighting.title=照明之秘
-actors.hero.talent.secret_lighting.desc=_+1：_阅读卷轴获得_20回合发光_。\n\n_+2：_阅读卷轴获得_40回合发光_。\n\n天赋类型：_特效类_。\n\n该天赋可以通过阅读无序魔典触发。
+actors.hero.talent.secret_lighting.desc=_+1：_阅读卷轴获得_20回合发光_。\n\n_+2：_阅读卷轴获得_40回合发光_。\n\n天赋类型：_特效类_。
 
 actors.hero.talent.potential_1.title=潜力激发
 actors.hero.talent.potential_1.desc=_+1：_获得_1张蜕变秘卷_。\n\n_+2：_无效果。
@@ -2269,16 +2269,16 @@ actors.hero.talent.abacus.title=算盘
 actors.hero.talent.abacus.desc=_+1：_物理攻击_50%概率_增加_2点可叠加护盾_。\n\n_+2：_物理攻击_75%概率_增加_2点可叠加护盾_。\n\n_+3：_物理攻击_必定_增加_2点可叠加护盾_。\n\n天赋类型：_物攻类_。
 
 actors.hero.talent.time_sand.title=时之沙
-actors.hero.talent.time_sand.desc=_+1：_时光沙漏静止自己只消耗_1点充能_(仍需剩余2点及以上充能才能发动)。\n\n_+2：_在+1的基础上，时光沙漏冻结周围_回合+1_(消耗第1点充能不增加回合数)。\n\n_+3：_在+1和+2的基础上，时光沙漏充能速度提高_20%_。\n\n天赋类型：_法术类_。\n\n“THE WORLD!!!”
+actors.hero.talent.time_sand.desc=_+1：_沙漏静止自己只消耗_1点充能_(仍需剩余2点及以上充能才能发动)。\n\n_+2：_在+1的基础上，沙漏冻结周围_回合+1_(消耗第1点充能不增加回合数)。\n\n_+3：_在+1和+2的基础上，沙漏充能速度提高_20%_。\n\n天赋类型：_法术类_。\n\n“THE WORLD!!!”
 
 actors.hero.talent.damaged_core.title=破损核心
-actors.hero.talent.damaged_core.desc=_+1：_物理攻击附带_1点魔法伤害_。\n\n_+2：_物理攻击附带_1~2点魔法伤害_。\n\n天赋类型：_法伤类_。\n\n“鸡煲天下第一！”
+actors.hero.talent.damaged_core.desc=_+1：_物理攻击附带_1点法术伤害_。\n\n_+2：_物理攻击附带_1~2点法术伤害_。\n\n天赋类型：_法伤类_。\n\n“鸡煲天下第一！”
 
 actors.hero.talent.read_profitable.title=开卷有益
-actors.hero.talent.read_profitable.desc=阅读卷轴获得_1种随机增益_。\n\n_+1：_随机增益包括_全面净化、飘浮、极速_。\n\n_+2：_在+1的基础上，还包括_隐形_。\n\n_+3：_在+1和+2的基础上，还包括_少量生命恢复_。\n\n天赋类型：_特效类_。\n\n该天赋可以通过阅读无序魔典触发。
+actors.hero.talent.read_profitable.desc=阅读卷轴获得_1种随机增益_。\n\n_+1：_随机增益包括_全面净化、飘浮、极速_。\n\n_+2：_在+1的基础上，还包括_隐形_。\n\n_+3：_在+1和+2的基础上，还包括_少量生命恢复_。\n\n天赋类型：_特效类_。
 
 actors.hero.talent.strength_cloak.title=强化斗篷
-actors.hero.talent.strength_cloak.desc=_+1：_暗影斗篷的每点充能额外给予_1回合影遁_。\n\n_+2：_暗影斗篷的每点充能额外给予_1.5回合影遁_。\n\n_+3：_暗影斗篷的每点充能额外给予_2回合影遁_，并且暗影斗篷的充能速度增加_20%_。\n\n天赋类型：_法术类_。
+actors.hero.talent.strength_cloak.desc=_+1：_斗篷的每点充能额外给予_1回合影遁_。\n\n_+2：_斗篷的每点充能额外给予_1.5回合影遁_。\n\n_+3：_斗篷的每点充能额外给予_2回合影遁_。斗篷充能速度增加_20%_。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.anesthesia.title=麻醉酊剂
 actors.hero.talent.anesthesia.desc=_+1：_饮用药剂获得_3点护盾_来抵御下次受到的伤害。\n\n_+2：_饮用药剂获得_5点护盾_来抵御下次受到的伤害。\n\n天赋类型：_特效类_。
@@ -2308,11 +2308,11 @@ actors.hero.talent.sharp_head.title=脑袋尖尖
 actors.hero.talent.sharp_head.desc=_+1：_力量_+1_，命中_下降17%_。\n\n_+2：_力量_+2_，命中_下降33%_。\n\n_+3：_力量_+3_，命中_下降50%_。\n\n天赋类型：_其他类_。\n\n“那我问你。”
 
 actors.hero.talent.strength_armband.title=强化袖章
-actors.hero.talent.strength_armband.desc=_+1：_神偷袖章充能速度增加_20%_。\n\n_+2：_在+1的基础上，神偷袖章给予的负面效果的_生效时间延长30%_。\n\n_+3：_在+1和+2的基础上，偷窃敌人给予自己_3回合激素涌动_，偷窃商店减少_1点_充能消耗(_不改变偷窃成功率和使用时的充能阈值_，最少消耗1点充能)。\n\n天赋类型：_法术类_。
+actors.hero.talent.strength_armband.desc=_+1：_袖章充能速度增加_20%_。\n\n_+2：_在+1的基础上，袖章给予的负面效果的_生效时间延长30%_。\n\n_+3：_在+1和+2的基础上，偷窃敌人给予自己_3回合激素涌动_，偷窃商店减少_1点_充能消耗(_不改变偷窃成功率和使用时的充能阈值_，最少消耗1点充能)。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.strength_book.title=强化魔典
 #fix9：注释补充
-actors.hero.talent.strength_book.desc=_+1：_阅读无序魔典会根据_视野内是否有敌人_触发_战斗类/非战斗类_卷轴效果。\n\n_+2：_在+1的基础上，无序魔典充能速度提高_20%_。\n\n天赋类型：_法术类_。\n\n与无序结晶一样，_战斗类_卷轴包括催眠/镜像/盛怒/充能/复仇/恐惧/传送卷轴，而_非战斗类_卷轴则包括鉴定/催眠/探地/祛邪/充能/传送卷轴。
+actors.hero.talent.strength_book.desc=_+1：_阅读魔典会根据_视野内是否有敌人_触发_战斗类/非战斗类_卷轴效果。\n\n_+2：_在+1的基础上，魔典充能速度提高_20%_。\n\n天赋类型：_法术类_。\n\n与无序结晶一样，_战斗类_卷轴包括催眠/镜像/盛怒/充能/复仇/恐惧/传送卷轴，而_非战斗类_卷轴则包括鉴定/催眠/探地/祛邪/充能/传送卷轴。
 
 actors.hero.talent.eternal_curse.title=永恒诅咒
 actors.hero.talent.eternal_curse.desc=_+0：_需要至少_2张祛邪卷轴_才能祛除诅咒。\n\n_+1：_只需要1张祛邪卷轴就能祛除诅咒，但_仍保留诅咒附魔/刻印_。\n\n_+2：_只需要1张祛邪就能完全祛除诅咒。\n\n天赋类型：_限定1_。\n\n“咒多不压身。”\n\n_来自DM-216的诅咒
@@ -2459,7 +2459,7 @@ actors.hero.talent.backfired.title=引火上身
 actors.hero.talent.backfired.desc=_+1：_饮用液火药剂获得_2回合火焰之力_。\n\n_+2：_饮用液火药剂获得_3回合火焰之力_。\n\n天赋类型：_特效类_。
 
 actors.hero.talent.goldofbook.title=书中黄金
-actors.hero.talent.goldofbook.desc=_+1：_阅读卷轴获得_50金币_。\n\n_+2：_阅读卷轴获得_100金币_。\n\n天赋类型：_资源类_。\n\n该天赋可以通过阅读无序魔典触发。
+actors.hero.talent.goldofbook.desc=_+1：_阅读卷轴获得_50金币_。\n\n_+2：_阅读卷轴获得_100金币_。\n\n天赋类型：_资源类_。
 
 actors.hero.talent.extreme_reaction.title=极限反应
 actors.hero.talent.extreme_reaction.desc=_+1：_闪避敌人伤害时获得_1回合激素涌动_。\n\n_+1：_闪避敌人伤害时获得_2回合激素涌动_。\n\n_+2：_闪避敌人伤害时获得_3回合激素涌动_。\n\n天赋类型：_辅助类_。\n\n自身激素涌动效果的持续时间超过5回合时，不会叠加激素涌动效果。
@@ -2513,7 +2513,7 @@ actors.hero.talent.shepherd_intention.title=牧羊原旨
 actors.hero.talent.shepherd_intention.desc=_+1：_圣典可以施放法术_牧羊原旨_，消耗3点充能指定一处地点_产生一小群魔法绵羊_。\n\n_+2：_圣典可以施放法术_牧羊原旨_，消耗3点充能指定一处地点_产生一群魔法绵羊_。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.conversion_holy.title=圣法皈依
-actors.hero.talent.conversion_holy.desc=_+1：_圣典可以施放法术_圣法皈依_，消耗5点充能_沉沦视野内的任意目标_。\n\n_+2：_在沉沦目标的基础上，给予目标_10回合赐福_。\n\n天赋类型：_法术类_。\n\n通过该法术沉沦的敌人不会产生掉落物。
+actors.hero.talent.conversion_holy.desc=_+1：_圣典可以施放法术_圣法皈依_，消耗5点充能_沉沦视野内的任意目标_。\n\n_+2：_在沉沦目标的基础上，给予目标_10回合赐福_。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.purifying_evil.title=净化邪恶
 actors.hero.talent.purifying_evil.desc=_+1：_圣典可以施放法术_净化邪恶_，消耗3点充能以_消除目标身上的全部增益效果_。\n\n_+2：_在+1的基础上，还会_消除目标身上的精英效果_。\n\n_+3：_在+1和+2的基础上，还能对_亡灵和恶魔属性_的敌人造成_20%玩家生命上限_的伤害(对Boss效果减半)。\n\n天赋类型：_法术类_。
@@ -2575,7 +2575,7 @@ actors.hero.talent.hand_destruction.title=溃决之手
 actors.hero.talent.hand_destruction.desc=_+1：_物理攻击可以直接_秒杀_不具有死神抗性且生命值_低于5%_的目标。\n\n_+2：_物理攻击可以直接_秒杀_不具有死神抗性且生命值_低于10%_的目标。\n\n_+3：_物理攻击可以直接_秒杀_不具有死神抗性且生命值_低于15%_的目标。\n\n天赋类型：_物攻类_。
 
 actors.hero.talent.predictive_lover.title=预知秘卷爱好者
-actors.hero.talent.predictive_lover.desc=_+1：_阅读预知秘卷时_额外鉴定1种物品_。\n\n_+2：_阅读预知秘卷时_额外鉴定2种物品_。\n\n天赋类型：_资源类_。\n\n该天赋可以通过阅读无序魔典中的预知秘卷触发。
+actors.hero.talent.predictive_lover.desc=_+1：_阅读预知秘卷时_额外鉴定1种物品_。\n\n_+2：_阅读预知秘卷时_额外鉴定2种物品_。\n\n天赋类型：_资源类_。
 
 actors.hero.talent.fire_ball.title=火球术
 actors.hero.talent.fire_ball.desc=_+1：_对可燃地格施法时会在该地格释放_1单位的火焰_。\n\n_+2：_对可燃地格施法时会在该地格释放_2单位的火焰_。\n\n天赋类型：_法伤类_。
@@ -2596,7 +2596,7 @@ actors.hero.talent.focus_light.title=聚焦光线
 actors.hero.talent.focus_light.desc=_+1：_圣典可以施放法术_聚焦光线_，消耗2点充能射出一个高温火球造成_4~8_点伤害并点燃路径和目标。\n\n_+2：_圣典可以施放法术_聚焦光线_，消耗2点充能射出一个高温火球造成_6~10_点伤害并点燃路径和目标。\n\n天赋类型：_法术类_。
 
 actors.hero.talent.zhuanyu_spell.title=转愈圣术
-actors.hero.talent.zhuanyu_spell.desc=_+1：_圣典可以施放法术_转愈圣术_，消耗2点充能将当前护盾量以_50%_的转化效率转化为治疗效果。\n\n_+2：_圣典可以施放法术_转愈圣术_，消耗2点充能将当前护盾量以_75%_的转化效率转化为治疗效果。\n\n_+3：_圣典可以施放法术_转愈圣术_，消耗2点充能将当前护盾量以_100%_的转化效率转化为治疗效果。\n\n天赋类型：_法术类_。\n\n该法术的总治疗量不会超过英雄生命上限的一半。\n\n“弥补了圣典只会给一堆护盾而没有治疗效果的缺陷。”
+actors.hero.talent.zhuanyu_spell.desc=_+1：_圣典可以施放法术_转愈圣术_，消耗2点充能将当前护盾量以_50%_的转化效率转化为治疗效果。\n\n_+2：_圣典可以施放法术_转愈圣术_，消耗2点充能将当前护盾量以_75%_的转化效率转化为治疗效果。\n\n_+3：_圣典可以施放法术_转愈圣术_，消耗2点充能将当前护盾量以_100%_的转化效率转化为治疗效果。\n\n天赋类型：_法术类_。\n\n该法术的总治疗量不会超过英雄生命上限的一半。\n\n“弥补了圣典只会给一堆护盾而没有治疗效果的缺陷。”\n\n_DM-216设计的第一个正面天赋_
 
 actors.hero.talent.thorn_whip.title=荆棘之鞭
 actors.hero.talent.thorn_whip.desc=_+1：_圣典可以施放法术_荆棘之鞭_，消耗1点充能拉近敌人并造成_3点流血_效果。\n\n_+2：_圣典可以施放法术_荆棘之鞭_，消耗1点充能拉近敌人并造成_5点流血_效果。\n\n天赋类型：_法术类_。
@@ -2615,47 +2615,12 @@ actors.hero.talent.hunting_intuition.title=狩猎直觉
 actors.hero.talent.hunting_intuition.desc=_+1：_英雄鉴定投掷武器的速度提升为原来的_3倍_。\n\n_+2：_英雄能在_使用投掷武器命中敌人时_将其立即鉴定。\n\n天赋类型：_辅助类_。
 
 actors.hero.talent.revelation.title=天启
-actors.hero.talent.revelation.desc=_+1：_圣典可以施放法术_天启_，消耗1点充能获得_3回合的天启_，使自身已有的_正面天赋效果等级+1_。\n\n_+2：_圣典可以施放法术_天启_，消耗1点充能获得_5回合的天启_，使自身已有的_正面天赋效果等级+1_。\n\n天赋类型：_法术类_。\n\n天赋效果等级不会超过限制等级。
+actors.hero.talent.revelation.desc=_+1：_可以释放法术_天启_，消耗1点充能获得_3回合天启_，使自身已有_正面天赋效果等级+1_，天赋效果等级最大不超过限制等级。\n\n_+2：_可以释放法术_天启_，消耗1点充能获得_5回合天启_，使自身已有_正面天赋效果等级+1_，天赋效果等级最大不超过限制等级。\n天赋类型：法术类。
 
 actors.hero.talent.holy_grenade.title=神圣手雷
-actors.hero.talent.holy_grenade.desc=_+1：_圣典可以施放法术_神圣手雷_，消耗2点充能对目标_3x3范围_的敌人造成_15~30_点伤害。\n\n_+2：_圣典可以施放法术_神圣手雷_，消耗2点充能对目标_3x3范围_的敌人造成_20~40_点伤害。\n\n_+3：_圣典可以施放法术_神圣手雷_，消耗2点充能对目标_5x5范围_的敌人造成_20~40_点伤害。\n\n天赋类型：_法术类_。\n\n神圣手雷必定对_亡灵和恶魔属性_的敌人造成最大伤害。\n\n“哈~利路亚~”
+actors.hero.talent.holy_grenade.desc=_+1：_可以释放法术_神圣手雷_，消耗2点充能对目标_3x3范围_敌方生物造成_15-30点伤害_，对恶魔和亡灵生物始终造成最大值伤害。\n\n_+2：_可以释放法术_神圣手雷_，消耗2点充能对目标_3x3范围_敌方生物造成_20-40点伤害_，对恶魔和亡灵生物始终造成最大值伤害。\n\n_+3：_可以释放法术_神圣手雷_，消耗2点充能对目标_5x5范围_敌方生物造成_20-40点伤害_，对恶魔和亡灵生物始终造成最大值伤害。\n天赋类型：法术类。
 
-actors.hero.talent.blade_star.title=刀刃阶梯
-actors.hero.talent.blade_star.desc=_+1：_圣典可以施放法术_刀刃阶梯_，消耗3点充能以创造_3x3范围_，持续10回合的刀刃区域。\n\n_+2：_圣典可以施放法术_刀刃阶梯_，消耗3点充能以创造_5x5范围_，持续10回合的刀刃区域。\n\n_+3：_圣典可以施放法术_刀刃阶梯_，消耗3点充能以创造_7x7范围_，持续10回合的刀刃区域。\n\n天赋类型：_法术类_。\n\n刀刃区域每回合会对敌人造成4~8点物理伤害并给予3回合残废。
-
-actors.hero.talent.sacred_blade.title=黄金回旋
-actors.hero.talent.sacred_blade.desc=_+1：_圣典可以施放法术_黄金回旋_，消耗1点充能对目标造成_基于近战武器的魔法伤害_。\n\n_+2：_在+1的基础上，伤害额外_提高20%_，并对_亡灵和恶魔属性_的敌人造成最大伤害。\n\n_+3：_在+1和+2的基础上，对_亡灵和恶魔属性_的敌人造成的伤害额外_提高50%_。\n\n天赋类型：_法术类_。
-
-actors.hero.talent.equipment_bless.title=装备赐福
-actors.hero.talent.equipment_bless.desc=_+1：_圣典可以施放法术_装备赐福_，消耗3点充能获得_50回合的装备赐福_，使所有武器和防具获得_+1的临时等级_。\n\n_+2：_圣典可以施放法术_装备赐福_，消耗3点充能获得_50回合的装备赐福_，使所有武器和防具获得_+2的临时等级_。\n\n天赋类型：_法术类_。
-
-actors.hero.talent.hotlight.title=灼热强光
-actors.hero.talent.hotlight.desc=_+1：_圣典可以施放法术_灼热强光_，消耗_3点充能_对视野内非英雄目标造成_3回合致盲_，并对_亡灵和恶魔属性_的敌人造成_3回合燃烧_。\n\n_+2：_圣典可以施放法术_灼热强光_，消耗_2点充能_对视野内非英雄目标造成_3回合致盲_，并对_亡灵和恶魔属性_的敌人造成_3回合燃烧_。\n\n天赋类型：_法术类_。
-
-actors.hero.talent.healattack.title=圣愈一击
-actors.hero.talent.healattack.desc=_+1：_对获得圣晖的敌人造成物理伤害会使自身获得_3点治疗_。\n\n_+2：_对获得圣晖的敌人造成物理伤害会使自身获得_英雄等级30%的治疗_。\n\n天赋类型：_法术类_。
-
-actors.hero.talent.eat_mind.title=食人心智
-actors.hero.talent.eat_mind.desc=_+1：_每通过法杖造成1点魔法伤害就会_回复0.2饱食度_。\n\n_+2：_每通过法杖造成1点魔法伤害就会_回复0.3饱食度_。\n\n天赋类型：_法伤类_。
-
-actors.hero.talent.disabliity_posion.title=致残毒云
-actors.hero.talent.disabliity_posion.desc=_+1：_酸蚀法杖的_初始酸雾伤害提高2点_并额外_提高30%的气体量_。\n\n_+2：_在+1的基础上，对处于酸雾内的目标造成_1回合残废_。\n\n_+3：_在+1和+2的基础上，对处于酸雾内的目标造成_1回合虚弱和恍惚_。\n\n天赋类型：法伤类。
-
-actors.hero.talent.light_crop.title=雷雨发庄稼
-actors.hero.talent.light_crop.desc=_+1：_在电场中，普通空地会_长草_，余烬和草会_长出高草_。\n\n_+2：_使用雷霆法杖施法时，会对施法位置_施加该天赋+1的长草_效果。\n\n天赋类型：_法伤类_。\n\n“N2+O2放电产生2NO。”\n“2NO+O2产生2NO2。”\n“3NO2+H2O产生2HNO3+NO。”
-
-actors.hero.talent.devil_flame.title=恶魔之焰
-actors.hero.talent.devil_flame.desc=_+1：_焰浪法杖施法时，如果_原充能消耗3点及以上_，则_充能消耗-1_。\n\n_+2：_焰浪法杖施法时，如果_原充能消耗2点及以上_，则_充能消耗-1_。\n\n_+3：_在+2的基础上，焰浪法杖的伤害_提高20%_，并且火焰滞留_延长1回合_。\n\n天赋类型：_法伤类_。\n\n该天赋减少的充能消耗不会影响焰浪法杖施法时造成的伤害，仍依据原充能消耗进行计算。
-
-actors.hero.talent.fast_break.title=高速突破
-actors.hero.talent.fast_break.desc=_+1：_敌人掉落经验的_最大等级+1_。\n\n_+2：_敌人掉落经验的_最大等级+2_。\n\n天赋类型：_资源类_。
-
-actors.hero.talent.crazy_dancer.title=疯狂舞者
-actors.hero.talent.crazy_dancer.desc=_+1：_闪避敌人伤害时使敌人_狂乱2回合_。\n\n_+2：_闪避敌人伤害时使敌人_狂乱3回合_。\n\n天赋类型：_辅助类_。\n\n“你们不要再打啦！”
-
-actors.hero.talent.throwing_recycling.title=投掷回收
-actors.hero.talent.throwing_recycling.desc=_+1：_物理攻击_处于中矢状态_的敌人有_25%概率_可以将敌人身上的投掷武器取回。\n\n_+2：_物理攻击_处于中矢状态_的敌人有_50%概率_可以将敌人身上的投掷武器取回。\n\n_+3：_物理攻击_处于中矢状态_的敌人有_75%概率_可以将敌人身上的投掷武器取回。\n\n天赋类型：_物攻类_。\n\n“理论上的飞斧无限连。”
-
+HOLY_GRENADE
 
 #新法术
 actors.hero.spells.ascension_curse.name=升天咒
@@ -2673,7 +2638,7 @@ actors.hero.spells.shepherd_intention.desc=施法者将借助圣典凝聚体内�
 actors.hero.spells.conversion_holy.name=圣法皈依
 actors.hero.spells.conversion_holy.short_desc=能够沉沦一个目标。
 actors.hero.spells.conversion_holy.no_target=没有目标可以被沉沦。
-actors.hero.spells.conversion_holy.desc=施法者能够展示圣典神力，使目标皈依神圣教，成为施法者忠心的仆从。\n\n通过该法术沉沦的敌人不会产生掉落物。\n\n该法术施法_消耗1回合_。
+actors.hero.spells.conversion_holy.desc=施法者能够展示圣典神力，使目标皈依神圣教，成为施法者忠心的仆从。\n\n该法术施法_消耗1回合_。
 
 actors.hero.spells.purifying_evil.name=净化邪恶
 actors.hero.spells.purifying_evil.short_desc=能够净化一个目标。
@@ -2728,35 +2693,15 @@ actors.hero.spells.thorn_whip.more_distance=距离过远，无法触及。
 actors.hero.spells.thorn_whip.desc=施法者手中将浮现一条带刺金鞭，能够将目标拉近并附加_%1$d点流血_。\n\n该法术的距离限制为_12格_。\n\n该法术施法_消耗1回合_。
 
 actors.hero.spells.revelation.name=天启
-actors.hero.spells.revelation.short_desc=使自身已有的正面天赋等级提升。
-actors.hero.spells.revelation.desc=施法者将得到上天的启发，获得_%1$d回合天启_，使自身已有的_正面天赋效果等级+1_。\n\n天赋效果等级不会超过限制等级。\n\n该法术施法_不耗时_。
+actors.hero.spells.revelation.short_desc=将已有正面天赋等级提升。
+actors.hero.spells.revelation.desc=施法者获得_%1$d回合天启_，使自身已有_正面天赋效果等级+1_，天赋效果等级最大不超过限制等级。\n\n该法术施法_不消耗回合_。
 actors.hero.spells.revelation$revelationbuff.name=天启
-actors.hero.spells.revelation$revelationbuff.desc=你感觉自己得到了上天的启发，所有已有的正面天赋效果等级+1。\n\n剩余回合：%s回合。
+actors.hero.spells.revelation$revelationbuff.desc=感觉到得到上天的启发，已有正面天赋效果等级+1。\n\n剩余回合：%s回合。
 
 actors.hero.spells.holy_grenade.name=神圣手雷
-actors.hero.spells.holy_grenade.short_desc=产生爆炸，杀伤敌人。
-actors.hero.spells.holy_grenade.desc=施法者扔出一个能量光团，瞬间在光团落点_%1$dx%1$d_范围造成_%2$d~%3$d点伤害_，亡灵和恶魔目标必定承受最大伤害。\n\n该法术施法_消耗1回合_。
+actors.hero.spells.holy_grenade.short_desc=造成爆炸，伤害敌对生物。
+actors.hero.spells.holy_grenade.desc=施法者扔出一个能量光团，瞬间在光团落点_%1$dx%1$d_范围造成_%2$d~%3$d_点伤害，恶魔必定承受最大伤害。\n\n该法术施法_消耗1回合_。
 
-actors.hero.spells.blade_star.name=刀刃阶梯
-actors.hero.spells.blade_star.short_desc=创造刀刃区域，伤害并致残敌人。
-actors.hero.spells.blade_star.desc=施法者将圣光实体化为刀刃，形成一片_%1$dx%1$d_范围的刀刃区域，在这个区域内的敌人会持续受到_4~8点伤害_并获得_3回合的残废_效果。该区域可以维持_10回合_。\n\n该法术施法_消耗1回合_。
-actors.hero.spells.blade_star.invalid_target=无法在该位置生成刀刃区域。
-actors.hero.spells.blade_star$blade_stair.name=刀刃区域
-actors.hero.spells.blade_star$blade_stair.desc=此处已经化为刀刃区域。刀刃区域会持续伤害并减速敌人。
-
-actors.hero.spells.sacred_blade.name=黄金回旋
-actors.hero.spells.sacred_blade.short_desc=丢出一把由圣光凝聚而成的回旋镖，对目标造成魔法伤害。
-actors.hero.spells.sacred_blade.desc=施法者将丢出一把由圣光凝聚而成的回旋镖，对目标造成_基于手中武器的魔法伤害_，其中亡灵和恶魔目标会受到额外伤害加成。\n\n该法术施法_消耗1回合_。
-
-actors.hero.spells.equipment_bless.name=装备赐福
-actors.hero.spells.equipment_bless.short_desc=强化所有武器和防具。
-actors.hero.spells.equipment_bless.desc=施法者可对所有武器和防具进行赐福，使其等级得到临时提升。\n\n该法术施法_消耗1回合_。
-actors.hero.spells.equipment_bless$blessbuff.name=装备赐福
-actors.hero.spells.equipment_bless$blessbuff.desc=你感觉身上的装备已经得到了赐福。\n\n该效果持续时间内，所有武器和防具的等级将获得临时提升。\n\n剩余回合：%s回合。
-
-actors.hero.spells.hotlight.name=灼热强光
-actors.hero.spells.hotlight.short_desc=释放强光，致盲敌人。
-actors.hero.spells.hotlight.desc=施法者瞬间释放出灼热的强光，使视野内的所有敌人_致盲3回合_，并点燃亡灵和恶魔目标。\n\n该法术施法_消耗1回合_。
 
 
 actors.hero.heroclass.freeman=绅士
@@ -2898,7 +2843,6 @@ actors.mobs.warriorboss.wantfood=食物，美味的食物！
 actors.mobs.warriorboss.leap=肉蛋葱鸡！
 actors.mobs.warriorboss.defeated=还有...很多美食没吃...
 actors.mobs.warriorboss.wake=什么？开饭了？
-actors.mobs.warriorboss.kill=被战士？的肉蛋葱鸡压成肉饼
 
 
 #slimegirl
@@ -3016,4 +2960,4 @@ actors.hero.talent.quality_absorption.title=优质吸收
 actors.hero.talent.quality_absorption.desc=_+1：_史莱姆娘吸收露珠恢复的生命值_+1_。\n\n_+2：_史莱姆娘吸收露珠恢复的生命值_+2_。\n\n天赋类型：_辅助类_。\n\n该天赋同样适用于水袋内的露珠。
 
 actors.hero.talent.empowering_life.title=盈能生命
-actors.hero.talent.empowering_life.desc=_+1：_史莱姆娘当前生命值为满时，溢出的自然回复会转化为不会流失的护盾，上限为_最大生命值的6.7%_，同时_施法伤害提高10%_。\n\n_+2：_史莱姆娘当前生命值为满时，溢出的自然回复会转化为不会流失的护盾，上限为_最大生命值的13.3%_，同时_施法伤害提高20%_。\n\n_+3：_史莱姆娘当前生命值为满时，溢出的自然回复会转化为不会流失的护盾，上限为_最大生命值的20%_，同时_施法伤害提高30%_。\n\n天赋类型：_法伤类_。
+actors.hero.talent.empowering_life.desc=_+1：_史莱姆娘当前生命值为满时，溢出的自然回复会转化为不会流失的护盾，上限为_最大生命值的6.67%_，同时_施法伤害提高10%_。\n\n_+2：_史莱姆娘当前生命值为满时，溢出的自然回复会转化为不会流失的护盾，上限为_最大生命值的13.3%_，同时_施法伤害提高20%_。\n\n_+2：_史莱姆娘当前生命值为满时，溢出的自然回复会转化为不会流失的护盾，上限为_最大生命值的20%_，同时_施法伤害提高30%_。\n\n天赋类型：_法伤类_。

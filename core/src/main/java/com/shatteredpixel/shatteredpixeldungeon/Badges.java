@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -133,6 +135,7 @@ public class Badges {
 		BOSS_SLAIN_1_DUELIST,
 		BOSS_SLAIN_1_CLERIC,
 		BOSS_SLAIN_1_FREEMAN,
+		BOSS_SLAIN_1_SLIMEGIRL,
 		BOSS_SLAIN_1_ALL_CLASSES    ( 54, BadgeType.GLOBAL ),
 
 		RESEARCHER_2                ( 55, BadgeType.JOURNAL ),
@@ -172,6 +175,7 @@ public class Badges {
 		HIGH_SCORE_3                ( 86 ),
 		ENEMY_HAZARDS               ( 87 ),
 		HEROBOSS_SLAIN_1             (88 ),
+		HEROBOSS_COUNTER_1             (92 ),
 
 
 		//platinum
@@ -191,6 +195,7 @@ public class Badges {
 		VICTORY_DUELIST,
 		VICTORY_CLERIC,
 		VICTORY_FREEMAN,
+		VICTORY_SLIMEGIRL,
 		VICTORY_ALL_CLASSES         ( 101, BadgeType.GLOBAL ),
 		DEATH_FROM_ALL              ( 102, BadgeType.GLOBAL ),
 		BOSS_SLAIN_3_GLADIATOR,
@@ -206,6 +211,8 @@ public class Badges {
 		BOSS_SLAIN_3_PRIEST,
 		BOSS_SLAIN_3_PALADIN,
 		BOSS_SLAIN_3_FREEMAN,
+		BOSS_SLAIN_3_WATERSLIME,
+		BOSS_SLAIN_3_DARKSLIME,
 
 		BOSS_SLAIN_3_ALL_SUBCLASSES ( 103, BadgeType.GLOBAL ),
 		BOSS_CHALLENGE_3            ( 104 ),
@@ -338,7 +345,12 @@ public class Badges {
 	}
 
 	public static void saveGlobal(){
-		saveGlobal(false);
+		if(Dungeon.isChallenged(Challenges.TEST_MODE)){
+
+		}else{
+			saveGlobal(false);
+		}
+
 	}
 
 	public static void saveGlobal(boolean force) {
@@ -427,26 +439,26 @@ public class Badges {
 	public static void validateLevelReached() {
 		Badge badge = null;
 		
-		if (!local.contains( Badge.LEVEL_REACHED_1 ) && Dungeon.hero.lvl >= 6) {
+		if (!local.contains( Badge.LEVEL_REACHED_1 ) && hero.lvl >= 6) {
 			badge = Badge.LEVEL_REACHED_1;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.LEVEL_REACHED_2 ) && Dungeon.hero.lvl >= 12) {
+		if (!local.contains( Badge.LEVEL_REACHED_2 ) && hero.lvl >= 12) {
 			if (badge != null) unlock(badge);
 			badge = Badge.LEVEL_REACHED_2;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.LEVEL_REACHED_3 ) && Dungeon.hero.lvl >= 18) {
+		if (!local.contains( Badge.LEVEL_REACHED_3 ) && hero.lvl >= 18) {
 			if (badge != null) unlock(badge);
 			badge = Badge.LEVEL_REACHED_3;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.LEVEL_REACHED_4 ) && Dungeon.hero.lvl >= 24) {
+		if (!local.contains( Badge.LEVEL_REACHED_4 ) && hero.lvl >= 24) {
 			if (badge != null) unlock(badge);
 			badge = Badge.LEVEL_REACHED_4;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.LEVEL_REACHED_5 ) && Dungeon.hero.lvl >= 30) {
+		if (!local.contains( Badge.LEVEL_REACHED_5 ) && hero.lvl >= 30) {
 			if (badge != null) unlock(badge);
 			badge = Badge.LEVEL_REACHED_5;
 			local.add( badge );
@@ -458,26 +470,26 @@ public class Badges {
 	public static void validateStrengthAttained() {
 		Badge badge = null;
 		
-		if (!local.contains( Badge.STRENGTH_ATTAINED_1 ) && Dungeon.hero.STR >= 12) {
+		if (!local.contains( Badge.STRENGTH_ATTAINED_1 ) && hero.STR >= 12) {
 			badge = Badge.STRENGTH_ATTAINED_1;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.STRENGTH_ATTAINED_2 ) && Dungeon.hero.STR >= 14) {
+		if (!local.contains( Badge.STRENGTH_ATTAINED_2 ) && hero.STR >= 14) {
 			if (badge != null) unlock(badge);
 			badge = Badge.STRENGTH_ATTAINED_2;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.STRENGTH_ATTAINED_3 ) && Dungeon.hero.STR >= 16) {
+		if (!local.contains( Badge.STRENGTH_ATTAINED_3 ) && hero.STR >= 16) {
 			if (badge != null) unlock(badge);
 			badge = Badge.STRENGTH_ATTAINED_3;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.STRENGTH_ATTAINED_4 ) && Dungeon.hero.STR >= 18) {
+		if (!local.contains( Badge.STRENGTH_ATTAINED_4 ) && hero.STR >= 18) {
 			if (badge != null) unlock(badge);
 			badge = Badge.STRENGTH_ATTAINED_4;
 			local.add( badge );
 		}
-		if (!local.contains( Badge.STRENGTH_ATTAINED_5 ) && Dungeon.hero.STR >= 20) {
+		if (!local.contains( Badge.STRENGTH_ATTAINED_5 ) && hero.STR >= 20) {
 			if (badge != null) unlock(badge);
 			badge = Badge.STRENGTH_ATTAINED_5;
 			local.add( badge );
@@ -715,7 +727,7 @@ public class Badges {
 		//doesn't actually use catalogs, but triggers at the same time effectively
 		if (!local.contains(Badge.CATALOG_POTIONS_SCROLLS)
 				&& Potion.allKnown() && Scroll.allKnown()
-				&& Dungeon.hero != null && Dungeon.hero.isAlive()){
+				&& hero != null && hero.isAlive()){
 			local.add(Badge.CATALOG_POTIONS_SCROLLS);
 			displayBadge(Badge.CATALOG_POTIONS_SCROLLS);
 		}
@@ -829,6 +841,7 @@ public class Badges {
 		firstBossClassBadges.put(HeroClass.DUELIST, Badge.BOSS_SLAIN_1_DUELIST);
 		firstBossClassBadges.put(HeroClass.CLERIC, Badge.BOSS_SLAIN_1_CLERIC);
 		firstBossClassBadges.put(HeroClass.FREEMAN, Badge.BOSS_SLAIN_1_FREEMAN);
+		firstBossClassBadges.put(HeroClass.SLIMEGIRL, Badge.BOSS_SLAIN_1_SLIMEGIRL);
 	}
 
 	private static LinkedHashMap<HeroClass, Badge> victoryClassBadges = new LinkedHashMap<>();
@@ -840,6 +853,7 @@ public class Badges {
 		victoryClassBadges.put(HeroClass.DUELIST, Badge.VICTORY_DUELIST);
 		victoryClassBadges.put(HeroClass.CLERIC, Badge.VICTORY_CLERIC);
 		victoryClassBadges.put(HeroClass.FREEMAN, Badge.VICTORY_FREEMAN);
+		victoryClassBadges.put(HeroClass.SLIMEGIRL, Badge.VICTORY_SLIMEGIRL);
 	}
 
 	private static LinkedHashMap<HeroSubClass, Badge> thirdBossSubclassBadges = new LinkedHashMap<>();
@@ -856,6 +870,8 @@ public class Badges {
 		thirdBossSubclassBadges.put(HeroSubClass.MONK, Badge.BOSS_SLAIN_3_MONK);
 		thirdBossSubclassBadges.put(HeroSubClass.PRIEST, Badge.BOSS_SLAIN_3_PRIEST);
 		thirdBossSubclassBadges.put(HeroSubClass.PALADIN, Badge.BOSS_SLAIN_3_PALADIN);
+		thirdBossSubclassBadges.put(HeroSubClass.WATERSLIME, Badge.BOSS_SLAIN_3_WATERSLIME);
+		thirdBossSubclassBadges.put(HeroSubClass.DARKSLIME, Badge.BOSS_SLAIN_3_DARKSLIME);
 	}
 	public static void validateHeroBossSlain() {
 		if (!isUnlocked(Badge.HEROBOSS_SLAIN_1) && Dungeon.depth==5){
@@ -868,6 +884,11 @@ public class Badges {
 		switch (Dungeon.depth) {
 		case 5:
 			badge = Badge.BOSS_SLAIN_1;
+			if(hero.heroClass== HeroClass.SLIMEGIRL){
+				if (!isUnlocked(Badge.HEROBOSS_COUNTER_1)) {
+					displayBadge(Badge.HEROBOSS_COUNTER_1 );
+				}
+			}
 			break;
 		case 10:
 			badge = Badge.BOSS_SLAIN_2;
@@ -879,13 +900,14 @@ public class Badges {
 			badge = Badge.BOSS_SLAIN_4;
 			break;
 		}
+
 		
 		if (badge != null) {
 			local.add( badge );
 			displayBadge( badge );
 			
 			if (badge == Badge.BOSS_SLAIN_1) {
-				badge = firstBossClassBadges.get(Dungeon.hero.heroClass);
+				badge = firstBossClassBadges.get(hero.heroClass);
 				if (badge == null) return;
 				local.add( badge );
 				unlock(badge);
@@ -906,7 +928,7 @@ public class Badges {
 				}
 			} else if (badge == Badge.BOSS_SLAIN_3) {
 
-				badge = thirdBossSubclassBadges.get(Dungeon.hero.subClass);
+				badge = thirdBossSubclassBadges.get(hero.subClass);
 				if (badge == null) return;
 				local.add( badge );
 				unlock(badge);
@@ -926,7 +948,7 @@ public class Badges {
 				}
 			}
 
-			if (Statistics.qualifiedForBossRemainsBadge && Dungeon.hero.belongings.getItem(RemainsItem.class) != null){
+			if (Statistics.qualifiedForBossRemainsBadge && hero.belongings.getItem(RemainsItem.class) != null){
 				badge = Badge.BOSS_SLAIN_REMAINS;
 				local.add( badge );
 				displayBadge( badge );
@@ -964,7 +986,7 @@ public class Badges {
 	public static void validateMastery() {
 		
 		Badge badge = null;
-		switch (Dungeon.hero.heroClass) {
+		switch (hero.heroClass) {
 			case WARRIOR : default:
 				badge = Badge.MASTERY_WARRIOR;
 				break;
@@ -1030,17 +1052,17 @@ public class Badges {
 	}
 
 	public static void validateDuelistUnlock(){
-		if (!isUnlocked(Badge.UNLOCK_DUELIST) && Dungeon.hero != null
-				&& Dungeon.hero.belongings.weapon instanceof MeleeWeapon
-				&& ((MeleeWeapon) Dungeon.hero.belongings.weapon).tier >= 2
-				&& ((MeleeWeapon) Dungeon.hero.belongings.weapon).STRReq() <= Dungeon.hero.STR()){
+		if (!isUnlocked(Badge.UNLOCK_DUELIST) && hero != null
+				&& hero.belongings.weapon instanceof MeleeWeapon
+				&& ((MeleeWeapon) hero.belongings.weapon).tier >= 2
+				&& ((MeleeWeapon) hero.belongings.weapon).STRReq() <= hero.STR()){
 
-			if (Dungeon.hero.belongings.weapon.isIdentified() &&
-					((MeleeWeapon) Dungeon.hero.belongings.weapon).STRReq() <= Dungeon.hero.STR()) {
+			if (hero.belongings.weapon.isIdentified() &&
+					((MeleeWeapon) hero.belongings.weapon).STRReq() <= hero.STR()) {
 				displayBadge(Badge.UNLOCK_DUELIST);
 
-			} else if (!Dungeon.hero.belongings.weapon.isIdentified() &&
-					((MeleeWeapon) Dungeon.hero.belongings.weapon).STRReq(0) <= Dungeon.hero.STR()){
+			} else if (!hero.belongings.weapon.isIdentified() &&
+					((MeleeWeapon) hero.belongings.weapon).STRReq(0) <= hero.STR()){
 				displayBadge(Badge.UNLOCK_DUELIST);
 			}
 		}
@@ -1060,7 +1082,7 @@ public class Badges {
 		local.add( badge );
 		displayBadge( badge );
 
-		badge = victoryClassBadges.get(Dungeon.hero.heroClass);
+		badge = victoryClassBadges.get(hero.heroClass);
 		if (badge == null) return;
 		local.add( badge );
 		unlock(badge);
@@ -1079,9 +1101,9 @@ public class Badges {
 	}
 
 	public static void validateTakingTheMick(Object cause){
-		if (cause == Dungeon.hero &&
-				Dungeon.hero.belongings.attackingWeapon() instanceof Pickaxe
-				&& Dungeon.hero.belongings.attackingWeapon().level() >= 20){
+		if (cause == hero &&
+				hero.belongings.attackingWeapon() instanceof Pickaxe
+				&& hero.belongings.attackingWeapon().level() >= 20){
 			local.add( Badge.TAKING_THE_MICK );
 			displayBadge(Badge.TAKING_THE_MICK);
 		}
@@ -1162,7 +1184,7 @@ public class Badges {
 		local.add( Badge.HAPPY_END );
 		displayBadge( Badge.HAPPY_END );
 
-		if( Dungeon.hero.belongings.getItem(RemainsItem.class) != null ){
+		if( hero.belongings.getItem(RemainsItem.class) != null ){
 			local.add( Badge.HAPPY_END_REMAINS );
 			displayBadge( Badge.HAPPY_END_REMAINS );
 		}
@@ -1285,7 +1307,8 @@ public class Badges {
 			{Badge.BOSS_SLAIN_4, Badge.BOSS_CHALLENGE_4},
 			{Badge.VICTORY,      Badge.BOSS_CHALLENGE_5},
 			{Badge.HAPPY_END,    Badge.PACIFIST_ASCENT},
-			{Badge.VICTORY,      Badge.TAKING_THE_MICK}
+			{Badge.VICTORY,      Badge.TAKING_THE_MICK},
+			{Badge.VICTORY,      Badge.CHAMPION_4}
 	};
 
 	//If the summary badge is unlocked, don't show the component badges

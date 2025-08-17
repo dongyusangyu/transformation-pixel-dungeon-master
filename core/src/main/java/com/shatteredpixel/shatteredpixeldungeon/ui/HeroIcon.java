@@ -50,8 +50,9 @@ public class HeroIcon extends Image {
 	public static final int MONK        = 9;
 	public static final int PRIEST      = 10;
 	public static final int PALADIN     = 11;
-	public static final int WATERSLIME      = 12;
-	public static final int DARKSLIME     = 13;
+	public static final int WATERSLIME      = 13;
+	public static final int DARKSLIME     = 14;
+	public static final int FREEMAN     = 12;
 
 	//abilities
 	public static final int HEROIC_LEAP     = 16;
@@ -144,6 +145,17 @@ public class HeroIcon extends Image {
 	public static final int ZHUANYU_SPELL = 154;
 
 	public static final int THORN_WHIP = 156;
+	public static final int REVELATION = 158;
+
+	public static final int HOLY_GRENADE = 160;
+
+	public static final int BLADE_STAR = 162;
+
+	public static final int SACRED_BLADE = 164;
+
+	public static final int EQUIPMENT_BLESS = 166;
+
+	public static final int HOTLIGHT = 168;
 
 
 

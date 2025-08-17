@@ -831,6 +831,9 @@ public abstract class Mob extends Char {
 		if(hero.pointsNegative(Talent.DUMP_TRUCK)>0 && properties().contains(Property.LARGE)){
 			speed*=1+0.5f*hero.pointsNegative(Talent.DUMP_TRUCK);
 		}
+		for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
+			speed*= buff.speedFactor();
+		}
 		return speed * AscensionChallenge.enemySpeedModifier(this);
 	}
 
@@ -917,14 +920,18 @@ public abstract class Mob extends Char {
 				Bestiary.countEncounter(getClass());
 
 				AscensionChallenge.processEnemyKill(this);
+				int mlvl=maxLvl;
+				if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
+					mlvl+=hero.pointsInTalent(Talent.FAST_BREAK);
+				}
 				
-				int exp = hero.lvl <= maxLvl ? EXP : 0;
+				int exp = hero.lvl <= mlvl ? EXP : 0;
 
 				//during ascent, under-levelled enemies grant 10 xp each until level 30
 				// after this enemy kills which reduce the amulet curse still grant 10 effective xp
 				// for the purposes of on-exp effects, see AscensionChallenge.processEnemyKill
 				if (hero.buff(AscensionChallenge.class) != null &&
-						exp == 0 && maxLvl > 0 && EXP > 0 && hero.lvl < Hero.MAX_LEVEL){
+						exp == 0 && mlvl > 0 && EXP > 0 && hero.lvl < Hero.MAX_LEVEL){
 					exp = Math.round(10 * spawningWeight());
 				}
 
@@ -942,6 +949,10 @@ public abstract class Mob extends Char {
 	
 	@Override
 	public void die( Object cause ) {
+		int mlvl=maxLvl;
+		if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
+			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK);
+		}
 		if(!this.buffs(Resurrection.REsurrection.class).isEmpty() && !this.properties().contains(BOSS) && !this.properties().contains(BOSS_MINION) && cause != Chasm.class){
 			Buff b=this.buff(Resurrection.REsurrection.class);
 			b.detach();
@@ -976,7 +987,7 @@ public abstract class Mob extends Char {
 			Talent.onEmenyDie(this,cause);
 			rollToDropLoot();
 		}
-		if(hero.pointsInTalent(Talent.ZHUOJUN_BUTCHER)>Random.Int(10) && this.properties().isEmpty() && (!(this instanceof NPC) && hero.lvl <= maxLvl + 2)){
+		if(hero.pointsInTalent(Talent.ZHUOJUN_BUTCHER)>Random.Int(10) && this.properties().isEmpty() && (!(this instanceof NPC) && hero.lvl <= mlvl + 2)){
 			Dungeon.level.drop(new MysteryMeat(),pos).sprite.drop(pos);
 		}
 		if (hero.isAlive() && !Dungeon.level.heroFOV[pos] ) {
@@ -1042,7 +1053,11 @@ public abstract class Mob extends Char {
 	}
 
 	public void rollToDropLoot(){
-		if (hero.lvl > maxLvl + 2 && !Dungeon.isChallenged(Challenges.RED_ENVELOPE)) return;
+		int mlvl=maxLvl;
+		if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
+			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK);
+		}
+		if (hero.lvl > mlvl+2 && !Dungeon.isChallenged(Challenges.RED_ENVELOPE)) return;
 
 		MasterThievesArmband.StolenTracker stolen = buff(MasterThievesArmband.StolenTracker.class);
 		if (stolen == null || !stolen.itemWasStolen()) {

@@ -36,4 +36,10 @@ public class ThrowingSpike extends MissileWeapon {
 		tier = 1;
 	}
 
+	@Override
+	public int max(int lvl) {
+		return  5 * tier +                      //base
+				(tier+1)*lvl;                       //level scaling
+	}
+
 }

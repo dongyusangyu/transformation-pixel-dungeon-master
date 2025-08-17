@@ -34,11 +34,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Lightning;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SparkParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
@@ -89,6 +93,19 @@ public class WandOfLightning extends DamageWand {
 		}
 		//if the main target is in water, all affected take full damage
 		if (Dungeon.level.water[bolt.collisionPos]) multiplier = 1f;
+		if(hero!=null && hero.pointsInTalent(Talent.LIGHT_CROP)>1){
+			int c= Dungeon.level.map[bolt.collisionPos];
+			if(c== Terrain.GRASS){
+				Level.set( bolt.collisionPos, Terrain.HIGH_GRASS);
+				GameScene.updateMap( bolt.collisionPos );
+				CellEmitter.get(bolt.collisionPos).burst(LeafParticle.LEVEL_SPECIFIC, 2);
+			}
+			if (c == Terrain.EMPTY || c == Terrain.EMBERS || c == Terrain.EMPTY_DECO) {
+				Level.set( bolt.collisionPos, Terrain.GRASS);
+				GameScene.updateMap( bolt.collisionPos );
+				CellEmitter.get(bolt.collisionPos).burst(LeafParticle.LEVEL_SPECIFIC, 2);
+			}
+		}
 
 		for (Char ch : affected){
 			if (ch == Dungeon.hero) PixelScene.shake( 2, 0.3f );

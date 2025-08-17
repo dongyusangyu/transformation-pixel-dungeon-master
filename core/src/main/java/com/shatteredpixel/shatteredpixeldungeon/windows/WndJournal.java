@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -810,7 +812,9 @@ public class WndJournal extends WndTabbed {
 					} else {
 						desc += item.info();
 					}
-					if (item instanceof MeleeWeapon){
+					if (item instanceof MeleeWeapon && hero == null){
+						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
+					}else if(item instanceof MeleeWeapon && hero.heroClass!=HeroClass.DUELIST){
 						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
 					}
 
@@ -1144,7 +1148,7 @@ public class WndJournal extends WndTabbed {
 		@Override
 		protected void createChildren() {
 
-			if (Dungeon.hero != null) {
+			if (hero != null) {
 				btnLocal = new RedButton(Messages.get(this, "this_run")) {
 					@Override
 					protected void onClick() {

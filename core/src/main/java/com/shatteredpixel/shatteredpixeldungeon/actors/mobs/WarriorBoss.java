@@ -368,6 +368,10 @@ public class WarriorBoss extends Mob {
                             damage += WarriorBoss.this.damageRoll()*2;
                             damage -= mob.drRoll();
                             mob.damage(damage, WarriorBoss.this);
+                            if (mob == hero && !mob.isAlive()) {
+                                Dungeon.fail( this );
+                                GLog.n( Messages.get(WarriorBoss.this, "kill") );
+                            }
                             if(mob == hero){
                                 Statistics.bossScores[0] -= 100;
                             }

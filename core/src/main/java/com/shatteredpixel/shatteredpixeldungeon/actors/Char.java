@@ -437,6 +437,15 @@ public abstract class Char extends Actor {
 				if (this != Dungeon.hero && Dungeon.hero.subClass == HeroSubClass.PRIEST){
 					enemy.damage(5+Dungeon.hero.lvl, GuidingLight.INSTANCE);
 				}
+				if(hero.hasTalent(Talent.HEALATTACK) && this == hero){
+					int heal = 3;
+					if(hero.pointsInTalent(Talent.HEALATTACK)>1){
+						heal =(int)(hero.lvl * 0.3);
+					}
+					heal = Math.min( heal, hero.HT - hero.HP );
+					hero.HP += heal;
+					hero.sprite.showStatusWithIcon( CharSprite.POSITIVE, Integer.toString( heal ), FloatingText.HEALING );
+				}
 			}
 
 			Berserk berserk = buff(Berserk.class);
@@ -610,6 +619,9 @@ public abstract class Char extends Actor {
 					Buff.affect(hero, Adrenaline.class,hero.pointsInTalent(Talent.EXTREME_REACTION));
 				}
 			}
+			if((enemy instanceof Hero)&& hero.hasTalent(Talent.CRAZY_DANCER)){
+				Buff.affect(this,Amok.class,1+hero.pointsInTalent(Talent.CRAZY_DANCER));
+			}
 			if (enemy.sprite != null){
 				if (hitMissIcon != -1){
 					//dooking is a playful sound Ferrets can make, like low pitched chirping
@@ -680,6 +692,7 @@ public abstract class Char extends Actor {
 			acuRoll *= buff.evasionAndAccuracyFactor();
 		}
 		acuRoll *= AscensionChallenge.statModifier(attacker);
+		acuRoll *= accMulti;
 		
 		float defRoll = Random.Float( defStat );
 		if (defender.buff(Bless.class) != null) defRoll *= 1.25f;

@@ -58,7 +58,7 @@ public class DivineSense extends ClericSpell {
 
 	@Override
 	public void onCast(HolyTome tome, Hero hero) {
-		Buff.prolong(hero, DivineSenseTracker.class, 30f);
+		Buff.prolong(hero, DivineSenseTracker.class, 50f);
 		Dungeon.observe();
 
 		Sample.INSTANCE.play(Assets.Sounds.READ);

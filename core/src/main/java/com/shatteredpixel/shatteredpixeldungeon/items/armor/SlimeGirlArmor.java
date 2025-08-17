@@ -14,7 +14,7 @@ public class SlimeGirlArmor extends ClassArmor {
     {
         image = ItemSpriteSheet.ARMOR_SLIMEGIRL;
         //image = ItemSpriteSheet.ARMOR_CLOTH;
-        unique = false;
+        unique = true;
     }
     @Override
     public boolean doUnequip(Hero hero, boolean collect, boolean single) {
