@@ -135,6 +135,7 @@ public abstract class ClericSpell {
 			if(cleric.hasTalent(Talent.FOCUS_LIGHT)) {
 				spells.add(Focus_Light.INSTANCE);
 			}
+
 		} else if (tier == 2) {
 
 			if (cleric.hasTalent(Talent.RECALL_INSCRIPTION)){
@@ -169,6 +170,15 @@ public abstract class ClericSpell {
 			}
 			if (cleric.hasTalent(Talent.THORN_WHIP)){
 				spells.add(Thorn_Whip.INSTANCE);
+			}
+			if (cleric.hasTalent(Talent.REVELATION)){
+				spells.add(Revelation.INSTANCE);
+			}
+			if(cleric.hasTalent(Talent.EQUIPMENT_BLESS)){
+				spells.add(Equipment_Bless.INSTANCE);
+			}
+			if(cleric.hasTalent(Talent.HOTLIGHT)){
+				spells.add(HotLight.INSTANCE);
 			}
 
 		} else if (tier == 3){
@@ -215,6 +225,16 @@ public abstract class ClericSpell {
 			if (cleric.hasTalent(Talent.ZHUANYU_SPELL)){
 				spells.add(Zhuanyu_Spell.INSTANCE);
 			}
+			if(cleric.hasTalent(Talent.HOLY_GRENADE)){
+				spells.add(Holy_Grenade.INSTANCE);
+			}
+			if(cleric.hasTalent(Talent.BLADE_STAR)){
+				spells.add(Blade_Star.INSTANCE);
+			}
+			if(cleric.hasTalent(Talent.SACRED_BLADE)){
+				spells.add(Sacred_Blade.INSTANCE);
+			}
+
 
 		} else if (tier == 4){
 
@@ -298,6 +318,12 @@ public abstract class ClericSpell {
 		spells.add(Focus_Light.INSTANCE);
 		spells.add(Zhuanyu_Spell.INSTANCE);
 		spells.add(Thorn_Whip.INSTANCE);
+		spells.add(Revelation.INSTANCE);
+		spells.add(Holy_Grenade.INSTANCE);
+		spells.add(Blade_Star.INSTANCE);
+		spells.add(Sacred_Blade.INSTANCE);
+		spells.add(Equipment_Bless.INSTANCE);
+		spells.add(HotLight.INSTANCE);
 		return spells;
 	}
 }

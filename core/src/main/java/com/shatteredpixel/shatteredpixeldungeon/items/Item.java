@@ -135,19 +135,24 @@ public class Item implements Bundlable {
 			if(hero.pointsNegative(Talent.ENDLESS_MALICE)>0 && Random.Int(10)<2+hero.pointsNegative(Talent.ENDLESS_MALICE)){
 				hero.damage((int)(hero.HT*hero.pointsNegative(Talent.ENDLESS_MALICE)*0.05), new WandOfMagicMissile());
 			}
-			float picktime = TIME_TO_PICK_UP;
-			if(hero.pointsInTalent(Talent.AUTO_PICK)==2){
-				picktime = 0f;
-			}else if(hero.pointsInTalent(Talent.AUTO_PICK)==1) {
-				picktime /= 2f;
-			}
+
 			Sample.INSTANCE.play( Assets.Sounds.ITEM );
-			hero.spendAndNext( picktime );
+			hero.spendAndNext(picktime(hero,pos));
 			return true;
 			
 		} else {
 			return false;
 		}
+	}
+	public float picktime(Hero hero, int pos){
+		float picktime = TIME_TO_PICK_UP;
+		if(hero.pointsInTalent(Talent.AUTO_PICK)==2){
+			picktime = 0f;
+		}else if(hero.pointsInTalent(Talent.AUTO_PICK)==1) {
+			picktime /= 2f;
+		}
+		return picktime;
+
 	}
 	
 	public void doDrop( Hero hero ) {
@@ -614,6 +619,7 @@ public class Item implements Bundlable {
 			bundle.put( QUICKSLOT, Dungeon.quickslot.getSlot(this) );
 		}
 		bundle.put( KEPT_LOST, keptThoughLostInvent );
+		if (customNoteID != -1)     bundle.put(CUSTOM_NOTE_ID, customNoteID);
 	}
 	
 	@Override
@@ -684,7 +690,7 @@ public class Item implements Bundlable {
 								if (enemy != null && enemy.alignment != curUser.alignment){
 									Sample.INSTANCE.play(Assets.Sounds.HIT);
 									Buff.affect(enemy, Blindness.class, 1f + curUser.pointsInTalent(Talent.IMPROVISED_PROJECTILES));
-									Buff.affect(curUser, Talent.ImprovisedProjectileCooldown.class, 50f);
+									Buff.affect(curUser, Talent.ImprovisedProjectileCooldown.class, 20f);
 								}
 							}
 

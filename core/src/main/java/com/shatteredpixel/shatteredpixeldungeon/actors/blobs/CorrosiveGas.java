@@ -21,11 +21,18 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.blobs;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -54,8 +61,18 @@ public class CorrosiveGas extends Blob {
 				for (int j = area.top; j < area.bottom; j++){
 					cell = i + j*Dungeon.level.width();
 					if (cur[cell] > 0 && (ch = Actor.findChar( cell )) != null) {
-						if (!ch.isImmune(this.getClass()))
+						if (!ch.isImmune(this.getClass())){
 							Buff.affect(ch, Corrosion.class).set(2f, strength, source);
+							if(!(ch instanceof Hero) && hero.pointsInTalent(Talent.DISABLIITY_POSION)>1){
+								Buff.affect(ch, Cripple.class,1);
+								if(hero.pointsInTalent(Talent.DISABLIITY_POSION)>2){
+									Buff.affect(ch, Weakness.class,1);
+									Buff.affect(ch, Daze.class,1);
+								}
+							}
+						}
+
+
 					}
 				}
 			}

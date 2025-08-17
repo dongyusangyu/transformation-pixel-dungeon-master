@@ -95,9 +95,14 @@ public class HighGrass {
 					}
 				}
 				int index = Random.index( respawnPoints );
-				RotLasher mob = new RotLasher();
-				GameScene.add( mob );
-				ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
+				if(Actor.findChar( index) == null){
+					RotLasher mob = new RotLasher();
+					GameScene.add( mob );
+					ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
+
+				}
+
+
 
 			}
 			if (ch instanceof Hero && ((Hero) ch).heroClass == HeroClass.HUNTRESS){
@@ -202,10 +207,10 @@ public class HighGrass {
 		}
 		
 		freezeTrample = false;
-		
+
 		if (ShatteredPixelDungeon.scene() instanceof GameScene) {
 			GameScene.updateMap(pos);
-			
+
 			CellEmitter.get(pos).burst(LeafParticle.LEVEL_SPECIFIC, 4);
 			if (Dungeon.level.heroFOV[pos]) Dungeon.observe();
 		}

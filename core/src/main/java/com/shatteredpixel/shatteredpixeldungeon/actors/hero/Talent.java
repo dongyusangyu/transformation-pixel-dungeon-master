@@ -165,6 +165,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSir
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
@@ -187,6 +188,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWea
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GnollRockfallTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RockfallTrap;
@@ -334,6 +336,8 @@ public enum Talent {
 	//MadSlimeT4
 	NO_PICK(439, 4), FOOD_BONUS(440, 4), DELICIOUS_DIGESTION(441, 4),
 
+	HUNTING_INTUITION(449),
+
 
 	//GOO
 	AQUATIC_RECOVER(160,2),PUMP_ATTACK(161,2),OOZE_ATTACK(162,2),
@@ -427,7 +431,10 @@ public enum Talent {
 	SWIFT_CHURCH(379,3),PROTECT_CURSE(380),POTENTIAL_ENERGY(381),NIRVANA(382),INSINUATION(383),
 	AUTO_PICK(384),HAND_SLIP(385),HAND_DESTRUCTION(386,3),PREDICTIVE_LOVER(387),FIRE_BALL(388),
 	FLASH_GENIUS(389),WITCH_POTION(390),TRAITOROUS_SPELL(391),SPRINT_SPELL(392),FOCUS_LIGHT(393),
-	ZHUANYU_SPELL(394,3),THORN_WHIP(395),STRONGEST_SHIELD(396),COMBO_PACKAGE(397),BREAK_ENEMY_RANKS(398);
+	ZHUANYU_SPELL(394,3),THORN_WHIP(395),STRONGEST_SHIELD(396),COMBO_PACKAGE(397),BREAK_ENEMY_RANKS(398),
+	REVELATION(399),HOLY_GRENADE(400,3),BLADE_STAR(401,3),SACRED_BLADE(402,3),
+	EQUIPMENT_BLESS(403,2),HOTLIGHT(404),HEALATTACK(405),EAT_MIND(406),DISABLIITY_POSION(407,3),
+	LIGHT_CROP(408),DEVIL_FLAME(409,3),FAST_BREAK(410),CRAZY_DANCER(411),THROWING_RECYCLING(412,3);
 
 	public static final int ATTACK = 0;
 	public static final int MAGIC = 1;
@@ -1000,6 +1007,7 @@ public enum Talent {
 		if (talent == IRON_WILL && hero.heroClass != HeroClass.WARRIOR){
 			Buff.affect(hero, BrokenSeal.WarriorShield.class);
 		}
+
 		if (talent == VETERANS_INTUITION && hero.pointsInTalent(VETERANS_INTUITION) == 2){
 			if (hero.belongings.armor() != null && !ShardOfOblivion.passiveIDDisabled())  {
 				hero.belongings.armor.identify();
@@ -1105,7 +1113,7 @@ public enum Talent {
 		if (hero.hasTalent(HEARTY_MEAL)){
 			//3/5 HP healed, when hero is below 30% health
 			if (hero.HP/(float)hero.HT <= 0.33f) {
-				int healing = 1 + 2 * hero.pointsInTalent(HEARTY_MEAL);
+				int healing = 2 + 2 * hero.pointsInTalent(HEARTY_MEAL);
 				hero.HP = Math.min(hero.HP + healing, hero.HT);
 				hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(healing), FloatingText.HEALING);
 
@@ -1261,7 +1269,7 @@ public enum Talent {
 			}
 		}
 		if(Dungeon.eat_item>=maxeat && eat_item>oldeat){
-			GLog.i("无敌一餐，金币一餐，吃出经验、生日礼物等天赋此后不再触发");
+			GLog.i("无敌一餐，饭里藏金，吃出经验、生日礼物等天赋此后不再触发。");
 		}
 		if(hero.subClass==HeroSubClass.DARKSLIME && hero.buffs(DarkHookCooldown.class).isEmpty() && hero.buffs(DarkHook.class).isEmpty()){
 			Buff.affect(hero, DarkHook.class);
@@ -1299,13 +1307,16 @@ public enum Talent {
 		if (item instanceof Ring){
 			factor *= 1f + hero.pointsInTalent(THIEFS_INTUITION);
 		}
+		if (item instanceof MissileWeapon){
+			factor *= 1f + 2.0f*hero.pointsInTalent(HUNTING_INTUITION);
+		}
 		return factor;
 	}
 
 	public static void onPotionUsed( Hero hero, int cell, float factor ){
 		if(hero.hasTalent(WITCH_POTION)){
 			Char mob = Actor.findChar(cell);
-			if(!(mob instanceof  Hero)){
+			if(mob !=null && !(mob instanceof  Hero)){
 				Buff.affect( mob, Charm.class, 5 ).object = hero.id();
 				if(hero.pointsInTalent(WITCH_POTION)==2){
 					Buff.affect( mob, Poison.class).set(5);
@@ -1313,28 +1324,10 @@ public enum Talent {
 			}
 		}
 		if (hero.hasTalent(LIQUID_WILLPOWER)){
-			if (hero.heroClass == HeroClass.WARRIOR) {
-				/*
-				BrokenSeal.WarriorShield shield = hero.buff(BrokenSeal.WarriorShield.class);
-				if (shield != null) {
-					// 50/75% of total shield
-					int shieldToGive = Math.round(factor * shield.maxShield() * 0.25f * (1 + hero.pointsInTalent(LIQUID_WILLPOWER)));
-					hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(shieldToGive), FloatingText.SHIELDING);
-					shield.supercharge(shieldToGive);
-				}
-
-				 */
-				// 6.5%/10% of max HP
-				int shieldToGive = Math.round( factor * hero.HT * (0.035f * (hero.pointsInTalent(LIQUID_WILLPOWER)) + 0.03f));
+			int shieldToGive = Math.round( factor * hero.HT * (0.035f * (hero.pointsInTalent(LIQUID_WILLPOWER)) + 0.03f));
 				hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(shieldToGive), FloatingText.SHIELDING);
 				Buff.affect(hero, Barrier.class).setShield(shieldToGive);
-			} else {
-				// 5/7.5% of max HP
-				int shieldToGive = Math.round( factor * hero.HT * (0.025f * (1+hero.pointsInTalent(LIQUID_WILLPOWER))));
-				hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(shieldToGive), FloatingText.SHIELDING);
-				Buff.affect(hero, Barrier.class).setShield(shieldToGive);
-			}
-		}
+}
 		if (hero.hasTalent(LIQUID_NATURE)){
 			ArrayList<Integer> grassCells = new ArrayList<>();
 			for (int i : PathFinder.NEIGHBOURS9){
@@ -1400,11 +1393,17 @@ public enum Talent {
 			Potion p = Reflection.newInstance(Random.element(potions));
 			if(hero.pointsInTalent(LIQUID_PERCEPTION)==2 && Random.Int(2)==1){
 				Scroll s = Reflection.newInstance(Random.element(scrolls));
-				s.identify();
-				IDed.add(s);
+				if(s!=null){
+					s.identify();
+					IDed.add(s);
+				}
+				
 			}else{
-				p.identify();
-				IDed.add(p);
+				if(p!=null){
+					p.identify();
+					IDed.add(p);
+				}
+				
 			}
 			GameScene.show(new WndDivination(IDed));
 		}
@@ -1420,19 +1419,8 @@ public enum Talent {
 			Buff.affect(hero, Invisibility.class, factor * (1 + 2*hero.pointsInTalent(INSCRIBED_STEALTH)));
 			Sample.INSTANCE.play( Assets.Sounds.MELD );
 		}
-		if (hero.hasTalent(RECALL_INSCRIPTION) && Scroll.class.isAssignableFrom(cls) && cls != ScrollOfUpgrade.class && cls!= ScrollOfMetamorphosis.class){
-			/*
-			if (hero.heroClass == HeroClass.CLERIC){
-				Buff.prolong(hero, RecallInscription.UsedItemTracker.class, hero.pointsInTalent(RECALL_INSCRIPTION) == 2 ? 300 : 10).item = cls;
-			} else {
-				// 10/15%
-				if (Random.Int(20) < 1 + hero.pointsInTalent(RECALL_INSCRIPTION)){
-					Reflection.newInstance(cls).collect();
-					GLog.p("refunded!");
-				}
-			}
+		if (hero.hasTalent(RECALL_INSCRIPTION) && cls !=null && Scroll.class.isAssignableFrom(cls) && cls != ScrollOfUpgrade.class && cls!= ScrollOfMetamorphosis.class){
 
-			 */
 			Buff.prolong(hero, RecallInscription.UsedItemTracker.class, hero.pointsInTalent(RECALL_INSCRIPTION) == 2 ? 300 : 10).item = cls;
 
 		}
@@ -1505,7 +1493,7 @@ public enum Talent {
 					SpellSprite.show(hero, SpellSprite.CHARGE);
 				}
 			} else {
-				Buff.affect(hero, Recharging.class, 4 + 8 * hero.pointsInTalent(INSCRIBED_POWER));
+				Buff.affect(hero, Recharging.class, 8 + 8 * hero.pointsInTalent(INSCRIBED_POWER));
 			}
 		}
 	}
@@ -1596,13 +1584,13 @@ public enum Talent {
 		if(hero.hasTalent(HEDONISM) && hero.buff(Hunger.class).level<300){
 			dmg+=2*hero.pointsInTalent(HEDONISM);
 		}
-		if(hero.pointsInTalent(PUMP_ATTACK)>0 &&  Random.Int( 5 )==1 && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if(hero.pointsInTalent(PUMP_ATTACK)>0 &&  Random.Int( 5 )==1 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			dmg = Math.round(dmg * (1.0f + 1.0f*hero.pointsInTalent(PUMP_ATTACK)));
 			GLog.i("此一击积蓄了很强的力量，造成多倍伤害");
 		}
-		if (hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==1 && hero.belongings.attackingWeapon() instanceof MeleeWeapon && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
+		if (hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==1 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null) && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
 			dmg*=1.3;
-		}else if(hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==2 && hero.belongings.attackingWeapon() instanceof MeleeWeapon && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
+		}else if(hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==2 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null) && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
 			dmg*=1.5;
 		}
 		if(hero.attackDelay()>1 && hero.pointsInTalent(Talent.OVERWHELMING)>=1){
@@ -1611,7 +1599,7 @@ public enum Talent {
 		if( hero.pointsInTalent(JUSTICE_PUNISH)>=1 && (enemy.properties().contains(Char.Property.UNDEAD)|| enemy.properties().contains(Char.Property.DEMONIC))){
 			dmg*=1.1+0.1*hero.pointsInTalent(JUSTICE_PUNISH);
 		}
-		if(hero.pointsInTalent(AMAZING_EYESIGHT)>0 && hero.belongings.attackingWeapon() instanceof MeleeWeapon && Dungeon.level.distance(hero.pos,enemy.pos)>=4-hero.pointsInTalent(AMAZING_EYESIGHT)){
+		if(hero.pointsInTalent(AMAZING_EYESIGHT)>0 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null) && Dungeon.level.distance(hero.pos,enemy.pos)>=4-hero.pointsInTalent(AMAZING_EYESIGHT)){
 			dmg*=1.2;
 		}
 		if(hero.hasTalent(Talent.RAGE_ATTACK)){
@@ -1742,13 +1730,13 @@ public enum Talent {
 				dmg = Math.round(dmg * (1.0f + .1f*hero.pointsInTalent(DEADLY_FOLLOWUP)));
 			}
 		}
-		if(hero.hasTalent(OOZE_ATTACK)&& Random.Int( 4 )<=hero.pointsInTalent(OOZE_ATTACK) && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if(hero.hasTalent(OOZE_ATTACK)&& Random.Int( 4 )<=hero.pointsInTalent(OOZE_ATTACK) && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect( enemy, Ooze.class ).set(15);
 			Viscosity.DeferedDamage deferred=Buff.affect( enemy, Viscosity.DeferedDamage.class );
 			deferred.prolong( 10 );
 			enemy.sprite.burst( 0x000000, 5 );
 		}
-		if( hero.pointsInTalent(STRONG_ATTACK)>=1 && hero.buffs(Talent.StrAtkCooldown.class).isEmpty() && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if( hero.pointsInTalent(STRONG_ATTACK)>=1 && hero.buffs(Talent.StrAtkCooldown.class).isEmpty() && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect( enemy, Vulnerable.class ,1+hero.pointsInTalent(STRONG_ATTACK)*2);
 			Buff.affect(hero,StrAtkCooldown.class,15);
 
@@ -1759,7 +1747,7 @@ public enum Talent {
 		if(hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT)>0 && !enemy.buffs(PinCushion.class).isEmpty()){
 			Buff.affect(enemy, Hex.class,hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT));
 		}
-		if (hero.hasTalent(COVER_SCAR) && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if (hero.hasTalent(COVER_SCAR) && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect( enemy, Bleeding.class).set(hero.pointsInTalent(COVER_SCAR));
 		}
 		if(hero.hasTalent(ICE_BREAKING) && !enemy.buffs(Chill.class).isEmpty()){
@@ -1822,7 +1810,7 @@ public enum Talent {
 			hero.buff(Talent.SpiritBladesTracker.class).detach();
 		}
 		ComboPackage c = hero.buff(ComboPackage.class);
-		if(hero.hasTalent(COMBO_PACKAGE) && c!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if(hero.hasTalent(COMBO_PACKAGE) && c!=null && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			c.left++;
 			if(c.left>=8-2*hero.pointsInTalent(COMBO_PACKAGE)){
 				onFoodEaten(hero,0,null);
@@ -1831,8 +1819,22 @@ public enum Talent {
 					c.detach();
 				}
 			}
-		}else if(hero.hasTalent(COMBO_PACKAGE) && c==null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		}else if(hero.hasTalent(COMBO_PACKAGE) && c==null && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect(hero,ComboPackage.class).left=1;
+		}
+
+		if(hero.pointsInTalent(THROWING_RECYCLING)>Random.Int(4) && enemy.buff(PinCushion.class) != null ){
+			while (enemy.buff(PinCushion.class) != null) {
+				Item item = enemy.buff(PinCushion.class).grabOne();
+				if (item.doPickUp(hero, enemy.pos)) {
+					hero.spend(-item.picktime(hero, enemy.pos)); //casting the spell already takes a turn
+					GLog.i( Messages.capitalize(Messages.get(hero, "you_now_have", item.name())) );
+
+				} else {
+					GLog.w(Messages.get(TelekineticGrab.class, "cant_grab"));
+					Dungeon.level.drop(item, enemy.pos).sprite.drop();
+				}
+			}
 		}
 		dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
 		return dmg;
@@ -2229,7 +2231,7 @@ public enum Talent {
 			SpellSprite.show(hero, SpellSprite.FOOD);
 			Sample.INSTANCE.play(Assets.Sounds.EAT);
 			Talent.DarkHookCooldown b = hero.buff(Talent.DarkHookCooldown.class);
-			if(b!=null){
+			if(b!=null && cause != Chasm.class){
 				b.detach();
 			}
 		}
@@ -2462,17 +2464,17 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(0).get(ATTACK),PROVOKED_ANGER,LINGERING_MAGIC,SUCKER_PUNCH,FOLLOWUP_STRIKE,STRENGTHENING_MEAL,
 				PATIENT_STRIKE,STRONG_ATTACK,FEAR_INCARNATION,DISTURB_ATTACK,WATER_ATTACK,COVER_SCAR,STRENGTH_GREATEST,POSION_DAGGER,
 				ATTACK_DOOR,WATER_WAVE);
-		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION);
+		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP);
 		Collections.addAll(typeTalent.get(0).get(EFFECT),HEARTY_MEAL,BACKUP_BARRIER,PROTECTIVE_SHADOWS,NATURES_AID,AGGRESSIVE_BARRIER,
 				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,INVINCIBLE,
 				THORNY_ROSE,ASH_LEDGER,SECRET_LIGHTING,ANESTHESIA,JASMINE_TEA,PERSONAL_ATTACK,FLASH_GENIUS,RESILIENT_MEAL);
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
 				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION);
 		Collections.addAll(typeTalent.get(0).get(SPELL),SATIATED_SPELLS, HOLY_INTUITION, SEARING_LIGHT, SHIELD_OF_LIGHT,
-				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT);
+				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT,HEALATTACK);
 		Collections.addAll(typeTalent.get(0).get(ASSIST),VETERANS_INTUITION,IRON_WILL,SCHOLARS_INTUITION,THIEFS_INTUITION,
 				SURVIVALISTS_INTUITION,ADVENTURERS_INTUITION,BOMB_MANIAC,THICKENED_ARMOR,STRENGTH_TRAIN,SAVAGE_PHYSIQUE,
-				AUTO_PICK,LIQUID_ARMOR);
+				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER);
 		Collections.addAll(typeTalent.get(0).get(OTHER),FISHING_TIME,WATER_GHOST,HONEY_FISH,CHOCOLATE_COINS);
 
 		//tier=2
@@ -2480,14 +2482,15 @@ public enum Talent {
 				WEIRD_THROW,AMAZING_EYESIGHT,GIANT_KILLER,ARROW_PENETRATION,FRENZIED_ATTACK,FUDI_CHOUXIN,POISON_INBODY,HEDONISM,
 				SHOOT_SATELLITE,LETHAL_HASTE);
 		Collections.addAll(typeTalent.get(1).get(MAGIC),ENERGIZING_MEAL,INSCRIBED_POWER,ARCANE_VISION,SHIELD_BATTERY,BURNING_CURSE,
-				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,FIRE_BALL);
+				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,FIRE_BALL,EAT_MIND);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
 				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,INVISIBILITY_SHADOWS,BLESS_MEAL,COLLECTION_GOLD,GET_UP,
 				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE);
 		Collections.addAll(typeTalent.get(1).get(RESOURCE),WAND_PRESERVATION,ROGUES_FORESIGHT,PRECIOUS_EXPERIENCE,MORE_CHANCE,WANT_ALL,
-				SEED_RECYCLING,INSTANT_REFINING);
+				SEED_RECYCLING,INSTANT_REFINING,FAST_BREAK);
 		Collections.addAll(typeTalent.get(1).get(SPELL),STRENGTHEN_CHAIN,STRENGTHEN_CHALICE,JOURNEY_NATURE,STRENGTH_BOOK,RECALL_INSCRIPTION,
-				SUNRAY, DIVINE_SENSE, BLESS, DIVINE_PROTECTION,CONVERSION_HOLY,GENESIS,INDULGENCE,SPRINT_SPELL,THORN_WHIP,ENLIGHTENING_MEAL);
+				SUNRAY, DIVINE_SENSE, BLESS, DIVINE_PROTECTION,CONVERSION_HOLY,GENESIS,INDULGENCE,SPRINT_SPELL,THORN_WHIP,ENLIGHTENING_MEAL,
+				REVELATION,EQUIPMENT_BLESS,HOTLIGHT);
 		Collections.addAll(typeTalent.get(1).get(ASSIST),WIDE_SEARCH,SILENT_STEPS,REJUVENATING_STEPS,HEIGHTENED_SENSES,DURABLE_PROJECTILES,
 				WEAPON_RECHARGING,SWIFT_EQUIP,LIGHT_APPLICATION,HEAVY_APPLICATION,DROP_RESISTANT,GOD_LEFTHAND,GOD_RIGHTHAND,BURNING_BLOOD,
 				HEAVY_BURDEN,EXPLORATION_INTUITION,PROTECT_CURSE,POTENTIAL_ENERGY,NIRVANA,RUNIC_TRANSFERENCE,ENERGY_ABSORPTION,
@@ -2497,15 +2500,15 @@ public enum Talent {
 		//tier=3
 		Collections.addAll(typeTalent.get(2).get(ATTACK),POINT_BLANK,PRECISE_ASSAULT,DEADLY_FOLLOWUP,COUNTER_ATTACK,OVERWHELMING,PHANTOM_SHOOTER,
 				MARTIAL_TRAIN,RAGE_ATTACK,ACCUMULATE_STEADILY,WELLFED_MEAL,SKY_EARTH,DEEP_FREEZE,LOVE_BACKSTAB,ABACUS,PRECISE_SHOT,CICADA_DANCE,
-				ASHES_BOW,HAND_DESTRUCTION);
+				ASHES_BOW,HAND_DESTRUCTION,THROWING_RECYCLING);
 		Collections.addAll(typeTalent.get(2).get(MAGIC),DESPERATE_POWER,MAGIC_RECYCLING,ANGEL_STANCE,MORONITY,EXTREME_CASTING,SWIFT_CHURCH,
-				EMPOWERING_LIFE);
+				EMPOWERING_LIFE,DISABLIITY_POSION,DEVIL_FLAME);
 		Collections.addAll(typeTalent.get(2).get(EFFECT),ENHANCED_RINGS,SEER_SHOT,INVINCIBLE_MEAL,DETOX_DAMAGE,EARTH_MEAL,REVERSE_POLARITY,
 				WATER_ISFOOD,NO_VIEWRAPE,READ_PROFITABLE,WANLING_POTION,ENDLESS_MEAL,HEALTHY_FOOD);
 		Collections.addAll(typeTalent.get(2).get(RESOURCE),TRAP_MASTER,GOLD_FORMATION,DOUBLE_TRINKETS,RETURNING_HONOR,WEAPON_MAKE,SECRET_STASH,
 				PYROMANIAC,BIRTHDAY_GIFT,COLLECT_PLANTS,TREASURE_SENSE,CHANGQI_BOOKSTORE);
 		Collections.addAll(typeTalent.get(2).get(SPELL),ALLY_WARP,TIME_SAND,STRENGTH_CLOAK,STRENGTH_ARMBAND,CLEANSE, LIGHT_READING,PURIFYING_EVIL,
-				DIVINE_STORM,RESURRECTION,ZHUANYU_SPELL);
+				DIVINE_STORM,RESURRECTION,ZHUANYU_SPELL,HOLY_GRENADE,BLADE_STAR,SACRED_BLADE);
 		Collections.addAll(typeTalent.get(2).get(ASSIST),HOLD_FAST,STRONGMAN,LIGHT_CLOAK,BEHEST,AFRAID_DEATH,HERO_NAME,HOMETOWN_CLOUD,WIDE_KNOWLEDGE,
 				CONCEPT_GRID,ACTIVE_MUSCLES,SEA_WIND,BEYOND_LIMIT,EXTREME_REACTION,HOLY_FAITH,ORIGINAL_MONSTER);
 		Collections.addAll(typeTalent.get(2).get(OTHER),ENGINEER_REFIT,SHARP_HEAD);
@@ -2545,7 +2548,7 @@ public enum Talent {
 		switch (cls){
 			case WARRIOR: default:
 				Collections.addAll(tierTalents, HEARTY_MEAL, VETERANS_INTUITION);
-				//Collections.addAll(tierTalents,EMPOWERING_LIFE,CICADA_DANCE);
+				//Collections.addAll(tierTalents,SACRED_BLADE,BLADE_STAR);
 				break;
 			case MAGE:
 				//Collections.addAll(tierTalents, GAS_SPURT, SCHOLARS_INTUITION);

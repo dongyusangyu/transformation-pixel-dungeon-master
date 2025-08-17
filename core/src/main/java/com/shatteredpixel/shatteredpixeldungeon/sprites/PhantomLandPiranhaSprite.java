@@ -24,16 +24,16 @@ public class PhantomLandPiranhaSprite extends MobSprite {
         int c = 16;
 
         idle = new MovieClip.Animation( 8, true );
-        idle.frames( frames, c+0, c+1, c+2, c+1 );
+        idle.frames( frames, c+0, c+1, c+0, c+1 );
 
         run = new MovieClip.Animation( 20, true );
-        run.frames( frames, c+0, c+1, c+2, c+1 );
+        run.frames( frames, c+0, c+6, c+7, c+8, c+9, c+10 );
 
         attack = new MovieClip.Animation( 20, false );
-        attack.frames( frames, c+3, c+4, c+5, c+6, c+7, c+8, c+9, c+10, c+11 );
+        attack.frames( frames, c+0, c+2, c+3, c+4, c+5);
 
         die = new MovieClip.Animation( 4, false );
-        die.frames( frames, c+12, c+13, c+14 );
+        die.frames( frames,  c+11 ,c+12, c+13, c+14 );
 
         play( idle );
     }

@@ -25,7 +25,9 @@ import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WandEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
@@ -71,6 +73,9 @@ public abstract class DamageWand extends Wand{
 		}
 		if(hero.hasTalent(Talent.EMPOWERING_LIFE) && hero.shielding()>0){
 			dmg*=(int)(dmg*(1f+0.1f*hero.pointsInTalent(Talent.EMPOWERING_LIFE)));;
+		}
+		if(hero.hasTalent(Talent.EAT_MIND)){
+			Buff.affect(hero, Hunger.class).satisfy((0.1f + 0.1f*hero.pointsInTalent(Talent.EAT_MIND))*dmg);
 		}
 		return dmg;
 	}

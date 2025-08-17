@@ -267,6 +267,7 @@ public enum HeroClass {
 		waterskin.collect();
 		//new ScrollOfSublimation().identify();
 		new ScrollOfIdentify().identify();
+		new ScrollOfMetamorphosis().identify();
 
 		switch (this) {
 			case WARRIOR: default:
@@ -543,13 +544,13 @@ public enum HeroClass {
 		}
 	}
 	private static void doChallengeSpawn(Hero hero) {
-		new ChallengeBag().collect();
 
-		new DictBook().collect();
-//		new NewDictBook().collect();
 
 
 		if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
+			new ChallengeBag().collect();
+			new RubbingsTome().identify().collect();
+			new DictBook().collect();
 			/*
 			Mana mana = new Mana();
 			mana.maxMana = 200;

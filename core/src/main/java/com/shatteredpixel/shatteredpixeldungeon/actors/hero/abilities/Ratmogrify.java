@@ -238,7 +238,7 @@ public class Ratmogrify extends ArmorAbility {
 			if (timeLeft <= 0){
 				Mob original = getOriginal();
 				this.original = null;
-				original.clearTime();
+				//original.clearTime();
 				GameScene.add(original);
 
 				EXP = 0;

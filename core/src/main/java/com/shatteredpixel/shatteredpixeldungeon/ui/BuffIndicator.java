@@ -147,6 +147,9 @@ public class BuffIndicator extends Component {
 	public static final int DARK_HOOK =  89;
 	public static final int COMBO_PACKAGE =  90;
 	public static final int THROWN_WEP = 91;
+	public static final int REVELATION = 92;
+
+	public  static  final  int EQUIPMENT_BLESS = 93;
 
 
 	private static BuffIndicator heroInstance;

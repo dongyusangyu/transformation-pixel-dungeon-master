@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyLance;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Sacred_Blade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
@@ -105,6 +106,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 		ANGULAR_SPEEDS.put(ScorpioBossSprite.Shot.class,   0);
 		ANGULAR_SPEEDS.put(GreatDemonSprite.Shot.class,   0);
 		ANGULAR_SPEEDS.put(HolyLance.HolyLanceVFX.class,   0);
+
 		ANGULAR_SPEEDS.put(GreatShoperSprite.MissileGold.class,   0);
 
 		//720 is default
@@ -112,6 +114,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 		ANGULAR_SPEEDS.put(GnollGeomancer.Boulder.class,   90);
 		
 		ANGULAR_SPEEDS.put(HeavyBoomerang.class,1440);
+		ANGULAR_SPEEDS.put(Sacred_Blade.HolBladeVFX.class,   1440);
 		ANGULAR_SPEEDS.put(Bolas.class,         1440);
 		
 		ANGULAR_SPEEDS.put(Shuriken.class,                  2160);

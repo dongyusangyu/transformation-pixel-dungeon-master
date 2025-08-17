@@ -96,6 +96,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HallowedGroun
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyWard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Resurrection;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Revelation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Smite;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatShoper;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
@@ -220,6 +221,7 @@ import com.watabou.utils.PathFinder;
 import com.watabou.utils.Point;
 import com.watabou.utils.Random;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -451,10 +453,14 @@ public class Hero extends Char {
 	public int pointsInTalent( Talent talent ){
 		for (LinkedHashMap<Talent, Integer> tier : talents){
 			for (Talent f : tier.keySet()){
+				int talentlvl = tier.get(f);
 				if(f == talent && Dungeon.isChallenged(Challenges.WEAKENED_TALENT)){
-					return (int)(tier.get(f)/2);
+					talentlvl/=2;
 				}
-				if (f == talent) return tier.get(f);
+				if(!buffs(Revelation.RevelationBuff.class).isEmpty() && f == talent){
+					talentlvl+=1;
+				}
+				if (f == talent) return Math.min(talentlvl,f.maxPoints);
 			}
 		}
 		return 0;
@@ -2452,6 +2458,11 @@ public class Hero extends Char {
 						GameScene.show( new WndResurrect(finalAnkh) );
 					}
 				});
+				try {
+					Dungeon.saveAll();
+				} catch (IOException e) {
+					ShatteredPixelDungeon.reportException(e);
+				}
 
 				if (cause instanceof Hero.Doom) {
 					((Hero.Doom)cause).onDeath();

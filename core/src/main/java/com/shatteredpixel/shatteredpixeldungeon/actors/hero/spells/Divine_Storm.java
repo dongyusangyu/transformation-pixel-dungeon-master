@@ -44,7 +44,7 @@ public class Divine_Storm extends TargetedClericSpell {
     }
     @Override
     public float chargeUse(Hero hero) {
-        return 4;
+        return 3;
 
     }
     @Override

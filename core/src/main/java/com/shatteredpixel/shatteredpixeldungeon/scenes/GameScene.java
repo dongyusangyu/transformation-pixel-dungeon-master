@@ -1018,7 +1018,7 @@ public class GameScene extends PixelScene {
 
 		float offset = Camera.main.centerOffset.y;
 		banner.x = align( uiCamera, (uiCamera.width - banner.width) / 2 );
-		banner.y = align( uiCamera, (uiCamera.height - banner.height) / 2 - banner.height/2 - 16 - offset );
+		banner.y = align( uiCamera, (uiCamera.height - banner.height) / 2 - 32 - offset );
 
 		addToFront( banner );
 	}
@@ -1409,7 +1409,7 @@ public class GameScene extends PixelScene {
 
 			@Override
 			public void update() {
-				alpha(gameOver.am);
+				alpha((float)Math.pow(gameOver.am, 2));
 				super.update();
 			}
 		};

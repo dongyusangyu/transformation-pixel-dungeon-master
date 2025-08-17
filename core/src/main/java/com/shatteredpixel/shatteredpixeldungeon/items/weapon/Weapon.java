@@ -36,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Asc
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.BodyForm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Equipment_Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Smite;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
@@ -384,7 +385,16 @@ abstract public class Weapon extends KindOfWeapon {
 	public int level() {
 		int level = super.level();
 		if (curseInfusionBonus) level += 1 + level/6;
+
 		return level;
+	}
+	@Override
+	public int buffedLvl() {
+		int level = 0;
+		if (hero!=null && hero.buff(Equipment_Bless.Blessbuff.class)!=null){
+			level += hero.pointsInTalent(Talent.EQUIPMENT_BLESS);
+		}
+		return level+super.buffedLvl();
 	}
 	
 	@Override
@@ -485,7 +495,7 @@ abstract public class Weapon extends KindOfWeapon {
 	}
 
 	public boolean hasEnchant(Class<?extends Enchantment> type, Char owner) {
-		if(owner!= null ){
+		if(owner == null ){
 			return false;
 		} else if (  owner.buff(MagicImmune.class) != null) {
 			return false;

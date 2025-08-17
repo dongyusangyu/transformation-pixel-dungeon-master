@@ -70,12 +70,26 @@ public class AboutScene extends PixelScene {
 				"Developed by: _东隅桑榆_\nBased on Shattered Pixel Dungeon's open source",
 				"蜕变地牢测试群",
 				"https://qm.qq.com/q/FmNw25jGUg");
+
 		if (landscape()){
 			tpx.setRect(w/2f - colWidth, 10, colWidth, 0);
 		} else {
 			tpx.setRect((w - colWidth)/2f, 6, colWidth, 0);
 		}
 		content.add(tpx);
+		CreditsBlock tougao = new CreditsBlock(false,  Window.TPX_COLOR,
+				null,
+				null,
+				null,
+				"投稿链接",
+				"https://docs.qq.com/form/page/DTVh5Y1ZDeG5WdkFH");
+		if (landscape()){
+			tougao.setRect(w/2f - colWidth, 8, colWidth, 0);
+		} else {
+			tougao.setRect((w - colWidth)/2f, tpx.bottom() + 4, colWidth, 0);
+
+		}
+		content.add(tougao);
 
 		CreditsBlock art = new CreditsBlock(false, Window.TPX_COLOR,
 				"Art:",
@@ -84,9 +98,9 @@ public class AboutScene extends PixelScene {
 				null,
 				null);
 		if (landscape()){
-			art.setRect(tpx.right(), 8, 50, 0);
+			art.setRect(tougao.right(), 8, 50, 0);
 		} else {
-			art.setRect(tpx.left()+5, tpx.bottom() + 4, 50, 0);
+			art.setRect(tougao.left()+5, tougao.bottom() + 4, 50, 0);
 
 		}
 		content.add(art);

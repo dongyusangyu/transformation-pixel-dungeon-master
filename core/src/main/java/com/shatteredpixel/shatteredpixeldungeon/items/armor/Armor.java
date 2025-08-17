@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.AuraOfProtection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.BodyForm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Equipment_Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyWard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.LifeLinkSpell;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.PrismaticImage;
@@ -473,6 +474,14 @@ public class Armor extends EquipableItem {
 			level += hero.pointsInTalent(Talent.PROTECT_CURSE);
 		}
 		return level;
+	}
+	@Override
+	public int buffedLvl() {
+		int level = 0;
+		if (hero!=null && hero.buff(Equipment_Bless.Blessbuff.class)!=null){
+			level += hero.pointsInTalent(Talent.EQUIPMENT_BLESS);
+		}
+		return level+super.buffedLvl();
 	}
 	
 	@Override

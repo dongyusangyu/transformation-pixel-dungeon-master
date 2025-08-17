@@ -93,6 +93,7 @@ public class SpiritBow extends Weapon {
 		}
 	}
 
+
 	private static Class[] harmfulPlants = new Class[]{
 			Blindweed.class, Firebloom.class, Icecap.class, Sorrowmoss.class,  Stormvine.class
 	};
@@ -390,7 +391,7 @@ public class SpiritBow extends Weapon {
 						user.buff(Talent.LethalMomentumTracker.class).detach();
 						user.next();
 					} else {
-						user.spendAndNext(castDelay(user, dst));
+						user.spendAndNext(castDelay(user, cell));
 					}
 					sniperSpecial = false;
 					flurryCount = -1;
@@ -489,4 +490,4 @@ public class SpiritBow extends Weapon {
 			return Messages.get(SpiritBow.class, "prompt");
 		}
 	};
-}
+}	

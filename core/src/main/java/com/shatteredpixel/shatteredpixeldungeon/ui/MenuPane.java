@@ -54,6 +54,7 @@ public class MenuPane extends Component {
 	private Button depthButton;
 
 	private Image challengeIcon;
+	private Image redEnvelopeIcon;
 	private BitmapText challengeText;
 	private Button challengeButton;
 
@@ -111,7 +112,9 @@ public class MenuPane extends Component {
 		if (Challenges.activeChallenges() > 0){
 
 			challengeIcon = Icons.get(Icons.CHAL_COUNT);
-			if(Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
+			if(Dungeon.isChallenged(Challenges.TEST_MODE)){
+				challengeIcon = Icons.get(Icons.TEST_MODE);
+			} else if(Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
 				challengeIcon = Icons.get(Icons.REDCHAL_COUNT);
 			}
 			add(challengeIcon);
@@ -133,6 +136,11 @@ public class MenuPane extends Component {
 				}
 			};
 			add(challengeButton);
+			redEnvelopeIcon=Icons.get(Icons.RED_ENVELOPE);
+			if(Dungeon.isChallenged(Challenges.RED_ENVELOPE)){
+				add(redEnvelopeIcon);
+			}
+
 		}
 
 		btnJournal = new JournalButton();
@@ -187,6 +195,13 @@ public class MenuPane extends Component {
 
 			challengeButton.setRect(challengeIcon.x, challengeIcon.y, challengeIcon.width(), challengeIcon.height() + challengeText.height());
 		}
+		if (redEnvelopeIcon != null){
+			redEnvelopeIcon.x = challengeIcon.x - challengeIcon.width();
+			redEnvelopeIcon.y = challengeIcon.y - 1;
+			if (SPDSettings.interfaceSize() == 0) redEnvelopeIcon.y++;
+			PixelScene.align(redEnvelopeIcon);
+		}
+
 
 		version.scale.set(PixelScene.align(0.5f));
 		version.measure();

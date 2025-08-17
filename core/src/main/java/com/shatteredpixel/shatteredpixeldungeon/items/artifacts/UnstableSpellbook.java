@@ -150,12 +150,15 @@ public class UnstableSpellbook extends Artifact {
 
 	public void doReadEffect(Hero hero){
 		charge--;
+		/*
 		if(hero.hasTalent(Talent.MAGIC_GIRL)){
 			Buff.affect(hero, HeroDisguise.class,15+15*hero.pointsInTalent(Talent.MAGIC_GIRL));
 			if(hero.pointsInTalent(Talent.MAGIC_GIRL)==2){
 				Buff.affect(hero, Light.class,10);
 			}
 		}
+
+		 */
 
 		Scroll scroll;
 		if(hero.hasTalent(Talent.STRENGTH_BOOK)){
@@ -246,7 +249,9 @@ public class UnstableSpellbook extends Artifact {
 			checkForArtifactProc(curUser, scroll);
 			Talent.onArtifactUsed(Dungeon.hero);
 		}
+		Talent.onScrollUsed(curUser,curUser.pos,1,null);
 		updateQuickslot();
+
 	}
 	private void checkForArtifactProc(Hero user, Scroll scroll){
 		//if the base scroll (exotics all match) is an AOE effect, then also trigger illuminate

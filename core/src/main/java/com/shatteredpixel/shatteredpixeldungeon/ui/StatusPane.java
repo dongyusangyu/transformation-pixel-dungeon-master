@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
+import static com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene.landscape;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
@@ -328,12 +330,17 @@ public class StatusPane extends Component {
 			expText.text(Dungeon.hero.exp + "/" + Dungeon.hero.maxExp());
 			expText.measure();
 			expText.x = hp.x + (128 - expText.width())/2f;
-			int locate=(int)(Math.round(81-81*hunger_float/450));
-			hunger.frame(18,locate,9,81);
-			hunger.y=115+locate;
 
-		} else {
+			//int locate=(int)(Math.round(81-81*hunger_float/450));
+			//hunger.frame(18,locate,9,81);
+			//hunger.y=115+locate;
+			hunger.frame(0,0,9,(int)(Math.ceil(81*hunger_float/450)));
+
+		}else {
 			exp.scale.x = (width / exp.width) * Dungeon.hero.exp / Dungeon.hero.maxExp();
+			//int locate=(int)(Math.round(81-81*hunger_float/450));
+			//hunger.frame(0,0,9,(int)(Math.ceil(81*hunger_float/450)));
+			//hunger.y=115+locate;
 			hunger.frame(0,0,9,(int)(Math.ceil(81*hunger_float/450)));
 		}
 

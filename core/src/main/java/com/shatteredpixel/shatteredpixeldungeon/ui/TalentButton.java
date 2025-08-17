@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndHero;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndInfoTalent;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournalItem;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndNegative;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.ColorBlock;
@@ -193,6 +194,8 @@ public class TalentButton extends Button {
 					if (ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE != null){
 						ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE.hide();
 					}
+					GameScene.show(new ScrollOfMetamorphosis.WndType(tier,talent));
+					/*
 					Game.runOnRenderThread(new Callback() {
 						@Override
 						public void call() {
@@ -213,6 +216,8 @@ public class TalentButton extends Button {
 							} );
 						}
 					});
+
+					 */
 				}
 			});
 		} else if (mode == Mode.METAMORPH_REPLACE && Dungeon.hero != null && Dungeon.hero.isAlive()) {

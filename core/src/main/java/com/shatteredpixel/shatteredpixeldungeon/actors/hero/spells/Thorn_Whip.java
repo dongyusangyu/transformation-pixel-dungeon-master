@@ -47,7 +47,7 @@ public class Thorn_Whip extends TargetedClericSpell {
     }
     @Override
     public float chargeUse(Hero hero) {
-        return 2;
+        return 1;
 
     }
     @Override

@@ -36,6 +36,49 @@ public class v0_2_X {
         ChangeInfo changes = new ChangeInfo("v0.2", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+        changes = new ChangeInfo("0.2.5fix6",false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_ 天赋_即兴投掷_加强，冷却从50下调到20。\n"+
+                        "_-_ 除符文复制外的其他使用卷轴的天赋均可用魔典触发(实验性玩法)。\n"+
+                        "_-_ 开局全部职业鉴定_蜕变秘卷_。\n"+
+                        "_-_ 在不装备武器时，也能触发近战类天赋。\n"+
+                        "_-_ 修复部分界面错误。\n"+
+                        "_-_ 修改部分文本错误。\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
+                "_-_ 新增7个正面天赋:食人心智，致残毒云，雷雨发庄稼，恶魔之焰，高速突破，疯狂舞者，投掷回收。\n"+
+                        "_-_ 新增7个法术天赋:天启，神圣手雷，刀刃阶梯，神圣利刃，装备赐福，灼热强光，圣愈一击。\n"
+        ));
+        changes = new ChangeInfo("0.2.5fix5",false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_ 法术荆棘之鞭，神力领域风暴的充能消耗均向下调整1点。\n"+
+                        "_-_ 修复鼠化术怪物恢复时的怪物会时停的bug。\n"+
+                        "_-_ 武技等必中效果修复，图鉴武技修复。\n"+
+                        "_-_ 修改部分文本错误。\n"
+        ));
+        changes = new ChangeInfo("0.2.5fix4",false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_ 同步破碎3.2绝大多数改动，并对部分改动进行适应性调整。\n"+
+                        "_-_ 实装注解版2.4的测试工具，目前是初步实装，部分功能未做改动。\n"+
+                        "_-_ 新增成就和对成就部分内容进行修复。\n"+
+                        "_-_ 在游戏内的挑战小图标旁边添加红包作战小图标。\n"+
+                        "_-_ 暗液缠绕+3效果调整：使用暗液钩爪将敌人拉下悬崖后不再能重置cd。\n"+
+                        "_-_ 处理部分天赋生效异常问题。\n"+
+                        "_-_ 修改部分文本错误。\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋改动",
+                "_-_ 新增1个正面天赋:狩猎直觉。\n"+
+                        "_-_ 调整蜕变选择天赋类型的界面。\n"+
+                        "_-_ 在_关于蜕变地牢_界面内置投稿链接。\n"
+
+
+        ));
         changes = new ChangeInfo("0.2.5fix3",false, null);
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);

@@ -55,7 +55,6 @@ import com.watabou.utils.ColorMath;
 import com.watabou.utils.DeviceCompat;
 
 import java.util.Date;
-
 public class TitleScene extends PixelScene {
 	
 	@Override
