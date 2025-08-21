@@ -82,6 +82,9 @@ public class WndHeroInfo extends WndTabbed {
 			case SLIMEGIRL:
 				tabIcon = new ItemSprite(ItemSpriteSheet.ARMOR_SLIME,null);
 				break;
+			case NINJA:
+				tabIcon = new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN,null);
+				break;
 		}
 
 		int finalHeight = MIN_HEIGHT;
@@ -222,6 +225,12 @@ public class WndHeroInfo extends WndTabbed {
 					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.ARMOR_SLIME),
 							new ItemSprite(ItemSpriteSheet.SEED_SUNGRASS),
 							new ItemSprite(ItemSpriteSheet.SPEARCONQUEROR),
+							new ItemSprite(ItemSpriteSheet.SCROLL_ISAZ)};
+					break;
+				case NINJA:
+					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN),
+							new ItemSprite(ItemSpriteSheet.SHURIKEN),
+							new ItemSprite(ItemSpriteSheet.WAKIZASHI),
 							new ItemSprite(ItemSpriteSheet.SCROLL_ISAZ)};
 					break;
 			}

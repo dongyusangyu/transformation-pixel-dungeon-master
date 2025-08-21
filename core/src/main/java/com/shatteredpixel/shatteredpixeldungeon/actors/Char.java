@@ -117,6 +117,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Potential;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Swiftness;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfCleansing;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Pickaxe;
@@ -403,6 +404,9 @@ public abstract class Char extends Actor {
 				if (h.belongings.attackingWeapon() instanceof MissileWeapon
 						&& h.subClass == HeroSubClass.SNIPER
 						&& !Dungeon.level.adjacent(h.pos, enemy.pos)){
+					dr = 0;
+				}
+				if (h.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken){
 					dr = 0;
 				}
 
@@ -698,6 +702,7 @@ public abstract class Char extends Actor {
 		if (defender.buff(Bless.class) != null) defRoll *= 1.25f;
 		if (defender.buff(  Hex.class) != null) defRoll *= 0.8f;
 		if (defender.buff( Daze.class) != null) defRoll *= 0.5f;
+		if (defender.buff( Talent.XiaDef.class) != null) defRoll *= 1.5f;
 		for (ChampionEnemy buff : defender.buffs(ChampionEnemy.class)){
 			defRoll *= buff.evasionAndAccuracyFactor();
 		}
@@ -964,7 +969,7 @@ public abstract class Char extends Actor {
 			if (dmg < 0) dmg = 0;
 		}
 
-		if (buff( Paralysis.class ) != null) {
+		if (buff( Paralysis.class ) != null && !(src instanceof Hero && hero.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken)) {
 			buff( Paralysis.class ).processDamage(dmg);
 		}
 
@@ -1275,7 +1280,9 @@ public abstract class Char extends Actor {
 		float stealth = 0;
 
 		stealth += Obfuscation.stealthBoost(this, glyphLevel(Obfuscation.class));
-
+		if(this instanceof Hero && ((Hero)this).heroClass==HeroClass.NINJA){
+			stealth += 2;
+		}
 		return stealth;
 	}
 

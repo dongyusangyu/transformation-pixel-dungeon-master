@@ -137,6 +137,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
@@ -2233,6 +2234,8 @@ public class Hero extends Char {
 
 		EtherealChains.chainsRecharge chains = buff(EtherealChains.chainsRecharge.class);
 		if (chains != null) chains.gainExp(percent);
+		Shuriken_Box.shurikenRecharge box = buff(Shuriken_Box.shurikenRecharge.class);
+		if (box != null) box.gainExp(percent);
 
 		HornOfPlenty.hornRecharge horn = buff(HornOfPlenty.hornRecharge.class);
 		if (horn != null) horn.gainCharge(percent);
@@ -2715,6 +2718,7 @@ public class Hero extends Char {
 
 		boolean circular = pointsInTalent(Talent.WIDE_SEARCH) == 1;
 		int distance = heroClass == HeroClass.ROGUE ? 2 : 1;
+		distance = heroClass == HeroClass.NINJA ? 2 : 1;
 		if (hasTalent(Talent.WIDE_SEARCH)) distance++;
 		
 		boolean foresight = buff(Foresight.class) != null;
@@ -2878,6 +2882,8 @@ public class Hero extends Char {
 				((CloakOfShadows) i).activate(this);
 			} else if (i instanceof HolyTome  && i.keptThroughLostInventory() && hasTalent(Talent.LIGHT_READING)) {
 				((HolyTome) i).activate(this);
+			} else if (i instanceof Shuriken_Box  && i.keptThroughLostInventory() && hasTalent(Talent.LIGHT_BOX)) {
+				((Shuriken_Box) i).activate(this);
 			} else if (i instanceof Wand && i.keptThroughLostInventory()){
 				if (holster != null && holster.contains(i)){
 					((Wand) i).charge(this, MagicalHolster.HOLSTER_SCALE_FACTOR);

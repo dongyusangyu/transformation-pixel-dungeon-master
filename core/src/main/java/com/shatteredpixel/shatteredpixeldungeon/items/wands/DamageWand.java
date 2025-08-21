@@ -72,7 +72,7 @@ public abstract class DamageWand extends Wand{
 			dmg=(int)(dmg*(1f+0.2f*hero.pointsInTalent(Talent.EXTREME_CASTING)));
 		}
 		if(hero.hasTalent(Talent.EMPOWERING_LIFE) && hero.shielding()>0){
-			dmg*=(int)(dmg*(1f+0.1f*hero.pointsInTalent(Talent.EMPOWERING_LIFE)));;
+			dmg=(int)(dmg*(1f+0.1f*hero.pointsInTalent(Talent.EMPOWERING_LIFE)));;
 		}
 		if(hero.hasTalent(Talent.EAT_MIND)){
 			Buff.affect(hero, Hunger.class).satisfy((0.1f + 0.1f*hero.pointsInTalent(Talent.EAT_MIND))*dmg);

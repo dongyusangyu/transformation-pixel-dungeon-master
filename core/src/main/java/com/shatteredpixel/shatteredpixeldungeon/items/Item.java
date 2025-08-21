@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -28,17 +30,22 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MostDegrade;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldBoss;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
@@ -212,6 +219,17 @@ public class Item implements Bundlable {
 		if (!heap.isEmpty()) {
 			heap.sprite.drop( cell );
 		}
+		if(!(this instanceof Weapon) && hero.hasTalent(Talent.FEINT) && curUser==hero && hero.buff(Talent.FeintCooldown.class)==null){
+			for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
+				if (mob.alignment != Char.Alignment.ALLY && Dungeon.level.heroFOV[mob.pos]) {
+					if (mob.state != mob.PASSIVE) {
+						mob.state = mob.WANDERING;
+					}
+					mob.beckon( cell );
+				}
+			}
+			Buff.affect(hero,Talent.FeintCooldown.class,25-hero.pointsInTalent(Talent.FEINT)*5);
+		}
 	}
 	
 	//takes two items and merges them (if possible)
@@ -252,9 +270,9 @@ public class Item implements Bundlable {
 				if (isSimilar( item )) {
 					item.merge( this );
 					item.updateQuickslot();
-					if (Dungeon.hero != null && Dungeon.hero.isAlive()) {
+					if (hero != null && hero.isAlive()) {
 						Badges.validateItemLevelAquired( this );
-						Talent.onItemCollected(Dungeon.hero, item);
+						Talent.onItemCollected(hero, item);
 						if (isIdentified()) {
 							Catalog.setSeen(getClass());
 							Statistics.itemTypesDiscovered.add(getClass());
@@ -270,7 +288,7 @@ public class Item implements Bundlable {
 								{ actPriority = VFX_PRIO; }
 								@Override
 								protected boolean act() {
-									Dungeon.level.drop(d, Dungeon.hero.pos).sprite.drop();
+									Dungeon.level.drop(d, hero.pos).sprite.drop();
 									Actor.remove(this);
 									return true;
 								}
@@ -282,9 +300,9 @@ public class Item implements Bundlable {
 			}
 		}
 
-		if (Dungeon.hero != null && Dungeon.hero.isAlive()) {
+		if (hero != null && hero.isAlive()) {
 			Badges.validateItemLevelAquired( this );
-			Talent.onItemCollected( Dungeon.hero, this );
+			Talent.onItemCollected( hero, this );
 			if (isIdentified()){
 				Catalog.setSeen(getClass());
 				Statistics.itemTypesDiscovered.add(getClass());
@@ -300,7 +318,7 @@ public class Item implements Bundlable {
 	}
 	
 	public final boolean collect() {
-		return collect( Dungeon.hero.belongings.backpack );
+		return collect( hero.belongings.backpack );
 	}
 	
 	//returns a new item if the split was sucessful and there are now 2 items, otherwise null
@@ -404,11 +422,11 @@ public class Item implements Bundlable {
 	//note that not all item properties should care about buffs/debuffs! (e.g. str requirement)
 	public int buffedLvl(){
 		//only the hero can be affected by Degradation
-		if (Dungeon.hero != null && Dungeon.hero.buff( Degrade.class ) != null
-			&& (isEquipped( Dungeon.hero ) || Dungeon.hero.belongings.contains( this ))) {
+		if (hero != null && hero.buff( Degrade.class ) != null
+			&& (isEquipped( hero ) || hero.belongings.contains( this ))) {
 			return Degrade.reduceLevel(level());
-		} else if(Dungeon.hero != null && !Dungeon.hero.buffs( MostDegrade.class).isEmpty()
-				&& (isEquipped( Dungeon.hero ) || Dungeon.hero.belongings.contains( this ))){
+		} else if(hero != null && !hero.buffs( MostDegrade.class).isEmpty()
+				&& (isEquipped( hero ) || hero.belongings.contains( this ))){
 			return 0;
 		}else {
 			return level();
@@ -483,10 +501,10 @@ public class Item implements Bundlable {
 
 	public Item identify( boolean byHero ) {
 
-		if (byHero && Dungeon.hero != null && Dungeon.hero.isAlive()){
+		if (byHero && hero != null && hero.isAlive()){
 			Catalog.setSeen(getClass());
 			Statistics.itemTypesDiscovered.add(getClass());
-			if (!isIdentified()) Talent.onItemIdentified(Dungeon.hero, this);
+			if (!isIdentified()) Talent.onItemIdentified(hero, this);
 		}
 
 		levelKnown = true;
@@ -538,7 +556,7 @@ public class Item implements Bundlable {
 	
 	public String info() {
 
-		if (Dungeon.hero != null) {
+		if (hero != null) {
 			Notes.CustomRecord note = Notes.findCustomRecord(customNoteID);
 			if (note != null) {
 				//we swap underscore(0x5F) with low macron(0x2CD) here to avoid highlighting in the item window
@@ -638,7 +656,7 @@ public class Item implements Bundlable {
 		cursed	= bundle.getBoolean( CURSED );
 
 		//only want to populate slot on first load.
-		if (Dungeon.hero == null) {
+		if (hero == null) {
 			if (bundle.contains(QUICKSLOT)) {
 				Dungeon.quickslot.setSlot(bundle.getInt(QUICKSLOT), this);
 			}
