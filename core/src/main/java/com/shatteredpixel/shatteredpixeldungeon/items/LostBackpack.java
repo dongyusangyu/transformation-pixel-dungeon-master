@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
@@ -59,7 +60,9 @@ public class LostBackpack extends Item {
 					((EquipableItem) i).activate(hero);
 				} else if ( i instanceof CloakOfShadows && hero.hasTalent(Talent.LIGHT_CLOAK)){
 					((CloakOfShadows) i).activate(hero);
-				} else if ( i instanceof HolyTome && hero.hasTalent(Talent.LIGHT_READING)){
+				}else if (i instanceof Shuriken_Box && i.keptThroughLostInventory() && hero.hasTalent(Talent.LIGHT_BOX)) {
+					((Shuriken_Box) i).activate(hero);
+				}  else if ( i instanceof HolyTome && hero.hasTalent(Talent.LIGHT_READING)){
 					((HolyTome) i).activate(hero);
 				} else if (i instanceof Wand){
 					if (holster != null && holster.contains(i)){

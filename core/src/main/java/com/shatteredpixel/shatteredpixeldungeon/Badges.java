@@ -102,6 +102,8 @@ public class Badges {
 		HIGH_SCORE_1                ( 24 ),
 		UNLOCK_FREEMAN              (25),
 		UNLOCK_SLIME              (26),
+		UNLOCK_NINJA             ( 27 ),
+
 
 		//silver
 		NO_MONSTERS_SLAIN           ( 32 ),
@@ -136,6 +138,7 @@ public class Badges {
 		BOSS_SLAIN_1_CLERIC,
 		BOSS_SLAIN_1_FREEMAN,
 		BOSS_SLAIN_1_SLIMEGIRL,
+		BOSS_SLAIN_1_NINJA,
 		BOSS_SLAIN_1_ALL_CLASSES    ( 54, BadgeType.GLOBAL ),
 
 		RESEARCHER_2                ( 55, BadgeType.JOURNAL ),
@@ -175,7 +178,9 @@ public class Badges {
 		HIGH_SCORE_3                ( 86 ),
 		ENEMY_HAZARDS               ( 87 ),
 		HEROBOSS_SLAIN_1             (88 ),
+		HEROBOSS_SLAIN_2            (89 ),
 		HEROBOSS_COUNTER_1             (92 ),
+		HEROBOSS_COUNTER_2             (93 ),
 
 
 		//platinum
@@ -196,6 +201,7 @@ public class Badges {
 		VICTORY_CLERIC,
 		VICTORY_FREEMAN,
 		VICTORY_SLIMEGIRL,
+		VICTORY_NINJA,
 		VICTORY_ALL_CLASSES         ( 101, BadgeType.GLOBAL ),
 		DEATH_FROM_ALL              ( 102, BadgeType.GLOBAL ),
 		BOSS_SLAIN_3_GLADIATOR,
@@ -842,6 +848,7 @@ public class Badges {
 		firstBossClassBadges.put(HeroClass.CLERIC, Badge.BOSS_SLAIN_1_CLERIC);
 		firstBossClassBadges.put(HeroClass.FREEMAN, Badge.BOSS_SLAIN_1_FREEMAN);
 		firstBossClassBadges.put(HeroClass.SLIMEGIRL, Badge.BOSS_SLAIN_1_SLIMEGIRL);
+		firstBossClassBadges.put(HeroClass.NINJA, Badge.BOSS_SLAIN_1_NINJA);
 	}
 
 	private static LinkedHashMap<HeroClass, Badge> victoryClassBadges = new LinkedHashMap<>();
@@ -854,6 +861,7 @@ public class Badges {
 		victoryClassBadges.put(HeroClass.CLERIC, Badge.VICTORY_CLERIC);
 		victoryClassBadges.put(HeroClass.FREEMAN, Badge.VICTORY_FREEMAN);
 		victoryClassBadges.put(HeroClass.SLIMEGIRL, Badge.VICTORY_SLIMEGIRL);
+		victoryClassBadges.put(HeroClass.NINJA, Badge.VICTORY_NINJA);
 	}
 
 	private static LinkedHashMap<HeroSubClass, Badge> thirdBossSubclassBadges = new LinkedHashMap<>();
@@ -877,6 +885,9 @@ public class Badges {
 		if (!isUnlocked(Badge.HEROBOSS_SLAIN_1) && Dungeon.depth==5){
 			displayBadge( Badge.HEROBOSS_SLAIN_1 );
 		}
+		if (!isUnlocked(Badge.HEROBOSS_SLAIN_2) && Dungeon.depth==10){
+			displayBadge( Badge.HEROBOSS_SLAIN_2 );
+		}
 	}
 	
 	public static void validateBossSlain() {
@@ -892,6 +903,11 @@ public class Badges {
 			break;
 		case 10:
 			badge = Badge.BOSS_SLAIN_2;
+			if(hero.heroClass== HeroClass.NINJA){
+				if (!isUnlocked(Badge.HEROBOSS_COUNTER_2)) {
+					displayBadge(Badge.HEROBOSS_COUNTER_2 );
+				}
+			}
 			break;
 		case 15:
 			badge = Badge.BOSS_SLAIN_3;
@@ -1043,6 +1059,11 @@ public class Badges {
 	public static void validateSlimeUnlock(){
 		if (!isUnlocked(Badge.UNLOCK_SLIME)){
 			displayBadge( Badge.UNLOCK_SLIME );
+		}
+	}
+	public static void validateNinjaUnlock(){
+		if (!isUnlocked(Badge.UNLOCK_NINJA)){
+			displayBadge( Badge.UNLOCK_NINJA );
 		}
 	}
 	public static void validateClericUnlock(){

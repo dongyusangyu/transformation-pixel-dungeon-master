@@ -248,6 +248,7 @@ public class Tengu extends Mob {
 		super.die( cause );
 		
 		Badges.validateBossSlain();
+		Badges.validateNinjaUnlock();
 		if (Statistics.qualifiedForBossChallengeBadge){
 			Badges.validateBossChallengeCompleted();
 		}

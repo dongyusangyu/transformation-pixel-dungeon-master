@@ -142,6 +142,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
@@ -176,6 +177,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.AssassinsBlade;
@@ -335,8 +337,12 @@ public enum Talent {
 	VIOLENT_STORM(436, 4), NEW_TRAP(437, 4), HOLY_BATH(438, 4),
 	//MadSlimeT4
 	NO_PICK(439, 4), FOOD_BONUS(440, 4), DELICIOUS_DIGESTION(441, 4),
-
-	HUNTING_INTUITION(449),
+	//Ninja
+	NINJA_MEAL(448),HUNTING_INTUITION(449),
+	YUNYING_MEAL(452),XIA(453),FEINT(456),
+	LIGHT_BOX(458,3),
+	//Tatteki_ninja
+	SOKO(459,3),KONO_FUKUSA(460,3),KUNIKUCHI(461,3),
 
 
 	//GOO
@@ -523,6 +529,11 @@ public enum Talent {
 			}
 		}
 	};
+	public static class FeintCooldown extends FlavourBuff{
+		public int icon() { return BuffIndicator.TIME; }
+		public void tintIcon(Image icon) { icon.hardlight(0f, 0.5f, 1f); }
+		public float iconFadePercent() { return Math.max(0, visualcooldown() / 20); }
+	};
 	//史莱姆娘
 	public static class DarkHookCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -533,6 +544,11 @@ public enum Talent {
 			Buff.affect(Dungeon.hero, DarkHook.class);
 			if (target.remove( this ) && target.sprite != null) fx( false );
 		}
+	};
+	public static class XiaDef extends FlavourBuff{
+		public int icon() { return BuffIndicator.INVERT_MARK; }
+		public void tintIcon(Image icon) { icon.hardlight(0.0f, 0.0f, 1f); }
+		public float iconFadePercent() { return Math.max(0, visualcooldown() / 75); }
 	};
 	public static class DarkGasCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -1119,6 +1135,18 @@ public enum Talent {
 
 			}
 		}
+		if(hero.hasTalent(NINJA_MEAL)){
+			Shuriken_Box box = hero.belongings.getItem(Shuriken_Box.class);
+			if(box != null){
+				box.directCharge(hero.pointsInTalent(NINJA_MEAL));
+				ScrollOfRecharging.charge(hero);
+			}else{
+				Buff.affect( hero, ArtifactRecharge.class).set(hero.pointsInTalent(NINJA_MEAL));
+			}
+		}
+		if(hero.hasTalent(YUNYING_MEAL)){
+			Buff.affect(hero,Invisibility.class,hero.pointsInTalent(YUNYING_MEAL)*2);
+		}
 		if (hero.hasTalent(ENLIGHTENING_MEAL)){
 			HolyTome tome = hero.belongings.getItem(HolyTome.class);
 			if (tome != null) {
@@ -1459,6 +1487,9 @@ public enum Talent {
 		if(hero.hasTalent(CHANGQI_BOOKSTORE) && hero.pointsInTalent(CHANGQI_BOOKSTORE)*3+3>Random.Int(20)){
 			Dungeon.level.drop(Generator.randomUsingDefaults( Generator.Category.STONE ), hero.pos).sprite.drop();
 		}
+		if(hero.hasTalent(XIA)){
+			Buff.affect(hero,XiaDef.class,(1+2*hero.pointsInTalent(XIA))*factor);
+		}
 	}
 	public static void onRunestoneUsed( Hero hero, int pos, Class<?extends Item> cls ){
 		if (hero.hasTalent(RECALL_INSCRIPTION) && Runestone.class.isAssignableFrom(cls) ){
@@ -1654,6 +1685,9 @@ public enum Talent {
 				dmg*=2;
 			}
 		}
+		if(hero.hasTalent(KONO_FUKUSA) && (((Mob) enemy).surprisedBy(hero) || ((Mob) enemy).state==((Mob) enemy).HUNTING)){
+			dmg*=1+0.2*hero.pointsInTalent(KONO_FUKUSA);
+		}
 		return dmg;
 	}
 	public static int onAttackProcBonus( Hero hero, Char enemy){
@@ -1835,6 +1869,9 @@ public enum Talent {
 					Dungeon.level.drop(item, enemy.pos).sprite.drop();
 				}
 			}
+		}
+		if(hero.subClass==HeroSubClass.TATTEKI_NINJA && (hero.belongings.attackingWeapon() instanceof MissileWeapon)){
+			Buff.affect(enemy, Tatteki.Fix.class);
 		}
 		dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
 		return dmg;
@@ -2467,7 +2504,7 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP);
 		Collections.addAll(typeTalent.get(0).get(EFFECT),HEARTY_MEAL,BACKUP_BARRIER,PROTECTIVE_SHADOWS,NATURES_AID,AGGRESSIVE_BARRIER,
 				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,INVINCIBLE,
-				THORNY_ROSE,ASH_LEDGER,SECRET_LIGHTING,ANESTHESIA,JASMINE_TEA,PERSONAL_ATTACK,FLASH_GENIUS,RESILIENT_MEAL);
+				THORNY_ROSE,ASH_LEDGER,SECRET_LIGHTING,ANESTHESIA,JASMINE_TEA,PERSONAL_ATTACK,FLASH_GENIUS,RESILIENT_MEAL,NINJA_MEAL);
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
 				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION);
 		Collections.addAll(typeTalent.get(0).get(SPELL),SATIATED_SPELLS, HOLY_INTUITION, SEARING_LIGHT, SHIELD_OF_LIGHT,
@@ -2485,7 +2522,7 @@ public enum Talent {
 				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,FIRE_BALL,EAT_MIND);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
 				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,INVISIBILITY_SHADOWS,BLESS_MEAL,COLLECTION_GOLD,GET_UP,
-				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE);
+				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE,YUNYING_MEAL,XIA,FEINT);
 		Collections.addAll(typeTalent.get(1).get(RESOURCE),WAND_PRESERVATION,ROGUES_FORESIGHT,PRECIOUS_EXPERIENCE,MORE_CHANCE,WANT_ALL,
 				SEED_RECYCLING,INSTANT_REFINING,FAST_BREAK);
 		Collections.addAll(typeTalent.get(1).get(SPELL),STRENGTHEN_CHAIN,STRENGTHEN_CHALICE,JOURNEY_NATURE,STRENGTH_BOOK,RECALL_INSCRIPTION,
@@ -2510,7 +2547,7 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(2).get(SPELL),ALLY_WARP,TIME_SAND,STRENGTH_CLOAK,STRENGTH_ARMBAND,CLEANSE, LIGHT_READING,PURIFYING_EVIL,
 				DIVINE_STORM,RESURRECTION,ZHUANYU_SPELL,HOLY_GRENADE,BLADE_STAR,SACRED_BLADE);
 		Collections.addAll(typeTalent.get(2).get(ASSIST),HOLD_FAST,STRONGMAN,LIGHT_CLOAK,BEHEST,AFRAID_DEATH,HERO_NAME,HOMETOWN_CLOUD,WIDE_KNOWLEDGE,
-				CONCEPT_GRID,ACTIVE_MUSCLES,SEA_WIND,BEYOND_LIMIT,EXTREME_REACTION,HOLY_FAITH,ORIGINAL_MONSTER);
+				CONCEPT_GRID,ACTIVE_MUSCLES,SEA_WIND,BEYOND_LIMIT,EXTREME_REACTION,HOLY_FAITH,ORIGINAL_MONSTER,LIGHT_BOX);
 		Collections.addAll(typeTalent.get(2).get(OTHER),ENGINEER_REFIT,SHARP_HEAD);
 	}
 
@@ -2571,6 +2608,9 @@ public enum Talent {
 				break;
 			case SLIMEGIRL:
 				Collections.addAll(tierTalents, RESILIENT_MEAL, LIQUID_ARMOR);
+				break;
+			case NINJA:
+				Collections.addAll(tierTalents, NINJA_MEAL, HUNTING_INTUITION);
 				break;
 				/*
 			case COMMON:
@@ -2635,6 +2675,9 @@ public enum Talent {
 			case SLIMEGIRL:
 				Collections.addAll(tierTalents, TOUGH_MEAL, SLIME_GREENHOUSE, ENERGY_ABSORPTION);
 				break;
+			case NINJA:
+				Collections.addAll(tierTalents, YUNYING_MEAL, XIA,FEINT);
+				break;
 				/*
 			case COMMON:
 				Collections.addAll(tierTalents, LETHAL_MOMENTUM, IMPROVISED_PROJECTILES, ARCANE_VISION, SHIELD_BATTERY,
@@ -2697,6 +2740,9 @@ public enum Talent {
 				break;
 			case SLIMEGIRL:
 				Collections.addAll(tierTalents, ORIGINAL_MONSTER);
+				break;
+			case NINJA:
+				Collections.addAll(tierTalents, LIGHT_BOX);
 				break;
 				/*
 			case COMMON:
@@ -2790,6 +2836,9 @@ public enum Talent {
 				break;
 			case DARKSLIME:
 				Collections.addAll(tierTalents, POTENT_OOZE, DARK_GAS, DARK_LIQUID);
+				break;
+			case TATTEKI_NINJA:
+				Collections.addAll(tierTalents, SOKO, KONO_FUKUSA, KUNIKUCHI);
 				break;
 			case FREEMAN:
 				break;

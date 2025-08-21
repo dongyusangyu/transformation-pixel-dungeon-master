@@ -94,6 +94,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
@@ -111,6 +112,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlam
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMindVision;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfDivineInspiration;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfShroudingFog;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
@@ -125,6 +127,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImag
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
 import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
@@ -154,6 +157,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Rapier;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Spear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SpearOfConqueror;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WalkStick;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
@@ -177,7 +181,8 @@ public enum HeroClass {
 	DUELIST( HeroSubClass.CHAMPION, HeroSubClass.MONK ),
 	CLERIC( HeroSubClass.PRIEST, HeroSubClass.PALADIN ),
 	FREEMAN(HeroSubClass.FREEMAN),
-	SLIMEGIRL( HeroSubClass.WATERSLIME, HeroSubClass.DARKSLIME);
+	SLIMEGIRL( HeroSubClass.WATERSLIME, HeroSubClass.DARKSLIME),
+	NINJA(HeroSubClass.TATTEKI_NINJA);
 	//COMMON( HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
     //ADVANCED(HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR );
 
@@ -199,10 +204,10 @@ public enum HeroClass {
 
 		i = new Food();
 		if (!Challenges.isItemBlocked(i)) i.collect();
-
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
 		doChallengeSpawn(hero);
+
 
 		/*
 		new MagicalHolster().collect();
@@ -298,6 +303,9 @@ public enum HeroClass {
 				break;
 			case SLIMEGIRL:
 				initSlimeGirl( hero );
+				break;
+			case NINJA:
+				initNinja( hero );
 				break;
 		}
 
@@ -436,6 +444,17 @@ public enum HeroClass {
 		hero.belongings.weapon.activate(hero);
 		(hero.belongings.armor = new SlimeArmor()).identify();
 
+	}
+	private static void initNinja( Hero hero ) {
+		(hero.belongings.weapon = new Wakizashi()).identify();
+		hero.belongings.weapon.activate(hero);
+		hero.updateHT(true);
+		Shuriken_Box box = new Shuriken_Box();
+		(hero.belongings.artifact = box).identify();
+		hero.belongings.artifact.activate( hero );
+		Dungeon.quickslot.setSlot(0, box);
+		new PotionOfToxicGas().identify();
+		new ScrollOfTeleportation().identify();
 	}
 
 	public String title() {
