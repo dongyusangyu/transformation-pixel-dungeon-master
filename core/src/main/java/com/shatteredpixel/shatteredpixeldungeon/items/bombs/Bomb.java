@@ -127,7 +127,7 @@ public class Bomb extends Item {
 	}
 
 	@Override
-	protected void onThrow( int cell ) {
+	public void onThrow( int cell ) {
 		if (!Dungeon.level.pit[ cell ] && lightingFuse) {
 			Actor.addDelayed(fuse = createFuse().ignite(this), 2);
 		}
@@ -200,12 +200,13 @@ public class Bomb extends Item {
 					dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25;
 				}
 				dmg -= ch.drRoll();
-				if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
-					Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
-				}
+
 
 				if (dmg > 0) {
 					ch.damage(dmg, this);
+				}
+				if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
+					Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
 				}
 
 				

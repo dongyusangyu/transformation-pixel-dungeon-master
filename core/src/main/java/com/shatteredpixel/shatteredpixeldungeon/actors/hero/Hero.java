@@ -90,6 +90,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Asc
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Challenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.NaturesPower;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Endure;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.BodyForm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HallowedGround;
@@ -916,6 +917,13 @@ public class Hero extends Char {
 		if(hasTalent(Talent.SEA_WIND) && Dungeon.level.water[pos]){
 			speed*=1f+0.2f*pointsInTalent(Talent.SEA_WIND);
 		}
+		if(buff(OneSword.OKU_OneSword.class)!=null){
+			float onespd=2f;
+			if(hasTalent(Talent.GLIMPSE)){
+				onespd+=0.375f*pointsInTalent(Talent.GLIMPSE);
+			}
+			speed*=onespd;
+		}
 		return speed;
 		
 	}
@@ -966,7 +974,13 @@ public class Hero extends Char {
 		}
 
 		float delay = 1f;
-
+		if(buff(OneSword.OKU_OneSword.class)!=null  && belongings.attackingWeapon() instanceof MeleeWeapon){
+			float spd=1.5f;
+			if(hasTalent(Talent.OFFENSIVE)){
+				spd+=0.125f*pointsInTalent(Talent.OFFENSIVE);
+			}
+			delay/=spd;
+		}
 		if (!RingOfForce.fightingUnarmed(this)) {
 			
 			return delay * belongings.attackingWeapon().delayFactor( this );

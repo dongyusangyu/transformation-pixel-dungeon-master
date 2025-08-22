@@ -45,6 +45,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.S
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.ElementalBlast;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WarpBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.SpiderJar;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.DeathMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
@@ -182,7 +184,7 @@ public enum HeroClass {
 	CLERIC( HeroSubClass.PRIEST, HeroSubClass.PALADIN ),
 	FREEMAN(HeroSubClass.FREEMAN),
 	SLIMEGIRL( HeroSubClass.WATERSLIME, HeroSubClass.DARKSLIME),
-	NINJA(HeroSubClass.TATTEKI_NINJA);
+	NINJA(HeroSubClass.TATTEKI_NINJA,HeroSubClass.NINJA_MASTER);
 	//COMMON( HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
     //ADVANCED(HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR );
 
@@ -491,6 +493,8 @@ public enum HeroClass {
 				return new ArmorAbility[]{new Ratmogrify()};
 			case SLIMEGIRL:
 				return new ArmorAbility[]{new SpringSpell(), new RapidWaterfall(), new MadSlime()};
+			case NINJA:
+				return new ArmorAbility[]{new SpringSpell(), new SpiderJar(), new OneSword()};
 
 		}
 	}
@@ -513,6 +517,8 @@ public enum HeroClass {
 				return Assets.Sprites.FREEMAN;
 			case SLIMEGIRL:
 				return Assets.Sprites.SLIMEGIRL;
+			case NINJA:
+				return Assets.Sprites.NINJA;
 
 		}
 	}

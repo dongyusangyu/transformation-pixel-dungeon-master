@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
@@ -52,6 +53,7 @@ public class Shuriken_Box extends Artifact {
         usesTargeting = true;
 
         defaultAction = AC_SHOOT; //so it can be quickslotted
+        bones = false;
     }
     @Override
     public ArrayList<String> actions(Hero hero) {
@@ -60,6 +62,10 @@ public class Shuriken_Box extends Artifact {
             actions.add(AC_SHOOT);
         }
         return actions;
+    }
+    @Override
+    public int value() {
+        return 0;
     }
 
     public void directCharge( float amount){
@@ -169,7 +175,7 @@ public class Shuriken_Box extends Artifact {
     public class SmallShuriken extends Shuriken {
 
         {
-
+            image = ItemSpriteSheet.SMALLSKURIKEN;
             setID = 0;
         }
 
@@ -237,6 +243,25 @@ public class Shuriken_Box extends Artifact {
             Shuriken_Box.this.targetPos = cell;
             Shuriken_Box.this.charge--;
             super.cast(user, dst);
+        }
+    }
+    private static final String BUFF = "buff";
+
+    @Override
+    public void storeInBundle( Bundle bundle ) {
+        super.storeInBundle(bundle);
+        if (activeBuff != null) bundle.put(BUFF, activeBuff);
+    }
+
+    @Override
+    public void restoreFromBundle( Bundle bundle ) {
+        super.restoreFromBundle(bundle);
+        if (bundle.contains(BUFF)){
+            activeBuff = new shurikenRecharge();
+            activeBuff.restoreFromBundle(bundle.getBundle(BUFF));
+        }
+        if(charge<0){
+            charge=0;
         }
     }
 

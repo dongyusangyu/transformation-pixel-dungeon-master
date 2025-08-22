@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.SpiderJar;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Ghoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
@@ -445,11 +446,20 @@ public class GameScene extends PixelScene {
 				int pos = Dungeon.level.randomRespawnCell( null );
 				if (pos == -1) pos = Dungeon.level.entrance();
 				if (item instanceof Potion) {
-					((Potion) item).shatter(pos);
+					if(item instanceof PotionOfStrength){
+						Dungeon.level.drop(item, pos);
+					}else{
+						((Potion) item).shatter(pos);
+					}
+
 				} else if (item instanceof Plant.Seed && !Dungeon.isChallenged(Challenges.NO_HERBALISM)) {
 					Dungeon.level.plant((Plant.Seed) item, pos);
 				} else if (item instanceof Honeypot) {
 					Dungeon.level.drop(((Honeypot) item).shatter(null, pos), pos);
+				}else if(item instanceof SpiderJar.Spider){
+					Dungeon.level.drop(item, pos);
+					((SpiderJar.Spider)item).fuse = ((SpiderJar.Spider)item).createFuse().ignite((SpiderJar.Spider)item);
+					Actor.add(((SpiderJar.Spider)item).fuse);
 				} else {
 					Dungeon.level.drop(item, pos);
 				}

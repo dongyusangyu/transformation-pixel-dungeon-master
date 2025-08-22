@@ -437,17 +437,17 @@ public abstract class GoldBoss extends Mob {
                         Char ch = Actor.findChar(i);
                         if(ch==null){
 
-                        }else if(ch==hero){
-                            Buff.affect(enemy, Hex.class,5);
-                            Buff.affect(enemy, Vulnerable.class,5);
-                            Buff.affect(enemy, Blindness.class,5);
-                            Buff.affect(enemy, Charm.class,5);
-                            Buff.affect(enemy, Burning.class).reignite(enemy,5);
-                            Buff.affect(enemy, Degrade.class,5);
-                            Buff.affect(enemy, Amok.class,5);
-                            Buff.affect(enemy, Weakness.class,5);
-                            Buff.affect(enemy, Chill.class,5);
-                            Buff.affect(enemy, Slow.class,5);
+                        }else if(ch==hero && ch.isAlive()){
+                            Buff.affect(ch, Hex.class,5);
+                            Buff.affect(ch, Vulnerable.class,5);
+                            Buff.affect(ch, Blindness.class,5);
+                            Buff.affect(ch, Charm.class,5);
+                            Buff.affect(ch, Burning.class).reignite(enemy,5);
+                            Buff.affect(ch, Degrade.class,5);
+                            Buff.affect(ch, Amok.class,5);
+                            Buff.affect(ch, Weakness.class,5);
+                            Buff.affect(ch, Chill.class,5);
+                            Buff.affect(ch, Slow.class,5);
                         }else if(ch.alignment != Char.Alignment.ENEMY){
                             ch.sprite.showStatus( CharSprite.WARNING, "die" );
                             ch.die(this);

@@ -817,6 +817,7 @@ public abstract class Char extends Actor {
 		if(buff(SlimeBall.SlimeOoze.class)!=null){
 			speed *= 0.5f;
 		}
+		if
 
 		speed *= Swiftness.speedBoost(this, glyphLevel(Swiftness.class));
 		speed *= Flow.speedBoost(this, glyphLevel(Flow.class));

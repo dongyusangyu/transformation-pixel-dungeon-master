@@ -99,6 +99,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.DivineSense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.RecallInscription;
@@ -184,8 +185,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.AssassinsBlad
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dirk;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gloves;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Katana;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
@@ -343,7 +346,12 @@ public enum Talent {
 	LIGHT_BOX(458,3),
 	//Tatteki_ninja
 	SOKO(459,3),KONO_FUKUSA(460,3),KUNIKUCHI(461,3),
+	SOUL_HUNTING(462,3),USE_ENVIRONMENT(463,3),MIND_WATER(464,3),
 
+	POWER_GUNPOWDER(468,4),TEA_STAINS(469,4),FIREWORK(470,4),
+
+	//OneSword
+	OFFENSIVE(471,4),GLIMPSE(472,4),KILL_CONTINUE(473,4),
 
 	//GOO
 	AQUATIC_RECOVER(160,2),PUMP_ATTACK(161,2),OOZE_ATTACK(162,2),
@@ -546,8 +554,8 @@ public enum Talent {
 		}
 	};
 	public static class XiaDef extends FlavourBuff{
-		public int icon() { return BuffIndicator.INVERT_MARK; }
-		public void tintIcon(Image icon) { icon.hardlight(0.0f, 0.0f, 1f); }
+		public int icon() { return BuffIndicator.XIA; }
+		public void tintIcon(Image icon) { icon.hardlight(1f, 0.75f, 0.79f); }
 		public float iconFadePercent() { return Math.max(0, visualcooldown() / 75); }
 	};
 	public static class DarkGasCooldown extends FlavourBuff{
@@ -882,6 +890,8 @@ public enum Talent {
 					return 378;
 				case SLIMEGIRL:
 					return 442;
+				case NINJA:
+					return 474;
 			}
 		} else {
 			return icon;
@@ -1065,6 +1075,15 @@ public enum Talent {
 				if (item instanceof CloakOfShadows){
 					if (!hero.belongings.lostInventory() || item.keptThroughLostInventory()) {
 						((CloakOfShadows) item).activate(Dungeon.hero);
+					}
+				}
+			}
+		}
+		if (talent == LIGHT_BOX && hero.heroClass == HeroClass.NINJA){
+			for (Item item : Dungeon.hero.belongings.backpack){
+				if (item instanceof Shuriken_Box){
+					if (!hero.belongings.lostInventory() || item.keptThroughLostInventory()) {
+						((Shuriken_Box) item).activate(Dungeon.hero);
 					}
 				}
 			}
@@ -1688,6 +1707,17 @@ public enum Talent {
 		if(hero.hasTalent(KONO_FUKUSA) && (((Mob) enemy).surprisedBy(hero) || ((Mob) enemy).state==((Mob) enemy).HUNTING)){
 			dmg*=1+0.2*hero.pointsInTalent(KONO_FUKUSA);
 		}
+		if(hero.buff(OneSword.OKU_OneSword.class)!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+			Buff.affect(enemy,OneSword.Kill.class);
+			float onesword = 1.3f;
+			if((hero.belongings.attackingWeapon() instanceof Katana) || (hero.belongings.attackingWeapon() instanceof Wakizashi)){
+				onesword+=0.2f;
+			}
+			if(hero.hasTalent(OFFENSIVE)){
+				onesword+=0.15f*hero.pointsInTalent(OFFENSIVE);
+			}
+			dmg*=onesword;
+		}
 		return dmg;
 	}
 	public static int onAttackProcBonus( Hero hero, Char enemy){
@@ -2275,6 +2305,10 @@ public enum Talent {
 	}
 
 	public static void onMobDie(Mob mob,  Object cause ){
+		if(hero.hasTalent(Talent.KILL_CONTINUE) && hero.buff(OneSword.OKU_OneSword.class)!=null
+				&& cause==hero  && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+			Buff.affect(hero, OneSword.OKU_OneSword.class, hero.pointsInTalent(Talent.KILL_CONTINUE));
+		}
 		if(hero.hasTalent(Talent.BURNING_BLOOD)){
 			hero.HP=Math.min(hero.pointsInTalent(Talent.BURNING_BLOOD)+hero.HP,hero.HT);
 			hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(hero.pointsInTalent(Talent.BURNING_BLOOD)), FloatingText.HEALING);
@@ -2839,6 +2873,9 @@ public enum Talent {
 				break;
 			case TATTEKI_NINJA:
 				Collections.addAll(tierTalents, SOKO, KONO_FUKUSA, KUNIKUCHI);
+				break;
+			case NINJA_MASTER:
+				Collections.addAll(tierTalents, SOUL_HUNTING, USE_ENVIRONMENT, MIND_WATER);
 				break;
 			case FREEMAN:
 				break;
