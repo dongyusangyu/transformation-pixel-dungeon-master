@@ -151,6 +151,13 @@ public class BuffIndicator extends Component {
 
 	public  static  final  int EQUIPMENT_BLESS = 93;
 
+	public  static  final  int XIA = 94;
+	public  static  final  int FIX = 95;
+	public  static  final  int WATER_SMOOTH = 96;
+	public  static  final  int THROW_SKILL = 97;
+	public  static  final  int ONESWORD = 99;
+
+
 
 	private static BuffIndicator heroInstance;
 	private static BuffIndicator bossInstance;

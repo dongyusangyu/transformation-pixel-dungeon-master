@@ -94,7 +94,7 @@ public class Tatteki extends Weapon {
         }
         @Override
         public int icon() {
-            return BuffIndicator.COMBO_PACKAGE;
+            return BuffIndicator.FIX;
         }
         @Override
         public String iconTextDisplay() {
@@ -119,8 +119,10 @@ public class Tatteki extends Weapon {
                 GameScene.selectCell( shooter );
             }else if(curUser.buff(LoadCooldown.class)!=null && curItem.isEquipped(curUser)){
                 GLog.w( Messages.get(this, "unload"));
+                return;
             }else{
                 GLog.w(Messages.get(this, "need_equip"));
+                return;
             }
         }else if(action.equals(AC_EQUIP)){
             equipSecondary(hero);
@@ -355,10 +357,9 @@ public class Tatteki extends Weapon {
             if (target.buff(Tatteki.Fix.class)!=null){
                 Tatteki.Fix f = target.buff(Tatteki.Fix.class);
                 f.detach();
-
                 return Float.POSITIVE_INFINITY;
             } else {
-                return super.accuracyFactor(owner, target)*0.6f;
+                return super.accuracyFactor(owner, target)*0.3f;
             }
         }
 

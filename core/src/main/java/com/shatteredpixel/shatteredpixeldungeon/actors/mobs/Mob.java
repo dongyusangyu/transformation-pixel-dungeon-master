@@ -52,6 +52,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invulnerability;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
@@ -942,6 +943,9 @@ public abstract class Mob extends Char {
 
 				if (hero.subClass == HeroSubClass.MONK){
 					Buff.affect(hero, MonkEnergy.class).gainEnergy(this);
+				}
+				if (hero.subClass == HeroSubClass.NINJA_MASTER){
+					Buff.affect(hero, Ninja_Energy.class).gainEnergy(this);
 				}
 			}
 		}

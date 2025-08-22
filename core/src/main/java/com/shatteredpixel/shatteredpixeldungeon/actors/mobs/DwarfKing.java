@@ -314,7 +314,7 @@ public class DwarfKing extends Mob {
 						}
 					}
 					if(n==0){
-						summonSubject(1, DKGhoul.class);
+						summonSubject(2, DKGhoul.class);
 						spend(TICK);
 						return true;
 					}

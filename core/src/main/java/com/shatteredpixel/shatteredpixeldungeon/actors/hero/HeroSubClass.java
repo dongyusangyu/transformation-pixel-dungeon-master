@@ -51,7 +51,8 @@ public enum HeroSubClass {
 	FREEMAN(HeroIcon.FREEMAN),
 	WATERSLIME(HeroIcon.WATERSLIME),
 	DARKSLIME(HeroIcon.DARKSLIME),
-	TATTEKI_NINJA(HeroIcon.FREEMAN);
+	TATTEKI_NINJA(HeroIcon.TATTEKI),
+	NINJA_MASTER(HeroIcon.NINJAMASTER);
 
 	int icon;
 

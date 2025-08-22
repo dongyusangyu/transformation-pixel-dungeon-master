@@ -133,6 +133,9 @@ abstract public class ClassArmor extends Armor {
 			case SLIMEGIRL:
 				classArmor = new SlimeGirlArmor();
 				break;
+			case NINJA:
+				classArmor = new NinjaArmor();
+				break;
 		}
 		
 		classArmor.level(armor.trueLevel());

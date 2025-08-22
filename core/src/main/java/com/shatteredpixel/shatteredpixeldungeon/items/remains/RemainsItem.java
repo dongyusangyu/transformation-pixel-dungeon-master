@@ -96,6 +96,8 @@ public abstract class RemainsItem extends Item {
 				return new BrokenPackage();
 			case SLIMEGIRL:
 				return new MatchaPudding();
+			case NINJA:
+				return new MetalFragment();
 		}
 	}
 

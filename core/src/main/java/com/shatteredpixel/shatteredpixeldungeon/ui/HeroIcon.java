@@ -106,6 +106,11 @@ public class HeroIcon extends Image {
 	public static final int BEAMING_RAY     = 64;
 	public static final int LIFE_LINK       = 65;
 	public static final int STASIS          = 66;
+	public static final int TATTEKI          = 67;
+	public static final int NINJAMASTER          = 68;
+
+	public static final int SPIDERJAR          = 70;
+	public static final int ONESWORD          = 71;
 
 	//all cleric spells have a separate icon with no background for the action indicator
 	public static final int SPELL_ACTION_OFFSET      = 32;
@@ -119,6 +124,9 @@ public class HeroIcon extends Image {
 	public static final int WEAPON_SWAP     = 109;
 	public static final int MONK_ABILITIES  = 110;
 	public static final int DARK_HOOK = 111;
+	public static final int NINJA_NORMAL = 112;
+	public static final int NINJA_WATER = 113;
+	public static final int NINJA_GRASS = 114;
 
 	public static final int ASCENSION_CURSE  = 128;
 

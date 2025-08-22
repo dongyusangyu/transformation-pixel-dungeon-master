@@ -50,7 +50,8 @@ public class RotLasher extends Mob {
 		viewDistance = 1;
 
 		properties.add(Property.IMMOVABLE);
-		properties.add(Property.MINIBOSS);
+		maxLvl = 35;
+		//properties.add(Property.MINIBOSS);
 	}
 
 	@Override
