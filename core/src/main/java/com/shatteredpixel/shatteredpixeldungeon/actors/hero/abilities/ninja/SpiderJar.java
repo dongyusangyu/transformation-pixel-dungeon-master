@@ -408,6 +408,10 @@ public class SpiderJar extends ArmorAbility {
                                 new Flare(6, 32).color(0xFFAA00, true).show(heap.sprite,3);
                                 break;
                         }
+                        if(Math.floorMod(l,3)==1) {
+                            CellEmitter.center(heap.pos).start(Speck.factory(Speck.SCREAM), 0.3f, 3);
+                        }
+
                     }
                     if(Math.floorMod(l,2)==1) {
                         for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
@@ -415,10 +419,11 @@ public class SpiderJar extends ArmorAbility {
                                 mob.beckon(heap.pos);
                             }
                         }
-                        if (this.bomb instanceof SmallSpider) {
-                            CellEmitter.center(heap.pos).start(Speck.factory(Speck.SCREAM), 0.3f, 3);
-                        }
-                        Sample.INSTANCE.play(Assets.Sounds.ALERT);
+
+
+                    }
+                    if(!(this.bomb instanceof SmallSpider)){
+                        new Flare(6, 32).color(0xFFB7C5, true).show(heap.sprite,3);
                     }
                     l+=1;
                     if (l >= maxl){

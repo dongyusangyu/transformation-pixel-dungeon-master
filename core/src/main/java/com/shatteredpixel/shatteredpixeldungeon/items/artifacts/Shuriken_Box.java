@@ -6,9 +6,11 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
@@ -54,6 +56,7 @@ public class Shuriken_Box extends Artifact {
 
         defaultAction = AC_SHOOT; //so it can be quickslotted
         bones = false;
+        unique = true;
     }
     @Override
     public ArrayList<String> actions(Hero hero) {
@@ -178,6 +181,9 @@ public class Shuriken_Box extends Artifact {
             image = ItemSpriteSheet.SMALLSKURIKEN;
             setID = 0;
         }
+        public boolean isIdentified() {
+            return true;
+        }
 
         @Override
         public int defaultQuantity() {
@@ -222,6 +228,18 @@ public class Shuriken_Box extends Artifact {
             if (enemy == null || enemy == curUser) {
                 parent = null;
                 Splash.at( cell, 0xA9A6ABFF, 1 );
+                if(hero.buff(Ninja_Energy.Throw_Skill.class)!=null && Dungeon.level.water[hero.pos]){
+                    if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){
+                        Ninja_Energy.Gas_Storage gas_storage=hero.buff(Ninja_Energy.Gas_Storage.class);
+                        for(Blob blob:gas_storage.blobs.values()){
+                            GameScene.add(Blob.seed(cell,10,blob.getClass()));
+                        }
+                        gas_storage.detach();
+                    }
+                    Ninja_Energy.Throw_Skill b = hero.buff(Ninja_Energy.Throw_Skill.class);
+                    b.detach();
+                    Ninja_Energy.NinjaAbility.Throw_Water(hero.pos,cell);
+                }
             } else {
                 if (!curUser.shoot( enemy, this )) {
                     Splash.at(cell, 0xA9A6ABFF, 1);

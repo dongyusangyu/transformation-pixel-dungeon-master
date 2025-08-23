@@ -382,6 +382,7 @@ public class TalentButton extends Button {
 							Dungeon.hero.negativeTalents.add(talent);
 							Talent.onTalentUpgraded(Dungeon.hero,talent);
 							Dungeon.hero.updateHT(true);
+							GameScene.updateFog();
 							break;
 						}else{cnt++;}
 					}

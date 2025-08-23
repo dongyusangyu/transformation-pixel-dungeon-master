@@ -94,7 +94,7 @@ public class SpiritBow extends Weapon {
 	}
 
 
-	private static Class[] harmfulPlants = new Class[]{
+	public static Class[] harmfulPlants = new Class[]{
 			Blindweed.class, Firebloom.class, Icecap.class, Sorrowmoss.class,  Stormvine.class
 	};
 
@@ -306,6 +306,10 @@ public class SpiritBow extends Weapon {
 		@Override
 		public int defaultQuantity() {
 			return 1;
+		}
+
+		public boolean isIdentified() {
+			return true;
 		}
 
 		@Override

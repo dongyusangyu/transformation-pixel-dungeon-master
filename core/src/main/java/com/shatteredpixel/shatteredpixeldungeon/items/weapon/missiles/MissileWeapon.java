@@ -26,26 +26,36 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfSharpshooting;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ParchmentScrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Explosive;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -55,7 +65,9 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -136,9 +148,16 @@ abstract public class MissileWeapon extends Weapon {
 
 	//use the parent item if this has been thrown from a parent
 	public int buffedLvl(){
+
 		if (parent != null) {
+			if(hero!=null && hero.hasTalent(Talent.LIGHT_BOX) && hero.buff(Talent.LightBox.class)!=null){
+				return parent.buffedLvl()+hero.pointsInTalent(Talent.LIGHT_BOX);
+			}
 			return parent.buffedLvl();
 		} else {
+			if(hero!=null && hero.hasTalent(Talent.LIGHT_BOX) && hero.buff(Talent.LightBox.class)!=null){
+				return super.buffedLvl()+hero.pointsInTalent(Talent.LIGHT_BOX);
+			}
 			return super.buffedLvl();
 		}
 	}
@@ -317,7 +336,7 @@ abstract public class MissileWeapon extends Weapon {
 		if (parent != null) parent.cursedKnown = true;
 
 		//instant ID with the right talent
-		if (attacker == Dungeon.hero && Dungeon.hero.pointsInTalent(Talent.HUNTING_INTUITION) == 2){
+		if (attacker == Dungeon.hero && Dungeon.hero.pointsInTalent(Talent.HUNTING_INTUITION) == 2 && !((this instanceof Shuriken_Box.SmallShuriken)|| (this instanceof Tatteki.Tamaru) || (this instanceof SpiritBow.SpiritArrow))){
 			usesLeftToID = Math.min(usesLeftToID, 0);
 			availableUsesToID =  Math.max(usesLeftToID, 0);
 		}
@@ -351,6 +370,7 @@ abstract public class MissileWeapon extends Weapon {
 		if(hero.hasTalent(Talent.STRENGTH_GREATEST)){
 			result+=hero.pointsInTalent(Talent.STRENGTH_GREATEST);
 		}
+
 
 		return result;
 	}
@@ -415,6 +435,19 @@ abstract public class MissileWeapon extends Weapon {
 			if (user instanceof Hero && ((Hero) user).justMoved && ((Hero) user).hasTalent(Talent.SURPRISE_THROW))  return 0;
 			else                                                    return delayFactor( user );
 		} else {
+			//忍者技能
+			if(user instanceof Hero && hero.buff(Ninja_Energy.Throw_Skill.class)!=null && Dungeon.level.water[user.pos]){
+				if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){
+					Ninja_Energy.Gas_Storage gas_storage=hero.buff(Ninja_Energy.Gas_Storage.class);
+					for(Blob blob:gas_storage.blobs.values()){
+						GameScene.add(Blob.seed(cell,10,blob.getClass()));
+					}
+					gas_storage.detach();
+				}
+				Ninja_Energy.Throw_Skill b = hero.buff(Ninja_Energy.Throw_Skill.class);
+				b.detach();
+				Ninja_Energy.NinjaAbility.Throw_Water(user.pos,cell);
+			}
 			return super.castDelay(user, cell);
 		}
 	}

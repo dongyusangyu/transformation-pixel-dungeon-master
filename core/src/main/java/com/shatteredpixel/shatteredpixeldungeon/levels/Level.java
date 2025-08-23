@@ -1352,7 +1352,7 @@ public abstract class Level implements Bundlable {
 			float viewDist = c.viewDistance;
 			if (c instanceof Hero){
 				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
-				viewDist *= 1f-0.2f*Dungeon.hero.pointsNegative(Talent.SHORTSIGHTED);
+				viewDist *= 1f-0.2f*((Hero) c).pointsNegative(Talent.SHORTSIGHTED);
 				viewDist *= EyeOfNewt.visionRangeMultiplier();
 			}
 

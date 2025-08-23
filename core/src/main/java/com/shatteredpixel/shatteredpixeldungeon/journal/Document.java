@@ -341,6 +341,7 @@ public enum Document {
 		BACKS.pagesStates.put("imp",                 debug ? READ : NOT_FOUND);
 		BACKS.pagesStates.put("shopkeeper",                 debug ? READ : NOT_FOUND);
 		HERO.pagesStates.put("slimegril",                 debug ? READ : NOT_FOUND);
+		HERO.pagesStates.put("ninja",                 debug ? READ : NOT_FOUND);
 
 	}
 	

@@ -29,457 +29,56 @@ import java.util.ArrayList;
 
 public class v0_2_X {
     public static void addAllChanges( ArrayList<ChangeInfo> changeInfos ){
+        add_v0_2_6Changes(changeInfos);
+        add_v0_2_5Changes(changeInfos);
+        add_v0_2_4Changes(changeInfos);
+        add_v0_2_3Changes(changeInfos);
+        add_v0_2_2Changes(changeInfos);
         add_v0_2_1Changes(changeInfos);
+        add_v0_2_0Changes(changeInfos);
     }
-    public static void add_v0_2_1Changes( ArrayList<ChangeInfo> changeInfos ) {
+    public static void add_v0_2_0Changes( ArrayList<ChangeInfo> changeInfos ) {
 
         ChangeInfo changes = new ChangeInfo("v0.2", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
-        changes = new ChangeInfo("0.2.5fix6",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
+        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.FREEMAN, 1), "新增英雄：绅士",
+                "_-_ 绅士缺乏战斗能力，没有专精和护甲技能，不过好在其有无限的潜力激发，能够从冒险新手蜕变成一方强者\n" +
+                        "_-_ 该职业拥有一个特别宝箱，可以随机开出职业道具，3层天赋有4个可蜕变天赋槽\n" +
+                        "_-_ 使用一张蜕变秘卷即可解锁绅士及成就\n"
+        ));
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 天赋_活动肌肉_加强，持续时间从100回合提高至300回合\n" +
+                        "_-_ 改动_破冰行动_、_破损核心_等天赋的伤害类型\n" +
+                        "_-_ 天赋_借痛排毒_削弱，获得全面净化效果的概率降低\n" +
+                        "_-_ 矮人国王天赋_王之加护_不再有额外的免伤效果\n"
+        ));
         changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 天赋_即兴投掷_加强，冷却从50下调到20。\n"+
-                        "_-_ 除符文复制外的其他使用卷轴的天赋均可用魔典触发(实验性玩法)。\n"+
-                        "_-_ 开局全部职业鉴定_蜕变秘卷_。\n"+
-                        "_-_ 在不装备武器时，也能触发近战类天赋。\n"+
-                        "_-_ 修复部分界面错误。\n"+
-                        "_-_ 修改部分文本错误。\n"
+                "_-_ 更新日期：2025年1月28日\n"+
+                        "_-_ 击败古神后_小恶魔_会在25层祝玩家新年快乐。\n"+
+                        "_-_ 新增_批量升级_按钮，需要鉴定升级道具才能使用，一次能够使用10张升级卷轴\n"+
+                        "_-_ _升华秘卷_现在可被收纳进卷轴筒，物品图鉴增加升华秘卷、红包以及特别宝箱\n"
+
         ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增7个正面天赋:食人心智，致残毒云，雷雨发庄稼，恶魔之焰，高速突破，疯狂舞者，投掷回收。\n"+
-                        "_-_ 新增7个法术天赋:天启，神圣手雷，刀刃阶梯，神圣利刃，装备赐福，灼热强光，圣愈一击。\n"
-        ));
-        changes = new ChangeInfo("0.2.5fix5",false, null);
+    }
+    public static void add_v0_2_1Changes( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.1", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 法术荆棘之鞭，神力领域风暴的充能消耗均向下调整1点。\n"+
-                        "_-_ 修复鼠化术怪物恢复时的怪物会时停的bug。\n"+
-                        "_-_ 武技等必中效果修复，图鉴武技修复。\n"+
-                        "_-_ 修改部分文本错误。\n"
-        ));
-        changes = new ChangeInfo("0.2.5fix4",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 同步破碎3.2绝大多数改动，并对部分改动进行适应性调整。\n"+
-                        "_-_ 实装注解版2.4的测试工具，目前是初步实装，部分功能未做改动。\n"+
-                        "_-_ 新增成就和对成就部分内容进行修复。\n"+
-                        "_-_ 在游戏内的挑战小图标旁边添加红包作战小图标。\n"+
-                        "_-_ 暗液缠绕+3效果调整：使用暗液钩爪将敌人拉下悬崖后不再能重置cd。\n"+
-                        "_-_ 处理部分天赋生效异常问题。\n"+
-                        "_-_ 修改部分文本错误。\n"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋改动",
-                "_-_ 新增1个正面天赋:狩猎直觉。\n"+
-                        "_-_ 调整蜕变选择天赋类型的界面。\n"+
-                        "_-_ 在_关于蜕变地牢_界面内置投稿链接。\n"
-
-
-        ));
-        changes = new ChangeInfo("0.2.5fix3",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 添加新的冒险指南2篇、史莱姆故事一则。\n"+
-                        "_-_ 修复战士?和精英强敌3的一些问题。\n"+
-                        "_-_ 挑战图标和文本修订。\n"
-        ));
-        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.SLIMEGIRL, 1), "史莱姆娘：平衡性调整",
-                "_-_增强：狂史日记现在可以让被吞噬的怪物正常掉落掉落物\n" +
-                        "_-_削弱：粘液护甲的自动升级所需史莱姆娘等级：3/6/9/12/15→3/9/15/21/27。\n"+
-                        "_-_削弱：暗液缠身+3恢复的饱食度：90→45。\n"+
-                        "_-_削弱：狂史日记所需耗能：75→90。\n"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋改动",
-                        "_-_ 新增5个正面天赋:液体感知，水波荡漾，自然亲和，优质吸收，盈能生命。\n"+
-                                "_-_ 对物理增伤类天赋进行翻新，当前天赋增伤=伤害*累计天赋增伤倍率+天赋固定增伤值。\n"+
-                                "_-_ 累计天赋增伤倍率为所有物理增伤天赋倍率乘积，天赋固定增伤值为固定增伤天赋乘积。\n"+
-                                "_-_ 累计天赋增伤倍率为所有物理增伤天赋倍率乘积，天赋固定增伤值为固定增伤天赋之和。\n"+
-                                "_-_ 武僧宗师不再触发绝大多数的玩家天赋增伤效果。\n"
-
-
-        ));
-
-
-        changes = new ChangeInfo("0.2.5fix2",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 粘液护甲无法使用诅咒棱晶升级,使用邪能碎片不能完全诅咒的问题,移除粘液护甲转移功能\n"+
-                        "_-_ 修复暗液钩爪释放时天赋异常触发问题，如果遇到暗液钩爪功能消失，可通过进食恢复功能\n"+
-                        "_-_ 修复天赋_暗气释放_异常问题\n"+
-                        "_-_ 修复水灵史莱姆生成粘液消耗异常的问题\n"+
-                        "_-_ 暗液钩爪与法术荆棘之鞭设置12格的最大距离限制\n"+
-                        "_-_ 豺狼流寇不再因为负面效果敌对，而是因为生命值低于生命上限敌对\n"+
-                        "_-_ 削弱天赋_水灵强愈_。\n"+
-                        "_-_ 修复护甲技能三位一体的界面排版问题\n"+
-                        "_-_ 微调史莱姆娘立绘位置\n"+
-                        "_-_ 试修复国王和战士？战斗中问题\n"
-        ));
-
-
-        changes = new ChangeInfo("0.2.5fix1",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 修复天赋_极限施法_伤害异常、_暗气释放_、_陷阵之志_生效异常的问题\n"+
-                        "_-_ 调整部分文本。\n"+
-                        "_-_ 完善关于界面\n"+
-                        "_-_ 无敌一餐，金币一餐，吃出经验、生日礼物设置100次触发上限\n"+
-                        "_-_ 修复圣杯等治疗溢出问题\n"+
-                        "_-_ 调整战士？跳跃cd\n"+
-                        "_-_ 修复狂史日记贴图异常问题\n"
-        ));
-        changes.addButton(new ChangeButton(new ItemSprite(new SlimeBall()), "粘液球",
-                "新增新投掷武器：粘液球，由史莱姆娘初始持有\n" +
-                        "_-_ 这是从史莱姆娘身上不断脱落的粘液组成的球体，现在摸起来已经有些发硬了。也许丢出去还能对敌人的行动产生一些影响。\n" +
-                        "_-_ 本饰品由_DM216_制作\n"
-
-        ));
-        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.SLIMEGIRL, 1), "史莱姆娘：平衡性调整",
-                "_-_暗夜史莱姆近战攻击附着淤泥概率从30%上调至50%，暗夜钩爪cd从100下调至50，加强天赋_暗液缠身_、_强效淤泥_。\n" +
-                        "_-_史莱姆初始持有2个粘液球。\n"+
-                        "_-_粘液护甲加强，从原来的每6级一次提升加强到每3级一次提升，最多+5。\n"+
-                        "_-_讨伐者的长矛初始伤害从1-12上调至1-14。\n"
-        ));
-        changes = new ChangeInfo("0.2.5",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 修复天赋_极限施法_和_目光短浅_生效异常的问题\n"+
-                        "_-_ 修复精英强敌3、觉察之泉导致游戏崩溃的问题。\n"+
-                        "_-_ 本版本限定负面天赋组为：_限定2_\n"+
-                        "_-_ 绅士初始投武从投石调整为幸运银币。\n"
-
-        ));
-        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.SLIMEGIRL, 1), "新增英雄：史莱姆娘",
-                "_-_史莱姆娘初始穿戴无法脱下的_粘液护甲_，会随史莱姆娘等级提升而提高品阶和获得额外的等级。史莱姆娘可以花费一回合让种子在体内发芽，并立刻触发种子对应的植被效果。\n" +
-                        "史莱姆娘初始还携带有一把_讨伐者的长矛_、水袋以及绒布袋。\n" +
-                        "史莱姆娘作为魔物，没有任何开局鉴定的物品。\n"+
-                        "本英雄由_叶·凌卡缇娜·霜麟_设计，_可则_和_DM216_绘制美术素材，_Secher-Nbiw_制作"
-                       ));
-        changes.addButton(new ChangeButton(new Image(new WarriorBossSprite()), "新增5层boss：战士?",
-                "新增5层boss：战士?\n" +
-                        "_-_ 战士?和粘咕依照种子有1/2概率生成\n" +
-                        "_-_ 击败战士?可掉落纹章残蜡、口粮和战士的升华秘卷\n" +
-                        "_-_ 战士?拥有狂战和角斗的部分特性，以及能够使用护甲技能：跳跃\n"+
-                        "_-_ 战士?会掉落新类型的升华秘卷，并有全新的boss天赋可供选择\n"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.JOURNAL.get(), "新增高亮字体类型",
-                "新增￥红色￥、￡橙色￡、€绿色€高亮字体\n" +
-                        "_-_ 本字体效果由群友_咕_(QQ1323933183)指导完成，感谢群友_咕_\n"
-
-        ));
-
-        changes = new ChangeInfo("0.2.4fix1",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 力量药水不会因坠落深渊而碎裂，宝箱怪变羊时会掉落物品\n"+
-                        "_-_ 修复天赋_溃决之手_触发异常问题。\n"+
-                        "_-_ 部分天赋文本修改。\n"
-
-        ));
-
-
-        changes = new ChangeInfo("0.2.4",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 修复天赋_我全都要_、_营养不良_失效的问题，修复天赋_超越极限_生效异常的问题。\n"+
-                        "_-_ 修复徽章_光荣凯旋_获取异常问题。\n"+
-                        "_-_ 同步破碎对_臃肿诅咒_和_狱火刻印_的改动。\n"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.CHALLENGE_COLOR.get(), "新增挑战",
-                "_-_ 挑战_精英强敌_、_绝命头目_添加新的挑战效果\n"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋改动",
-                "_-_ 可蜕变的正面天赋划分为物攻，法伤，特效，资源，法术，辅助，其他共7类，在使用蜕变秘卷蜕变天赋时可选择类型，该类型天赋将以3倍概率出现在选项中。具体天赋分类请到对应天赋详情页查看。\n"+
-                        "_-_ 负面天赋划分为12个通用负面天赋，和4组每组8个版本限定负面天赋，每次更新时改变限定天赋组。具体负面天赋划分到天赋详情页查看。\n"+
-                        "_-_ 本版本限定负面天赋组为：_限定1_\n"+
-                        "_-_ 新增5个正面天赋:溃绝之手，预知卷轴爱好者，火球术，灵光闪现，女巫媚药。\n"+
-                        "_-_ 新增5个法术天赋:奸奇咒法，神行术，聚焦光线，转愈圣术，荆棘之鞭。\n"+
-                        "_-_ 新增1个负面天赋：手滑点错。\n"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.DISPLAY_LAND.get(), "界面改动",
-                "_-_ 标题界面、Boss斩杀等美术风格跟进破碎3.0的美术风格。本次更新的美术素材由_DM216_绘制\n"
-
-        ));
-
-
-        changes = new ChangeInfo("0.2.3",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ _牧羊原旨_削弱，+1释放的羊群范围缩小，+2能耗从2点上调至3点。\n"+
-                        "_-_ _赎罪券_加强，金币消耗从500/300下调至200/150。\n"+
-                        "_-_ _手杖_加强，初始伤害从1-6上调至1-7。\n"+
-                        "_-_ 同步破碎3.1的楼层改动，木桶及后续障碍物可用镐或炸弹清除,且炸弹只能清除3*3范围障碍。\n"+
-                        "_-_ 同步破碎3.1的牧师增强与削弱。\n"+
-                        "_-_ 同步破碎3.1的新徽章。\n"+
-                        "_-_ 同步破碎3.1的探索分计算方式。\n"+
-                        "_-_ 同步破碎3.1的新怪物和新饰品。\n"+
-                        "_-_ 同步破碎3.1战士天赋_丰盛一餐_、_受衅怒火_、_液蕴意志_的改动，关于纹章部分只修改贴图，不改变其机制及相关天赋。\n"+
-                        "_-_ 移除_升华秘卷_的警告界面\n"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增7个正面天赋:灰烬之弓，速行藓神教，诅咒护体，势能转换，涅槃，含沙射影，自动拾取。\n"+
-                        "_-_ 新增4个负面天赋：蚀骨之火，跳脸硅胶，草木皆兵，灾厄诅咒。\n"
-
-        ));
-
-
-        changes.addButton(new ChangeButton(new Image(new GreatShoperSprite()), "返程BOSS战2",
-                "新增20层返程boss战\n" +
-                        "_-_ 取得护符后对话20层店主即可触发\n" +
-                        "_-_ 击败boss可获得1万得分和徽章\n" +
-                        "_-_ 背景故事中新增返程见闻一则\n" +
-                        "_-_ BOSS战难度较高，需玩家谨慎对待\n" +
-                        "_-_ BOSS战怪物画师：_可则_、_幻影の人食い雑魚_、_DM216_、_放縦鵺_\n" +
-                        "_-_ 为BOSS战新增一首BGM《On-Boss》\n"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.CHALLENGE_COLOR.get(), "新增挑战",
-                "_-_ 增加新挑战_恶劣环境_和_极端环境_，并给挑战_信念护体_、_恐药异症_、_集群智能_、_没入黑暗_、_禁忌咒文_、_荒芜之地_添加新的挑战效果\n"+
-                        "_-_ 如果玩家勾选_恶劣环境_且没勾选任意基础挑战进入游戏，会随机增加一项基础挑战\n"+
-                        "_-_ 如果玩家勾选_极端环境_且没勾选_恶劣环境_进入游戏，会自动增加_恶劣环境_\n"
-
-
-        ));
-
-        changes = new ChangeInfo("0.2.2fix10",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 增加资源类天赋升级的道具数量限制，一般职业的上限为16次，绅士为29次。\n"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增10个正面天赋:量子骇入，空蝉幻舞，金币巧克力，白幽馈赠，人身攻击，击落卫星，圣光信仰，蜂蜜鱼缸，顷刻炼化，常启书室。\n"+
-                        "_-_ 新增10个法术天赋和对应的法术:升天咒，神明庇佑，牧羊原旨，圣法皈依，净化邪恶，神力领域风暴，创世纪，赎罪券，银光锐语，复活术。\n"+
-                        "_-_ 新增3个负面天赋：深层恐惧，门都没有，上升气流。\n"
-
-        ));
-
-        changes = new ChangeInfo("0.2.2fix9",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 同步破碎3.0.1对_神圣武器、护甲_的改动\n"+
-                        "_-_ 同步破碎3.0.1对_苔藓丛簇_的改动\n"+
-                        "_-_ _圣典拓本_充能上限上调至8点，转化能量从3*剩余充能数降低至2*剩余充能数，最大转化为15点能量\n"+
-                        "_-_ 实装附魔_横扫_的元素打击效果，本附魔由_Secher-Nbiw_制作\n"+
-                        "_-_ 实装饥饿条的ui，由_DM216_小姐绘制美术素材\n"
-
-        ));
-        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16), Messages.get(ChangesScene.class, "bugfixes"),
-                "_-_ 修复_每日挑战_地牢生成问题\n"+
-                        "_-_ 修复_老杖匠_和_巨魔_的对话异常问题\n"+
-                        "_-_ 修复_陷阱晶柱_存储陷阱问题\n"+
-                        "_-_ 修复__无味果投掷异常触发天赋长期素食问题\n"+
-                        "_-_ 修复护甲技能_超凡升天_的攻击距离不生效问题\n"+
-                        "_-_ 修复天赋_回味无穷_吞_启蒙圣餐_的充能问题\n"+
-                        "_-_ 将_魔能触媒_设置为不可堆叠，修复持有多个触媒炼金时，饰品窗口异常出现问题\n"+
-                        "_-_ 修复法术_符文复制_对符石的异常问题\n"+
-                        "_-_ 修复向_生命之泉_投掷装备的异常闪退问题\n"));
-
-        changes = new ChangeInfo("0.2.2fix8",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 同步3.0对财富戒指的改动\n"+
-                        "_-_ 修复绅士三层天赋异常问题\n"+
-                        "_-_ 修复凝血魔瓶和天赋寄生文本问题\n"+
-                        "_-_ 圣典拓本转化能量从8提升至3*剩余充能数\n"
-        ));
-
-
-        changes = new ChangeInfo("0.2.2fix7",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        ItemSprite sprite = new ItemSprite(ItemSpriteSheet.WORN_SHORTSWORD,new Sweeping().glowing());
-        sprite.lightness(0f);
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 同步3.0.0的连击和十字弩射击的武技效果\n"+
-                        "_-_ 同步3.0的苔藓、牙齿、十三叶草、香炉、遗忘碎片、陷阱元件效果\n"+
-                        "_-_ 同步3.0的天赋联动升级效果\n"+
-                        "_-_ 同步3.0的开始界面Ui改动\n"+
-                        "_-_ 同步3.0的斗篷、圣典不能嬗变的改动\n"+
-                        "_-_ 同步3.0的补充疯狂强盗的描述\n"+
-                        "_-_ 同步3.0对饥饿扣除生命值和生命值自然回复的改动\n"+
-                        "_-_ 淬毒匕首、涿郡屠夫、正义惩戒等天赋描述修改\n"+
-                        "_-_ 感谢_委员会全员_和_墨意-天志_为本次更新进行大量测试\n"+
-                        "_-_ 补充部分成就徽章图标和重绘绅士动画效果，以及大量物品图标重绘，由_DM216_小姐重绘\n"
-                ));
-        changes.addButton(new ChangeButton(sprite, "新增附魔：横扫",
-                "_-_ 横扫附魔会打击大量敌人\n"+
-                        "_-_ 决斗家元素打击效果未定\n"+
-                        "_-_ 本附魔由_Secher-Nbiw_制作\n"));
-        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.CLERIC, 1), "牧师实装",
-                "_-_ 实装牧师，并调整牧师初始天赋\n"+
-                           "_-_ 牧师的天赋除启蒙圣餐外，蜕变效果均不生效，启蒙圣餐效果也进行改动\n"+
-                           "_-_ 新增圣典拓本，使其他英雄也能像牧师一样释放法术，圣典拓本可以通过炼金获取(需要刻笔但不消耗刻笔)\n"+
-                           "_-_ 绅士公文包的可选物品新增圣典\n"+
-                           "_-_ 蜕变天赋时额外增加一个牧师天赋选项，便于玩家快速获取法术天赋，天赋分池后，将会进行调整\n"+
-                           "_-_ 天赋符文复制改动：无法复制蜕变秘卷\n"));
-        changes.addButton( new ChangeButton(Icons.DISPLAY.get(), "新ui实装",
-                "_-_ 蜕变地牢的紫色ui实装\n"+
-                           "_-_ 本次ui的美术素材由_DM216_小姐倾情绘制，希望大家喜欢\n"));
-
-
-        changes = new ChangeInfo("0.2.2fix6",false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增正面天赋3个，负面天赋3个。"));
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_ 全面调整各天赋描述中强调的内容。\n"+
-                        "_-_ 暂时关闭进入0层的通道。"));
-        changes.addButton(new ChangeButton(new ItemSprite( ItemSpriteSheet.MAGES_STAFF), "魔杖初始伤害调整",
-                "_-_ 魔杖初始伤害从_1-6_提高至_1-7_。"));
-        changes.addButton(new ChangeButton(new ItemSprite( ItemSpriteSheet.BROKEN_PACKAGE), "新增绅士遗物",
-                "_-_ 当绅士死亡后，玩家发现其遗骸，会生成破损皮包，使用后获得少量金币。"));
-
-
-
-        changes = new ChangeInfo("2月16日生日纪念版", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋强度调整",
-                "_-_ 无尽恶意+0时生效概率上调至40%，生命扣除从当前生命值的百分比调整为生命上限的百分比"));
-        changes.addButton(new ChangeButton(new ItemSprite( ItemSpriteSheet.SHATTERED_CAKE), "生日快乐",
-                "_-_ 祝_DM216_小姐2月16日生日快乐，永远年轻漂亮，每天生活开心!\n"+
-                        "_-_ DM216小姐为蜕变地牢绘制了很多精美的图标，还提出不少有意思的天赋创意并实装到蜕变地牢内，为蜕变地牢发展做出卓越贡献。\n相应的，如果大家也对蜕变地牢做出卓越贡献，可以反馈给制作组，制作组也会制作纪念版本分享给大家，并表彰其贡献。"));
-        changes = new ChangeInfo("0.2.2fix5", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton( Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 修复第一批天赋描述丢失的问题\n" +
-                        "_-_ 添加种子查找功能，除常规功能外，可以查找负面天赋\n"+
-                        "_-_ 限制存档数量，当玩家现有存档数超过5个时，将无法进行新游戏\n"+
-                        "_-_ 自该版本后的通关记录将保留存档内所有道具，而不是只保留装备和快捷栏道具"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋bug修复",
-                "_-_ 泥头车现在对全部拥有巨型词条的怪物生效\n"+
-                        "_-_ 细嚼慢咽的饱腹效果将维持在450/150回合"));
-        changes.addButton(new ChangeButton(new Image(new StatueSprite()), "第0层施工中",
-                "_-_ 现在第0层调用通用楼层，并放置一个测试石像供玩家测试伤害\n"+
-                        "_-_ 玩家将可以使用过去通关记录的角色进入第0层，未来将会围绕这一部分制作实验性玩法\n"+
-                        "_-_ 进入第0层方法：在有空余存档位的前提下，进入排行榜界面，选择一个通关记录，进入挑战信息界面，点击新的蓝色按钮即可进入\n"+
-                        "_-_ _注意：在本版本之前的通关记录只保留装备和快捷栏物品，而在本版本及之后的版本才能保留玩家存档的全部道具。由于未知原因，初次进入第0层后玩家的武器、护甲、神器不会自动充能，需要扔出或者退出重进存档才能正常充能_"));
-
-        changes = new ChangeInfo("0.2.2fix4", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton( Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 修复绅士的介绍界面和开始界面的显示问题\n" +
-                        "_-_ 添加第二批天赋描述,修复天赋描述问题"
-                       ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋强度改动",
-                "_-_ 茉莉花茶和军用水袋调整为一层天赋\n"+
-                        "_-_ 马猴烧酒的变身效果在阅读魔典时也会触发\n"+
-                        "_-_ 涿郡屠夫增加掉落的等级限制\n"+
-                        "_-_ 摸鱼时间+2会在水池房额外增加1条鱼的生成\n"+
-                        "_-_ 享乐主义的伤害增幅从3/6下调至2/4\n"+
-                        "_-_ 天地之力每级增伤从12%上调至15%，地缚根护甲可以触发，但守望的地缚根的树肤不会触发"));
-
-
-        changes = new ChangeInfo("0.2.2fix3", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton( Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 修复大恶魔buff图标显示问题\n" +
-                        "_-_ 批量升级投掷武器时将只起到一张升级的效果\n"+
-                        "_-_ 返程动画和标题界面重置，由_DM216_绘制\n"+
-                        "_-_ 添加第一批天赋描述,修复天赋描述问题\n"+"" +
-                        "_-_ 给奸奇信徒的黑魔法加入移除全面净化的效果"));
-        changes.addButton(new ChangeButton(new Image(new PhantomLandPiranhaSprite()), "新增幻影陆地食人鱼",
-                "_-_ 生成陆地食人鱼时概率生成幻影陆地食人鱼\n"+
-                        "_-_ 幻影陆地食人鱼属性与幻影食人鱼一致，可掉落幻影鱼肉\n"+
-                        "_-_ 幻影陆地食人鱼形象由_DM216_绘制"));
-        changes.addButton(new ChangeButton(new ItemSprite(new SpecialPackage()), "公文包变更",
-                "_-_ 绅士初始的特殊宝箱更改为公文包，由_DM216_绘制\n"+
-                        "_-_ 公文包与原特殊宝箱功能一致"));
-
-        ItemSprite sprite1 = new ItemSprite(ItemSpriteSheet.WORN_SHORTSWORD,new Heavy().glowing());
-        sprite.lightness(0f);
-        changes = new ChangeInfo("0.2.2fix2", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton( Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 修复畏光等天赋生效异常问题\n" +
-                        "_-_ 修复手杖未加入目录的问题\n"+
-                        "_-_ 修复绅士介绍界面图标异常问题\n"+
-                        "_-_ 削弱正义惩戒的击杀祝福效果\n"+
-                        "_-_ 绅士小人形象重置，本次更新的形象由_DM216_绘制"));
-        changes.addButton(new ChangeButton(sprite1, "新增诅咒：沉重",
-                "_-_ 沉重诅咒会使武器力量需求增加\n"+
-                        "_-_ 当决斗家武器有沉重诅咒时，元素打击效果为对范围内的怪物概率施加虚弱效果"));
-
-        changes = new ChangeInfo("0.2.2fix1", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton( Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 修复反戈一击的文本描述错误\n" +
-                        "_-_ 修复天赋弱化问题\n"+
-                        "_-_ 修复机械技师等生效问题\n"+
-                        "_-_ 实装当玩家处于马猴烧酒状态下，悲伤幽灵的特殊对话3则"));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋实装",
-                "_-_ 实装负面天赋陆游\n" +
-                        "_-_新增怪物陆地食人鱼\n"));
-        changes.addButton(new ChangeButton(new ItemSprite(new WalkStick()), "绅士初始武器修改",
-                "_-_ 手杖是一把可以攻击产生护盾，提高防御力的武器\n" +
-                        "_-_初始属性1-6，攻击概率叠加护盾\n"+
-                        "_-_ 本武器图标由_DM216_绘制"));
-        changes.addButton(new ChangeButton(new ItemSprite(new SpecialPackage()), "特别宝箱调整",
-                "_-_ 为减少玩家游玩绅士时SL频率，故设置特别宝箱的物品可以自选" ));
-
-        changes = new ChangeInfo("0.2.2", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(new ItemSprite(new GoldIngot()), "黄金元宝",
-                "黄金元宝完全实装\n" +
-                        "_-_ 通过减少金钱掉落量，获得额外伤害倍率\n" +
-                        "_-_ 本饰品由_Secher-Nbiw_制作\n"+
-                        "_-_ 本饰品由_DM216_重新绘制"
-
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增正面天赋_10_个\n" +
-                        "_-_新增负面天赋_15_个，具体请到天赋图鉴查阅\n"+
-                        "_-_本次更新的天赋图标由_DM216_绘制"));
-        changes.addButton(new ChangeButton(new Image(new DM300Sprite()), "DM300新形象",
-                "_-_ 实装DM300的新形象\n" +
-                        "_-_本次更新的形象由_Lefted_绘制"));
-
-
-
-        changes = new ChangeInfo("v0.2.1", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 调整部分天赋强度：\n" +
-                        "加强万灵药水、借痛排毒、求生意志、工程技师、反戈一击、盛食厉兵、算盘\n"+
-                        "_-_ 修复各类bug\n"+
-                        "_-_ 重修挑战界面"));
-
-        changes.addButton(new ChangeButton(new Image(new GreatDemonSprite()), "返程BOSS战1",
-                "新增25层返程boss战\n" +
-                        "_-_ 取得护符后对话25层小恶魔即可触发\n" +
-                        "_-_ 击败boss可获得1万得分和徽章\n" +
-                        "_-_ 背景故事中新增返程见闻一则\n" +
-                        "_-_ BOSS战难度较高，需玩家谨慎对待\n" +
-                        "_-_ BOSS战怪物画师：_可则_、_幻影の人食い雑魚_\n" +
-                        "_-_ 为BOSS战新增两首BGM《Combat Area》和《Chu-Boss》\n"
-
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                "_-_ 新增共计_1_个正面天赋：强化魔典\n"+
+                        "_-_ 以上新增内容均由_Secher-Nbiw_开发完成\n"
         ));
         changes.addButton(new ChangeButton(new ItemSprite(new GoldIngot()), "黄金元宝",
                 "新增新饰品：黄金元宝\n" +
@@ -487,55 +86,354 @@ public class v0_2_X {
                         "_-_ 本饰品由_Secher-Nbiw_制作\n"
 
         ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增正面天赋：强化魔典，由_Secher-Nbiw_制作\n" +
-                        "_-_新增负面天赋18个，具体请到天赋图鉴查阅\n"+
-                        "_-_新增挑战：负面天赋\n"+
-                        "_-_本次更新的天赋图标由_DM216_绘制"));
+        changes.addButton( new ChangeButton(new Image(new GreatDemonSprite()), "新增返程Boss战：大恶魔",
+                "_-_ _开启条件：_携带护符与25层小恶魔对话触发\n" +
+                        "_-_ 本场Boss战是一个可选择的挑战，并非玩家通关阻碍，故数值极高，要谨慎对待。如果玩家搞清楚该场Boss战机制，会变得相当简单\n" +
+                        "_-_ 本场Boss战会给玩家Boss得分增加10000分，击败Boss可以获得新徽章，在游戏背景故事新增一则返程见闻\n"+
+                        "_-_ 本场Boss战敌人贴图均由_可则_和_幻影の人食い雑魚_绘制\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.CHALLENGE_COLOR), "挑战更新",
+                "_-_ 新增_1_个挑战\n"+
+                        "_-_ _负面天赋：_玩家到达2，6，11，21层会强制从2个负面天赋中二选一，目前新增17个负面天赋可供玩家游玩\n"+
+                        "_-_ _负面：_永恒诅咒，饭桶，命运抉择，无尽恶意，有气无力，营养不良，目光短浅，蝙蝠血清，近视眼，陆游(未实装)，九龙拉馆，奸商，致敬牢大，好吃到爆，脑袋着地，喝水塞牙，生命在于运动，圣杯弱化\n"
+        ));
 
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 天赋_万灵药水_、_借痛排毒_、_求生意志_、_工程技师_、_反戈一击_、_盛食厉兵_和_算盘_加强\n" +
+                        "_-_ 此外还有各类杂项Bug修复以及挑战界面调整。\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年2月1日\n"
 
-
-
+        ));
 
 
     }
     public static void add_v0_2_2Changes( ArrayList<ChangeInfo> changeInfos ) {
 
-        ChangeInfo changes = new ChangeInfo("v0.2", true, "");
+        ChangeInfo changes = new ChangeInfo("v0.2.2", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
-
-        changes = new ChangeInfo("v0.2.1", false, null);
-        changes.hardlight(Window.TITLE_COLOR);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
-
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), Messages.get(ChangesScene.class, "misc"),
-                "_-_ 调整部分天赋强度：\n" +
-                        "加强万灵药水、借痛排毒、求生意志、工程技师、反戈一击、盛食厉兵、算盘、豺狼巫术\n"+
-                        "_-_ 修复各类bug\n"+
-                        "_-_ 重修挑战界面"));
-
-        changes.addButton(new ChangeButton(new Image(new GreatDemonSprite()), "返程BOSS战1",
-                "新增25层返程boss战\n" +
-                        "_-_ 取得护符后对话25层小恶魔即可触发\n" +
-                        "_-_ 击败boss可获得1万得分和徽章\n" +
-                        "_-_ 背景故事中新增返程见闻一则\n" +
-                        "_-_ BOSS战难度较高，需玩家谨慎对待\n" +
-                        "_-_ BOSS战怪物画师：_可则_、_幻影の人食い雑魚_\n" +
-                        "_-_ 为BOSS战新增两首BGM《Combat Area》和《Chu-Boss》\n"
-
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                "_-_ 新增共计_23_个正面天赋，_10_个法术天赋，_21_个负面天赋\n"+
+                        "_-_ _1层：_书中黄金，白幽馈赠，人身攻击，蜂蜜鱼缸，金币巧克力\n"+
+                        "_-_ _2层：_探险直觉，釜底抽薪，万毒入体，种子回收，享乐主义，引火上身，量子骇入，击落卫星，顷刻炼化\n" +
+                        "_-_ _3层：_极限施法，精准射击，宝藏嗅觉，超越极限，健康食物，极限反应，空蝉幻舞，圣光信仰，常启书室\n"+
+                        "_-_ _1层法术：_牧羊原旨，银光锐语，升天咒\n"+
+                        "_-_ _2层法术：_神明庇佑，圣法皈依，赎罪券，创世纪\n" +
+                        "_-_ _3层法术：_净化邪恶，神力领域风暴，复活术\n"+
+                        "_-_ _负面：_心智崩塌，无可回避，寄生，泥头车，糊人总冠军，畏光，失控魔法，冬泳怪鸽，干柴烈火，见异思迁，饥饿难耐，会员制餐厅，长启速逝，饭前洗手，荆棘丛生，热情满满，战意盈然，相位利爪，深层恐惧，门都没有，上升气流\n"+
+                        "_-_ 于fix1完全实装负面天赋_陆游_及其衍生敌人_巨型陆地食人鱼_\n"
         ));
-        changes.addButton(new ChangeButton(new ItemSprite(new GoldIngot()), "黄金元宝",
-                "新增新饰品：黄金元宝\n" +
-                        "_-_ 通过消耗金钱获得额外的伤害倍率\n" +
-                        "_-_ 本饰品由_Secher-Nbiw_制作\n"
-
+        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.FREEMAN, 6), "绅士完善",
+                "_-_ 于_fix1_将初始武器变更为_手杖_，初始伤害1~6点，攻击概率叠加护盾\n" +
+                        "_-_ 于_fix2_将_手杖_加入图鉴，并由_DM-216_对小人进行重绘\n" +
+                        "_-_ 于_fix3_将返程结算立绘重绘，同时还将特别宝箱改为_公文包_并能够自选职业道具，均由_DM-216_进行绘制\n"+
+                        "_-_ 于_fix6_新增遗物破损皮包，能够开出一些金币\n"+
+                        "_-_ 于_fix7_为公文包增加了神圣法典选项\n"
         ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "新增天赋",
-                "_-_ 新增正面天赋：强化魔典，由_Secher-Nbiw_制作\n" +
-                        "_-_新增负面天赋18个，具体请到天赋图鉴查阅\n"+
-                        "_-_新增挑战：负面天赋\n"+
-                        "_-_本次更新的天赋图标由_DM216_绘制"));
+        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.CLERIC, 6), "内容同步",
+                "_-_ 于_fix7_进行_破碎v3.0_的内容同步(感谢_委员会全员_以及_墨意-天志_为内容同步更新进行的大量测试)\n" +
+                        "_-_ _牧师实装：_牧师实装并对牧师初始天赋进行调整。牧师天赋除启蒙圣餐外，其余天赋被其他英雄蜕变出来均无效果变更，同时启蒙圣餐被其他英雄蜕变出来的效果也进行了改动，而符文复制新增无法复制蜕变秘卷的改动\n" +
+                        "_-_ _杂项内容：_决斗家的镶钉手套、双钗、魔岩拳套和十字弩的武技加强；对饰物苔藓丛簇、拟箱利齿、十三叶草、混沌香炉、遗忘碎片和陷阱元件的效果改动；狙击手天赋联动升级的效果改动；游戏存档界面的ui改动；暗影斗篷和神圣法典无法嬗变的改动；对疯狂强盗的描述补充\n"+
+                        "_-_ 于_fix8_同步_破碎v3.0_对财富戒指的改动(装卸戒指会继承保底次数而非直接重置)\n"+
+                        "_-_ 于_fix9_同步_破碎v3.0.1_苔藓丛簇和神圣武器、神圣护甲的效果"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.CATALOG), "内容更新",
+                "_-_ 完全实装饰物_黄金元宝_\n"+
+                        "_-_ 于_fix1_加入了幽妹的特殊对话内容，当玩家变身美少女“战士”后在每次下楼时概率触发(不与幽妹原对话内容同时触发)\n"+
+                        "_-_ 于_fix2_实装沉重诅咒，使武器力量需求+2\n"+
+                        "_-_ 于_fix5_通关排行榜的挑战页面加入一个奇妙的入口，随后于_fix6_移除\n"+
+                        "_-_ 于_fix7_实装_横扫附魔_，攻击一个目标时有几率对使用者周围所有目标造成一定打击(决斗家护甲技能元素打击效果未定)，由_Secher-Nbiw_制作\n"+
+                        "_-_ 同时还实装了_圣典拓本_，使其他英雄也能像牧师一样释放法术，不过由于其不稳定性，充能无法以任何形式回复，同时有些需要选取目标释放的法术在不选取目标尝试取消释放后依旧会消耗充能，需谨慎使用。拓本可通过炼金获取(具体可查看炼金图鉴-强化武器部分，材料中的奥术刻笔仅为需要放入，不会消耗)\n"+
+                        "_-_ 于_fix9_补充_横扫附魔_的元素打击效果\n\n"
+        ));
+        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
+                "_-_ _DM-300_贴图改动，由_Lefted_绘制\n" +
+                        "_-_ 于_fix3_进行主界面标题重绘，由_DM-216_绘制\n" +
+                        "_-_ 在_fix3~7_更新期间为大量天赋进行了描述补充、注释补充以及高亮内容调整\n"+
+                        "_-_ 于_fix7_重绘了绅士小人、绅士的英雄护甲、升华秘卷、符石、大恶魔徽章、天狗天赋等内容，同时还重绘了所有ui界面，顺便将DM-300天赋辟谷之术更名为_电子养胃_\n"+
+                        "_-_ 于_fix9_更新饱食度ui，类似mc的饱食度设计\n"
+        ));
+
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 于_fix2_削弱天赋_正义惩戒_给予的祝福效果\n" +
+                        "_-_ 于_fix3_加强_奸奇信徒_，使其远程攻击能够消除全面净化效果\n" +
+                        "_-_ 同时加强负面天赋_陆游_，现在还能够生成幻影陆地食人鱼，贴图由_可则_和_DM-216_绘制\n" +
+                        "_-_ 于_fix4_将天赋_茉莉花茶_和_军用水袋_从2层天赋池移动至1层天赋池\n" +
+                        "_-_ 天赋_摸鱼时间+2_效果新增：鱼房额外生成1条巨型食人鱼\n" +
+                        "_-_ 加强天赋_马猴烧酒_，现在可以通过阅读神器魔典触发\n" +
+                        "_-_ 加强天赋_天地之力_，每级增伤从12%上调至15%，地缚根护甲能够触发(守望者踩地缚根给的树肤不触发)\n" +
+                        "_-_ 削弱天赋_涿郡屠户_，增加掉落的等级限制\n" +
+                        "_-_ 削弱天赋_享乐主义_，伤害由3/6下调至2/4\n" +
+                        "_-_ 于2月16日——_DM-216_的生日加强负面天赋_无尽恶意_，+0时的生效概率上调至40%，扣除的生命值由“当前生命值的10%”变成“生命值上限的10%”\n" +
+                        "_-_ 于_fix6_将法师魔杖的初始伤害由1~6上调至1~7\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年2月2日-4月12日\n"+
+                        "_-_  于_fix3_对批量升级功能进行改动：对投掷武器进行批量升级只能起到一张升级的效果。\n"+
+                        "_-_  于_fix5_限制存档数量。\n"+
+                        "_-_  于_fix8_将圣典拓本转化的能量从8提升至3*剩余充能数。\n"+
+                        "_-_  于_fix10_新增资源类天赋的物品获得上限，通过升级及蜕变获得资源的效果至多触发16次(绅士为29次)。\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 于_fix2_修复负面天赋_畏光_常态生效的问题，同时还修复了人物选择界面绅士介绍图标的显示问题\n"+
+                        "_-_ 于_fix3_修复大恶魔Buff图标显示异常的问题\n"+
+                        "_-_ 于_fix4_修复绅士介绍和开始界面的显示问题，同时还修复了部分天赋的描述问题\n"+
+                        "_-_ 于_fix5_修复负面天赋_泥头车_只对巨型精英生效的问题，同时将天赋_细嚼慢咽_的饱腹效果维持在450/150回合(后者为启用挑战缩餐节食的情况\n"+
+                        "_-_ 于_fix8_修复_绅士_三层天赋生效异常问题，同时修复饰物凝血之瓶和负面天赋寄生的文本显示问题\n"
+        ));
 
     }
+
+    public static void add_v0_2_3Changes( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.3", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                "_-_ 新增共计_7_个正面天赋，_4_个负面天赋\n"+
+                        "_-_ _1层：_含沙射影，自动拾取\n"+
+                        "_-_ _2层：_诅咒护体，势能转换，涅槃\n" +
+                        "_-_ _3层：_灰烬之弓，速行藓神教\n"+
+                        "_-_ _负面：_蚀骨之火，跳脸硅胶，草木皆兵，灾厄诅咒\n"
+        ));
+        changes.addButton( new ChangeButton(new Image(new GreatShoperSprite()), "新增返程Boss战：店主",
+                "_-_ _开启条件：_携带护符与20层店主对话触发\n" +
+                        "_-_ 本场Boss战同样会给玩家Boss得分增加10000分，击败Boss可以获得新徽章，在游戏背景故事新增一则返程见闻\n" +
+                        "_-_ 本场Boss战敌人贴图由_可则_、_幻影の人食い雑魚_、_DM-216_和_放縦鵺_绘制\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.CHALLENGE_COLOR), "挑战更新",
+                "_-_ 新增_2_个挑战\n"+
+                        "_-_ _恶劣环境：_使破碎原有挑战提升至等级2，未勾选任何其他挑战则随机启用一项挑战\n"+
+                        "_-_ _极端环境：_使破碎原有挑战提升至等级3，自动启用恶劣环境挑战\n"+
+                        "_-_ 仅为信念护体、恐药异症、集群智能、没入黑暗、禁忌咒文和荒芜之地添加新的挑战效果\n"
+        ));
+        changes.addButton( new ChangeButton(Icons.get(Icons.SHPX), "内容同步",
+                "_-_ 对_破碎v3.1_的内容进行同步：楼层改动，木桶及后续障碍物可用镐子或炸弹清除，且炸弹只能清除3x3范围障碍；牧师增强与削弱；新成就；探索分计算方式；新敌人(豺狼流寇和寄居蟹)和新饰物(雪貂绒束)；战士天赋丰盛一餐、受衅怒火和液蕴意志改动，关于纹章部分只修改贴图，不改变其机制及相关天赋\n"
+        ));
+
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 削弱法术天赋_牧羊原旨_，+1释放的羊群范围缩小，+2能耗从2点上调至3点\n" +
+                        "_-_ 加强法术天赋_赎罪券_，金币消耗从500/300下调至200/15\n" +
+                        "_-_ 加强1阶武器_手杖_，初始伤害从1~6上调至1~7\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年7月23日\n"+
+                        "_-_  移除了_升华秘卷_的警告界面并调整其逻辑。\n"
+        ));
+
+
+    }
+    public static void add_v0_2_4Changes( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.4", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                "_-_ 可蜕变的正面天赋划分为_物攻_，_法伤_，_特效_，_资源_，_法术_，_辅助_，_其他_共7类，在使用蜕变秘卷蜕变天赋时可选择类型，该类型天赋将以3倍概率出现在选项中。具体天赋分类请到对应天赋详情页查看\n"+
+                        "_-_ 负面天赋划分为_12个通用_负面天赋，和_4组每组8个版本限定_负面天赋，每次大版本更新时改变限定天赋组。具体负面天赋划分到天赋详情页查看\n"+
+                        "_-_ 本版本限定负面天赋组为：_限定1_\n"+
+                        "_-_ 新增共计_5_个正面天赋，_5_个法术天赋，_1_个负面天赋\n"+
+                        "_-_ _1层：_灵光闪现，预知秘卷爱好者\n"+
+                        "_-_ _2层：_火球术，女巫媚药\n" +
+                        "_-_ _3层：_溃决之手\n"+
+                        "_-_ _1层法术：_奸奇咒法，聚焦光线\n"+
+                        "_-_ _2层法术：_神行术，荆棘之鞭\n" +
+                        "_-_ _3层法术：_转愈圣术\n"+
+                        "_-_ _负面：_手滑点错\n"
+        ));
+        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
+                "_-_ 标题界面、Boss击杀、失败等同步_破碎v3.0_的美术风格，由_DM-216_绘制\n"
+        ));
+
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "内容改动",
+                "_-_  更新日期：2025年7月30日-7月31日\n"+
+                        "_-_  为_精英强敌_和_绝命头目_挑战新增等级2和等级3的内容\n"+
+                        "_-_  同步了破碎对于_臃肿诅咒_和_狱火刻印_的改动\n"+
+                        "_-_  于_fix1_使得力量药剂不再因为坠入深渊而碎裂，同时使得被变成魔法绵羊的宝箱怪能够掉落物品"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 修复天赋_我全都要_和_营养不良_的失效问题，同时修复天赋_超越极限_生效异常的问题\n"+
+                        "_-_ 修复成就_光荣凯旋_获取异常问题\n"+
+                        "_-_ 于_fix1_修复神圣精英敌人坠落导致游戏卡死的问题，同时修复天赋_溃决之手_触发异常问题\n"
+        ));
+
+
+    }
+
+    public static void add_v0_2_5Changes( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.5", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                "_-_ 本版本限定负面天赋组为：_限定2_\n"+
+                        "_-_ 新增共计_13_个正面天赋，_7_个法术天赋\n"+
+                        "_-_ _1层：_液体感知，水波荡漾，狩猎直觉，雷雨发庄稼，疯狂舞者\n"+
+                        "_-_ _2层：_自然亲和，优质吸收，食人心智，高速突破\n" +
+                        "_-_ _3层：_盈能生命，致残毒云，恶魔之焰，投掷回收\n"+
+                        "_-_ _1层法术：_圣愈一击\n"+
+                        "_-_ _2层法术：_天启，装备赐福，灼热强光\n" +
+                        "_-_ _3层法术：_神圣手雷，刀刃阶梯，黄金回旋\n"
+        ));
+        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.SLIMEGIRL, 6), "史莱姆娘",
+                "_-_ 史莱姆娘只有9点力量，但拥有更高的初始生命值和生命成长。同时初始穿戴无法脱下的粘液护甲，会随史莱姆娘等级提升而提高等级和等阶。史莱姆娘还可以花费一回合让种子在体内发芽，并立刻触发种子对应的植被效果。击败粘咕即可解锁史莱姆娘及成就\n" +
+                        "_-_ _两个转职：_水灵史莱姆和暗液史莱姆\n" +
+                        "_-_ _三个护甲技能：_阳春法阵、飞湍瀑流和狂史日记\n"+
+                        "_-_ 角色由_叶·凌卡缇娜·霜麟_设计，_可则_和_DM-216_绘制美术素材，_Secher-Nbiw_制作\n",
+                        "_-_ 于_fix1_新增1阶投掷武器_粘液球_，由史莱姆娘初始携带2个，击中敌人时给予3回合黏糊糊效果，使敌人移速减半，由_DM-216_提议制作\n"+
+                        "_-_ 加强_粘液护甲_，从原来的每6级一次升级加强到每3级一次升级，最多+5\n"+
+                        "_-_ 加强_征讨者的长矛_，初始伤害从1~12上调至1~14\n"+
+                        "_-_ 加强_暗液史莱姆_，攻击附带淤泥的概率上调至50%，暗液钩爪冷却下降至50，天赋_暗液缠身_和_强效淤泥_得到加强\n"+
+                        "_-_ 于_fix2_改动_粘液护甲_，现在无法使用诅咒棱晶升级，但依然和_fix1_版本一样可以通过食用邪能碎片达到相同的效果\n"+
+                        "_-_ 移除史莱姆娘_英雄液铠_的转移功能\n"+
+                        "_-_ 削弱_水灵史莱姆_的天赋_水灵强愈_\n"+
+                        "_-_ 削弱_暗液史莱姆_的_暗液钩爪_，设置12格的最大距离限制\n"+
+                        "_-_ 于_fix3_调整护甲技能_狂史日记_，击杀敌人会有掉落物产生，但充能消耗由75提升至90\n"+
+                        "_-_ 削弱_粘液护甲_，自动升级所需史莱姆娘等级从3/6/9/12/15调整为3/9/15/21/27\n"+
+                        "_-_ 削弱天赋_暗液缠身+3_，恢复的饱食度从90调整为45\n"+
+                        "_-_ 于_fix4_调整天赋_暗液缠身+3_，使用暗液钩爪将敌人拉下悬崖后不再能重置cd\n"
+
+        ));
+        changes.addButton( new ChangeButton(new Image(new WarriorBossSprite()), "新增5层Boss：战士？",
+                "_-_ _战士？_和_粘咕_根据种子有1/2概率生成\n" +
+                        "_-_ _战士？_拥有狂战士和角斗士的部分特性，以及能够使用护甲技能。击败战士？可掉落纹章残蜡、1~3个口粮和专属_升华秘卷_并能获得_饭桶终结者_成就\n" +
+                        "_-_ 新增_3_个战士？天赋：最强之盾，连击套餐，陷阵之志\n"+
+                        "_-_ 于_fix1_调整战士？的技能cd，现在每10回合能够进行一次英勇之跃\n"
+
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.CHALLENGE_COLOR), "挑战更新",
+                "_-_ 于fix4新增_1_个挑战\n"+
+                        "_-_ _测试时间：_与破碎注解版一样的测试时间挑战，便于玩家进行游戏测试，目前仅为_v2.4_\n"
+        ));
+        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.SHURIKEN), "内容同步",
+                "_-_ 于_fix4_进行_破碎v3.2_的内容同步\n" +
+                        "_-_ _投武改动：_主要同步关于投武重做的内容，大部分削弱内容不作保留。投武耐久维持原状，原本是10和15耐久的投武不进行耐久削弱，当然飞刺也继续保持10耐久而不进行增强；投武升级的耐久提升仅从x3降低为x2；2阶及以上的投武伤害下限成长依旧为2，1阶投石和飞刺的成长从1~1改回1~2，均不进行削弱；不改动手里剑，保持为移动后投掷不消耗回合并且无cd限制；不削弱飞斧的流血；不削弱回旋镖的耐久，依然为10；不削弱苦无和方石的基础伤害上限；不削弱流星索和飞斧的伤害上限成长；保留投武空射固定消耗1回合的特性，相当于正常的丢出物品；保留投武被炸减少耐久的特性(这包括易爆诅咒的触发)\n" +
+                        "_-_ _杂项内容：_女猎手原来的生存直觉保留，同时加入投武鉴定版的生存直觉在蜕变池子中，名字变更为狩猎直觉；不保留针对矢石保养和联动升级的削弱；保留友善诅咒触发后使对应武器伤害降低至0的特性；针对狂战士的削弱不保留；其余有关牧师、战斗法师等增强保留；加入快捷备注功能；所有蜕变新增物品、单位图鉴都同步了破碎3.2图鉴中的未发现时的提示文本\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.CATALOG), "内容更新",
+                "_-_ 加入_幸运银币_作为绅士的初始投掷武器，用以替换投石\n"+
+                        "_-_ 于_fix1_加入了幽妹的特殊对话内容，当玩家变身美少女“战士”后在每次下楼时概率触发(不与幽妹原对话内容同时触发)\n"+
+                        "_-_ 于_fix3_添加新的_探索指南2篇_、_史莱姆娘英雄故事1则_，同时新增_1_个成就\n"+
+                        "_-_ _死境斗士_：在开启包括“恶劣环境”和“极端环境”八个挑战的情况下通关\n"+
+                        "_-_ 于_fix4_加入绅士的转职详情，仅用于查看潜力无限天赋，整体和原先一样无变化，同时为万事通成就加了绅士，并在“关于蜕变地牢”界面_内置创意投稿链接_\n"
+        ));
+        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
+                "_-_ 添加￥红色￥、￡橙色￡以及€绿色€字体，由咕(Q1323933183)指导完成\n" +
+                        "_-_ 于_fix1_完善主界面的“关于蜕变地牢”界面，同时调整部分文本\n" +
+                        "_-_ 于_fix2_微调史莱姆娘的立绘位置\n"+
+                        "_-_ 于_fix3_加入红杯图标，在开启挑战极端环境后替换游戏内原先的金杯，同时对部分文本进行修订\n"+
+                        "_-_ 于_fix4_加入红包作战图标，在游戏内会在挑战图标旁边显示\n"+
+                        "_-_ 于_fix5_加入测试时间图标，在游戏内会替换原先的金杯或红杯\n"
+        ));
+
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 于_fix1_为天赋_无敌一餐_、_饭里藏金_、_吃出经验_和_生日礼物_设置100次触发上限\n" +
+                        "_-_ 于_fix2_为法术天赋_荆棘之鞭_设置12格的最大距离限制\n" +
+                        "_-_ 于_fix3_削弱武僧宗师，使其不再能触发绝大多数的玩家天赋特殊效果\n" +
+                        "_-_ 于_fix5_加强法术天赋_荆棘之鞭_和_神力领域风暴_，充能消耗均向下调整1点，同时调整天狗天赋_奇袭投掷_，现在需要瞄准目标投掷才能生效不耗时特性但灵能弓也能够享受此加成\n" +
+                        "_-_ 于_fix6_令所有角色开局鉴定蜕变秘卷，同时加强天赋_即兴投掷_，冷却从50下调到20\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年8月8日~8月18日\n"+
+                        "_-_  这一版本的更新还包括了6次fix更新，此处将所有fix更新内容合并\n"+
+                        "_-_  于_fix2_为所有法术天赋添加了是否消耗回合的描述，可通过圣典查看法术详情得知，同时还为部分法术增加了快捷瞄准功能(例如聚焦光线)。\n"+
+                        "_-_  于_fix3_对物理增伤类天赋进行翻新，当前天赋增伤=伤害x累计天赋增伤倍率+天赋固定增伤值。(累计天赋增伤倍率为所有物理增伤天赋倍率乘积，天赋固定增伤值为固定增伤天赋之和)。\n"+
+                        "_-_  于_fix6_使得无序魔典能够触发除符文复制外的其他使用卷轴的天赋(实验性改动)，同时允许空手触发需要近战触发的天赋。\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 修复天赋_极限施法_和_目光短浅_生效异常的问题，同时修复精英强敌3级、知识之泉导致游戏崩溃的问题\n"+
+                        "_-_ 于_fix1_修复天赋_极限施法_伤害异常以及_暗气释放_和_陷阵之志_生效异常的问题，同时修复_蓄血圣杯_等治疗溢出问题以及护甲技能_狂史日记_导致的贴图异常问题\n"+
+                        "_-_ 于_fix2_试修复豺狼流寇的敌对问题\n"+
+                        "_-_ 修复史莱姆娘食用_邪能碎片_不能完全诅咒粘液护甲的问题\n\n"+
+                        "_-_ 修复暗液钩爪释放时天赋异常触发问题，如果遇到暗液钩爪功能消失，可通过进食恢复功能\n"+
+                        "_-_ 修复天赋_暗气释放_异常问题\n"+
+                        "_-_ 修复_水灵史莱姆_生成粘液消耗异常的问题\n"+
+                        "_-_ 修复护甲技能_三位一体_的界面排版问题\n"+
+                        "_-_ 尝试修复战士？贴图位置异常问题，不确定是否会再次出现\n"+
+                        "_-_ 尝试修复_矮人国王二阶段_卡死的情况，经测试后暂无问题\n"+
+                        "_-_ 尝试修复一部分返程报错的情况\n",
+                        "_-_ 于_fix3_修复_战士？_和挑战_精英强敌3级_的一些问题，同时将遗漏的天赋_夺命余势_和_启蒙圣餐_加回2层天赋池\n"+
+                        "_-_ 于_fix4_修复了_千面手_成就和_万事通_成就中的_史莱姆_、_水灵史莱姆_和_暗液史莱姆_不会亮的问题，同时修复了幽妹可以装备并复制出粘液护甲、战士？被击杀后不会重复获得_饭桶终结者_成就(不在局内显示)、负面天赋_营养不良_的生效异常和天赋_空蝉幻舞_的触发异常问题\n"+ "_-_ 于_fix5_修复被护甲技能_鼠化术_鼠化的敌人在恢复正常后能够发动绯红之王进行时删连续殴打的问题，同时修复武技等必中效果被闪避、轻弓和重弓平A耗时异常(修复后轻弓和重弓空射都是1回合，击中敌人时则为正常)、_狙击手_追击耗时异常、_索敌附魔_失效、部分文本的错误以及表述不当等问题\n"+
+                                "_-_ 于_fix6_修复部分pc端界面错误的问题\n"
+
+        ));
+
+    }
+    public static void add_v0_2_6Changes( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.6", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                "_-_ 根据投票，自本版本开始，天赋池up倍率从3倍上调至_6倍_\n"+
+                        "_-_ 本版本限定负面天赋组为：_限定3_\n"+
+                        "_-_ 新增共计_5_个正面天赋\n"+
+                        "_-_ _1层：_敏捷反击，吓我一跳\n"+
+                        "_-_ _2层：_快速搜索，忍者应酬\n" +
+                        "_-_ _3层：_千发投掷\n"
+        ));
+        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.NINJA, 6), "忍者",
+                "_-_ 忍者初始携带一件_独特的手里剑箱_，可从箱中快速取出并投射小小手里剑以打击甚至是干扰敌人。忍者能从更远的距离_探测秘密与陷阱_，并且行动_更难被敌人察觉_。击败天狗以解锁忍者\n" +
+                        "_-_ _两个转职：_铁炮忍者和忍术大师\n" +
+                        "_-_ _三个护甲技能：_影武者、平蜘蛛釜和一之太刀\n"+
+                        "_-_ 角色由_东榆桑榆_和_幻影食人杂鱼_设计，_DM-216_绘制美术素材，_东榆桑榆_制作\n"+
+                        "_-_ 追加一则关于忍者的英雄故事并新增相关成就\n"
+
+        ));
+
+
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 获得道具的最大次数从16次上调至26次，绅士仍保留额外的13次上限\n" +
+                        "_-_ 长启书室共用获得道具的最大次数\n"
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年8月23日\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 修复天赋_自然亲和_和_盈能生命_生效异常的问题\n"
+
+        ));
+
+    }
+
 }

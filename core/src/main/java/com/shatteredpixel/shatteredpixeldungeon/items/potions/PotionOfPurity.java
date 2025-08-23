@@ -43,7 +43,7 @@ public class PotionOfPurity extends Potion {
 	
 	private static final int DISTANCE	= 3;
 	
-	private static ArrayList<Class> affectedBlobs;
+	public static ArrayList<Class> affectedBlobs;
 
 	{
 		icon = ItemSpriteSheet.Icons.POTION_PURITY;

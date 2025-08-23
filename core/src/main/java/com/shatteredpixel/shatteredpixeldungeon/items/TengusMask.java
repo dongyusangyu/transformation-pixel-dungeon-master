@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -134,6 +135,11 @@ public class TengusMask extends Item {
 			Tatteki t =new Tatteki();
 			t.identify();
 			Dungeon.level.drop(t,curUser.pos).sprite.drop();
+		}
+		if (way == HeroSubClass.NINJA_MASTER){
+			Buff.affect(curUser, Ninja_Energy.class);
+			//Ninja_Energy ninjaenergy=curUser.buff(Ninja_Energy.class);
+			//ninjaenergy.energy=5;
 		}
 		hero.updateHT(true);
 

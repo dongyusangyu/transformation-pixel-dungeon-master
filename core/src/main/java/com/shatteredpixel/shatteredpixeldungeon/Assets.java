@@ -256,6 +256,7 @@ public class Assets {
 		public static final String FREEMAN  = "splashes/freeman.jpg";
 		public static final String CLERIC   = "splashes/cleric.jpg";
 		public static final String SLIMEGRIL   = "splashes/slime.jpg";
+		public static final String NINJA   = "splashes/ninja.png";
 
 		public static final String SEWERS   = "splashes/sewers.jpg";
 		public static final String PRISON   = "splashes/prison.jpg";
@@ -364,5 +365,6 @@ public class Assets {
 		public static final String WARRIORBOSS = "sprites/warriorboss.png";
 
 		public static final String SLIMEMUCUS    = "sprites/slimemucus.png";
+		public static final String DECOY    = "sprites/decoy.png";
 	}
 }

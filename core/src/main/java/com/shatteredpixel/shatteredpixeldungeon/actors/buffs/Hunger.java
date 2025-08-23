@@ -108,7 +108,7 @@ public class Hunger extends Buff implements Hero.Doom {
 				}
 				hungerDelay /= SaltCube.hungerGainMultiplier();
 				if(hero.pointsInTalent(Talent.NATURAL_AFFINITY)>0){
-					hungerDelay/=(5-hero.pointsInTalent(Talent.NATURAL_AFFINITY))/6;
+					hungerDelay*=1+hero.pointsInTalent(Talent.NATURAL_AFFINITY)*0.25f;
 				}
 				float newLevel = level;
 				if (hero.pointsInTalent(Talent.FASTING)==2 && hero.HP>=hero.HT*0.8){

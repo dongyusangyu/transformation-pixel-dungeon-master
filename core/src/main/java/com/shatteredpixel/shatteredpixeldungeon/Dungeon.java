@@ -1034,7 +1034,7 @@ public class Dungeon {
 	public static void observe(){
 		int dist = Math.max(Dungeon.hero.viewDistance, 8);
 		dist *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
-		dist *= 1f-0.2f*Dungeon.hero.pointsNegative(Talent.SHORTSIGHTED);
+		dist *= 1f - 0.2f*Dungeon.hero.pointsNegative(Talent.SHORTSIGHTED);
 		if (Dungeon.hero.buff(MagicalSight.class) != null){
 			dist = Math.max( dist, MagicalSight.DISTANCE );
 		}
@@ -1240,6 +1240,3 @@ public class Dungeon {
 		boolean canApproachFromPos = ch.buff(Terror.class) == null && ch.buff(Dread.class) == null;
 		return PathFinder.getStepBack( ch.pos, from, canApproachFromPos ? 8 : 4, passable, canApproachFromPos );
 		
-	}
-
-}

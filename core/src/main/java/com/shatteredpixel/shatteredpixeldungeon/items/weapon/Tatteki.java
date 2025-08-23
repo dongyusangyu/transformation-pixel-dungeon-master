@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.NaturesPower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -68,6 +69,7 @@ public class Tatteki extends Weapon {
 
         unique = true;
         bones = false;
+
     }
 
     public Bomb bomb = null;
@@ -82,6 +84,20 @@ public class Tatteki extends Weapon {
         }
         return actions;
     }
+    /*
+    public String targetingPrompt(){
+        if(hero!=null && hero.buff(LoadCooldown.class)==null){
+            return Messages.get(MissileWeapon.class, "prompt");
+        }else{
+            return null;
+        }
+
+    }
+    public boolean useTargeting(){
+        return targetingPrompt() != null;
+    }
+
+     */
     public static class LoadCooldown extends FlavourBuff {
         public int icon() { return BuffIndicator.TIME; }
         public void tintIcon(Image icon) { icon.hardlight(1f, 0f, 0f); }
@@ -116,12 +132,15 @@ public class Tatteki extends Weapon {
             curUser = hero;
             curItem = this;
             if(curUser.buff(LoadCooldown.class)==null && curItem.isEquipped(curUser)){
+                usesTargeting = true;
                 GameScene.selectCell( shooter );
             }else if(curUser.buff(LoadCooldown.class)!=null && curItem.isEquipped(curUser)){
                 GLog.w( Messages.get(this, "unload"));
+                usesTargeting = false;
                 return;
             }else{
                 GLog.w(Messages.get(this, "need_equip"));
+                usesTargeting = false;
                 return;
             }
         }else if(action.equals(AC_EQUIP)){
@@ -276,10 +295,6 @@ public class Tatteki extends Weapon {
         return damage;
     }
 
-    @Override
-    protected float baseDelay(Char owner) {
-        return super.baseDelay(owner);
-    }
 
     @Override
     public int buffedLvl() {
@@ -313,6 +328,9 @@ public class Tatteki extends Weapon {
 
             setID = 0;
         }
+        public boolean isIdentified() {
+            return true;
+        }
 
         @Override
         public int defaultQuantity() {
@@ -331,6 +349,21 @@ public class Tatteki extends Weapon {
                 return super.emitter();
             }
         }
+        @Override
+        protected float baseDelay(Char owner) {
+            /*
+            if(Tatteki.this.augment==Augment.DAMAGE){
+                return 1.5f;
+            }else if(Tatteki.this.augment==Augment.SPEED){
+                return 0.8f;
+            }else{
+                return 1f;
+            }
+
+             */
+            return Tatteki.this.baseDelay(owner);
+        }
+
 
         @Override
         public int damageRoll(Char owner) {
@@ -359,7 +392,7 @@ public class Tatteki extends Weapon {
                 f.detach();
                 return Float.POSITIVE_INFINITY;
             } else {
-                return super.accuracyFactor(owner, target)*0.3f;
+                return super.accuracyFactor(owner, target)*0.2f;
             }
         }
 
@@ -417,7 +450,7 @@ public class Tatteki extends Weapon {
     private CellSelector.Listener shooter = new CellSelector.Listener() {
         @Override
         public void onSelect( Integer target ) {
-            if (target != null) {
+            if (target != null && hero.buff(LoadCooldown.class)==null) {
                 knockTamaru().cast(curUser, target);
             }
         }
