@@ -174,6 +174,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Flail;
@@ -935,7 +936,7 @@ public class Hero extends Char {
 		if (RingOfForce.fightingUnarmed(this))  return true;
 		if (STR() < ((Weapon)w).STRReq())       return false;
 		if (w instanceof Flail)                 return false;
-
+		if (w instanceof Tatteki || w instanceof Tatteki.Tamaru)                 return false;
 		return super.canSurpriseAttack();
 	}
 
@@ -2852,10 +2853,20 @@ public class Hero extends Char {
 					GLog.n(Messages.get(this, "search_distracted"));
 					Buff.affect(this, Hunger.class).affectHunger(TIME_TO_SEARCH - (2 * HUNGER_FOR_SEARCH));
 				} else {
-					Buff.affect(this, Hunger.class).affectHunger(TIME_TO_SEARCH - HUNGER_FOR_SEARCH);
+					if(hero.hasTalent(Talent.QUICK_SEARCH)){
+						Buff.affect(this, Hunger.class).affectHunger(-1);
+					}else{
+						Buff.affect(this, Hunger.class).affectHunger(TIME_TO_SEARCH - HUNGER_FOR_SEARCH);
+					}
+
 				}
 			}
-			spendAndNext(TIME_TO_SEARCH);
+			if(hero.hasTalent(Talent.QUICK_SEARCH)){
+				spendAndNext(1f);
+			}else{
+				spendAndNext(TIME_TO_SEARCH);
+			}
+
 			
 		}
 		

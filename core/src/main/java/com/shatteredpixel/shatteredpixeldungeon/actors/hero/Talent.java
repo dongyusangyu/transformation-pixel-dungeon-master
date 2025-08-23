@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Freezing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SmokeScreen;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.StenchGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
@@ -63,6 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CounterBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EnhancedRings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FireImbue;
@@ -80,6 +82,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invulnerability;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Light;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PhysicalEmpower;
@@ -99,6 +102,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.DivineSense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
@@ -201,6 +205,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TenguDartTrap;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Earthroot;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Sungrass;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -341,13 +346,14 @@ public enum Talent {
 	//MadSlimeT4
 	NO_PICK(439, 4), FOOD_BONUS(440, 4), DELICIOUS_DIGESTION(441, 4),
 	//Ninja
-	NINJA_MEAL(448),HUNTING_INTUITION(449),
-	YUNYING_MEAL(452),XIA(453),FEINT(456),
-	LIGHT_BOX(458,3),
+	NINJA_MEAL(448),HUNTING_INTUITION(449),AGILE_ATTACK(450),YOU_SCARED_ME(451),
+	YUNYING_MEAL(452),XIA(453),QUICK_SEARCH(454),NINJA_SOCIAL(455),FEINT(456),
+	QIANFA_THROWING(457,3),LIGHT_BOX(458,3),
 	//Tatteki_ninja
 	SOKO(459,3),KONO_FUKUSA(460,3),KUNIKUCHI(461,3),
 	SOUL_HUNTING(462,3),USE_ENVIRONMENT(463,3),MIND_WATER(464,3),
 
+	DEVERSION(465,4),SHINKAGE(466,4),ALLHUNTING(467,4),
 	POWER_GUNPOWDER(468,4),TEA_STAINS(469,4),FIREWORK(470,4),
 
 	//OneSword
@@ -502,6 +508,61 @@ public enum Talent {
 		public void set(int shots){
 			left = Math.max(left, shots);
 		}
+		private static final String LEFT 	= "left";
+
+		@Override
+		public void storeInBundle( Bundle bundle ) {
+			super.storeInBundle(bundle);
+			bundle.put( LEFT, left );
+		}
+
+		@Override
+		public void restoreFromBundle( Bundle bundle ) {
+			super.restoreFromBundle( bundle );
+			left = bundle.getInt( LEFT );
+		}
+	}
+	public static class NinjaSocial extends Buff {
+
+		{
+			type = buffType.POSITIVE;
+		}
+		@Override
+		public int icon() {
+			return BuffIndicator.MARK;
+		}
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.5f, 0.5f, 1);
+		}
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, (5-left) / 5f);
+		}
+		@Override
+		public String iconTextDisplay() {
+			return Integer.toString(left);
+		}
+		@Override
+		public String desc() {
+			return Messages.get(this, "desc", left);
+		}
+		public int left;
+		public void set(int shots){
+			left = Math.max(left, shots);
+		}
+		private static final String LEFT 	= "left";
+		@Override
+		public void storeInBundle( Bundle bundle ) {
+			super.storeInBundle(bundle);
+			bundle.put( LEFT, left );
+		}
+
+		@Override
+		public void restoreFromBundle( Bundle bundle ) {
+			super.restoreFromBundle( bundle );
+			left = bundle.getInt( LEFT );
+		}
 	}
 	public static class ComboPackage extends Buff {
 
@@ -525,6 +586,16 @@ public enum Talent {
 			left = Math.max(left, shots);
 		}
 	}
+	public static class AgileAttack extends Buff {
+
+		{
+			type = buffType.POSITIVE;
+		}
+		@Override
+		public int icon() {
+			return BuffIndicator.NONE;
+		}
+	}
 	//史莱姆
 	public static class SlimeMucusCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -536,6 +607,9 @@ public enum Talent {
 				detach();
 			}
 		}
+	};
+	public static class LightBox extends FlavourBuff{
+		public int icon() { return BuffIndicator.NONE; }
 	};
 	public static class FeintCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -556,7 +630,10 @@ public enum Talent {
 	public static class XiaDef extends FlavourBuff{
 		public int icon() { return BuffIndicator.XIA; }
 		public void tintIcon(Image icon) { icon.hardlight(1f, 0.75f, 0.79f); }
-		public float iconFadePercent() { return Math.max(0, visualcooldown() / 75); }
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, (5 - visualcooldown()) / 5);
+		}
 	};
 	public static class DarkGasCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -923,7 +1000,7 @@ public enum Talent {
 		return Messages.get(this, name() + ".desc");
 	}
 	public static void onTalentUpgradedItem( Hero hero, Talent talent ){
-		int max_item=15;
+		int max_item=25;
 		if(hero.heroClass==HeroClass.FREEMAN){
 			max_item+=13;
 		}
@@ -1354,7 +1431,7 @@ public enum Talent {
 		if (item instanceof Ring){
 			factor *= 1f + hero.pointsInTalent(THIEFS_INTUITION);
 		}
-		if (item instanceof MissileWeapon){
+		if (item instanceof MissileWeapon && !((item instanceof Shuriken_Box.SmallShuriken)|| (item instanceof Tatteki.Tamaru) || (item instanceof SpiritBow.SpiritArrow))){
 			factor *= 1f + 2.0f*hero.pointsInTalent(HUNTING_INTUITION);
 		}
 		return factor;
@@ -1457,6 +1534,10 @@ public enum Talent {
 	}
 
 	public static void onScrollUsed( Hero hero, int pos, float factor, Class<?extends Item> cls ){
+		int max_item=15;
+		if(hero.heroClass==HeroClass.FREEMAN){
+			max_item+=13;
+		}
 		if (hero.hasTalent(INSCRIBED_POWER)){
 			// 2/3 empowered wand zaps
 			Buff.affect(hero, ScrollEmpower.class).reset((int) (factor * (1 + hero.pointsInTalent(INSCRIBED_POWER))));
@@ -1500,10 +1581,11 @@ public enum Talent {
 					break;
 			}
 		}
-		if(hero.hasTalent(GOLDOFBOOK)){
+		if(hero.hasTalent(GOLDOFBOOK) ){
 			Dungeon.level.drop(new Gold().quantity(50*hero.pointsInTalent(GOLDOFBOOK)), hero.pos).sprite.drop();
 		}
-		if(hero.hasTalent(CHANGQI_BOOKSTORE) && hero.pointsInTalent(CHANGQI_BOOKSTORE)*3+3>Random.Int(20)){
+		if(hero.hasTalent(CHANGQI_BOOKSTORE) && hero.pointsInTalent(CHANGQI_BOOKSTORE)*3+3>Random.Int(20)&& Dungeon.talent_item<max_item){
+			Dungeon.talent_item++;
 			Dungeon.level.drop(Generator.randomUsingDefaults( Generator.Category.STONE ), hero.pos).sprite.drop();
 		}
 		if(hero.hasTalent(XIA)){
@@ -1565,6 +1647,9 @@ public enum Talent {
 			if(hero.pointsInTalent(YOG_FIST)==3){
 				Barkskin.conditionallyAppend(hero, hero.lvl/2, 1 );
 			}
+		}
+		if(hero.hasTalent(Talent.LIGHT_BOX) && hero.belongings.getItem(Shuriken_Box.class)==null){
+			Buff.affect(hero,LightBox.class,3);
 		}
 		/*
 		if (Dungeon.hero.heroClass != HeroClass.CLERIC
@@ -1718,6 +1803,12 @@ public enum Talent {
 			}
 			dmg*=onesword;
 		}
+		if(enemy.buff(Decoy.ShadowMark.class)!=null && hero.hasTalent(Talent.ALLHUNTING)){
+			dmg*=1+0.15f*hero.pointsInTalent(Talent.ALLHUNTING);
+		}
+		if(hero.hasTalent(QIANFA_THROWING) && hero.pointsInTalent(QIANFA_THROWING)>Random.Int(10) && hero.belongings.attackingWeapon() instanceof MissileWeapon){
+			dmg *=3;
+		}
 		return dmg;
 	}
 	public static int onAttackProcBonus( Hero hero, Char enemy){
@@ -1780,10 +1871,15 @@ public enum Talent {
 		if(hero.pointsInTalent(Talent.WATER_WAVE)>0 && Dungeon.level.water[enemy.pos]){
 			dmg+=hero.pointsInTalent(Talent.WATER_WAVE);
 		}
+		if(hero.hasTalent(AGILE_ATTACK) && hero.buff(AgileAttack.class)!=null){
+			hero.buff(AgileAttack.class).detach();
+			dmg+=1+2*hero.pointsInTalent(AGILE_ATTACK);
+		}
 		return dmg;
 	}
 
 	public static int onAttackProc( Hero hero, Char enemy, int dmg ){
+		dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
 		if (hero.hasTalent(DEADLY_FOLLOWUP) && enemy.alignment == Char.Alignment.ENEMY) {
 			if (hero.belongings.attackingWeapon() instanceof MissileWeapon) {
 				if (!(hero.belongings.attackingWeapon() instanceof SpiritBow.SpiritArrow)) {
@@ -1903,7 +1999,35 @@ public enum Talent {
 		if(hero.subClass==HeroSubClass.TATTEKI_NINJA && (hero.belongings.attackingWeapon() instanceof MissileWeapon)){
 			Buff.affect(enemy, Tatteki.Fix.class);
 		}
-		dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
+		if(hero.buff(Ninja_Energy.Throw_Skill.class)!=null && (hero.belongings.attackingWeapon() instanceof MissileWeapon) && enemy.isAlive()){
+			Ninja_Energy.Throw_Skill b = hero.buff(Ninja_Energy.Throw_Skill.class);
+			b.detach();
+			if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){
+				Ninja_Energy.Gas_Storage gas_storage=hero.buff(Ninja_Energy.Gas_Storage.class);
+				for(Blob blob:gas_storage.blobs.values()){
+					GameScene.add(Blob.seed(enemy.pos,10,blob.getClass()));
+				}
+				gas_storage.detach();
+			}
+			if(Dungeon.level.map[hero.pos] == Terrain.GRASS || Dungeon.level.map[hero.pos] == Terrain.EMBERS
+					|| Dungeon.level.map[hero.pos] == Terrain.HIGH_GRASS || Dungeon.level.map[hero.pos] == Terrain.FURROWED_GRASS){
+				Plant plant = (Plant) Reflection.newInstance(Random.element(SpiritBow.harmfulPlants));
+				plant.pos = enemy.pos;
+				plant.activate( enemy.isAlive() ? enemy : null );
+			}else if(Dungeon.level.water[hero.pos]){
+				Ninja_Energy.NinjaAbility.Throw_Water(hero.pos,enemy.pos);
+			}else{
+				Buff.affect(enemy, Cripple.class,5);
+				Buff.affect(enemy,Bleeding.class).set(dmg*0.5f);
+			}
+		}
+		if(hero.buff(NinjaSocial.class)!=null){
+			hero.buff(NinjaSocial.class).left--;
+			if(hero.buff(NinjaSocial.class).left<0){
+				hero.buff(NinjaSocial.class).detach();
+			}
+		}
+
 		return dmg;
 	}
 
@@ -2142,6 +2266,14 @@ public enum Talent {
 			}
 
 		}
+		if(hero.armorAbility!=null && hero.armorAbility instanceof Decoy && dmg>hero.HP){
+			ArrayList<Decoy.Decoyman> decoymen = Decoy.getDecoymanAlly();
+			if(decoymen!=null){
+				decoymen.get(0).damage(114514,src);
+				return 0;
+			}
+		}
+
 		return Math.round(dmg);
 	}
 
@@ -2350,6 +2482,9 @@ public enum Talent {
 					break;
 			}
 		}
+		if(cause instanceof Hero && hero.hasTalent(NINJA_SOCIAL)){
+			Buff.affect(hero, NinjaSocial.class).set(1+2*hero.pointsInTalent(NINJA_SOCIAL));
+		}
 	}
 
 	public static class AquaticRecover extends Buff {
@@ -2384,7 +2519,11 @@ public enum Talent {
 		{ type = Buff.buffType.POSITIVE; }
 		//public static final float DURATION	= 5f;
 		//public float left=DURATION;
-		public int icon() { return BuffIndicator.SACRIFICE; }
+		public int icon() { return BuffIndicator.UPGRADE; }
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.6f, 0f, 0.8f);
+		}
 		@Override
 		public float iconFadePercent() {
 			return Math.max(0, (5 - visualcooldown()) / 5);
@@ -2469,7 +2608,7 @@ public enum Talent {
 
 	public static ArrayList<Talent> getNegativeTalent(){
 		//版本限定
-		int xianding = 2;
+		int xianding = 3;
 
 		ArrayList<Talent> Negatives=new ArrayList<>();
 		for(Talent t:negativeTalent.get(0)){
@@ -2534,7 +2673,7 @@ public enum Talent {
 		}
 		Collections.addAll(typeTalent.get(0).get(ATTACK),PROVOKED_ANGER,LINGERING_MAGIC,SUCKER_PUNCH,FOLLOWUP_STRIKE,STRENGTHENING_MEAL,
 				PATIENT_STRIKE,STRONG_ATTACK,FEAR_INCARNATION,DISTURB_ATTACK,WATER_ATTACK,COVER_SCAR,STRENGTH_GREATEST,POSION_DAGGER,
-				ATTACK_DOOR,WATER_WAVE);
+				ATTACK_DOOR,WATER_WAVE,AGILE_ATTACK);
 		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP);
 		Collections.addAll(typeTalent.get(0).get(EFFECT),HEARTY_MEAL,BACKUP_BARRIER,PROTECTIVE_SHADOWS,NATURES_AID,AGGRESSIVE_BARRIER,
 				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,INVINCIBLE,
@@ -2545,13 +2684,13 @@ public enum Talent {
 				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT,HEALATTACK);
 		Collections.addAll(typeTalent.get(0).get(ASSIST),VETERANS_INTUITION,IRON_WILL,SCHOLARS_INTUITION,THIEFS_INTUITION,
 				SURVIVALISTS_INTUITION,ADVENTURERS_INTUITION,BOMB_MANIAC,THICKENED_ARMOR,STRENGTH_TRAIN,SAVAGE_PHYSIQUE,
-				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER);
+				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME);
 		Collections.addAll(typeTalent.get(0).get(OTHER),FISHING_TIME,WATER_GHOST,HONEY_FISH,CHOCOLATE_COINS);
 
 		//tier=2
 		Collections.addAll(typeTalent.get(1).get(ATTACK),LETHAL_MOMENTUM,IMPROVISED_PROJECTILES,STRONG_THROW,JUSTICE_PUNISH,GHOLL_WITCHCRAFT,
 				WEIRD_THROW,AMAZING_EYESIGHT,GIANT_KILLER,ARROW_PENETRATION,FRENZIED_ATTACK,FUDI_CHOUXIN,POISON_INBODY,HEDONISM,
-				SHOOT_SATELLITE,LETHAL_HASTE);
+				SHOOT_SATELLITE,LETHAL_HASTE,NINJA_SOCIAL);
 		Collections.addAll(typeTalent.get(1).get(MAGIC),ENERGIZING_MEAL,INSCRIBED_POWER,ARCANE_VISION,SHIELD_BATTERY,BURNING_CURSE,
 				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,FIRE_BALL,EAT_MIND);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
@@ -2565,13 +2704,13 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(1).get(ASSIST),WIDE_SEARCH,SILENT_STEPS,REJUVENATING_STEPS,HEIGHTENED_SENSES,DURABLE_PROJECTILES,
 				WEAPON_RECHARGING,SWIFT_EQUIP,LIGHT_APPLICATION,HEAVY_APPLICATION,DROP_RESISTANT,GOD_LEFTHAND,GOD_RIGHTHAND,BURNING_BLOOD,
 				HEAVY_BURDEN,EXPLORATION_INTUITION,PROTECT_CURSE,POTENTIAL_ENERGY,NIRVANA,RUNIC_TRANSFERENCE,ENERGY_ABSORPTION,
-				NATURAL_AFFINITY,QUALITY_ABSORPTION);
+				NATURAL_AFFINITY,QUALITY_ABSORPTION,QUICK_SEARCH);
 		Collections.addAll(typeTalent.get(1).get(OTHER),WAKE_SNAKE);
 
 		//tier=3
 		Collections.addAll(typeTalent.get(2).get(ATTACK),POINT_BLANK,PRECISE_ASSAULT,DEADLY_FOLLOWUP,COUNTER_ATTACK,OVERWHELMING,PHANTOM_SHOOTER,
 				MARTIAL_TRAIN,RAGE_ATTACK,ACCUMULATE_STEADILY,WELLFED_MEAL,SKY_EARTH,DEEP_FREEZE,LOVE_BACKSTAB,ABACUS,PRECISE_SHOT,CICADA_DANCE,
-				ASHES_BOW,HAND_DESTRUCTION,THROWING_RECYCLING);
+				ASHES_BOW,HAND_DESTRUCTION,THROWING_RECYCLING,QIANFA_THROWING);
 		Collections.addAll(typeTalent.get(2).get(MAGIC),DESPERATE_POWER,MAGIC_RECYCLING,ANGEL_STANCE,MORONITY,EXTREME_CASTING,SWIFT_CHURCH,
 				EMPOWERING_LIFE,DISABLIITY_POSION,DEVIL_FLAME);
 		Collections.addAll(typeTalent.get(2).get(EFFECT),ENHANCED_RINGS,SEER_SHOT,INVINCIBLE_MEAL,DETOX_DAMAGE,EARTH_MEAL,REVERSE_POLARITY,

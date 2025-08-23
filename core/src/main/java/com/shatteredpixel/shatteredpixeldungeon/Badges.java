@@ -219,6 +219,8 @@ public class Badges {
 		BOSS_SLAIN_3_FREEMAN,
 		BOSS_SLAIN_3_WATERSLIME,
 		BOSS_SLAIN_3_DARKSLIME,
+		BOSS_SLAIN_3_TATTEKI,
+		BOSS_SLAIN_3_NINJA_MASTER,
 
 		BOSS_SLAIN_3_ALL_SUBCLASSES ( 103, BadgeType.GLOBAL ),
 		BOSS_CHALLENGE_3            ( 104 ),
@@ -880,6 +882,8 @@ public class Badges {
 		thirdBossSubclassBadges.put(HeroSubClass.PALADIN, Badge.BOSS_SLAIN_3_PALADIN);
 		thirdBossSubclassBadges.put(HeroSubClass.WATERSLIME, Badge.BOSS_SLAIN_3_WATERSLIME);
 		thirdBossSubclassBadges.put(HeroSubClass.DARKSLIME, Badge.BOSS_SLAIN_3_DARKSLIME);
+		thirdBossSubclassBadges.put(HeroSubClass.TATTEKI_NINJA, Badge.BOSS_SLAIN_3_TATTEKI);
+		thirdBossSubclassBadges.put(HeroSubClass.NINJA_MASTER, Badge.BOSS_SLAIN_3_NINJA_MASTER);
 	}
 	public static void validateHeroBossSlain() {
 		if (!isUnlocked(Badge.HEROBOSS_SLAIN_1) && Dungeon.depth==5){

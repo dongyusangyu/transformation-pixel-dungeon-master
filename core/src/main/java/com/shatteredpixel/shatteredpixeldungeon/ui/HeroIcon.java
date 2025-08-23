@@ -108,6 +108,7 @@ public class HeroIcon extends Image {
 	public static final int STASIS          = 66;
 	public static final int TATTEKI          = 67;
 	public static final int NINJAMASTER          = 68;
+	public static final int DECOY          = 69;
 
 	public static final int SPIDERJAR          = 70;
 	public static final int ONESWORD          = 71;

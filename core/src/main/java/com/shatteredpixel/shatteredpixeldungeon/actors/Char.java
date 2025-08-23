@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArcaneArmor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barkskin;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Berserk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
@@ -65,6 +66,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
@@ -626,6 +628,12 @@ public abstract class Char extends Actor {
 			if((enemy instanceof Hero)&& hero.hasTalent(Talent.CRAZY_DANCER)){
 				Buff.affect(this,Amok.class,1+hero.pointsInTalent(Talent.CRAZY_DANCER));
 			}
+			if((enemy instanceof Hero)&& hero.hasTalent(Talent.AGILE_ATTACK)){
+				Buff.affect(enemy,Talent.AgileAttack.class);
+			}
+			if((enemy instanceof Hero)&& hero.hasTalent(Talent.YOU_SCARED_ME)){
+				Buff.affect(enemy, Barrier.class).incShield(2*hero.pointsInTalent(Talent.YOU_SCARED_ME));
+			}
 			if (enemy.sprite != null){
 				if (hitMissIcon != -1){
 					//dooking is a playful sound Ferrets can make, like low pitched chirping
@@ -692,6 +700,7 @@ public abstract class Char extends Actor {
 		if (attacker.buff(Bless.class) != null) acuRoll *= 1.25f;
 		if (attacker.buff(  Hex.class) != null) acuRoll *= 0.8f;
 		if (attacker.buff( Daze.class) != null) acuRoll *= 0.5f;
+		if(attacker.buff( Talent.NinjaSocial.class) != null) acuRoll *= 1.5f;
 		for (ChampionEnemy buff : attacker.buffs(ChampionEnemy.class)){
 			acuRoll *= buff.evasionAndAccuracyFactor();
 		}
@@ -817,7 +826,9 @@ public abstract class Char extends Actor {
 		if(buff(SlimeBall.SlimeOoze.class)!=null){
 			speed *= 0.5f;
 		}
-		if
+		if(buff(Ninja_Energy.WaterSmooth.class)!=null && Dungeon.level.water[this.pos]){
+			speed *= 2f;
+		}
 
 		speed *= Swiftness.speedBoost(this, glyphLevel(Swiftness.class));
 		speed *= Flow.speedBoost(this, glyphLevel(Flow.class));

@@ -442,7 +442,7 @@ public abstract class GoldBoss extends Mob {
                             Buff.affect(ch, Vulnerable.class,5);
                             Buff.affect(ch, Blindness.class,5);
                             Buff.affect(ch, Charm.class,5);
-                            Buff.affect(ch, Burning.class).reignite(enemy,5);
+                            Buff.affect(ch, Burning.class).reignite(ch,5);
                             Buff.affect(ch, Degrade.class,5);
                             Buff.affect(ch, Amok.class,5);
                             Buff.affect(ch, Weakness.class,5);

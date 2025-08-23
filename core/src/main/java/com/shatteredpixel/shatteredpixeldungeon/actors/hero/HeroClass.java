@@ -45,6 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.S
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.ElementalBlast;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WarpBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.SpiderJar;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.DeathMark;
@@ -494,7 +495,7 @@ public enum HeroClass {
 			case SLIMEGIRL:
 				return new ArmorAbility[]{new SpringSpell(), new RapidWaterfall(), new MadSlime()};
 			case NINJA:
-				return new ArmorAbility[]{new SpringSpell(), new SpiderJar(), new OneSword()};
+				return new ArmorAbility[]{new Decoy(), new SpiderJar(), new OneSword()};
 
 		}
 	}
@@ -541,6 +542,8 @@ public enum HeroClass {
 				return Assets.Splashes.FREEMAN;
 			case SLIMEGIRL:
 				return Assets.Splashes.SLIMEGRIL;
+			case NINJA:
+				return Assets.Splashes.NINJA;
 
 		}
 	}

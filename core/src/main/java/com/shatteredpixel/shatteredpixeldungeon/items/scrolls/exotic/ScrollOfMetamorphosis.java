@@ -278,7 +278,7 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 			LinkedHashMap<Talent, Integer> options = new LinkedHashMap<>();
 			Set<Talent> curTalentsAtTier = hero.talents.get(tier-1).keySet();
 			List<Talent> availableTalents = new ArrayList<>();
-			int beilv = 3;
+			int beilv = 6;
 			int maxTpye = 7;
 			if(type != 4){
 			//if(false){

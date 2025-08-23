@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Rect;
@@ -213,6 +214,13 @@ public class Blob extends Actor {
 		volume -= cur[cell];
 		cur[cell] = 0;
 	}
+	public boolean get(int cell){
+		if(cur[cell]>0){
+			return true;
+		}else{
+			return false;
+		}
+	}
 
 	public void fullyClear(){
 		volume = 0;
@@ -233,6 +241,9 @@ public class Blob extends Actor {
 	
 	public String tileDesc() {
 		return null;
+	}
+	public String name() {
+		return Messages.get(this,"name");
 	}
 	
 	public static<T extends Blob> T seed( int cell, int amount, Class<T> type ) {

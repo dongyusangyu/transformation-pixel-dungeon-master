@@ -29,7 +29,7 @@ public class Wakizashi  extends MeleeWeapon {
     protected void duelistAbility(Hero hero, Integer target) {
         beforeAbilityUsed(hero, null);
         //1 turn less as using the ability is instant
-        Buff.prolong(hero, Scimitar.SwordDance.class, 3+buffedLvl());
+        Buff.prolong(hero, Scimitar.SwordDance.class, 5+buffedLvl());
         hero.sprite.operate(hero.pos);
         hero.next();
         afterAbilityUsed(hero);
