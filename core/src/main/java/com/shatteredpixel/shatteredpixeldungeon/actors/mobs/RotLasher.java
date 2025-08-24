@@ -21,16 +21,27 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.DwarfToken;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.RotLasherSprite;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndImp;
+import com.watabou.noosa.Game;
+import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 public class RotLasher extends Mob {
@@ -121,5 +132,20 @@ public class RotLasher extends Mob {
 			spend(TICK);
 			return super.noticeEnemy();
 		}
+	}
+	@Override
+	public boolean interact(Char c) {
+
+		sprite.turnTo( pos, hero.pos );
+
+		if (c != hero){
+			return true;
+		}
+		if( c==hero && buff(ScrollOfSirensSong.Enthralled.class)!=null){
+			this.damage(114514,this);
+		}
+		return super.interact(c);
+
+
 	}
 }

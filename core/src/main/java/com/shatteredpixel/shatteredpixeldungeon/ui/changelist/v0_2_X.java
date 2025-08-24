@@ -29,6 +29,7 @@ import java.util.ArrayList;
 
 public class v0_2_X {
     public static void addAllChanges( ArrayList<ChangeInfo> changeInfos ){
+        add_v0_2_6fixChanges(changeInfos);
         add_v0_2_6Changes(changeInfos);
         add_v0_2_5Changes(changeInfos);
         add_v0_2_4Changes(changeInfos);
@@ -424,13 +425,44 @@ public class v0_2_X {
         changeInfos.add(changes);
         changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
                 "_-_ 获得道具的最大次数从16次上调至26次，绅士仍保留额外的13次上限\n" +
-                        "_-_ 长启书室共用获得道具的最大次数\n"
+                        "_-_ _长启书室_共用获得道具的最大次数\n"
         ));
         changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
                 "_-_  更新日期：2025年8月23日\n"
         ));
         changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
                 "_-_ 修复天赋_自然亲和_和_盈能生命_生效异常的问题\n"
+
+        ));
+
+    }
+    public static void add_v0_2_6fixChanges( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.6fix", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( "v0.2.6fix1", false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN), "手里剑箱",
+                "_-_ 手里剑箱丢出的手里剑从2阶降低至1阶，手里剑箱每升2级,所丢出的手里剑提升1级保持不变\n"+
+                        "_-_ 尝试修复因为报错导致的手里剑箱充能异常问题\n"
+        ));
+        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.TATTEKI), "铁炮",
+                "_-_ 铁炮的伤害下限成长从原来的2下调为0，不再有伤害下限成长\n"
+
+        ));
+
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年8月24日\n"+
+                        "_-_  调整手里剑箱和铁炮的准心判定\n"+
+                        "_-_  沉沦触手可通过玩家临近交互清除\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 修复天赋_目光短浅_和觉察之泉的视野问题\n"+
+                        "_-_ 修复天赋_云隐一餐_对号角的减回合不生效的问题\n"+
+                        "_-_ 修复护甲技能平蜘蛛釜不触发其他天赋的问题\n"+
+                        "_-_ 修复腐化触手异常掉落问题\n"
 
         ));
 

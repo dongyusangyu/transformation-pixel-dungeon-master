@@ -184,42 +184,7 @@ public class Trinity extends ArmorAbility {
 								hero.sprite.operate(hero.pos);
 								hero.spendAndNext(1f);
 								armor.charge -= trinityChargeUsePerEffect(bodyForm.getClass());
-								if(hero.pointsInTalent(Talent.SUMMON_FOLLOWER)>=1){
-									ArrayList<Integer> respawnPoints = new ArrayList<>();
-
-									for (int i = 0; i < PathFinder.NEIGHBOURS9.length; i++) {
-										int p = hero.pos + PathFinder.NEIGHBOURS9[i];
-										if (Actor.findChar( p ) == null && Dungeon.level.passable[p]) {
-											respawnPoints.add( p );
-										}
-									}
-
-									int spawned = 0;
-									while (spawned < hero.pointsInTalent(Talent.SUMMON_FOLLOWER) && respawnPoints.size() > 0) {
-										int index = Random.index( respawnPoints );
-										if (Random.Int(2)==0){
-											Monk mob = new Monk();
-											AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
-											mob.state= mob.HUNTING;
-											GameScene.add( mob );
-											ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
-
-										}else {
-											Warlock mob = new Warlock();
-											AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
-											mob.state= mob.HUNTING;
-											GameScene.add( mob );
-											ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
-										}
-
-
-
-
-										respawnPoints.remove( index );
-
-										spawned++;
-									}
-								}
+								Talent.onArmorAbility(hero, chargeUse(hero));
 								armor.updateQuickslot();
 								Invisibility.dispel();
 								hide();
@@ -300,42 +265,7 @@ public class Trinity extends ArmorAbility {
 						Enchanting.show(hero, (Item) spiritForm);
 						hero.sprite.operate(hero.pos);
 						armor.charge -= trinityChargeUsePerEffect(spiritForm.getClass());
-						if(hero.pointsInTalent(Talent.SUMMON_FOLLOWER)>=1){
-							ArrayList<Integer> respawnPoints = new ArrayList<>();
-
-							for (int i = 0; i < PathFinder.NEIGHBOURS9.length; i++) {
-								int p = hero.pos + PathFinder.NEIGHBOURS9[i];
-								if (Actor.findChar( p ) == null && Dungeon.level.passable[p]) {
-									respawnPoints.add( p );
-								}
-							}
-
-							int spawned = 0;
-							while (spawned < hero.pointsInTalent(Talent.SUMMON_FOLLOWER) && respawnPoints.size() > 0) {
-								int index = Random.index( respawnPoints );
-								if (Random.Int(2)==0){
-									Monk mob = new Monk();
-									AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
-									mob.state= mob.HUNTING;
-									GameScene.add( mob );
-									ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
-
-								}else {
-									Warlock mob = new Warlock();
-									AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
-									mob.state= mob.HUNTING;
-									GameScene.add( mob );
-									ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
-								}
-
-
-
-
-								respawnPoints.remove( index );
-
-								spawned++;
-							}
-						}
+						Talent.onArmorAbility(hero, chargeUse(hero));
 						armor.updateQuickslot();
 						hide();
 					}

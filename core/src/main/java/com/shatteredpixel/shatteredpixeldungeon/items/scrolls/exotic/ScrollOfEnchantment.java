@@ -26,6 +26,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Enchanting;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeGirlArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.InventoryScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
@@ -71,7 +73,7 @@ public class ScrollOfEnchantment extends ExoticScroll {
 	public static boolean enchantable( Item item ){
 		return (item instanceof Weapon || item instanceof Armor)
 				&& (item.isUpgradable() || item instanceof SpiritBow
-				|| item instanceof Tatteki);
+				|| item instanceof Tatteki || item instanceof SlimeArmor || item instanceof SlimeGirlArmor);
 	}
 
 	private void confirmCancelation() {

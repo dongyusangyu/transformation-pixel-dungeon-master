@@ -53,6 +53,7 @@ public class Shuriken_Box extends Artifact {
         charge = 10;
         cooldown = 0;
         usesTargeting = true;
+        //chargeCap = 5+level()*2;
 
         defaultAction = AC_SHOOT; //so it can be quickslotted
         bones = false;
@@ -70,6 +71,12 @@ public class Shuriken_Box extends Artifact {
     public int value() {
         return 0;
     }
+    @Override
+    public void resetForTrinity(int visibleLevel) {
+        super.resetForTrinity(visibleLevel);
+        charge = 5+(level()*2); //sets charge to soft cap
+    }
+
 
     public void directCharge( float amount){
         int chargeTarget = 25+(level()*2);
@@ -144,6 +151,7 @@ public class Shuriken_Box extends Artifact {
             } else {
                 curUser = hero;
                 curItem = this;
+                usesTargeting = true;
                 GameScene.selectCell( shooter );
             }
 
@@ -180,7 +188,9 @@ public class Shuriken_Box extends Artifact {
         {
             image = ItemSpriteSheet.SMALLSKURIKEN;
             setID = 0;
+            tier = 1;
         }
+
         public boolean isIdentified() {
             return true;
         }
@@ -281,6 +291,12 @@ public class Shuriken_Box extends Artifact {
         if(charge<0){
             charge=0;
         }
+        if(partialCharge<0){
+            partialCharge=0;
+        }
+        if(charge>100){
+            charge=25;
+        }
     }
 
     @Override
@@ -295,11 +311,11 @@ public class Shuriken_Box extends Artifact {
         if (charge < chargeTarget*2){
             if (!isEquipped(target)) amount *= 0.75f*target.pointsInTalent(Talent.LIGHT_BOX)/3f;
             partialCharge += 0.5f*amount;
-            while (partialCharge >= 1){
-                partialCharge--;
-                charge++;
-                updateQuickslot();
+            if (partialCharge >= 1) {
+                charge += (int)partialCharge;
+                partialCharge -=(int)partialCharge;;
             }
+            updateQuickslot();
         }
     }
 
@@ -312,7 +328,7 @@ public class Shuriken_Box extends Artifact {
             if (cursed)
                 desc += Messages.get(this, "desc_cursed");
             else
-                desc += Messages.get(this, "desc_equipped",level()/2,Messages.decimalFormat("##.#",Math.min(100,(level()+1)*10)));
+                desc += Messages.get(this, "desc_equipped",level()/2+2,level()+4,Messages.decimalFormat("##.#",Math.min(100,(level()+1)*10)));
         }
         return desc;
     }
@@ -329,18 +345,19 @@ public class Shuriken_Box extends Artifact {
 
                 //gains a charge in 40 - 2*missingCharge turns
 
-                float chargeGain = (1 / (40f - (chargeTarget - charge)*2f));
+                float chargeGain = (1 / Math.max((40f - 2*(chargeTarget - charge)),10));
                 if (!isEquipped(hero)){
                     chargeGain *= 0.75f* hero.pointsInTalent(Talent.LIGHT_BOX)/3f;
                 }
                 chargeGain *= (float)(RingOfEnergy.artifactChargeMultiplier(target)*Math.max(1,(hero.speed())*0.5*hero.pointsInTalent(Talent.ENERGY_CONVERSION)));
                 partialCharge += chargeGain;
+                if (partialCharge >= 1) {
+                    charge += (int)partialCharge;
+                    partialCharge -=(int)partialCharge;;
+                }
             }
 
-            while (partialCharge >= 1) {
-                partialCharge --;
-                charge ++;
-            }
+
 
             updateQuickslot();
 

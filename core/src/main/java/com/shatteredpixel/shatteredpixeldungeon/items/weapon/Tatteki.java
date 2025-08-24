@@ -253,7 +253,8 @@ public class Tatteki extends Weapon {
         if(hero!=null){
             dmg+=hero.lvl*2;
         }
-        return Math.max(0, dmg);
+        //return Math.max(0, dmg);
+        return 0;
     }
 
     @Override
@@ -404,7 +405,7 @@ public class Tatteki extends Weapon {
         @Override
         protected void onThrow( int cell ) {
             for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
-                if (mob.alignment != Char.Alignment.ALLY && Dungeon.level.heroFOV[mob.pos]) {
+                if (mob.alignment == Char.Alignment.ENEMY && Dungeon.level.heroFOV[mob.pos]) {
                     Buff.affect( mob, Terror.class, 3 ).object = curUser.id();
                 }
             }
