@@ -220,7 +220,7 @@ public class Decoy extends ArmorAbility {
         }
         @Override
         public void die(Object src) {
-            switch (Random.Int(3)){
+            switch (Random.Int(4)){
                 case 0: default:
                     yell(Messages.get(this, "die1"));
                     break;

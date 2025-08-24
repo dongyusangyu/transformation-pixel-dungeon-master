@@ -83,6 +83,7 @@ public class SpiderJar extends ArmorAbility {
                             }
                         });
         armor.charge -= chargeUse(hero);
+        Talent.onArmorAbility(hero, chargeUse(hero));
         armor.updateQuickslot();
         Invisibility.dispel();
 
@@ -199,7 +200,7 @@ public class SpiderJar extends ArmorAbility {
                     if (dmg > 0) {
                         ch.damage(dmg, this);
                     }
-                    if(hero.hasTalent(Talent.TEA_STAINS) && ch!=hero && ch.isAlive()){
+                    if(hero.hasTalent(Talent.TEA_STAINS) && ch.isAlive()){
                         int r=Math.min(hero.pointsInTalent(Talent.TEA_STAINS),2);
                         int t=5;
                         if(hero.pointsInTalent(Talent.TEA_STAINS)>3){

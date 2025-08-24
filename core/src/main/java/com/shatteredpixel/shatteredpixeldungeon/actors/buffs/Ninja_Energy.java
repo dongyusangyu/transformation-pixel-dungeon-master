@@ -271,11 +271,17 @@ public class Ninja_Energy extends Buff implements ActionIndicator.Action {
                         return;
                     }
                     int spawned = 0;
-                    int maxSpawned=Random.Int(1,4);
+                    int maxSpawned=1;
+                    if(Random.Int(10)<4){
+                        maxSpawned++;
+                        if(Random.Int(4)<1){
+                            maxSpawned++;
+                        }
+                    }
                     while (spawned < maxSpawned && respawnPoints.size() > 0) {
                         int index = Random.index( respawnPoints );
                         RotLasher mob = new RotLasher();
-                        AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
+                        Buff.affect( mob, ScrollOfSirensSong.Enthralled.class);
                         GameScene.add( mob );
                         ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
                         respawnPoints.remove( index );
@@ -304,9 +310,11 @@ public class Ninja_Energy extends Buff implements ActionIndicator.Action {
                                 hero.move(cell);
                                 Dungeon.level.occupyCell(hero);
                                 Dungeon.observe();
-                                hero.spend(1f);
                                 GameScene.updateFog();
+                                hero.spend(1f);
                                 Buff.affect(hero, Invisibility.class,5);
+                                AttackIndicator.updateState();
+
                             }
                         });
                         Buff.affect(hero,Ninja_Energy.class).abilityUsed(this);

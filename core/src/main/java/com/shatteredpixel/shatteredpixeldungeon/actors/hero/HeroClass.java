@@ -212,7 +212,9 @@ public enum HeroClass {
 		doChallengeSpawn(hero);
 
 
+
 		/*
+		Buff.affect( hero, Awareness.class, Awareness.DURATION );
 		new MagicalHolster().collect();
 		new PotionBandolier().collect();
 		new ScrollHolder().collect();

@@ -1789,7 +1789,10 @@ public enum Talent {
 				dmg*=2;
 			}
 		}
-		if(hero.hasTalent(KONO_FUKUSA) && (((Mob) enemy).surprisedBy(hero) || ((Mob) enemy).state==((Mob) enemy).HUNTING)){
+		if(hero.hasTalent(KONO_FUKUSA) && enemy instanceof Mob &&(((Mob) enemy).surprisedBy(hero) || ((Mob) enemy).state==((Mob) enemy).HUNTING)){
+			dmg*=1+0.2*hero.pointsInTalent(KONO_FUKUSA);
+		}
+		if(hero.hasTalent(KONO_FUKUSA) && enemy instanceof Hero){
 			dmg*=1+0.2*hero.pointsInTalent(KONO_FUKUSA);
 		}
 		if(hero.buff(OneSword.OKU_OneSword.class)!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
@@ -2194,7 +2197,8 @@ public enum Talent {
 			for(int cnt=0;cnt<maxcnt;cnt++){
 				YogDzewa.Larva mob=new YogDzewa.Larva();
 				//YogFist.BurningFist mob=new YogFist.BurningFist();
-				AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
+				//AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
+				Buff.affect(mob,ScrollOfSirensSong.Enthralled.class);
 				GameScene.add( mob );
 				ScrollOfTeleportation.appear( mob, hero.pos );
 				if(hero.pointsInTalent(Talent.YOG_LARVA)==3 && Random.Int(2)==1){
@@ -2266,7 +2270,7 @@ public enum Talent {
 			}
 
 		}
-		if(hero.armorAbility!=null && hero.armorAbility instanceof Decoy && dmg>hero.HP){
+		if(hero.armorAbility!=null && hero.armorAbility instanceof Decoy && dmg>=hero.HP){
 			ArrayList<Decoy.Decoyman> decoymen = Decoy.getDecoymanAlly();
 			if(decoymen!=null){
 				decoymen.get(0).damage(114514,src);
@@ -2380,14 +2384,14 @@ public enum Talent {
 				int index = Random.index( respawnPoints );
 				if (Random.Int(2)==0){
 					Monk mob = new Monk();
-					AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
+					Buff.affect( mob, ScrollOfSirensSong.Enthralled.class);
 					mob.state= mob.HUNTING;
 					GameScene.add( mob );
 					ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
 
 				}else {
 					Warlock mob = new Warlock();
-					AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
+					Buff.affect( mob, ScrollOfSirensSong.Enthralled.class);
 					mob.state= mob.HUNTING;
 					GameScene.add( mob );
 					ScrollOfTeleportation.appear( mob, respawnPoints.get( index ) );
