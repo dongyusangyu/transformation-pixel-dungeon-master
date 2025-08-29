@@ -222,7 +222,7 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 		@Override
 		public void onBackPressed() {
 
-			if (identifiedByUse){
+			if (curItem instanceof ScrollOfMetamorphosis && identifiedByUse){
 				((ScrollOfMetamorphosis)curItem).confirmCancelation(this);
 			} else {
 				super.onBackPressed();

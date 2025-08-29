@@ -58,7 +58,7 @@ public class RapidWaterfall extends ArmorAbility {
             }
         }
         GameScene.add( Blob.seed( hero.pos, thisvol, RapidWater.class ) );
-        hero.spend(1f);
+        hero.spendAndNext(Actor.TICK);
         armor.charge -= chargeUse(hero);
         Talent.onArmorAbility(hero, chargeUse(hero));
         armor.updateQuickslot();

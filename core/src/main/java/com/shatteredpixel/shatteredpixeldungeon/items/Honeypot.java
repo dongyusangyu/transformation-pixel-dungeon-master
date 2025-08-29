@@ -24,22 +24,29 @@ package com.shatteredpixel.shatteredpixeldungeon.items;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bee;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
+import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.AquaBrew;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.tweeners.AlphaTweener;
 import com.watabou.utils.PathFinder;
@@ -174,6 +181,39 @@ public class Honeypot extends Item {
 		{
 			image = ItemSpriteSheet.SHATTPOT;
 			stackable = true;
+		}
+		public static final String AC_EAT	= "EAT";
+		@Override
+		public ArrayList<String> actions( Hero hero ) {
+			ArrayList<String> actions = super.actions( hero );
+			if(hero.heroClass== HeroClass.SLIMEGIRL){
+				actions.add( AC_EAT );
+			}
+
+			return actions;
+		}
+		@Override
+		public void execute( final Hero hero, String action ) {
+
+			super.execute( hero, action );
+
+			if (action.equals( AC_EAT )) {
+				if(hero.buff(Poison.class)!=null){
+					hero.buff(Poison.class).detach();
+				}
+				detach( hero.belongings.backpack );
+				Catalog.countUse(getClass());
+				Talent.onFoodEaten(hero,60,this);
+				GLog.i( Messages.get(this, "eat") );
+				hero.sprite.operate( hero.pos );
+				hero.busy();
+				SpellSprite.show( hero, SpellSprite.FOOD );
+				hero.spend( 1f );
+				Talent.onFoodEaten(hero, 60, this);
+				Statistics.foodEaten++;
+				Badges.validateFoodEaten();
+
+			}
 		}
 
 		@Override

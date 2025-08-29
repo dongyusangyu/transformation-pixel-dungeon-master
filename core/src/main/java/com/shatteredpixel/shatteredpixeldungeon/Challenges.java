@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Dewdrop;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.watabou.noosa.Image;
 
 public class Challenges {
 
@@ -91,6 +92,9 @@ public class Challenges {
 
 		return false;
 
+	}
+	public static Image icon(int value) {
+		return new Image(Assets.Interfaces.CHALLENGES_ICONS, value * 16, 0, 16, 16);
 	}
 
 }

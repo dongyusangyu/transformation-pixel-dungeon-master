@@ -586,7 +586,7 @@ public enum Talent {
 			left = Math.max(left, shots);
 		}
 	}
-	public static class AgileAttack extends Buff {
+	public static class EnemyDies extends Buff {
 
 		{
 			type = buffType.POSITIVE;
@@ -595,6 +595,18 @@ public enum Talent {
 		public int icon() {
 			return BuffIndicator.NONE;
 		}
+	}
+	public static class AgileAttack extends Buff {
+
+		{
+			type = buffType.POSITIVE;
+		}
+		@Override
+		public int icon() {
+			return BuffIndicator.INVERT_MARK;
+		}
+		public void tintIcon(Image icon) { icon.hardlight(1f, 0.8f, 0.85f); }
+
 	}
 	//史莱姆
 	public static class SlimeMucusCooldown extends FlavourBuff{
@@ -1441,7 +1453,7 @@ public enum Talent {
 		if(hero.hasTalent(WITCH_POTION)){
 			Char mob = Actor.findChar(cell);
 			if(mob !=null && !(mob instanceof  Hero)){
-				Buff.affect( mob, Charm.class, 5 ).object = hero.id();
+				Buff.affect( mob, Charm.class, 15 ).object = hero.id();
 				if(hero.pointsInTalent(WITCH_POTION)==2){
 					Buff.affect( mob, Poison.class).set(5);
 				}
@@ -1950,8 +1962,8 @@ public enum Talent {
 		if(hero.pointsNegative(Talent.FIRE_WOOD)>Random.Int(20)){
 			Buff.affect(hero, Burning.class).reignite(hero,3);
 			Buff.affect(enemy, Burning.class).reignite(enemy,3);
-			Buff.affect(hero, Charm.class,3);
-			Buff.affect(enemy, Charm.class,3);
+			Buff.affect(hero, Charm.class,10).object=enemy.id();
+			Buff.affect(enemy, Charm.class,10).object=hero.id();
 		}
 		if(hero.hasTalent(ASHES_BOW) && hero.buffs(AshesBowCooldown.class).isEmpty() &&
 				(hero.belongings.attackingWeapon() instanceof MissileWeapon
@@ -2008,7 +2020,7 @@ public enum Talent {
 			if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){
 				Ninja_Energy.Gas_Storage gas_storage=hero.buff(Ninja_Energy.Gas_Storage.class);
 				for(Blob blob:gas_storage.blobs.values()){
-					GameScene.add(Blob.seed(enemy.pos,10,blob.getClass()));
+					GameScene.add(Blob.seed(enemy.pos,30,blob.getClass()));
 				}
 				gas_storage.detach();
 			}
@@ -2059,7 +2071,7 @@ public enum Talent {
 					break;
 			}
 			if(darkGasTrue){
-				Buff.affect(hero, BlobImmunity.class,3);
+				Buff.affect(hero, BlobImmunity.class,4);
 			}
 
 		}
@@ -2294,7 +2306,7 @@ public enum Talent {
 				Buff.affect(target, Weakness.class,5);
 			}else if(hero.pointsInTalent(Talent.BURNING_CURSE)==2){
 				Buff.affect(target, Weakness.class,5);
-				Buff.affect(target, Terror.class,3);
+				Buff.affect(target, Vertigo.class,2);
 			}
 		}
 		if(hero.hasTalent(Talent.MORONITY) && target!=hero && Random.Int(2)==1){
@@ -2348,7 +2360,7 @@ public enum Talent {
 			}
 		}
 		if(hero.hasTalent(Talent.QUANTUM_HACKING) && !(target instanceof NPC) && !(target instanceof Hero)){
-			Buff.affect(target, Vertigo.class,1+hero.pointsInTalent(Talent.QUANTUM_HACKING));
+			Buff.affect(target, Vertigo.class,hero.pointsInTalent(Talent.QUANTUM_HACKING));
 		}
 
 	}
@@ -2416,6 +2428,7 @@ public enum Talent {
 			}
 			if(hero.hasTalent(Talent.CICADA_DANCE)){
 				Buff.affect(hero, Invisibility.class,1+hero.pointsInTalent(Talent.CICADA_DANCE));
+				Buff.affect(hero,EnemyDies.class);
 			}
 		}
 		if(hero.hasTalent(Talent.INVINCIBLE)){
@@ -2680,7 +2693,7 @@ public enum Talent {
 				ATTACK_DOOR,WATER_WAVE,AGILE_ATTACK);
 		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP);
 		Collections.addAll(typeTalent.get(0).get(EFFECT),HEARTY_MEAL,BACKUP_BARRIER,PROTECTIVE_SHADOWS,NATURES_AID,AGGRESSIVE_BARRIER,
-				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,INVINCIBLE,
+				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,
 				THORNY_ROSE,ASH_LEDGER,SECRET_LIGHTING,ANESTHESIA,JASMINE_TEA,PERSONAL_ATTACK,FLASH_GENIUS,RESILIENT_MEAL,NINJA_MEAL);
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
 				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION);
@@ -2688,7 +2701,7 @@ public enum Talent {
 				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT,HEALATTACK);
 		Collections.addAll(typeTalent.get(0).get(ASSIST),VETERANS_INTUITION,IRON_WILL,SCHOLARS_INTUITION,THIEFS_INTUITION,
 				SURVIVALISTS_INTUITION,ADVENTURERS_INTUITION,BOMB_MANIAC,THICKENED_ARMOR,STRENGTH_TRAIN,SAVAGE_PHYSIQUE,
-				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME);
+				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME,DROP_RESISTANT,POTENTIAL_ENERGY);
 		Collections.addAll(typeTalent.get(0).get(OTHER),FISHING_TIME,WATER_GHOST,HONEY_FISH,CHOCOLATE_COINS);
 
 		//tier=2
@@ -2698,7 +2711,7 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(1).get(MAGIC),ENERGIZING_MEAL,INSCRIBED_POWER,ARCANE_VISION,SHIELD_BATTERY,BURNING_CURSE,
 				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,FIRE_BALL,EAT_MIND);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
-				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,INVISIBILITY_SHADOWS,BLESS_MEAL,COLLECTION_GOLD,GET_UP,
+				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,INVISIBILITY_SHADOWS,BLESS_MEAL,COLLECTION_GOLD,GET_UP,INVINCIBLE,
 				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE,YUNYING_MEAL,XIA,FEINT);
 		Collections.addAll(typeTalent.get(1).get(RESOURCE),WAND_PRESERVATION,ROGUES_FORESIGHT,PRECIOUS_EXPERIENCE,MORE_CHANCE,WANT_ALL,
 				SEED_RECYCLING,INSTANT_REFINING,FAST_BREAK);
@@ -2706,8 +2719,8 @@ public enum Talent {
 				SUNRAY, DIVINE_SENSE, BLESS, DIVINE_PROTECTION,CONVERSION_HOLY,GENESIS,INDULGENCE,SPRINT_SPELL,THORN_WHIP,ENLIGHTENING_MEAL,
 				REVELATION,EQUIPMENT_BLESS,HOTLIGHT);
 		Collections.addAll(typeTalent.get(1).get(ASSIST),WIDE_SEARCH,SILENT_STEPS,REJUVENATING_STEPS,HEIGHTENED_SENSES,DURABLE_PROJECTILES,
-				WEAPON_RECHARGING,SWIFT_EQUIP,LIGHT_APPLICATION,HEAVY_APPLICATION,DROP_RESISTANT,GOD_LEFTHAND,GOD_RIGHTHAND,BURNING_BLOOD,
-				HEAVY_BURDEN,EXPLORATION_INTUITION,PROTECT_CURSE,POTENTIAL_ENERGY,NIRVANA,RUNIC_TRANSFERENCE,ENERGY_ABSORPTION,
+				WEAPON_RECHARGING,SWIFT_EQUIP,LIGHT_APPLICATION,HEAVY_APPLICATION,GOD_LEFTHAND,GOD_RIGHTHAND,BURNING_BLOOD,
+				HEAVY_BURDEN,EXPLORATION_INTUITION,PROTECT_CURSE,NIRVANA,RUNIC_TRANSFERENCE,ENERGY_ABSORPTION,
 				NATURAL_AFFINITY,QUALITY_ABSORPTION,QUICK_SEARCH);
 		Collections.addAll(typeTalent.get(1).get(OTHER),WAKE_SNAKE);
 

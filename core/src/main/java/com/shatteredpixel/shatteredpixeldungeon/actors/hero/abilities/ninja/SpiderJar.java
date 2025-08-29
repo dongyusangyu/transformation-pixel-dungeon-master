@@ -84,6 +84,7 @@ public class SpiderJar extends ArmorAbility {
                         });
         armor.charge -= chargeUse(hero);
         Talent.onArmorAbility(hero, chargeUse(hero));
+        hero.spendAndNext(Actor.TICK);
         armor.updateQuickslot();
         Invisibility.dispel();
 

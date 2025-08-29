@@ -64,6 +64,14 @@ public class Badges {
 		GLOBAL, //unlocked for the save profile only, usually over multiple runs
 		JOURNAL //profile-based and also tied to the journal, which means they even unlock in seeded runs
 	}
+	public boolean meta;
+	public static int copper=0;
+	public static int silver=40;
+	public static int gold=80;
+	public  static  int platinum=120;
+	public  static  int diamonds=144;
+
+	public static int alloys=160;
 
 	public enum Badge {
 		MASTERY_WARRIOR,
@@ -76,60 +84,61 @@ public class Badges {
 		FOUND_RATMOGRIFY,
 
 		//bronze
-		UNLOCK_MAGE                 ( 1 ),
-		UNLOCK_ROGUE                ( 2 ),
-		UNLOCK_HUNTRESS             ( 3 ),
-		UNLOCK_DUELIST              ( 4 ),
-		UNLOCK_CLERIC             ( 5 ),
-		MONSTERS_SLAIN_1            ( 6 ),
-		MONSTERS_SLAIN_2            ( 7 ),
-		GOLD_COLLECTED_1            ( 8 ),
-		GOLD_COLLECTED_2            ( 9 ),
-		ITEM_LEVEL_1                ( 10 ),
-		LEVEL_REACHED_1             ( 11 ),
-		STRENGTH_ATTAINED_1         ( 12 ),
-		FOOD_EATEN_1                ( 13 ),
-		ITEMS_CRAFTED_1             ( 14 ),
-		BOSS_SLAIN_1                ( 15 ),
-		CATALOG_ONE_EQUIPMENT       ( 16, BadgeType.JOURNAL ),
-		DEATH_FROM_FIRE             ( 17 ),
-		DEATH_FROM_POISON           ( 18 ),
-		DEATH_FROM_GAS              ( 19 ),
-		DEATH_FROM_HUNGER           ( 20 ),
-		DEATH_FROM_FALLING          ( 21 ),
-		RESEARCHER_1                ( 22, BadgeType.JOURNAL ),
-		GAMES_PLAYED_1              ( 23, BadgeType.GLOBAL ),
-		HIGH_SCORE_1                ( 24 ),
-		UNLOCK_FREEMAN              (25),
-		UNLOCK_SLIME              (26),
-		UNLOCK_NINJA             ( 27 ),
+		UNLOCK_MAGE                 ( copper+1 ),
+		UNLOCK_ROGUE                ( copper+2 ),
+		UNLOCK_HUNTRESS             ( copper+3 ),
+		UNLOCK_DUELIST              ( copper+4 ),
+		UNLOCK_CLERIC             ( copper+5 ),
+		UNLOCK_FREEMAN              (copper+6),
+		UNLOCK_SLIME              (copper+7),
+		UNLOCK_NINJA             ( copper+8 ),
+		MONSTERS_SLAIN_1            ( copper+12 ),
+		MONSTERS_SLAIN_2            ( copper+13 ),
+		GOLD_COLLECTED_1            ( copper+14 ),
+		GOLD_COLLECTED_2            ( copper+15 ),
+		ITEM_LEVEL_1                ( copper+16 ),
+		LEVEL_REACHED_1             ( copper+17 ),
+		STRENGTH_ATTAINED_1         ( copper+18 ),
+		FOOD_EATEN_1                ( copper+19 ),
+		ITEMS_CRAFTED_1             ( copper+20 ),
+		BOSS_SLAIN_1                ( copper+21 ),
+		CATALOG_ONE_EQUIPMENT       ( copper+22, BadgeType.JOURNAL ),
+		DEATH_FROM_FIRE             ( copper+23 ),
+		DEATH_FROM_POISON           ( copper+24 ),
+		DEATH_FROM_GAS              ( copper+25 ),
+		DEATH_FROM_HUNGER           ( copper+26 ),
+		DEATH_FROM_FALLING          ( copper+27 ),
+		RESEARCHER_1                ( copper+28, BadgeType.JOURNAL ),
+		GAMES_PLAYED_1              ( copper+29, BadgeType.GLOBAL ),
+		HIGH_SCORE_1                ( copper+30 ),
+
 
 
 		//silver
-		NO_MONSTERS_SLAIN           ( 32 ),
-		BOSS_SLAIN_REMAINS          ( 33 ),
-		MONSTERS_SLAIN_3            ( 34 ),
-		MONSTERS_SLAIN_4            ( 35 ),
-		GOLD_COLLECTED_3            ( 36 ),
-		GOLD_COLLECTED_4            ( 37 ),
-		ITEM_LEVEL_2                ( 38 ),
-		ITEM_LEVEL_3                ( 39 ),
-		LEVEL_REACHED_2             ( 40 ),
-		LEVEL_REACHED_3             ( 41 ),
-		STRENGTH_ATTAINED_2         ( 42 ),
-		STRENGTH_ATTAINED_3         ( 43 ),
-		FOOD_EATEN_2                ( 44 ),
-		FOOD_EATEN_3                ( 45 ),
-		ITEMS_CRAFTED_2             ( 46 ),
-		ITEMS_CRAFTED_3             ( 47 ),
-		BOSS_SLAIN_2                ( 48 ),
-		BOSS_SLAIN_3                ( 49 ),
+		NO_MONSTERS_SLAIN           ( silver ),
+		BOSS_SLAIN_REMAINS          ( silver+1 ),
+		MONSTERS_SLAIN_3            ( silver+2 ),
+		MONSTERS_SLAIN_4            ( silver+3 ),
+		GOLD_COLLECTED_3            ( silver+4 ),
+		GOLD_COLLECTED_4            ( silver+5 ),
+		ITEM_LEVEL_2                ( silver+6 ),
+		ITEM_LEVEL_3                ( silver+7 ),
+		LEVEL_REACHED_2             ( silver+8 ),
+		LEVEL_REACHED_3             ( silver+9 ),
+		STRENGTH_ATTAINED_2         ( silver+10 ),
+		STRENGTH_ATTAINED_3         ( silver+11 ),
+		FOOD_EATEN_2                ( silver+12 ),
+		FOOD_EATEN_3                ( silver+13 ),
+		ITEMS_CRAFTED_2             ( silver+14 ),
+		ITEMS_CRAFTED_3             ( silver+15 ),
+		BOSS_SLAIN_2                ( silver+16 ),
+		BOSS_SLAIN_3                ( silver+17 ),
 		ALL_POTIONS_IDENTIFIED      , //still exists internally for pre-2.5 saves
 		ALL_SCROLLS_IDENTIFIED      , //still exists internally for pre-2.5 saves
-		CATALOG_POTIONS_SCROLLS     ( 50 ),
-		DEATH_FROM_ENEMY_MAGIC      ( 51 ),
-		DEATH_FROM_FRIENDLY_MAGIC   ( 52 ),
-		DEATH_FROM_SACRIFICE        ( 53 ),
+		CATALOG_POTIONS_SCROLLS     ( silver+18 ),
+		DEATH_FROM_ENEMY_MAGIC      ( silver+19 ),
+		DEATH_FROM_FRIENDLY_MAGIC   ( silver+20 ),
+		DEATH_FROM_SACRIFICE        ( silver+21 ),
 		BOSS_SLAIN_1_WARRIOR,
 		BOSS_SLAIN_1_MAGE,
 		BOSS_SLAIN_1_ROGUE,
@@ -139,56 +148,56 @@ public class Badges {
 		BOSS_SLAIN_1_FREEMAN,
 		BOSS_SLAIN_1_SLIMEGIRL,
 		BOSS_SLAIN_1_NINJA,
-		BOSS_SLAIN_1_ALL_CLASSES    ( 54, BadgeType.GLOBAL ),
+		BOSS_SLAIN_1_ALL_CLASSES    ( silver+22, BadgeType.GLOBAL ),
 
-		RESEARCHER_2                ( 55, BadgeType.JOURNAL ),
-		GAMES_PLAYED_2              ( 56, BadgeType.GLOBAL ),
-		HIGH_SCORE_2                ( 57 ),
+		RESEARCHER_2                ( silver+23, BadgeType.JOURNAL ),
+		GAMES_PLAYED_2              ( silver+24, BadgeType.GLOBAL ),
+		HIGH_SCORE_2                ( silver+25 ),
 
 
 		//gold
-		PIRANHAS                    ( 64 ),
-		GRIM_WEAPON                 ( 65 ),
+		PIRANHAS                    ( gold ),
+		GRIM_WEAPON                 ( gold+1 ),
 		BAG_BOUGHT_VELVET_POUCH,
 		BAG_BOUGHT_SCROLL_HOLDER,
 		BAG_BOUGHT_POTION_BANDOLIER,
 		BAG_BOUGHT_MAGICAL_HOLSTER,
-		ALL_BAGS_BOUGHT             ( 66 ),
-		MASTERY_COMBO               ( 67 ),
-		MONSTERS_SLAIN_5            ( 68 ),
-		GOLD_COLLECTED_5            ( 69 ),
-		ITEM_LEVEL_4                ( 70 ),
-		LEVEL_REACHED_4             ( 71 ),
-		STRENGTH_ATTAINED_4         ( 72 ),
-		STRENGTH_ATTAINED_5         ( 73 ),
-		FOOD_EATEN_4                ( 74 ),
-		FOOD_EATEN_5                ( 75 ),
-		ITEMS_CRAFTED_4             ( 76 ),
-		ITEMS_CRAFTED_5             ( 77 ),
-		BOSS_SLAIN_4                ( 78 ),
+		ALL_BAGS_BOUGHT             ( gold+2 ),
+		MASTERY_COMBO               ( gold+3 ),
+		MONSTERS_SLAIN_5            ( gold+4 ),
+		GOLD_COLLECTED_5            ( gold+5 ),
+		ITEM_LEVEL_4                ( gold+6 ),
+		LEVEL_REACHED_4             ( gold+7 ),
+		STRENGTH_ATTAINED_4         ( gold+8 ),
+		STRENGTH_ATTAINED_5         ( gold+9 ),
+		FOOD_EATEN_4                ( gold+10 ),
+		FOOD_EATEN_5                ( gold+11 ),
+		ITEMS_CRAFTED_4             ( gold+12 ),
+		ITEMS_CRAFTED_5             ( gold+13 ),
+		BOSS_SLAIN_4                ( gold+14 ),
 		ALL_RINGS_IDENTIFIED        , //still exists internally for pre-2.5 saves
 		ALL_ARTIFACTS_IDENTIFIED    , //still exists internally for pre-2.5 saves
-		ALL_RARE_ENEMIES            ( 79, BadgeType.JOURNAL ),
-		DEATH_FROM_GRIM_TRAP        ( 80 ), //also disintegration traps
-		VICTORY                     ( 81 ),
-		BOSS_CHALLENGE_1            ( 82 ),
-		BOSS_CHALLENGE_2            ( 83 ),
-		RESEARCHER_3                ( 84, BadgeType.JOURNAL ),
-		GAMES_PLAYED_3              ( 85, BadgeType.GLOBAL ),
-		HIGH_SCORE_3                ( 86 ),
-		ENEMY_HAZARDS               ( 87 ),
-		HEROBOSS_SLAIN_1             (88 ),
-		HEROBOSS_SLAIN_2            (89 ),
-		HEROBOSS_COUNTER_1             (92 ),
-		HEROBOSS_COUNTER_2             (93 ),
+		ALL_RARE_ENEMIES            ( gold+15, BadgeType.JOURNAL ),
+		DEATH_FROM_GRIM_TRAP        ( gold+16 ), //also disintegration traps
+		VICTORY                     ( gold+17 ),
+		BOSS_CHALLENGE_1            ( gold+18 ),
+		BOSS_CHALLENGE_2            ( gold+19 ),
+		RESEARCHER_3                ( gold+20, BadgeType.JOURNAL ),
+		GAMES_PLAYED_3              ( gold+21, BadgeType.GLOBAL ),
+		HIGH_SCORE_3                ( gold+22 ),
+		ENEMY_HAZARDS               ( gold+23 ),
+		HEROBOSS_SLAIN_1             (gold+24 ),
+		HEROBOSS_SLAIN_2            (gold+25 ),
+		HEROBOSS_COUNTER_1             (gold+28 ),
+		HEROBOSS_COUNTER_2             (gold+29 ),
 
 
 		//platinum
-		ITEM_LEVEL_5                ( 96 ),
-		LEVEL_REACHED_5             ( 97 ),
-		HAPPY_END                   ( 98 ),
-		HAPPY_END_REMAINS           ( 99 ),
-		RODNEY                      ( 100, BadgeType.JOURNAL ),
+		ITEM_LEVEL_5                ( platinum ),
+		LEVEL_REACHED_5             ( platinum+1 ),
+		HAPPY_END                   ( platinum+2 ),
+		HAPPY_END_REMAINS           ( platinum+3 ),
+		RODNEY                      ( platinum+4, BadgeType.JOURNAL ),
 		ALL_WEAPONS_IDENTIFIED      , //still exists internally for pre-2.5 saves
 		ALL_ARMOR_IDENTIFIED        , //still exists internally for pre-2.5 saves
 		ALL_WANDS_IDENTIFIED        , //still exists internally for pre-2.5 saves
@@ -202,8 +211,8 @@ public class Badges {
 		VICTORY_FREEMAN,
 		VICTORY_SLIMEGIRL,
 		VICTORY_NINJA,
-		VICTORY_ALL_CLASSES         ( 101, BadgeType.GLOBAL ),
-		DEATH_FROM_ALL              ( 102, BadgeType.GLOBAL ),
+		VICTORY_ALL_CLASSES         ( platinum+5, BadgeType.GLOBAL ),
+		DEATH_FROM_ALL              ( platinum+6, BadgeType.GLOBAL ),
 		BOSS_SLAIN_3_GLADIATOR,
 		BOSS_SLAIN_3_BERSERKER,
 		BOSS_SLAIN_3_WARLOCK,
@@ -222,30 +231,32 @@ public class Badges {
 		BOSS_SLAIN_3_TATTEKI,
 		BOSS_SLAIN_3_NINJA_MASTER,
 
-		BOSS_SLAIN_3_ALL_SUBCLASSES ( 103, BadgeType.GLOBAL ),
-		BOSS_CHALLENGE_3            ( 104 ),
-		BOSS_CHALLENGE_4            ( 105 ),
-		RESEARCHER_4                ( 106, BadgeType.JOURNAL ),
-		GAMES_PLAYED_4              ( 107, BadgeType.GLOBAL ),
-		HIGH_SCORE_4                ( 108 ),
-		CHAMPION_1                  ( 109 ),
-		MANY_BUFFS                  ( 110 ),
-		BACK1    					( 112),
-		BACK2    					( 113),
+		BOSS_SLAIN_3_ALL_SUBCLASSES ( platinum+7, BadgeType.GLOBAL ),
+		BOSS_CHALLENGE_3            ( platinum+8 ),
+		BOSS_CHALLENGE_4            ( platinum+9 ),
+		RESEARCHER_4                ( platinum+10, BadgeType.JOURNAL ),
+		GAMES_PLAYED_4              ( platinum+11, BadgeType.GLOBAL ),
+		HIGH_SCORE_4                ( platinum+12 ),
+		CHAMPION_1                  ( platinum+13 ),
+		MANY_BUFFS                  ( platinum+14 ),
 
-		CHAMPION_4  				( 117),
 
 		//diamond
-		BOSS_CHALLENGE_5            ( 120 ),
-		RESEARCHER_5                ( 121, BadgeType.JOURNAL ),
-		GAMES_PLAYED_5              ( 122, BadgeType.GLOBAL ),
-		HIGH_SCORE_5                ( 123 ),
-		CHAMPION_2                  ( 124 ),
-		CHAMPION_3                  ( 125 ),
-		PACIFIST_ASCENT             ( 126 ),
-		TAKING_THE_MICK             ( 127 ); //This might be the most obscure game reference I've made;
+		BOSS_CHALLENGE_5            ( diamonds ),
+		RESEARCHER_5                ( diamonds+1, BadgeType.JOURNAL ),
+		GAMES_PLAYED_5              ( diamonds+2, BadgeType.GLOBAL ),
+		HIGH_SCORE_5                ( diamonds+3 ),
+		CHAMPION_2                  ( diamonds+4 ),
+		CHAMPION_3                  ( diamonds+5 ),
+		PACIFIST_ASCENT             ( diamonds+6 ),
+		TAKING_THE_MICK             ( diamonds+7 ), //This might be the most obscure game reference I've made;
+		//ALLOY
+		BACK1    					( alloys),
+		BACK2    					( alloys+1),
 
-		public boolean meta;
+		CHAMPION_4  				( alloys+5);
+
+
 
 		public int image;
 		public BadgeType type;
@@ -891,6 +902,10 @@ public class Badges {
 		}
 		if (!isUnlocked(Badge.HEROBOSS_SLAIN_2) && Dungeon.depth==10){
 			displayBadge( Badge.HEROBOSS_SLAIN_2 );
+		}
+		if (Statistics.qualifiedForBossRemainsBadge && hero.belongings.getItem(RemainsItem.class) != null){
+			local.add( Badge.BOSS_SLAIN_REMAINS );
+			displayBadge( Badge.BOSS_SLAIN_REMAINS);
 		}
 	}
 	

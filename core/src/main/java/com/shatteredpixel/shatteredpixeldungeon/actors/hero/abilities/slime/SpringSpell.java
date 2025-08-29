@@ -25,8 +25,11 @@ public class SpringSpell extends ArmorAbility {
 
     @Override
     protected void activate(ClassArmor armor, Hero hero, Integer target) {
-
-        Buff.affect(hero, Sungrass.Health.class).boost(25 + 5*hero.pointsInTalent(Talent.POTENT_HEALING));
+        int heal=25 + 5*hero.pointsInTalent(Talent.POTENT_HEALING);
+        if(hero.hasTalent(Talent.ORIGINAL_MONSTER)){
+            heal+=heal/2;
+        }
+        Buff.affect(hero, Sungrass.Health.class).boost(heal);
         Char finalch = null;
         int finalchHP = 1000000000;
         float distance = 0;
@@ -56,18 +59,16 @@ public class SpringSpell extends ArmorAbility {
         }
 
         if (finalch != null){
-            int heal=25 + 5*hero.pointsInTalent(Talent.POTENT_HEALING);
-            if(hero.hasTalent(Talent.ORIGINAL_MONSTER)){
-                heal+=heal/2;
-            }
+
             Buff.affect(finalch, Sungrass.Health.class).boost(heal);
             hero.sprite.parent.add(new Beam.HealthRay(hero.sprite.destinationCenter(),finalch.sprite.center()));
         }
 
         armor.charge -= chargeUse(hero);
         Talent.onArmorAbility(hero, chargeUse(hero));
+        hero.spendAndNext(Actor.TICK);
         armor.updateQuickslot();
-        hero.spend(1f);
+
 
     }
 

@@ -45,33 +45,28 @@ public class Sweeping extends Weapon.Enchantment {
         // lvl 1 ~ 23%
         // lvl 2 ~ 26%
         //float procChance = (level+5f)/(level+25f) * procChanceMultiplier(attacker);
-        float procChance = (level+5f)/(level+25f);
-        if (Random.Float() < procChance) {
-
-            ArrayList<Char> targets = new ArrayList<>();
-
-            Char closest = null;
-
-            for (Char ch : Actor.chars()) {
-                if (ch.alignment == Char.Alignment.ENEMY//属于敌人（似乎不包括宝箱怪）
-                        && !hero.isCharmedBy(ch)        //未被敌人魅惑
-                        && Dungeon.level.heroFOV[ch.pos]//？
-                        && hero.canAttack(ch)           //能够攻击到
-                        && ch != defender) {            //被攻击的敌人不会受到横扫
-                    targets.add(ch);
-                    if (closest == null || Dungeon.level.trueDistance(hero.pos, closest.pos) > Dungeon.level.trueDistance(hero.pos, ch.pos)) {
-                        closest = ch;
-                    }
+        float procChance = 1;
+        ArrayList<Char> targets = new ArrayList<>();
+        Char closest = null;
+        for (Char ch : Actor.chars()) {
+            if (ch.alignment == Char.Alignment.ENEMY//属于敌人（似乎不包括宝箱怪）
+                    && !hero.isCharmedBy(ch)        //未被敌人魅惑
+                    && Dungeon.level.heroFOV[ch.pos]//？
+                    && hero.canAttack(ch)           //能够攻击到
+                    && ch != defender) {            //被攻击的敌人不会受到横扫
+                targets.add(ch);
+                if (closest == null || Dungeon.level.trueDistance(hero.pos, closest.pos) > Dungeon.level.trueDistance(hero.pos, ch.pos)) {
+                    closest = ch;
                 }
             }
-
-            for (Char ch : targets) {
-                //横扫攻击
-                int sweepingdmg = (int) Math.ceil(damage * (procChanceMultiplier(attacker) + 1f) /
-                                                            (procChanceMultiplier(attacker) + 9f));
-                ch.damage(sweepingdmg, hero);
-            }
         }
+
+        for (Char ch : targets) {
+            //横扫攻击
+            int sweepingdmg = (int) Math.ceil(damage * (procChanceMultiplier(attacker) + 1f+level) / (procChanceMultiplier(attacker) + 10f+level));
+            ch.damage(sweepingdmg, hero);
+        }
+
         return damage;
 
     }

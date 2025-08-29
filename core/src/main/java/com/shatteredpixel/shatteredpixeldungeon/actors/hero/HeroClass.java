@@ -263,8 +263,12 @@ public enum HeroClass {
 		Buff.affect(hero, Ooze.class).set(1000);
 		//Buff.affect(hero,GreatDemon.MeleesDefence.class,5);
 		//Buff.affect(hero,SlimeBall.SlimeOoze.class,100);
+		new Amulet().collect();
 
 		 */
+
+
+
 
 
 

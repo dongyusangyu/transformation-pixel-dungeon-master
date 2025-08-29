@@ -25,6 +25,7 @@ import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.OrderedMap;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingListPane;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Component;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -113,19 +114,25 @@ public class WndChallenges extends Window {
 		add(pane);
 		pane.setRect(0, title.bottom()+2, WIDTH, HEIGHT - title.bottom() - 2);
 		Component content = pane.content();
-
+		int index = 0 ;
+		int index1 = 0 ;
 		for (ObjectMap.Entry<String, Integer> chal : challenges.entries()) {
 
 			final String challenge = chal.key;
+			if (chal.value == Challenges.HARSH_ENVIRONMENT){
+				index1 =
+			}else if (chal.value == Challenges.EXTREME_ENVIRONMENT){
+				cb.textColor(0xFF0000);
+			}
+
 			String chaltitle = Messages.titleCase(Messages.get(Challenges.class, challenge));
 
-			ConduitBox cb = new ConduitBox( chaltitle );
+			ConduitBox cb = new ConduitBox( chaltitle, Challenges.icon(index) );
 			cb.checked( (checked & chal.value) != 0 );
 			cb.active = editable;
 			if (chal.value == Challenges.HARSH_ENVIRONMENT){
 				cb.textColor(0xFFA500);
-			}
-			if (chal.value == Challenges.EXTREME_ENVIRONMENT){
+			}else if (chal.value == Challenges.EXTREME_ENVIRONMENT){
 				cb.textColor(0xFF0000);
 			}
 
@@ -149,6 +156,7 @@ public class WndChallenges extends Window {
 			infos.add(info);
 
 			pos = cb.bottom();
+
 		}
 
 		content.setSize(WIDTH, pos);
@@ -184,9 +192,17 @@ public class WndChallenges extends Window {
 	}
 
 	public class ConduitBox extends CheckBox{
+		private Image symbolIcon = null;
 
 		public ConduitBox(String label) {
 			super(label);
+		}
+		public ConduitBox( String label, Image icon ) {
+			super( label );
+
+			symbolIcon = icon;
+			add(symbolIcon);
+			icon( Icons.get( Icons.UNCHECKED ) );
 		}
 
 		@Override
@@ -205,6 +221,13 @@ public class WndChallenges extends Window {
 		protected void layout() {
 			super.layout();
 			hotArea.width = hotArea.height = 0;
+			if (symbolIcon != null) {
+				float margin = (height - symbolIcon.height) / 2;
+
+				symbolIcon.x = x + margin;
+				symbolIcon.y = y + margin;
+				PixelScene.align(symbolIcon);
+			}
 		}
 	}
 }

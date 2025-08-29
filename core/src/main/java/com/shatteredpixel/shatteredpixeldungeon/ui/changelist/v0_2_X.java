@@ -441,6 +441,25 @@ public class v0_2_X {
         ChangeInfo changes = new ChangeInfo("v0.2.6fix", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+        changes = new ChangeInfo( "v0.2.6fix2", false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年8月25日\n"+
+                        "_-_  调节ui按键色彩饱和度，使之更柔和\n"+
+                        "_-_  天赋_女巫媚药_给予的魅惑效果由5回合提高至15回合\n"+
+                        "_-_  天赋_燃咒+2_给予的恐惧效果改为眩晕\n"+
+                        "_-_  天赋_量子骇入_给予的眩晕效果由2/3回合下调至1/2回合\n"+
+                        "_-_  负面天赋_干柴烈火_给予的魅惑效果由3回合提高至10回合\n"+
+                        "_-_  暗液史莱姆天赋_暗气释放_不再有cd限制，且给予的净化屏障持续时间上调至4回合\n"+
+                        "_-_  调整护甲技能_狂史日记_造成的伤害\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 试修复忍术大师释放遁术导致的游戏崩溃\n"+
+                        "_-_ 修复击杀英雄boss无法获得徽章问题\n"
+
+        ));
         changes = new ChangeInfo( "v0.2.6fix1", false, null);
         changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);

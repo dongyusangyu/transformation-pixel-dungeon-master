@@ -233,7 +233,12 @@ public enum Rankings {
 
 		Statistics.chalMultiplier = (float)Math.pow(1.25, Challenges.activeChallenges());
 		if(hero.hasTalent(Talent.HEAVY_BURDEN)){
-			Statistics.chalMultiplier*=1+hero.pointsInTalent(Talent.HEAVY_BURDEN);
+			if(hero.hasTalent(Talent.REVELATION) && Dungeon.isChallenged(Challenges.WEAKENED_TALENT)){
+				Statistics.chalMultiplier*=1+1+hero.pointsInTalent(Talent.HEAVY_BURDEN);
+			}else{
+				Statistics.chalMultiplier*=1+hero.pointsInTalent(Talent.HEAVY_BURDEN);
+			}
+
 		}
 		Statistics.chalMultiplier = Math.round(Statistics.chalMultiplier*20f)/20f;
 

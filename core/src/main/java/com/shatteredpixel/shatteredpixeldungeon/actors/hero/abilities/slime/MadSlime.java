@@ -73,7 +73,7 @@ public class MadSlime extends ArmorAbility {
             GLog.w(Messages.get(this, "strong_target"));
             return;
         }else{
-            c.damage(c.HT,hero);
+            c.damage(1314,hero);
         }
 
 
@@ -100,7 +100,7 @@ public class MadSlime extends ArmorAbility {
         hero.busy();
         SpellSprite.show( hero, SpellSprite.FOOD );
         Sample.INSTANCE.play( Assets.Sounds.EAT );
-        hero.spend(1f);
+        hero.spendAndNext(Actor.TICK);
     }
 
     @Override

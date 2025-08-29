@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PhysicalEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.noosa.audio.Sample;
 
@@ -19,6 +20,8 @@ public class MatchaPudding extends RemainsItem {
     protected void doEffect(Hero hero) {
         Buff.affect( hero, Hunger.class).satisfy(60);
         Talent.onFoodEaten(hero,60,this);
+        hero.sprite.operate( hero.pos );
+        SpellSprite.show( hero, SpellSprite.FOOD );
 
     }
 }

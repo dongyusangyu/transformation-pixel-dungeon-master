@@ -22,16 +22,19 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.watabou.noosa.Image;
 
 public class CheckBox extends RedButton {
 
 	private boolean checked = false;
+
 	
 	public CheckBox( String label ) {
 		super( label );
 		
 		icon( Icons.get( Icons.UNCHECKED ) );
 	}
+
 
 	@Override
 	protected void layout() {
@@ -47,6 +50,8 @@ public class CheckBox extends RedButton {
 		icon.x = x + width - margin - icon.width;
 		icon.y = y + margin;
 		PixelScene.align(icon);
+
+
 	}
 	
 	public boolean checked() {

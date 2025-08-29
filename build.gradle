@@ -24,7 +24,7 @@ allprojects {
         appVersionCode = 1001
         //appVersionName = '2.5.4'
         //appVersionName = 'happy.birthday2.16'
-        appVersionName = '0.2.6fix1'
+        appVersionName = '0.2.6fix2'
         appJavaCompatibility = JavaVersion.VERSION_1_8
 
         appAndroidCompileSDK = 33 //compile SDK is still 33 atm as we're sticking with AGP 8.0.2

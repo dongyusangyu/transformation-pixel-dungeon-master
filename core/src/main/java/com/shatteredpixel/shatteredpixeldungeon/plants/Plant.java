@@ -235,20 +235,21 @@ public abstract class Plant implements Bundlable {
 			}else if(action.equals( AC_EAT)){
 				detach( hero.belongings.backpack );
 				Buff.affect(hero, Hunger.class).satisfy(30);
+				if(Dungeon.isChallenged(Challenges.NO_HERBALISM) && hero.pointsInTalent(Talent.SLIME_GREENHOUSE) ==2 ){
+					hero.spend( TIME_TO_PLANT_IN_BODY*20 );
+				}else{
+					hero.spend( TIME_TO_PLANT_IN_BODY );
+				}
+				hero.busy();
 				if(hero.pointsInTalent(Talent.SLIME_GREENHOUSE) ==2 ){
 					//不知道什么原因但是成功达到效果
 					Plant plant = this.couch( hero.pos, null );
 					plant.activate(hero);
 				}
 				hero.sprite.operate( hero.pos );
-				hero.busy();
 				SpellSprite.show( hero, SpellSprite.FOOD );
 				Sample.INSTANCE.play( Assets.Sounds.EAT );
-				if(Dungeon.isChallenged(Challenges.NO_HERBALISM) && hero.pointsInTalent(Talent.SLIME_GREENHOUSE) ==2 ){
-					hero.spend( TIME_TO_PLANT_IN_BODY*20 );
-				}else{
-					hero.spend( TIME_TO_PLANT_IN_BODY );
-				}
+
 			}
 		}
 		

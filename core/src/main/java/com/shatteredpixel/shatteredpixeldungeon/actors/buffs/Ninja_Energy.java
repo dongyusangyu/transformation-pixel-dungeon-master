@@ -311,7 +311,7 @@ public class Ninja_Energy extends Buff implements ActionIndicator.Action {
                                 Dungeon.level.occupyCell(hero);
                                 Dungeon.observe();
                                 GameScene.updateFog();
-                                hero.spend(1f);
+                                hero.spendAndNext(Actor.TICK);
                                 Buff.affect(hero, Invisibility.class,5);
                                 AttackIndicator.updateState();
 
@@ -357,7 +357,8 @@ public class Ninja_Energy extends Buff implements ActionIndicator.Action {
         public static void Use_Environmet(){
             PathFinder.buildDistanceMap( hero.pos, BArray.not( Dungeon.level.solid, null ), 1 );
             ArrayList<Blob> blobs = new ArrayList<>();
-            for (Class c : PotionOfPurity.affectedBlobs){
+            for (Class c :new BlobImmunity().immunities()){
+            //for (Class c :PotionOfPurity.affectedBlobs){
                 Blob b = Dungeon.level.blobs.get(c);
                 if (b != null && b.volume > 0){
                     blobs.add(b);

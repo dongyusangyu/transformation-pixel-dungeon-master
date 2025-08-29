@@ -91,8 +91,14 @@ public class Invisibility extends FlavourBuff {
 
 	public static void dispel(Char ch){
 
+
 		for ( Buff invis : ch.buffs( Invisibility.class )){
-			invis.detach();
+			if(hero.hasTalent(Talent.CICADA_DANCE) && hero.buff(Talent.EnemyDies.class)!=null){
+				hero.buff(Talent.EnemyDies.class).detach();
+			}else{
+				invis.detach();
+			}
+
 		}
 		CloakOfShadows.cloakStealth cloakBuff = ch.buff( CloakOfShadows.cloakStealth.class );
 		if (cloakBuff != null) {

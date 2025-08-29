@@ -2626,10 +2626,11 @@ public class Hero extends Char {
 				|| (enemy instanceof Mimic && enemy.alignment == Alignment.NEUTRAL);
 
 		boolean hit = attack( enemy );
+		Invisibility.dispel();
 		if(enemy.HP<=0 && hero.hasTalent(Talent.CICADA_DANCE)){
 
 		}else{
-			Invisibility.dispel();
+
 		}
 
 
