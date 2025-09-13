@@ -400,6 +400,9 @@ public class Armor extends EquipableItem {
 		
 		if (owner instanceof Hero){
 			int aEnc = STRReq() - ((Hero) owner).STR();
+			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+				aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+			}
 			if (aEnc > 0) evasion /= Math.pow(1.5, aEnc);
 			
 			Momentum momentum = owner.buff(Momentum.class);
@@ -418,6 +421,9 @@ public class Armor extends EquipableItem {
 		
 		if (owner instanceof Hero) {
 			int aEnc = STRReq() - ((Hero) owner).STR();
+			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+				aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+			}
 			if (aEnc > 0) speed /= Math.pow(1.2, aEnc);
 		}
 		
@@ -788,7 +794,9 @@ public class Armor extends EquipableItem {
 
 		Class<? extends Glyph> oldGlyphClass = glyph != null ? glyph.getClass() : null;
 		Glyph gl = Glyph.random( oldGlyphClass );
-
+		if(hero!=null && hero.pointsInTalent(Talent.KEBI)>1 && Random.Int(5)==1){
+			gl = Glyph.randomRare(gl.getClass());
+		}
 		return inscribe( gl );
 	}
 

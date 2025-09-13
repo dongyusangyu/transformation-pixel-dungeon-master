@@ -109,6 +109,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.RecallInscription;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DM100;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Ghoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Golem;
@@ -171,6 +172,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSir
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.SummonElemental;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
@@ -454,7 +456,10 @@ public enum Talent {
 	ZHUANYU_SPELL(394,3),THORN_WHIP(395),STRONGEST_SHIELD(396),COMBO_PACKAGE(397),BREAK_ENEMY_RANKS(398),
 	REVELATION(399),HOLY_GRENADE(400,3),BLADE_STAR(401,3),SACRED_BLADE(402,3),
 	EQUIPMENT_BLESS(403,2),HOTLIGHT(404),HEALATTACK(405),EAT_MIND(406),DISABLIITY_POSION(407,3),
-	LIGHT_CROP(408),DEVIL_FLAME(409,3),FAST_BREAK(410),CRAZY_DANCER(411),THROWING_RECYCLING(412,3);
+	LIGHT_CROP(408),DEVIL_FLAME(409,3),FAST_BREAK(410),CRAZY_DANCER(411),THROWING_RECYCLING(412,3),
+    FALSEHOOD_POWER(413),FLAME_INCARNATION(414,3),MARKSMAN(415),SPIDER_SENSE(443),NO_MORE_MOB(444),
+	KEBI(445),ICE_MEAL(446,3),MORE_FAVORS(447),HARDWARE_ELEMENTS(475,3),STATIC_LIGHT(476),
+	MIRACLE_ALCHEMY(477);
 
 	public static final int ATTACK = 0;
 	public static final int MAGIC = 1;
@@ -1410,6 +1415,19 @@ public enum Talent {
 		if(hero.subClass==HeroSubClass.DARKSLIME && hero.buffs(DarkHookCooldown.class).isEmpty() && hero.buffs(DarkHook.class).isEmpty()){
 			Buff.affect(hero, DarkHook.class);
 		}
+		if(hero.hasTalent(Talent.ICE_MEAL)){
+			Buff.affect(hero, FrostImbue.class,Math.min(4,2*hero.pointsInTalent(Talent.ICE_MEAL)));
+			if(hero.pointsInTalent(Talent.ICE_MEAL)>2){
+				for (int i : PathFinder.NEIGHBOURS8) {
+					int c = hero.pos + i;
+					Char ch = Actor.findChar(c);
+					if(ch!=null){
+						Buff.affect(ch, Frost.class, Frost.DURATION);
+					}
+
+				}
+			}
+		}
 	}
 
 	public static class WarriorFoodImmunity extends FlavourBuff{
@@ -2182,8 +2200,9 @@ public enum Talent {
 				//Buff.affect(slime, Bleeding.class).set(6);
 				//Buff.affect(slime, Barrier.class).setShield( hero.HT/2 );
 			}
-
-
+		}
+		if(hero.hasTalent(SPIDER_SENSE) && !Dungeon.level.heroFOV[enemy.pos]){
+			Buff.affect(hero,Swiftthistle.TimeBubble.class).reset1(hero.pointsInTalent(SPIDER_SENSE));
 		}
 		return (int)damage;
 	}
@@ -2293,7 +2312,7 @@ public enum Talent {
 		return Math.round(dmg);
 	}
 
-	public static void onWandProc( Char target, int wandLevel, int chargesUsed){
+	public static void onWandProc( Char target, int wandLevel, int chargesUsed,int dmg){
 		if(hero != null && hero.hasTalent(Talent.INSINUATION) && target instanceof Mob && ((Mob) target).state== ((Mob) target).SLEEPING){
 			Buff.affect(target, Poison.class).set(1+2*hero.pointsInTalent(Talent.INSINUATION));
 		}
@@ -2362,6 +2381,7 @@ public enum Talent {
 		if(hero.hasTalent(Talent.QUANTUM_HACKING) && !(target instanceof NPC) && !(target instanceof Hero)){
 			Buff.affect(target, Vertigo.class,hero.pointsInTalent(Talent.QUANTUM_HACKING));
 		}
+
 
 	}
 
@@ -2442,14 +2462,20 @@ public enum Talent {
 			hero.sprite.showStatusWithIcon( 0x44CCFF, Integer.toString(1), FloatingText.ENERGY );
 		}
 		if(hero != null && hero.subClass==HeroSubClass.DARKSLIME && hero.pointsInTalent(Talent.DARK_LIQUID)==3 && emeny.buff(Roots.class)!=null){
-			Buff.affect(hero, Hunger.class).satisfy(45);
-			Talent.onFoodEaten(hero,90,null);
-			SpellSprite.show(hero, SpellSprite.FOOD);
-			Sample.INSTANCE.play(Assets.Sounds.EAT);
+			Buff.affect(hero, Recharging.class,8);
+			Buff.affect(hero, ArtifactRecharge.class).extend(5);
 			Talent.DarkHookCooldown b = hero.buff(Talent.DarkHookCooldown.class);
 			if(b!=null && cause != Chasm.class){
 				b.detach();
 			}
+		}
+        if(emeny.buff(Burning.class)!=null && hero.pointsInTalent(FLAME_INCARNATION)>Random.Int(10)){
+			Elemental elemental = new Elemental.FireElemental();
+			GameScene.add( elemental );
+			Buff.affect(elemental, SummonElemental.InvisAlly.class);
+			elemental.setSummonedALly();
+			elemental.HP = elemental.HT;
+			ScrollOfTeleportation.appear( elemental, emeny.pos );
 		}
 	}
 
@@ -2691,17 +2717,20 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(0).get(ATTACK),PROVOKED_ANGER,LINGERING_MAGIC,SUCKER_PUNCH,FOLLOWUP_STRIKE,STRENGTHENING_MEAL,
 				PATIENT_STRIKE,STRONG_ATTACK,FEAR_INCARNATION,DISTURB_ATTACK,WATER_ATTACK,COVER_SCAR,STRENGTH_GREATEST,POSION_DAGGER,
 				ATTACK_DOOR,WATER_WAVE,AGILE_ATTACK);
-		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP);
+		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP,MARKSMAN,
+				STATIC_LIGHT);
 		Collections.addAll(typeTalent.get(0).get(EFFECT),HEARTY_MEAL,BACKUP_BARRIER,PROTECTIVE_SHADOWS,NATURES_AID,AGGRESSIVE_BARRIER,
 				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,
 				THORNY_ROSE,ASH_LEDGER,SECRET_LIGHTING,ANESTHESIA,JASMINE_TEA,PERSONAL_ATTACK,FLASH_GENIUS,RESILIENT_MEAL,NINJA_MEAL);
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
-				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION);
+				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION,
+				MORE_FAVORS);
 		Collections.addAll(typeTalent.get(0).get(SPELL),SATIATED_SPELLS, HOLY_INTUITION, SEARING_LIGHT, SHIELD_OF_LIGHT,
 				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT,HEALATTACK);
 		Collections.addAll(typeTalent.get(0).get(ASSIST),VETERANS_INTUITION,IRON_WILL,SCHOLARS_INTUITION,THIEFS_INTUITION,
 				SURVIVALISTS_INTUITION,ADVENTURERS_INTUITION,BOMB_MANIAC,THICKENED_ARMOR,STRENGTH_TRAIN,SAVAGE_PHYSIQUE,
-				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME,DROP_RESISTANT,POTENTIAL_ENERGY);
+				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME,DROP_RESISTANT,POTENTIAL_ENERGY,
+                FALSEHOOD_POWER,SPIDER_SENSE,NO_MORE_MOB);
 		Collections.addAll(typeTalent.get(0).get(OTHER),FISHING_TIME,WATER_GHOST,HONEY_FISH,CHOCOLATE_COINS);
 
 		//tier=2
@@ -2714,7 +2743,7 @@ public enum Talent {
 				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,INVISIBILITY_SHADOWS,BLESS_MEAL,COLLECTION_GOLD,GET_UP,INVINCIBLE,
 				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE,YUNYING_MEAL,XIA,FEINT);
 		Collections.addAll(typeTalent.get(1).get(RESOURCE),WAND_PRESERVATION,ROGUES_FORESIGHT,PRECIOUS_EXPERIENCE,MORE_CHANCE,WANT_ALL,
-				SEED_RECYCLING,INSTANT_REFINING,FAST_BREAK);
+				SEED_RECYCLING,INSTANT_REFINING,FAST_BREAK,KEBI,MIRACLE_ALCHEMY);
 		Collections.addAll(typeTalent.get(1).get(SPELL),STRENGTHEN_CHAIN,STRENGTHEN_CHALICE,JOURNEY_NATURE,STRENGTH_BOOK,RECALL_INSCRIPTION,
 				SUNRAY, DIVINE_SENSE, BLESS, DIVINE_PROTECTION,CONVERSION_HOLY,GENESIS,INDULGENCE,SPRINT_SPELL,THORN_WHIP,ENLIGHTENING_MEAL,
 				REVELATION,EQUIPMENT_BLESS,HOTLIGHT);
@@ -2731,9 +2760,9 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(2).get(MAGIC),DESPERATE_POWER,MAGIC_RECYCLING,ANGEL_STANCE,MORONITY,EXTREME_CASTING,SWIFT_CHURCH,
 				EMPOWERING_LIFE,DISABLIITY_POSION,DEVIL_FLAME);
 		Collections.addAll(typeTalent.get(2).get(EFFECT),ENHANCED_RINGS,SEER_SHOT,INVINCIBLE_MEAL,DETOX_DAMAGE,EARTH_MEAL,REVERSE_POLARITY,
-				WATER_ISFOOD,NO_VIEWRAPE,READ_PROFITABLE,WANLING_POTION,ENDLESS_MEAL,HEALTHY_FOOD);
+				WATER_ISFOOD,NO_VIEWRAPE,READ_PROFITABLE,WANLING_POTION,ENDLESS_MEAL,HEALTHY_FOOD,FLAME_INCARNATION,ICE_MEAL);
 		Collections.addAll(typeTalent.get(2).get(RESOURCE),TRAP_MASTER,GOLD_FORMATION,DOUBLE_TRINKETS,RETURNING_HONOR,WEAPON_MAKE,SECRET_STASH,
-				PYROMANIAC,BIRTHDAY_GIFT,COLLECT_PLANTS,TREASURE_SENSE,CHANGQI_BOOKSTORE);
+				PYROMANIAC,BIRTHDAY_GIFT,COLLECT_PLANTS,TREASURE_SENSE,CHANGQI_BOOKSTORE,HARDWARE_ELEMENTS);
 		Collections.addAll(typeTalent.get(2).get(SPELL),ALLY_WARP,TIME_SAND,STRENGTH_CLOAK,STRENGTH_ARMBAND,CLEANSE, LIGHT_READING,PURIFYING_EVIL,
 				DIVINE_STORM,RESURRECTION,ZHUANYU_SPELL,HOLY_GRENADE,BLADE_STAR,SACRED_BLADE);
 		Collections.addAll(typeTalent.get(2).get(ASSIST),HOLD_FAST,STRONGMAN,LIGHT_CLOAK,BEHEST,AFRAID_DEATH,HERO_NAME,HOMETOWN_CLOUD,WIDE_KNOWLEDGE,

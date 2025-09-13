@@ -21,6 +21,9 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -181,7 +184,19 @@ public class UnstableSpell extends Spell {
 
 		@Override
 		public Item sampleOutput(ArrayList<Item> ingredients) {
-			return new UnstableSpell();
+			try {
+				Item result = new UnstableSpell();
+				int outQuantity = 1;
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+					result.quantity(outQuantity+1);
+				}else{
+					result.quantity(outQuantity);
+				}
+				return result;
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException( e );
+				return null;
+			}
 		}
 	}
 }

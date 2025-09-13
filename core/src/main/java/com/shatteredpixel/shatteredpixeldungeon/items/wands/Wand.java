@@ -231,6 +231,11 @@ public abstract class Wand extends Item {
 
 	protected void wandProc(Char target, int chargesUsed){
 		wandProc(target, buffedLvl(), chargesUsed);
+		if(this instanceof DamageWand){
+			Talent.onWandProc( target,buffedLvl(),chargesUsed,((DamageWand)this).damageRoll());
+		}else{
+			Talent.onWandProc( target,buffedLvl(),chargesUsed,0);
+		}
 	}
 
 	//TODO Consider externalizing char awareness buff
@@ -245,8 +250,9 @@ public abstract class Wand extends Item {
 				Random.Float() > (Math.pow(0.92f, (wandLevel*chargesUsed)+1) - 0.07f)){
 			SoulMark.prolong(target, SoulMark.class, SoulMark.DURATION + wandLevel);
 		}
-		Talent.onWandProc( target,wandLevel,chargesUsed);
 	}
+
+
 
 
 
@@ -400,11 +406,12 @@ public abstract class Wand extends Item {
 			//inside staff, still need to apply degradation
 			if (charger.target == hero
 					&& !hero.belongings.contains(this)
+					&& hero.buff( MostDegrade.class ) != null){
+				lvl = 0;
+			}else if (charger.target == hero
+					&& !hero.belongings.contains(this)
 					&& hero.buff( Degrade.class ) != null){
 				lvl = Degrade.reduceLevel(lvl);
-			}else if(Dungeon.hero != null && !Dungeon.hero.buffs( MostDegrade.class).isEmpty()
-					&& Dungeon.hero.belongings.contains( this )){
-				lvl = 0;
 			}
 
 			if (charger.target.buff(ScrollEmpower.class) != null){
@@ -501,7 +508,12 @@ public abstract class Wand extends Item {
 
 		if(hero.pointsInTalent(Talent.MAGIC_RECYCLING)>0 && hero.pointsInTalent(Talent.MAGIC_RECYCLING)*5+5>Random.Int(100)){
 			curCharges=curCharges;
-		}else{curCharges -= cursed ? 1 : chargesPerCast();}
+		}else if(hero.hasTalent(Talent.MARKSMAN ) && hero.buff(WandOfMagicMissile.MagicCharge.class) != null && !(this instanceof WandOfMagicMissile)){
+			//no charge lost
+
+		}else{
+			curCharges -= cursed ? 1 : chargesPerCast();
+		}
 
 		//remove magic charge at a higher priority, if we are benefiting from it are and not the
 		//wand that just applied it
@@ -556,8 +568,13 @@ public abstract class Wand extends Item {
 
 		Invisibility.dispel();
 		updateQuickslot();
+		if(hero.pointsInTalent(Talent.MARKSMAN )>1 && hero.buff(WandOfMagicMissile.MagicCharge.class) != null && !(this instanceof WandOfMagicMissile)){
+			curUser.next();
 
-		curUser.spendAndNext( TIME_TO_ZAP );
+		}else{
+			curUser.spendAndNext( TIME_TO_ZAP );
+		}
+
 	}
 	
 	@Override

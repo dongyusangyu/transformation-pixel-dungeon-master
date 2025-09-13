@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Smite;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfArcana;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfForce;
@@ -302,6 +303,9 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		if( owner instanceof Hero ){
 			encumbrance = STRReq() - ((Hero)owner).STR();
+			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+				encumbrance = Math.max(0, encumbrance - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+			}
 		}
 
 		float ACC = this.ACC;
@@ -323,6 +327,9 @@ abstract public class Weapon extends KindOfWeapon {
 		float delay = augment.delayFactor(this.DLY);
 		if (owner instanceof Hero) {
 			int encumbrance = STRReq() - ((Hero)owner).STR();
+			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+				encumbrance = Math.max(0, encumbrance - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+			}
 			if (encumbrance > 0){
 				delay *= Math.pow( 1.2, encumbrance );
 			}
@@ -490,7 +497,9 @@ abstract public class Weapon extends KindOfWeapon {
 
 		Class<? extends Enchantment> oldEnchantment = enchantment != null ? enchantment.getClass() : null;
 		Enchantment ench = Enchantment.random( oldEnchantment );
-
+		if(hero!=null && hero.pointsInTalent(Talent.KEBI)>1 && Random.Int(5)==1){
+			ench = Enchantment.randomRare(ench.getClass());
+		}
 		return enchant( ench );
 	}
 

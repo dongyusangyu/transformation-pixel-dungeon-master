@@ -21,13 +21,17 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Enchanting;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.PurpleParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -109,6 +113,32 @@ public class Stylus extends Item {
 		curUser.spend(TIME_TO_INSCRIBE);
 		curUser.busy();
 	}
+
+	private void enchant( Weapon weapon ) {
+
+		if (!weapon.cursedKnown){
+			GLog.w( Messages.get(this, "identify"));
+			return;
+		} else if (weapon.cursed || weapon.hasCurseEnchant()){
+			GLog.w( Messages.get(this, "cursed"));
+			return;
+		}
+
+		detach(curUser.belongings.backpack);
+		Catalog.countUse(getClass());
+
+		GLog.w( Messages.get(this, "inscribed"));
+
+		weapon.enchant();
+
+		curUser.sprite.operate(curUser.pos);
+		curUser.sprite.centerEmitter().start(PurpleParticle.BURST, 0.05f, 10);
+		Enchanting.show(curUser, weapon);
+		Sample.INSTANCE.play(Assets.Sounds.BURNING);
+
+		curUser.spend(TIME_TO_INSCRIBE);
+		curUser.busy();
+	}
 	
 	@Override
 	public int value() {
@@ -129,13 +159,20 @@ public class Stylus extends Item {
 
 		@Override
 		public boolean itemSelectable(Item item) {
-			return item instanceof Armor;
+			if(hero.hasTalent(Talent.KEBI)){
+				return item instanceof Armor || item instanceof Weapon;
+			}else{
+				return item instanceof Armor;
+			}
+
 		}
 
 		@Override
 		public void onSelect( Item item ) {
-			if (item != null) {
+			if (item != null && item instanceof Armor) {
 				Stylus.this.inscribe( (Armor)item );
+			}else if(item != null && item instanceof Weapon) {
+				Stylus.this.enchant((Weapon) item);
 			}
 		}
 	};

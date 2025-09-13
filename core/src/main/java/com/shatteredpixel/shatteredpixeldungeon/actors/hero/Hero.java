@@ -353,10 +353,13 @@ public class Hero extends Char {
 			strBonus += (int)Math.floor(STR * (0.03f + 0.05f*pointsInTalent(Talent.STRONGMAN)));
 		}
 		if(hasTalent(Talent.SHARP_HEAD)){
-			strBonus +=pointsInTalent(Talent.SHARP_HEAD);
+			strBonus +=pointsInTalent(Talent.SHARP_HEAD)*3;
 		}
 		if(pointsInTalent(Talent.STRENGTH_TRAIN)==2){
 			strBonus +=1;
+		}
+		if(hasTalent(Talent.FALSEHOOD_POWER)){
+			strBonus -=1;
 		}
 
 		return STR + strBonus;
@@ -1716,6 +1719,7 @@ public class Hero extends Char {
 		}
 
 		damage = Talent.onAttackProc( this, enemy, damage );
+		GoldIngot existing = Dungeon.hero.belongings.getItem(GoldIngot.class);
 
 		if (wep != null) {
 			damage = wep.proc( this, enemy, damage );
@@ -1735,7 +1739,7 @@ public class Hero extends Char {
 				}
 			}
 		}
-		GoldIngot existing = Dungeon.hero.belongings.getItem(GoldIngot.class);
+
 		if (existing != null){
 			damage = (int)(damage * (1 + existing.level() * 0.075f));
 		}
@@ -2727,14 +2731,14 @@ public class Hero extends Char {
 	}
 
 	public boolean search( boolean intentional ) {
-		
+
 		if (!isAlive()) return false;
 		
 		boolean smthFound = false;
 
 		boolean circular = pointsInTalent(Talent.WIDE_SEARCH) == 1;
 		int distance = heroClass == HeroClass.ROGUE ? 2 : 1;
-		distance = heroClass == HeroClass.NINJA ? 2 : 1;
+		distance = heroClass == HeroClass.NINJA ? 2 : distance;
 		if (hasTalent(Talent.WIDE_SEARCH)) distance++;
 		
 		boolean foresight = buff(Foresight.class) != null;

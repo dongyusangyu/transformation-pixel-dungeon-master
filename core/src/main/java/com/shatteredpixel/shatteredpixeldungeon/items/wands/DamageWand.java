@@ -25,14 +25,19 @@ import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SoulMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WandEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.Random;
 
 //for wands that directly damage a target
 //wands with AOE or circumstantial direct damage count here (e.g. fireblast, transfusion), but wands with indirect damage do not (e.g. corrosion)
@@ -77,8 +82,16 @@ public abstract class DamageWand extends Wand{
 		if(hero.hasTalent(Talent.EAT_MIND)){
 			Buff.affect(hero, Hunger.class).satisfy((0.1f + 0.1f*hero.pointsInTalent(Talent.EAT_MIND))*dmg);
 		}
+		if(hero.hasTalent(Talent.STATIC_LIGHT)){
+			dmg+=hero.pointsInTalent(Talent.STATIC_LIGHT);
+		}
 		return dmg;
 	}
+
+
+
+
+
 
 	@Override
 	public String statsDesc() {

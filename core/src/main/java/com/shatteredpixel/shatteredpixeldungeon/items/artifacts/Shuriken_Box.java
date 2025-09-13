@@ -218,7 +218,7 @@ public class Shuriken_Box extends Artifact {
         public int proc(Char attacker, Char defender, int damage) {
             if (defender instanceof Mob
                     && defender.buff(Talent.SuckerPunchTracker.class) == null
-            && Random.Int(10)<level()*2+1){
+            && Random.Int(10)<Shuriken_Box.this.level()+1){
                 Buff.affect(defender, Paralysis.class,2);
                 Buff.affect(defender, Talent.SuckerPunchTracker.class);
             }

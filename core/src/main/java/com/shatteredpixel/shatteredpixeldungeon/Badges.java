@@ -891,6 +891,7 @@ public class Badges {
 		thirdBossSubclassBadges.put(HeroSubClass.MONK, Badge.BOSS_SLAIN_3_MONK);
 		thirdBossSubclassBadges.put(HeroSubClass.PRIEST, Badge.BOSS_SLAIN_3_PRIEST);
 		thirdBossSubclassBadges.put(HeroSubClass.PALADIN, Badge.BOSS_SLAIN_3_PALADIN);
+		thirdBossSubclassBadges.put(HeroSubClass.FREEMAN, Badge.BOSS_SLAIN_3_FREEMAN);
 		thirdBossSubclassBadges.put(HeroSubClass.WATERSLIME, Badge.BOSS_SLAIN_3_WATERSLIME);
 		thirdBossSubclassBadges.put(HeroSubClass.DARKSLIME, Badge.BOSS_SLAIN_3_DARKSLIME);
 		thirdBossSubclassBadges.put(HeroSubClass.TATTEKI_NINJA, Badge.BOSS_SLAIN_3_TATTEKI);
@@ -964,6 +965,7 @@ public class Badges {
 			} else if (badge == Badge.BOSS_SLAIN_3) {
 
 				badge = thirdBossSubclassBadges.get(hero.subClass);
+
 				if (badge == null) return;
 				local.add( badge );
 				unlock(badge);
@@ -975,6 +977,7 @@ public class Badges {
 						break;
 					}
 				}
+
 				if (allUnlocked) {
 					badge = Badge.BOSS_SLAIN_3_ALL_SUBCLASSES;
 					if (!isUnlocked( badge )) {

@@ -28,8 +28,11 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Awareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MostDegrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
@@ -92,7 +95,8 @@ public class Food extends Item {
 			
 			Statistics.foodEaten++;
 			Badges.validateFoodEaten();
-			
+			//Buff.affect(hero, HeroDisguise.class,10);
+			//Buff.affect(hero, Awareness.class,10);
 		}
 	}
 
@@ -109,9 +113,10 @@ public class Food extends Item {
 			|| hero.hasTalent(Talent.MYSTICAL_MEAL)
 			|| hero.hasTalent(Talent.INVIGORATING_MEAL)
 			|| hero.hasTalent(Talent.FOCUSED_MEAL)
-				|| hero.hasTalent(Talent.BLESS_MEAL)||
-				Dungeon.hero.hasTalent(Talent.ENLIGHTENING_MEAL) ||
-		hero.hasTalent(Talent.YUNYING_MEAL)){
+			|| hero.hasTalent(Talent.BLESS_MEAL)
+			|| hero.hasTalent(Talent.ENLIGHTENING_MEAL)
+			|| hero.hasTalent(Talent.YUNYING_MEAL)
+			||hero.hasTalent(Talent.ICE_MEAL)){
 			return TIME_TO_EAT - 2;
 		} else {
 			return TIME_TO_EAT;

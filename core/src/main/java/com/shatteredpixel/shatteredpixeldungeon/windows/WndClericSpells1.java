@@ -190,10 +190,11 @@ public class WndClericSpells1 extends Window {
 				if(!tome1.canCast(Dungeon.hero, spell)){
 					GLog.w(Messages.get(HolyTome.class, "no_spell"));
 				} else {
+					tome1.spendCharge(spell.chargeUse(Dungeon.hero));
 					//float charge = tome.getArtifactCharge();
 					spell.onCast(tome, Dungeon.hero);
 					//float curcharge = tome.getArtifactCharge();
-					tome1.spendCharge(spell.chargeUse(Dungeon.hero));
+
 					//tome1.spendCharge(10-curcharge);
 				}
 

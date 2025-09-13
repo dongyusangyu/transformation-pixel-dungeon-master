@@ -1002,10 +1002,10 @@ public abstract class Mob extends Char {
 			}
 		}
 		Talent.onMobDie(this,cause);
+		boolean soulMarked = buff(SoulMark.class) != null;
+
 
 		super.die( cause );
-
-		boolean soulMarked = buff(SoulMark.class) != null;
 		if (!(this instanceof Wraith)
 				&& soulMarked
 				&& Random.Float() < (0.4f* hero.pointsInTalent(Talent.NECROMANCERS_MINIONS)/3f)){
@@ -1018,6 +1018,8 @@ public abstract class Mob extends Char {
 				}
 			}
 		}
+
+
 		if (!(this instanceof Wraith) && Dungeon.level.water[this.pos]
 				&& hero.hasTalent(Talent.WATER_GHOST) && Random.Int(5)==1){
 			Wraith w = Wraith.spawnAt(pos, Wraith.class);
@@ -1277,8 +1279,13 @@ public abstract class Mob extends Char {
 				for (Mob mob : Dungeon.level.mobs) {
 					if (mob.paralysed <= 0
 							&& Dungeon.level.distance(pos, mob.pos) <= distance
-							&& mob.state != mob.HUNTING) {
-						mob.beckon(target);
+							&& mob.state != mob.HUNTING && !(hero.hasTalent(Talent.NO_MORE_MOB) && Random.Int(2)==1)) {
+						if(hero.pointsInTalent(Talent.NO_MORE_MOB)>1){
+							state = WANDERING;
+						}else{
+							mob.beckon(target);
+						}
+
 						if(Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
 							Buff.affect(mob,Adrenaline.class,5);
 						}

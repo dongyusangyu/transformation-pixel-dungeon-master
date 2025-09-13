@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.OrderedMap;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingListPane;
 import com.watabou.noosa.Image;
@@ -90,7 +91,10 @@ public class WndChallenges extends Window {
 				int size = boxes.size();
 				if (editable) {
 					for (int i = 0; i < size; i++) {
-						if (boxes.get(i).onClick(x, y)) break;
+						if (boxes.get(i).onClick(x, y)) {
+
+							break;
+						}
 					}
 
 				}
@@ -120,14 +124,32 @@ public class WndChallenges extends Window {
 
 			final String challenge = chal.key;
 			if (chal.value == Challenges.HARSH_ENVIRONMENT){
-				index1 =
+				index1 = 12;
 			}else if (chal.value == Challenges.EXTREME_ENVIRONMENT){
-				cb.textColor(0xFF0000);
+				index1 = 25;
+			}else if (chal.value == Challenges.RED_ENVELOPE){
+				index1 = 38;
+			}else if (chal.value == Challenges.TEST_MODE){
+				index1 = 39;
+			}else{
+				index1 = index;
+				index++;
+				if(boxes.get(1).checked()){
+					index1+=26;
+				}else if(boxes.get(0).checked()){
+					index1+=13;
+				}
+
 			}
 
 			String chaltitle = Messages.titleCase(Messages.get(Challenges.class, challenge));
+			ConduitBox cb;
+			if(index1 == -1){
+				cb = new ConduitBox( chaltitle);
+			}else{
+				cb = new ConduitBox( chaltitle, Challenges.icon(index1) );
+			}
 
-			ConduitBox cb = new ConduitBox( chaltitle, Challenges.icon(index) );
 			cb.checked( (checked & chal.value) != 0 );
 			cb.active = editable;
 			if (chal.value == Challenges.HARSH_ENVIRONMENT){
@@ -161,6 +183,31 @@ public class WndChallenges extends Window {
 
 		content.setSize(WIDTH, pos);
 	}
+
+	public void updateConduitBox() {
+		for(int i=0;i<boxes.size();i++){
+			int index1 = 0 ;
+			if (Challenges.MASKS[i] == Challenges.HARSH_ENVIRONMENT){
+				index1 = 12;
+			}else if (Challenges.MASKS[i] == Challenges.EXTREME_ENVIRONMENT){
+				index1 = 25;
+			}else if (Challenges.MASKS[i] == Challenges.RED_ENVELOPE){
+				index1 = 38;
+			}else if (Challenges.MASKS[i] == Challenges.TEST_MODE){
+				index1 = 39;
+			}else{
+				index1 = i-2;
+				if(boxes.get(1).checked()){
+					index1+=26;
+				}else if(boxes.get(0).checked()){
+					index1+=13;
+				}
+				boxes.get(i).update(index1);
+			}
+
+		}
+	}
+
 
 	@Override
 	public void onBackPressed() {
@@ -199,7 +246,6 @@ public class WndChallenges extends Window {
 		}
 		public ConduitBox( String label, Image icon ) {
 			super( label );
-
 			symbolIcon = icon;
 			add(symbolIcon);
 			icon( Icons.get( Icons.UNCHECKED ) );
@@ -208,26 +254,45 @@ public class WndChallenges extends Window {
 		@Override
 		protected void onClick() {
 			super.onClick();
+			WndChallenges.this.updateConduitBox();
 		}
 
+
 		protected boolean onClick(float x, float y) {
+
 			if (!inside(x, y) || !editable) return false;
 			Sample.INSTANCE.play(Assets.Sounds.CLICK);
 			onClick();
 			return true;
+		}
+		protected  void update(int index) {
+
+			if (this.symbolIcon != null) {
+				remove( this.symbolIcon );
+			}
+			symbolIcon = Challenges.icon(index);
+			if (this.symbolIcon != null) {
+				add( this.symbolIcon );
+				layout();
+			}
+
 		}
 
 		@Override
 		protected void layout() {
 			super.layout();
 			hotArea.width = hotArea.height = 0;
+
 			if (symbolIcon != null) {
 				float margin = (height - symbolIcon.height) / 2;
 
 				symbolIcon.x = x + margin;
 				symbolIcon.y = y + margin;
 				PixelScene.align(symbolIcon);
+				text.setPos( x + margin + (symbolIcon != null ? symbolIcon.width : 0) + 2, y+(height - text.height()) / 2);
+				PixelScene.align(text);
 			}
+
 		}
 	}
 }
@@ -311,6 +376,5 @@ public class WndChallenges extends Window {
 }
 
  */
-
 
 

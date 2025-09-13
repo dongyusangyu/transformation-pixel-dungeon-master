@@ -426,7 +426,7 @@ public class MagesStaff extends MeleeWeapon {
 		@Override
 		public void onSelect( final Item item ) {
 			if (item != null) {
-
+				/*
 				if (!item.isIdentified()) {
 					GLog.w(Messages.get(MagesStaff.class, "id_first"));
 					return;
@@ -434,6 +434,8 @@ public class MagesStaff extends MeleeWeapon {
 					GLog.w(Messages.get(MagesStaff.class, "cursed"));
 					return;
 				}
+
+				 */
 
 				if (wand == null){
 					applyWand((Wand)item);

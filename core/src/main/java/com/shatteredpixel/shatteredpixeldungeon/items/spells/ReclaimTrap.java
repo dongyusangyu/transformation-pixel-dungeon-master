@@ -98,7 +98,7 @@ public class ReclaimTrap extends TargetedSpell {
 				GLog.w(Messages.get(this, "no_trap"));
 			}
 		} else {
-			if (hero.pointsInTalent(Talent.TRAP_MASTER)> Random.Int(4)){
+			if (!Random.Int(4)){
 				quantity++;
 			}
 

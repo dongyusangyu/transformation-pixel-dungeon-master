@@ -21,8 +21,11 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Shopkeeper;
@@ -108,7 +111,19 @@ public class Alchemize extends Spell {
 
 		@Override
 		public Item sampleOutput(ArrayList<Item> ingredients) {
-			return new Alchemize().quantity(OUT_QUANTITY);
+			try {
+				Item result = new Alchemize();
+				int outQuantity = OUT_QUANTITY;
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+					result.quantity(outQuantity+1);
+				}else{
+					result.quantity(outQuantity);
+				}
+				return result;
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException( e );
+				return null;
+			}
 		}
 	}
 

@@ -21,12 +21,18 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.food;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -92,7 +98,19 @@ public class MeatPie extends Food {
 		
 		@Override
 		public Item sampleOutput(ArrayList<Item> ingredients) {
-			return new MeatPie();
+			try {
+				Item result = new MeatPie();
+				int outQuantity = 1;
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+					result.quantity(outQuantity+1);
+				}else{
+					result.quantity(outQuantity);
+				}
+				return result;
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException( e );
+				return null;
+			}
 		}
 	}
 }

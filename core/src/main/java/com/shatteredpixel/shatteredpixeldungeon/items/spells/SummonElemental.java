@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -37,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.RainbowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShaftParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Embers;
@@ -191,7 +194,7 @@ public class SummonElemental extends Spell {
 				return;
 			}
 
-			item.detach(Dungeon.hero.belongings.backpack);
+			item.detach(hero.belongings.backpack);
 			if (item instanceof PotionOfLiquidFlame) {
 				Sample.INSTANCE.play(Assets.Sounds.BURNING);
 				curUser.sprite.emitter().burst( FlameParticle.FACTORY, 12 );
@@ -241,6 +244,27 @@ public class SummonElemental extends Spell {
 
 			output = SummonElemental.class;
 			outQuantity = OUT_QUANTITY;
+		}
+		@Override
+		public int cost(ArrayList<Item> ingredients) {
+			if(hero != null && hero.hasTalent(Talent.HARDWARE_ELEMENTS)){
+				return 25-5*hero.pointsInTalent(Talent.HARDWARE_ELEMENTS);
+			}else{
+				return cost;
+			}
+
+		}
+		@Override
+		public Item brew(ArrayList<Item> ingredients) {
+			if (!testIngredients(ingredients)) return null;
+
+			if(hero != null && hero.hasTalent(Talent.HARDWARE_ELEMENTS)){
+
+			}else{
+				return super.brew(ingredients);
+			}
+
+			return sampleOutput(null);
 		}
 
 	}

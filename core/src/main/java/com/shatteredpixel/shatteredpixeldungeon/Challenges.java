@@ -94,7 +94,8 @@ public class Challenges {
 
 	}
 	public static Image icon(int value) {
-		return new Image(Assets.Interfaces.CHALLENGES_ICONS, value * 16, 0, 16, 16);
+
+		return new Image(Assets.Interfaces.CHALLENGES_ICONS, Math.floorMod(value,13) * 16, 0+16*(int)(value/13), 16, 16);
 	}
 
 }

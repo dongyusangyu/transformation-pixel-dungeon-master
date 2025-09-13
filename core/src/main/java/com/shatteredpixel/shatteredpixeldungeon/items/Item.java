@@ -422,12 +422,12 @@ public class Item implements Bundlable {
 	//note that not all item properties should care about buffs/debuffs! (e.g. str requirement)
 	public int buffedLvl(){
 		//only the hero can be affected by Degradation
-		if (hero != null && hero.buff( Degrade.class ) != null
-			&& (isEquipped( hero ) || hero.belongings.contains( this ))) {
-			return Degrade.reduceLevel(level());
-		} else if(hero != null && !hero.buffs( MostDegrade.class).isEmpty()
+		if(hero != null && hero.buff( MostDegrade.class) != null
 				&& (isEquipped( hero ) || hero.belongings.contains( this ))){
 			return 0;
+		}else if (hero != null && hero.buff( Degrade.class ) != null
+			&& (isEquipped( hero ) || hero.belongings.contains( this ))) {
+			return Degrade.reduceLevel(level());
 		}else {
 			return level();
 		}

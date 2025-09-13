@@ -91,7 +91,7 @@ public class RingOfElements extends Ring {
 	
 	public static float resist( Char target, Class effect ){
 		float resist = 1f;
-		if(hero !=null && hero.pointsInTalent(Talent.ORIGINAL_MONSTER)>1 && hero.buff(Sungrass.Health.class)!=null){
+		if(hero !=null && target == hero && hero.pointsInTalent(Talent.ORIGINAL_MONSTER)>1 && hero.buff(Sungrass.Health.class)!=null){
 			resist = 0.67f;
 		}
 		if (getBuffedBonus(target, Resistance.class) == 0) return resist;

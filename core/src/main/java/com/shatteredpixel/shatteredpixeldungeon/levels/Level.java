@@ -1466,7 +1466,13 @@ public abstract class Level implements Bundlable {
 			if (c.buff( Awareness.class ) != null) {
 				for (Heap heap : heaps.valueList()) {
 					int p = heap.pos;
-					for (int i : PathFinder.NEIGHBOURS9) heroMindFov[p+i] = true;
+					for (int i : PathFinder.NEIGHBOURS9){
+						if(p+i<length()){
+							heroMindFov[p+i] = true;
+						}else{
+							heap.destroy();
+						}
+					}
 				}
 			}
 

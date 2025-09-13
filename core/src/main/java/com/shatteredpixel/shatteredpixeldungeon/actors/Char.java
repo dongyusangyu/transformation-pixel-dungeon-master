@@ -130,6 +130,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfCha
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfPsionicBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.FerretTuft;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
@@ -429,6 +430,7 @@ public abstract class Char extends Actor {
 			} else {
 				dmg = damageRoll();
 			}
+
 
 			dmg = dmg*dmgMulti;
 
@@ -992,6 +994,13 @@ public abstract class Char extends Actor {
 				dmg = s.absorbDamage(dmg);
 				if (dmg == 0) break;
 			}
+		}
+		if(hero!=null && hero.hasTalent(Talent.STATIC_LIGHT) && src instanceof Wand && dmg>0){
+			int lightturns = (int)(dmg*(0.025f+0.025f*hero.pointsInTalent(Talent.STATIC_LIGHT)));
+			if(lightturns>0){
+				Buff.affect(this, Paralysis.class,lightturns);
+			}
+
 		}
 		shielded -= dmg;
 		HP -= dmg;

@@ -99,7 +99,7 @@ public class Assets {
 		public static final String RADIAL_MENU      = "interfaces/radial_menu.png";
 
 		public static final String HUNGER_BAR      = "interfaces/hunger_bar.png";
-		public static final String CHALLENGES_ICONS      = "interfaces/challenges.png";
+		public static final String CHALLENGES_ICONS      = "interfaces/Challenge_icons.png";
 
 	}
 

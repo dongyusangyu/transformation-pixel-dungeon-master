@@ -136,6 +136,60 @@ public class BrokenSeal extends Item {
 	public boolean isUpgradable() {
 		return level() == 0;
 	}
+	public void affixToArmor(Armor armor, Item outgoing){
+		if (armor != null) {
+			if (!armor.cursedKnown){
+				GLog.w(Messages.get(BrokenSeal.class, "unknown_armor"));
+
+			} else if (armor.cursed && (getGlyph() == null || !getGlyph().curse())){
+				GLog.w(Messages.get(BrokenSeal.class, "cursed_armor"));
+
+			}else if (armor.glyph != null && getGlyph() != null
+					&& canTransferGlyph()
+					&& armor.glyph.getClass() != getGlyph().getClass()) {
+
+				GameScene.show(new WndOptions(new ItemSprite(ItemSpriteSheet.SEAL),
+						Messages.get(BrokenSeal.class, "choose_title"),
+						Messages.get(BrokenSeal.class, "choose_desc", armor.glyph.name(), getGlyph().name()),
+						armor.glyph.name(),
+						getGlyph().name()){
+					@Override
+					protected void onSelect(int index) {
+						if (index == -1) return;
+
+						if (outgoing == BrokenSeal.this) {
+							detach(Dungeon.hero.belongings.backpack);
+						}
+
+						if (index == 0) setGlyph(null);
+						//if index is 1, then the glyph transfer happens in affixSeal
+
+						GLog.p(Messages.get(BrokenSeal.class, "affix"));
+						Dungeon.hero.sprite.operate(Dungeon.hero.pos);
+						Sample.INSTANCE.play(Assets.Sounds.UNLOCK);
+						armor.affixSeal(BrokenSeal.this);
+					}
+
+					@Override
+					public void hide() {
+						super.hide();
+						Dungeon.hero.next();
+					}
+				});
+
+			} else {
+				if (outgoing == this) {
+					detach(Dungeon.hero.belongings.backpack);
+				}
+
+				GLog.p(Messages.get(BrokenSeal.class, "affix"));
+				Dungeon.hero.sprite.operate(Dungeon.hero.pos);
+				Sample.INSTANCE.play(Assets.Sounds.UNLOCK);
+				armor.affixSeal(this);
+				Dungeon.hero.next();
+			}
+		}
+	}
 
 	protected static WndBag.ItemSelector armorSelector = new WndBag.ItemSelector() {
 
@@ -154,6 +208,7 @@ public class BrokenSeal extends Item {
 			return item instanceof Armor;
 		}
 
+		/*
 		@Override
 		public void onSelect( Item item ) {
 			BrokenSeal seal = (BrokenSeal) curItem;
@@ -192,6 +247,15 @@ public class BrokenSeal extends Item {
 					armor.affixSeal((BrokenSeal)curItem);
 					curItem.detach(Dungeon.hero.belongings.backpack);
 				}
+			}
+		}
+
+		 */
+		@Override
+		public void onSelect( Item item ) {
+			if (item instanceof Armor) {
+				BrokenSeal seal = (BrokenSeal) curItem;
+				seal.affixToArmor((Armor)item, seal);
 			}
 		}
 	};

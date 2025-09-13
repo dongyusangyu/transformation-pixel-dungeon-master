@@ -142,7 +142,6 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
                                             Dungeon.level.occupyCell(enemy);
                                             Dungeon.observe();
                                             GameScene.updateFog();
-                                            hero.spendAndNext(1f);
                                         }
                                     }));
                                     hero.next();
@@ -150,7 +149,7 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
                             }));
 
                     detach();
-                    Buff.affect(Dungeon.hero, Talent.DarkHookCooldown.class, 50f);
+                    Buff.affect(Dungeon.hero, Talent.DarkHookCooldown.class, 65f);
 
                     if (Dungeon.hero.pointsInTalent(Talent.DARK_LIQUID) >= 1){
                         Buff.affect(ch, Roots.class, 5f);

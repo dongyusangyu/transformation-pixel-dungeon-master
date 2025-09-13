@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfAntiMagic;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
@@ -372,8 +373,20 @@ public abstract class Scroll extends Item {
 			} else {
 				s.identify();
 			}
+			try {
+				Item result = Reflection.newInstance(stones.get(s.getClass()));
+				int outQuantity = 2;
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+					outQuantity+=1;
+				}
+				return result.quantity(outQuantity);
+
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException( e );
+				return null;
+			}
 			
-			return Reflection.newInstance(stones.get(s.getClass())).quantity(2);
+
 		}
 		
 		@Override
@@ -381,12 +394,22 @@ public abstract class Scroll extends Item {
 			if (!testIngredients(ingredients)) return null;
 			
 			Scroll s = (Scroll) ingredients.get(0);
+			try {
+				int outQuantity = 2;
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+					outQuantity+=1;
+				}
+				if (!s.isKnown()){
+					return new Runestone.PlaceHolder().quantity(outQuantity);
+				} else {
+					return Reflection.newInstance(stones.get(s.getClass())).quantity(outQuantity);
+				}
 
-			if (!s.isKnown()){
-				return new Runestone.PlaceHolder().quantity(2);
-			} else {
-				return Reflection.newInstance(stones.get(s.getClass())).quantity(2);
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException( e );
+				return null;
 			}
+
 		}
 	}
 }

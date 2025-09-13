@@ -71,7 +71,7 @@ public class HeroSprite extends CharSprite {
 	}
 	public void magic_girl(){
 		texture( Assets.Sprites.MAGICGIRL );
-		updateArmor();
+		transform();
 	}
 
 	
@@ -107,7 +107,19 @@ public class HeroSprite extends CharSprite {
 		else
 			die();
 	}
-	
+
+	public void transform() {
+		if (Dungeon.hero.isAlive()){
+			read();
+		}else{
+			die();
+		}
+
+	}
+
+
+
+
 	@Override
 	public void place( int p ) {
 		super.place( p );

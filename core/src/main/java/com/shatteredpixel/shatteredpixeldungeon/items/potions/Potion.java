@@ -27,6 +27,7 @@ import static com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHea
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -574,24 +575,42 @@ public class Potion extends Item {
 			if (result instanceof PotionOfHealing) {
 				Dungeon.LimitedDrops.COOKING_HP.count++;
 			}
+			int outQuantity = 1;
+			if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+				result.quantity(outQuantity+1);
+			}else{
+				result.quantity(outQuantity);
+			}
 			
 			return result;
 		}
 		
 		@Override
 		public Item sampleOutput(ArrayList<Item> ingredients) {
-			return new WndBag.Placeholder(ItemSpriteSheet.POTION_HOLDER){
+			try {
+				Item result = new WndBag.Placeholder(ItemSpriteSheet.POTION_HOLDER){
 
-				@Override
-				public String name() {
-					return Messages.get(Potion.SeedToPotion.class, "name");
+					@Override
+					public String name() {
+						return Messages.get(Potion.SeedToPotion.class, "name");
+					}
+
+					@Override
+					public String info() {
+						return "";
+					}
+				};
+				int outQuantity = 1;
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+					result.quantity(outQuantity+1);
+				}else{
+					result.quantity(outQuantity);
 				}
-				
-				@Override
-				public String info() {
-					return "";
-				}
-			};
+				return result;
+			} catch (Exception e) {
+				ShatteredPixelDungeon.reportException( e );
+				return null;
+			}
 		}
 	}
 
