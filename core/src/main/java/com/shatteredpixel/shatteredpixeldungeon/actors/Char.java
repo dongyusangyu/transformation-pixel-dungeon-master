@@ -633,8 +633,8 @@ public abstract class Char extends Actor {
 			if((enemy instanceof Hero)&& hero.hasTalent(Talent.AGILE_ATTACK)){
 				Buff.affect(enemy,Talent.AgileAttack.class);
 			}
-			if((enemy instanceof Hero)&& hero.hasTalent(Talent.YOU_SCARED_ME)){
-				Buff.affect(enemy, Barrier.class).incShield(2*hero.pointsInTalent(Talent.YOU_SCARED_ME));
+			if((enemy instanceof Hero)&& hero.hasTalent(Talent.YOU_SCARED_ME) && enemy.shielding()<hero.pointsInTalent(Talent.YOU_SCARED_ME)*2){
+				Buff.affect(enemy, Barrier.class).incShield(Math.min(1+hero.pointsInTalent(Talent.YOU_SCARED_ME),hero.pointsInTalent(Talent.YOU_SCARED_ME)*2-enemy.shielding()));
 			}
 			if (enemy.sprite != null){
 				if (hitMissIcon != -1){

@@ -86,7 +86,7 @@ public class Hunger extends Buff implements Hero.Doom {
 				}
 				if (partialDamage > 1){
 					if(hero.hasTalent(Talent.CHOCOLATE_COINS) && Dungeon.gold>100-25*hero.pointsInTalent(Talent.CHOCOLATE_COINS)){
-						Dungeon.gold-=100-25*hero.pointsInTalent(Talent.CHOCOLATE_COINS);
+						Dungeon.gold-=49-12*hero.pointsInTalent(Talent.CHOCOLATE_COINS);
 					}else{
 						target.damage( (int)partialDamage, this);
 						if(hero.pointsNegative(Talent.MALNUTRITION)==2){

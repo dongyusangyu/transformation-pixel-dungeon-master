@@ -401,6 +401,9 @@ abstract public class Weapon extends KindOfWeapon {
 		if (hero!=null && hero.buff(Equipment_Bless.Blessbuff.class)!=null){
 			level += hero.pointsInTalent(Talent.EQUIPMENT_BLESS);
 		}
+		if (hero!=null && hero.hasTalent(Talent.PROTECT_CURSE) && this.cursed){
+			level += hero.pointsInTalent(Talent.PROTECT_CURSE);
+		}
 		return level+super.buffedLvl();
 	}
 	

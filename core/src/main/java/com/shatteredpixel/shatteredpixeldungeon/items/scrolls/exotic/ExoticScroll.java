@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfMastery;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
@@ -147,12 +148,6 @@ public abstract class ExoticScroll extends Scroll {
 			}
 			try {
 				Item result = Reflection.newInstance(regToExo.get(ingredients.get(0).getClass()));
-				int outQuantity = 1;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

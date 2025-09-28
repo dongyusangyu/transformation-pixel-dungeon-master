@@ -66,7 +66,7 @@ public class Dewdrop extends Item {
 				Buff.affect(hero, Poison.class).set(3);
 			}
 
-		} else if(hero.hasTalent(Talent.MILITARY_WATERSKIN) && flask.volume<20+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*5){
+		} else if(hero.hasTalent(Talent.MILITARY_WATERSKIN) && flask.volume<20+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*15){
 			flask.collectDew( this );
 			GameScene.pickUp( this, pos );
 		}else {

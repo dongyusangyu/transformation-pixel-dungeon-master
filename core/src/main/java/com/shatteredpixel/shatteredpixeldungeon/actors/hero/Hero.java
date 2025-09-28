@@ -649,7 +649,7 @@ public class Hero extends Char {
 		}
 		accuracy *= RingOfAccuracy.accuracyMultiplier( this );
 		if(pointsInTalent(Talent.AMAZING_EYESIGHT)>0 && belongings.attackingWeapon() instanceof MeleeWeapon && Dungeon.level.distance(this.pos,target.pos)>=4-pointsInTalent(Talent.AMAZING_EYESIGHT)){
-			accuracy *=1.5;
+			accuracy *=1.35;
 		}
 		if(hasTalent(Talent.SHARP_HEAD)){
 			accuracy*=1-pointsInTalent(Talent.SHARP_HEAD)/6;
@@ -795,8 +795,12 @@ public class Hero extends Char {
 
 		if (belongings.armor() != null) {
 			int armDr = Random.NormalIntRange( belongings.armor().DRMin(), belongings.armor().DRMax());
-			if (STR() < belongings.armor().STRReq()){
-				armDr -= 2*(belongings.armor().STRReq() - STR());
+            int aEnc = belongings.armor().STRReq() - STR();
+            if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+                aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+            }
+			if (aEnc>0){
+				armDr -= 2*aEnc;
 			}
 			if (armDr > 0) dr += armDr;
 			if(hero.hasTalent(Talent.STRONGEST_SHIELD) && Random.Int(2)==1 && armDr>0){
@@ -804,9 +808,13 @@ public class Hero extends Char {
 			}
 		}
 		if (belongings.weapon() != null && !RingOfForce.fightingUnarmed(this))  {
+            int aEnc = ((Weapon)belongings.weapon()).STRReq()  - STR();
+            if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+                aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+            }
 			int wepDr = Random.NormalIntRange( 0 , belongings.weapon().defenseFactor( this ) );
-			if (STR() < ((Weapon)belongings.weapon()).STRReq()){
-				wepDr -= 2*(((Weapon)belongings.weapon()).STRReq() - STR());
+			if (aEnc>0){
+				wepDr -= 2*aEnc;
 			}
 			if (wepDr > 0) dr += wepDr;
 		}
@@ -1720,7 +1728,9 @@ public class Hero extends Char {
 
 		damage = Talent.onAttackProc( this, enemy, damage );
 		GoldIngot existing = Dungeon.hero.belongings.getItem(GoldIngot.class);
-
+		if (existing != null){
+			damage = (int)(damage * (1 + existing.level() * 0.075f));
+		}
 		if (wep != null) {
 			damage = wep.proc( this, enemy, damage );
 		} else {
@@ -1740,9 +1750,7 @@ public class Hero extends Char {
 			}
 		}
 
-		if (existing != null){
-			damage = (int)(damage * (1 + existing.level() * 0.075f));
-		}
+
 		switch (subClass) {
 			case SNIPER:
 				if (wep instanceof MissileWeapon && !(wep instanceof SpiritBow.SpiritArrow) && enemy != this) {
@@ -2320,7 +2328,7 @@ public class Hero extends Char {
 					HP=Math.min(HT,HP+HT*pointsInTalent(Talent.HERO_NAME)/5);
 				}
 				if(hasTalent(Talent.ACTIVE_MUSCLES)){
-					Buff.affect(this, AdrenalineSurge.class).reset(pointsInTalent(Talent.ACTIVE_MUSCLES),300);
+					Buff.affect(this, AdrenalineSurge.class).reset(pointsInTalent(Talent.ACTIVE_MUSCLES)*2,400);
 				}
 				if(belongings.armor instanceof SlimeArmor || belongings.armor instanceof SlimeGirlArmor){
 					this.belongings.armor.tier = Math.min(1 + this.lvl/6,5);

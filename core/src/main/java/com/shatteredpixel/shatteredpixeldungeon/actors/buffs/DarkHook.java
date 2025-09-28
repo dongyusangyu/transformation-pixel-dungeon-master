@@ -160,8 +160,6 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
                     if (Dungeon.hero.pointsInTalent(Talent.DARK_LIQUID) >= 2){
                         Buff.affect(ch, Ooze.class).set(Ooze.DURATION);
                     }
-
-                    spend(TICK);
                 }
             }
         }

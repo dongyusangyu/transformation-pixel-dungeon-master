@@ -49,7 +49,7 @@ public class PotionOfExperience extends Potion {
 			hero.earnExp( (int)(hero.maxExp()*0.5), getClass() );
 		}else if(hero.pointsInTalent(Talent.PRECIOUS_EXPERIENCE)==2){
 			hero.earnExp( (int)(hero.maxExp()*0.5), getClass() );
-			Buff.affect(hero, Bless.class,15);
+			Buff.affect(hero, Bless.class,50);
 		}
 		new Flare( 6, 32 ).color(0xFFFF00, true).show( curUser.sprite, 2f );
 	}

@@ -151,18 +151,20 @@ public abstract class Recipe {
 			}
 			
 			//sample output and real output are identical in this case.
-			return sampleOutput(null);
+			Item result = sampleOutput(null);
+			if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !((result instanceof MagicalInfusion) || (result instanceof ElixirOfMight))){
+				result.quantity(outQuantity+1);
+			}else{
+				result.quantity(outQuantity);
+			}
+			return result;
 		}
 		
 		//ingredients are ignored, as output doesn't vary
 		public Item sampleOutput(ArrayList<Item> ingredients){
 			try {
 				Item result = Reflection.newInstance(output);
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !(result instanceof MagicalInfusion)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
+				result.quantity(outQuantity);
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

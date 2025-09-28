@@ -322,7 +322,7 @@ public class Potion extends Item {
 		if (!anonymous) {
 			Catalog.countUse(getClass());
 			if((this instanceof PotionOfLiquidFlame) && hero.hasTalent(Talent.BACKFIRED)){
-				Buff.affect(hero,FireImbue.class).set(2+hero.pointsInTalent(Talent.BACKFIRED));
+				Buff.affect(hero,FireImbue.class).set(2+hero.pointsInTalent(Talent.BACKFIRED)*3);
 			}
 			if (Random.Float() < talentChance) {
 				Talent.onPotionUsed(curUser, curUser.pos, talentFactor);

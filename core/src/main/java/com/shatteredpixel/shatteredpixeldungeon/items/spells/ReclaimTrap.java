@@ -98,7 +98,7 @@ public class ReclaimTrap extends TargetedSpell {
 				GLog.w(Messages.get(this, "no_trap"));
 			}
 		} else {
-			if (!Random.Int(4)){
+			if (Random.Int(2+hero.pointsInTalent(Talent.TRAP_MASTER))!=0 && hero.pointsInTalent(Talent.TRAP_MASTER)>0){
 				quantity++;
 			}
 
@@ -379,13 +379,5 @@ public class ReclaimTrap extends TargetedSpell {
 
 		@Override
 		public void restoreFromBundle(Bundle bundle) {
-			super.restoreFromBundle(bundle);
-			trap = bundle.getClass(TRAP);
-		}
-	}
-	
-}
 
  */
-
-

@@ -123,8 +123,10 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public void execute(Hero hero, String action) {
 		super.execute(hero, action);
-
-
+		int aEnc = STRReq() -hero.STR();
+		if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
+			aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+		}
 		if (action.equals(AC_ABILITY)){
 			usesTargeting = false;
 			if (!isEquipped(hero)) {
@@ -140,7 +142,7 @@ public class MeleeWeapon extends Weapon {
 				}
 			} else if (hero.heroClass != HeroClass.DUELIST && hero.pointsInTalent(Talent.MARTIAL_TRAIN)<1){
 				//do nothing
-			} else if (STRReq() > hero.STR()){
+			} else if (aEnc>0){
 				GLog.w(Messages.get(this, "ability_low_str"));
 			} else if ((Buff.affect(hero, Charger.class).charges + Buff.affect(hero, Charger.class).partialCharge) < abilityChargeUse(hero, null)) {
 				GLog.w(Messages.get(this, "ability_no_charge"));

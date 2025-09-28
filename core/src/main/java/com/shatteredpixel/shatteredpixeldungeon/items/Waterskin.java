@@ -192,8 +192,8 @@ public class Waterskin extends Item {
 
 		GLog.i( Messages.get(this, "collected") );
 		volume += dew.quantity;
-		if (volume >= MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*5) {
-			volume = MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*5;
+		if (volume >= MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*15) {
+			volume = MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*15;
 			GLog.p( Messages.get(this, "full") );
 		}
 
@@ -201,14 +201,19 @@ public class Waterskin extends Item {
 	}
 
 	public void fill() {
-		volume = MAX_VOLUME;
+
+		if (hero.hasTalent(Talent.MILITARY_WATERSKIN)) {
+			volume = MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*15;
+		}else{
+			volume = MAX_VOLUME;
+		}
 		updateQuickslot();
 	}
 
 	@Override
 	public String status() {
 		if(hero != null){
-			return Messages.format( TXT_STATUS, volume, MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*5);
+			return Messages.format( TXT_STATUS, volume, MAX_VOLUME+hero.pointsInTalent(Talent.MILITARY_WATERSKIN)*15);
 		}else{
 			return Messages.format( TXT_STATUS, volume, MAX_VOLUME);
 		}

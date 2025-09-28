@@ -85,6 +85,9 @@ public abstract class DamageWand extends Wand{
 		if(hero.hasTalent(Talent.STATIC_LIGHT)){
 			dmg+=hero.pointsInTalent(Talent.STATIC_LIGHT);
 		}
+		if(hero.pointsInTalent(Talent.MARKSMAN)>1 && this instanceof WandOfMagicMissile){
+			dmg+=3;
+		}
 		return dmg;
 	}
 

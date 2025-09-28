@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
@@ -112,7 +113,7 @@ public class HighGrass {
 				Level.set(pos, Terrain.GRASS);
 				if(ch instanceof Mob && hero.pointsInTalent(Talent.WAKE_SNAKE)>Random.Int(10)){
 					Snake mob=new Snake();
-					Buff.affect(mob, Amok.class,3);
+					Corruption.corruptionHeal(mob);
 					GameScene.add( mob );
 					ScrollOfTeleportation.appear( mob, pos );
 				}

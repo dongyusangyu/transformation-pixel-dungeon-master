@@ -568,12 +568,7 @@ public abstract class Wand extends Item {
 
 		Invisibility.dispel();
 		updateQuickslot();
-		if(hero.pointsInTalent(Talent.MARKSMAN )>1 && hero.buff(WandOfMagicMissile.MagicCharge.class) != null && !(this instanceof WandOfMagicMissile)){
-			curUser.next();
-
-		}else{
-			curUser.spendAndNext( TIME_TO_ZAP );
-		}
+		curUser.spendAndNext( TIME_TO_ZAP );
 
 	}
 	
@@ -882,7 +877,7 @@ public abstract class Wand extends Item {
 					+ (SCALING_CHARGE_ADDITION * Math.pow(scalingFactor, missingCharges)));
 			float gainCharge=1f/turnsToCharge;
 			if(hero.hasTalent(Talent.EXTREME_CASTING)){
-				gainCharge*=1f-0.1f*hero.pointsInTalent(Talent.EXTREME_CASTING);
+				gainCharge*=1f-0.13f*hero.pointsInTalent(Talent.EXTREME_CASTING);
 			}
 			int cnt=hero.pointsInTalent(Talent.ENERGY_CONVERSION);
 			if (Regeneration.regenOn())

@@ -99,10 +99,9 @@ public class Sacred_Blade extends TargetedClericSpell {
                                                 }
                                             }
                                         }
-                                        max *= 1.2f;
                                     }
                                     if(hero.pointsInTalent(Talent.SACRED_BLADE)>2 && (Char.hasProp(enemy, Char.Property.UNDEAD) || Char.hasProp(enemy, Char.Property.DEMONIC))){
-                                        max *= 1.5f;
+                                        max *= 1.3f;
                                     }
                                     enemy.damage(max, Sacred_Blade.this);
                                     Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, Random.Float(0.8f, 1f) );

@@ -151,7 +151,7 @@ public class ExoticPotion extends Potion {
 			try {
 				Item result = Reflection.newInstance(regToExo.get(ingredients.get(0).getClass()));
 				int outQuantity = 1;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
+				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !(result instanceof PotionOfMastery)){
 					result.quantity(outQuantity+1);
 				}else{
 					result.quantity(outQuantity);
@@ -168,12 +168,6 @@ public class ExoticPotion extends Potion {
 		public Item sampleOutput(ArrayList<Item> ingredients) {
 			try {
 				Item result = Reflection.newInstance(regToExo.get(ingredients.get(0).getClass()));
-				int outQuantity = 1;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

@@ -923,7 +923,7 @@ public abstract class Mob extends Char {
 				AscensionChallenge.processEnemyKill(this);
 				int mlvl=maxLvl;
 				if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
-					mlvl+=hero.pointsInTalent(Talent.FAST_BREAK);
+					mlvl+=hero.pointsInTalent(Talent.FAST_BREAK)+1;
 				}
 				
 				int exp = hero.lvl <= mlvl ? EXP : 0;
@@ -955,7 +955,7 @@ public abstract class Mob extends Char {
 	public void die( Object cause ) {
 		int mlvl=maxLvl;
 		if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
-			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK);
+			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK)+1;
 		}
 		if(!this.buffs(Resurrection.REsurrection.class).isEmpty() && !this.properties().contains(BOSS) && !this.properties().contains(BOSS_MINION) && cause != Chasm.class){
 			Buff b=this.buff(Resurrection.REsurrection.class);
@@ -1061,7 +1061,7 @@ public abstract class Mob extends Char {
 	public void rollToDropLoot(){
 		int mlvl=maxLvl;
 		if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
-			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK);
+			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK)+1;
 		}
 		if (hero.lvl > mlvl+2 && !Dungeon.isChallenged(Challenges.RED_ENVELOPE)) return;
 

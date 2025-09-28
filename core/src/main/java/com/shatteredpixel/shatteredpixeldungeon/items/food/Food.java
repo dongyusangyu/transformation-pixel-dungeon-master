@@ -129,7 +129,7 @@ public class Food extends Item {
 			foodVal /= 3f;
 		}
 		if(hero.hasTalent(Talent.VEGETARIANISM)){
-			foodVal/=2f;
+			foodVal*=0.7f;
 		}
 		if(hero.hasTalent(Talent.EATEN_SLOWLY)){
 			foodVal*=1+0.3*hero.pointsInTalent(Talent.EATEN_SLOWLY);

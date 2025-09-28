@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
@@ -62,6 +63,7 @@ public class PotionOfDivineInspiration extends ExoticPotion {
 		} else {
 			identifiedByUse = false;
 		}
+
 
 		boolean[] enabled = new boolean[5];
 		enabled[1] = enabled[2] = enabled[3] = enabled[4] = true;
@@ -114,6 +116,12 @@ public class PotionOfDivineInspiration extends ExoticPotion {
 					curUser.sprite.operate(curUser.pos);
 
 					curUser.spendAndNext(1f);
+					if(hero.pointsInTalent(Talent.PRECIOUS_EXPERIENCE)==1){
+						hero.earnExp( (int)(hero.maxExp()*0.5), getClass() );
+					}else if(hero.pointsInTalent(Talent.PRECIOUS_EXPERIENCE)==2){
+						hero.earnExp( (int)(hero.maxExp()*0.5), getClass() );
+						Buff.affect(hero, Bless.class,50);
+					}
 
 					boolean unspentTalents = false;
 					for (int i = 1; i <= Dungeon.hero.talents.size(); i++){
@@ -153,6 +161,7 @@ public class PotionOfDivineInspiration extends ExoticPotion {
 				}
 			}
 		});
+
 
 	}
 
