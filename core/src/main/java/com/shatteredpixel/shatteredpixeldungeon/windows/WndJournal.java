@@ -1122,8 +1122,39 @@ public class WndJournal extends WndTabbed {
 					}
 				}
 			};
+			if(Talent.typeTalent.get(0).get(Talent.ATTACK).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.ATTACK).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.ATTACK).contains(talent)){
+				gridItem.hardLightBG(255f, 0f, 0f);
+			}else if(Talent.typeTalent.get(0).get(Talent.MAGIC).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.MAGIC).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.MAGIC).contains(talent)){
+				gridItem.hardLightBG(0f, 0f, 255f);
+			}else if(Talent.typeTalent.get(0).get(Talent.EFFECT).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.EFFECT).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.EFFECT).contains(talent)){
+				gridItem.hardLightBG(255f, 165f, 0f);
+			}else if(Talent.typeTalent.get(0).get(Talent.RESOURCE).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.RESOURCE).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.RESOURCE).contains(talent)){
+				gridItem.hardLightBG(0f, 255f, 0f);
+			}else if(Talent.typeTalent.get(0).get(Talent.SPELL).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.SPELL).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.SPELL).contains(talent)){
+				gridItem.hardLightBG(255f, 255f, 0f);
+			}else if(Talent.typeTalent.get(0).get(Talent.ASSIST).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.ASSIST).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.ASSIST).contains(talent)){
+				gridItem.hardLightBG(0f, 255f, 255f);
+			}else if(Talent.typeTalent.get(0).get(Talent.OTHER).contains(talent)
+					|| Talent.typeTalent.get(1).get(Talent.OTHER).contains(talent)
+					|| Talent.typeTalent.get(2).get(Talent.OTHER).contains(talent)){
+				gridItem.hardLightBG(128f, 128f, 128f);
+			}else{
+				gridItem.hardLightBG(1f, 1f, 2f);
+			}
 
-			gridItem.hardLightBG(1f, 1f, 2f);
+			//gridItem.hardLightBG(1f, 1f, 2f);
 			grid.addItem(gridItem);
 		}
 	}

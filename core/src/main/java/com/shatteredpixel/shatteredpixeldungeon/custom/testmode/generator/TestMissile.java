@@ -3,14 +3,17 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ForceCube;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.HeavyBoomerang;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Javelin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Kunai;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Shuriken;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.SlimeBall;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingClub;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingHammer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingKnife;
@@ -45,13 +48,17 @@ public class TestMissile extends TestGenerator {
     private int item_quantity = 1;
     private int levelToGen = 0;
     private boolean bowGenerated = false;
+    private boolean tattekiGenerated = false;
 
     private static final String AC_BOW = "bow";
+    private static final String AC_TATTEKI = "tatteki";
+
 
     @Override
     public ArrayList<String> actions(Hero hero) {
         ArrayList<String> actions = super.actions(hero);
         if (!bowGenerated) actions.add(AC_BOW);
+        if (!tattekiGenerated) actions.add(AC_TATTEKI);
         return actions;
     }
 
@@ -64,6 +71,10 @@ public class TestMissile extends TestGenerator {
             SpiritBow bow = new SpiritBow();
             bow.identify().collect();
             bowGenerated = true;
+        } else if (action.equals(AC_TATTEKI)) {
+            Tatteki tatteki = new Tatteki();
+            tatteki.identify().collect();
+            tattekiGenerated = true;
         }
     }
 
@@ -85,6 +96,7 @@ public class TestMissile extends TestGenerator {
         bundle.put("selected", selected);
         bundle.put("level_to_gen", levelToGen);
         bundle.put("bow_generated", bowGenerated);
+        bundle.put("bow_tatteki", tattekiGenerated);
     }
 
     @Override
@@ -94,6 +106,7 @@ public class TestMissile extends TestGenerator {
         selected = bundle.getInt("selected");
         levelToGen = bundle.getInt("level_to_gen");
         bowGenerated = bundle.getBoolean("bow_generated");
+        tattekiGenerated = bundle.getBoolean("tatteki_generated");
     }
 
     private static ArrayList<Class<? extends MissileWeapon>> missileList = new ArrayList<>();
@@ -109,34 +122,38 @@ public class TestMissile extends TestGenerator {
             case 3:
                 return FishingSpear.class;
             case 4:
-                return Shuriken.class;
+                return LuckyCoin.class;
             case 5:
-                return ThrowingClub.class;
+                return SlimeBall.class;
             case 6:
-                return ThrowingSpear.class;
+                return Shuriken.class;
             case 7:
-                return Kunai.class;
+                return ThrowingClub.class;
             case 8:
-                return Bolas.class;
+                return ThrowingSpear.class;
             case 9:
-                return Javelin.class;
+                return Kunai.class;
             case 10:
-                return HeavyBoomerang.class;
+                return Bolas.class;
             case 11:
+                return Javelin.class;
+            case 12:
+                return HeavyBoomerang.class;
+            case 13:
             default:
                 return Tomahawk.class;
-            case 12:
-                return ThrowingHammer.class;
-            case 13:
-                return Trident.class;
             case 14:
+                return ThrowingHammer.class;
+            case 15:
+                return Trident.class;
+            case 16:
                 return ForceCube.class;
         }
     }
 
     private void buildList() {
         if (missileList.isEmpty()) {
-            for (int i = 0; i < 15; ++i) {
+            for (int i = 0; i <= 16; ++i) {
                 missileList.add(idToMissile(i));
             }
         }

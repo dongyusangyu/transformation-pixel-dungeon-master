@@ -124,13 +124,13 @@ public class WndChallenges extends Window {
 
 			final String challenge = chal.key;
 			if (chal.value == Challenges.HARSH_ENVIRONMENT){
-				index1 = 12;
-			}else if (chal.value == Challenges.EXTREME_ENVIRONMENT){
 				index1 = 25;
-			}else if (chal.value == Challenges.RED_ENVELOPE){
+			}else if (chal.value == Challenges.EXTREME_ENVIRONMENT){
 				index1 = 38;
-			}else if (chal.value == Challenges.TEST_MODE){
+			}else if (chal.value == Challenges.RED_ENVELOPE){
 				index1 = 39;
+			}else if (chal.value == Challenges.TEST_MODE){
+				index1 = 12;
 			}else{
 				index1 = index;
 				index++;
@@ -188,13 +188,13 @@ public class WndChallenges extends Window {
 		for(int i=0;i<boxes.size();i++){
 			int index1 = 0 ;
 			if (Challenges.MASKS[i] == Challenges.HARSH_ENVIRONMENT){
-				index1 = 12;
-			}else if (Challenges.MASKS[i] == Challenges.EXTREME_ENVIRONMENT){
 				index1 = 25;
-			}else if (Challenges.MASKS[i] == Challenges.RED_ENVELOPE){
+			}else if (Challenges.MASKS[i] == Challenges.EXTREME_ENVIRONMENT){
 				index1 = 38;
-			}else if (Challenges.MASKS[i] == Challenges.TEST_MODE){
+			}else if (Challenges.MASKS[i] == Challenges.RED_ENVELOPE){
 				index1 = 39;
+			}else if (Challenges.MASKS[i] == Challenges.TEST_MODE){
+				index1 = 12;
 			}else{
 				index1 = i-2;
 				if(boxes.get(1).checked()){

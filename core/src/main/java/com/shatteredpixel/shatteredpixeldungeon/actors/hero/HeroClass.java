@@ -601,7 +601,7 @@ public enum HeroClass {
 			CustomWeapon customWeapon = new CustomWeapon();
 			customWeapon.adjustStatus();
 			customWeapon.identify().collect();
-
+			new ScrollOfSublimation().type("TENGU").collect();
 			new TestBag().collect();
 
 			new TrapPlacer().collect();

@@ -128,6 +128,7 @@ public class HeroIcon extends Image {
 	public static final int NINJA_NORMAL = 112;
 	public static final int NINJA_WATER = 113;
 	public static final int NINJA_GRASS = 114;
+	public  static  final  int SMOKEMASK = 115;
 
 	public static final int ASCENSION_CURSE  = 128;
 

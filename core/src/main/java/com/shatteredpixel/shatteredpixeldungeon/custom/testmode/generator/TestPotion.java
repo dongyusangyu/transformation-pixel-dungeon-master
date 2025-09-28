@@ -74,9 +74,13 @@ import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.MetalShard;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BowFragment;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenHilt;
+import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenPackage;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.CloakScrap;
+import com.shatteredpixel.shatteredpixeldungeon.items.remains.MatchaPudding;
+import com.shatteredpixel.shatteredpixeldungeon.items.remains.MetalFragment;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.SealShard;
+import com.shatteredpixel.shatteredpixeldungeon.items.remains.TornPage;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
@@ -121,6 +125,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ChaoticCenser;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.DimensionalSundial;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ExoticCrystals;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.EyeOfNewt;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.FerretTuft;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.GoldIngot;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MimicTooth;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MossyClump;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ParchmentScrap;
@@ -516,6 +522,10 @@ public class TestPotion extends TestGenerator {
             case 2: return CloakScrap.class;
             case 3: return BowFragment.class;
             case 4: return BrokenHilt.class;
+            case 5: return TornPage.class;
+            case 6: return BrokenPackage.class;
+            case 7: return MatchaPudding.class;
+            case 8: return MetalFragment.class;
         }
     }
 
@@ -537,6 +547,8 @@ public class TestPotion extends TestGenerator {
             case 13: return VialOfBlood.class;
             case 14: return ShardOfOblivion.class;
             case 15: return ChaoticCenser.class;
+            case 16: return GoldIngot.class;
+            case 17: return FerretTuft.class;
 
         }
     }
@@ -547,8 +559,8 @@ public class TestPotion extends TestGenerator {
         if(cate == 9) return 10;
         if(cate == 10) return 10;
         if(cate == 11) return 13;
-        if(cate == 12) return 4;
-        if(cate == 13) return 15;
+        if(cate == 12) return 8;
+        if(cate == 13) return 17;
         return 11;
     }
 

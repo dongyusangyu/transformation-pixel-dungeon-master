@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.FetidRat;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Ghoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollExile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollSapper;
@@ -38,10 +39,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldenMimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Golem;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatCrab;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Guard;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.HermitCrab;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.LandPiranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Monk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Necromancer;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhantomLandPiranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhantomPiranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Rat;
@@ -65,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Warlock;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.custom.dict.DictSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
@@ -90,7 +95,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 
-public class MobPlacer extends TestItem{
+public class MobPlacer extends TestItem {
     {
         image = ItemSpriteSheet.CANDLE;
         defaultAction = AC_PLACE;
@@ -141,6 +146,10 @@ public class MobPlacer extends TestItem{
                                 if (m instanceof Mimic) {
                                     ((Mimic)m).items = null;
                                     ((Mimic)m).setLevel(Dungeon.depth);
+                                    if (m instanceof CrystalMimic) {
+                                        ((CrystalMimic)m).items = new ArrayList<>();
+                                        ((CrystalMimic)m).items.add(Generator.random());
+                                    }
                                 }
                                 GameScene.add(m);
                                 if(elite_op>0){
@@ -184,8 +193,9 @@ public class MobPlacer extends TestItem{
             case 3: return DataPack.DM201.ordinal() - DataPack.NEW_FIRE_ELE.ordinal() - 1;
             case 4: return DataPack.ELE_CHAOS.ordinal() - DataPack.DM201.ordinal() - 1;
             case 5: return DataPack.ACIDIC.ordinal() - DataPack.ELE_CHAOS.ordinal() - 1;
-            case 6: return DataPack.PHANTOM_PIRANHA.ordinal() - DataPack.ACIDIC.ordinal() - 1;
-            case 7: default: return DataPack.GNOLL_SAPPER.ordinal() - DataPack.PHANTOM_PIRANHA.ordinal() - 1;
+            case 6: return DataPack.LAND_PHANTOM_PIRANHA.ordinal() - DataPack.ACIDIC.ordinal() - 1;
+            case 7: default: return DataPack.GNOLL_SAPPER.ordinal() - DataPack.LAND_PHANTOM_PIRANHA.ordinal() - 1;
+            case 8: return DataPack.PHANTOM_PIRANHA.ordinal() - DataPack.PHANTOM_PIRANHA.ordinal() - 1;
         }
     }
     private int dataThreshold(int tier){
@@ -203,7 +213,9 @@ public class MobPlacer extends TestItem{
             case 6:
                 return DataPack.ACIDIC.ordinal()+1;
             case 7:
-                return DataPack.PHANTOM_PIRANHA.ordinal() + 1;
+                return DataPack.LAND_PHANTOM_PIRANHA.ordinal() + 1;
+            case 8:
+                return DataPack.LAND_PHANTOM_PIRANHA.ordinal() + 1;
         }
     }
 
@@ -228,7 +240,7 @@ public class MobPlacer extends TestItem{
 
     private class WndSetMob extends Window{
 
-        private static final int WIDTH = 120;
+        private static final int WIDTH = 140;
         private static final int HEIGHT = 118;
         private static final int BTN_SIZE = 18;
         private static final int GAP = 2;
@@ -418,9 +430,11 @@ public class MobPlacer extends TestItem{
         RAT(Rat.class, DictSpriteSheet.RAT),
         //TESTRAT(TestRat.class, DictSpriteSheet.RAT),
         GNOLL(Gnoll.class, DictSpriteSheet.GNOLL),
+        GNOLL_EXILE (GnollExile.class,DictSpriteSheet.GNOLL),
         SNAKE(Snake.class, DictSpriteSheet.SNAKE),
         ALBINO(Albino.class, DictSpriteSheet.ALBINO),
         CRAB(Crab.class, DictSpriteSheet.CRAB),
+        HERMIT_CRAB(HermitCrab.class, DictSpriteSheet.CRAB),
         SWARM(Swarm.class, DictSpriteSheet.SWARM),
         SLIME(Slime.class, DictSpriteSheet.SLIME),
         C_SLIME(CausticSlime.class, DictSpriteSheet.CAUSTIC_SLIME),
@@ -473,12 +487,13 @@ public class MobPlacer extends TestItem{
         WRAITH(Wraith.class, DictSpriteSheet.WRAITH),
         TORMENTED_SPIRIT(TormentedSpirit.class,DictSpriteSheet.TORMENTED_SPIRIT),
         PIRANHA(Piranha.class, DictSpriteSheet.FISH),
+        LAND_PIRANHA(LandPiranha.class, DictSpriteSheet.FISH),
         PHANTOM_PIRANHA(PhantomPiranha.class,DictSpriteSheet.PHANTOM_PIRANHA),
+        LAND_PHANTOM_PIRANHA(PhantomLandPiranha.class,DictSpriteSheet.PHANTOM_PIRANHA),
 
         CRYSTAL_SPIRE(CrystalSpire.class,DictSpriteSheet.CRYSTAL_SPIRE),
         CRYSTAL_GUARDIAN(CrystalGuardian.class,DictSpriteSheet.CRYSTAL_GUARDIAN),
         CRYSTAL_WISP(CrystalWisp.class,DictSpriteSheet.CRYSTAL_WISP),
-
         GNOLL_GEOMANCER(GnollGeomancer.class,DictSpriteSheet.GNOLL_GEOMANCER),
         GNOLL_GUARD(GnollGuard.class,DictSpriteSheet.GNOLL_GUARD),
         GNOLL_SAPPER(GnollSapper.class,DictSpriteSheet.GNOLL_SAPPER);

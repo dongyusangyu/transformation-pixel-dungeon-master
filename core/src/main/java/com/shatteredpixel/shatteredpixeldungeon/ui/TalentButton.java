@@ -74,6 +74,7 @@ public class TalentButton extends Button {
 	TalentIcon icon;
 	Image bg;
 
+
 	ColorBlock fill;
 
 	public enum Mode {

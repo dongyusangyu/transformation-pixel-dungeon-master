@@ -88,6 +88,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PhysicalEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
@@ -163,6 +164,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfDra
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
@@ -217,12 +219,15 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
+import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.Visual;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.BArray;
 import com.watabou.utils.Bundle;
@@ -700,6 +705,14 @@ public enum Talent {
 		public int icon() { return BuffIndicator.TIME; }
 		public void tintIcon(Image icon) { icon.hardlight(0.15f, 0.2f, 0.5f); }
 		public float iconFadePercent() { return Math.max(0, visualcooldown() / 20); }
+		public void detach(){
+			if(hero.hasTalent(SMOKE_MASK)) {
+				Buff.affect(Dungeon.hero, SmokeMask.class);
+				ActionIndicator.setAction( hero.buff(SmokeMask.class) );
+			}
+			BuffIndicator.refreshHero();
+			super.detach();
+		}
 	};
 	public static class InvShaCooldown extends FlavourBuff{
 		public int icon() { return BuffIndicator.TIME; }
@@ -1025,8 +1038,11 @@ public enum Talent {
 			GLog.w("超出资源限制，无法通过升级天赋获取资源");
 			return ;
 		}
+		if(talent==SHOCK_BOMB && hero.hasTalent(SHOCK_BOMB)) {
+			Dungeon.level.drop(new Bomb(), hero.pos).sprite.drop();
+		}
+
 		if(talent==BOMB_MANIAC && hero.hasTalent(BOMB_MANIAC)) {
-			Dungeon.talent_item += 1;
 			Dungeon.level.drop(new Bomb(), hero.pos).sprite.drop();
 		}
 		if(talent==POTENTIAL_1 && hero.pointsInTalent(POTENTIAL_1)==1){
@@ -1111,6 +1127,10 @@ public enum Talent {
 				Dungeon.level.drop(new Blandfruit(),hero.pos).sprite.drop(hero.pos);
 			}
 		}
+		if(talent==PERSONAL_ATTACK && hero.hasTalent(PERSONAL_ATTACK)) {
+			Dungeon.talent_item+=1;
+			Dungeon.level.drop(new ScrollOfRage(), hero.pos).sprite.drop();
+		}
 	}
 
 
@@ -1127,6 +1147,12 @@ public enum Talent {
 		//for metamorphosis
 		if (talent == IRON_WILL && hero.heroClass != HeroClass.WARRIOR){
 			Buff.affect(hero, BrokenSeal.WarriorShield.class);
+		}
+		if (talent == SMOKE_MASK && hero.buff(SmokeCooldown.class)==null){
+
+			Buff.affect(hero, SmokeMask.class);
+			ActionIndicator.setAction( hero.buff(SmokeMask.class) );
+			BuffIndicator.refreshHero();
 		}
 
 		if (talent == VETERANS_INTUITION && hero.pointsInTalent(VETERANS_INTUITION) == 2){
@@ -1255,7 +1281,7 @@ public enum Talent {
 				box.directCharge(hero.pointsInTalent(NINJA_MEAL));
 				ScrollOfRecharging.charge(hero);
 			}else{
-				Buff.affect( hero, ArtifactRecharge.class).set(hero.pointsInTalent(NINJA_MEAL));
+				Buff.affect( hero, ArtifactRecharge.class).set(hero.pointsInTalent(NINJA_MEAL)).ignoreHornOfPlenty = foodSource instanceof HornOfPlenty;
 			}
 		}
 		if(hero.hasTalent(YUNYING_MEAL)){
@@ -1333,9 +1359,9 @@ public enum Talent {
 			Buff.affect( hero, Barrier.class).setShield(hero.pointsInTalent(MEAL_SHIELD)*4);
 		}
 		if(hero.hasTalent(NURTRITIOUS_MEAL)){
-			hero.HP = Math.min(hero.HP + hero.pointsInTalent(NURTRITIOUS_MEAL), hero.HT);
-			hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(hero.pointsInTalent(NURTRITIOUS_MEAL)), FloatingText.HEALING);
-			Buff.affect( hero, Barrier.class).setShield(hero.pointsInTalent(NURTRITIOUS_MEAL));
+			hero.HP = Math.min(hero.HP + hero.pointsInTalent(NURTRITIOUS_MEAL)*2, hero.HT);
+			hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(hero.pointsInTalent(NURTRITIOUS_MEAL)*2), FloatingText.HEALING);
+			Buff.affect( hero, Barrier.class).setShield(hero.pointsInTalent(NURTRITIOUS_MEAL)*2);
 		}
 		if(hero.hasTalent(INVINCIBLE_MEAL) && Dungeon.eat_item<maxeat){
 			Buff.affect(hero, Invulnerability.class,hero.pointsInTalent(INVINCIBLE_MEAL));
@@ -1366,7 +1392,7 @@ public enum Talent {
 			new Bomb.ConjuredBomb().explode(explosionPos);
 		}
 		if(hero.hasTalent(HEALTHY_FOOD)){
-			Buff.affect(hero, PotionOfCleansing.Cleanse.class,hero.pointsInTalent(HEALTHY_FOOD));
+			Buff.affect(hero, PotionOfCleansing.Cleanse.class,hero.pointsInTalent(HEALTHY_FOOD)+1);
 		}
 		if(hero.pointsNegative(VIP_MEAL)>0){
 			Dungeon.gold-=(int)((0.1f*hero.pointsNegative(VIP_MEAL))*Dungeon.gold);
@@ -1530,7 +1556,7 @@ public enum Talent {
 			Buff.affect(hero, Barrier.class).setShield(2+3*hero.pointsInTalent(ANESTHESIA));
 		}
 		if(hero.hasTalent(WANLING_POTION)){
-			Buff.affect(hero, PotionOfCleansing.Cleanse.class,1*hero.pointsInTalent(WANLING_POTION));
+			Buff.affect(hero, PotionOfCleansing.Cleanse.class,hero.pointsInTalent(WANLING_POTION)+1);
 			if(hero.pointsInTalent(WANLING_POTION)==3){
 				for (Buff b : hero.buffs()){
 					if (b.type == Buff.buffType.NEGATIVE
@@ -2099,13 +2125,7 @@ public enum Talent {
 			damage*=1+hero.pointsInTalent(Talent.RAGE_ATTACK)*0.1;
 		}
 
-		if(hero.pointsInTalent(SMOKE_MASK)==2 && hero.buffs(SmokeCooldown.class).isEmpty()){
-			GameScene.add( Blob.seed( hero.pos, 100, SmokeScreen.class ) );
-			Buff.affect(hero, SmokeCooldown.class, 20f);
-		}else if (hero.pointsInTalent(SMOKE_MASK)==1 && hero.buffs(SmokeCooldown.class).isEmpty()){
-			Buff.affect(hero, SmokeCooldown.class, 20f);
-			GameScene.add( Blob.seed( hero.pos, 75, SmokeScreen.class ) );
-		}
+
 		if (hero.pointsInTalent(Talent.SURVIVAL_VOLITION)>=1 && hero.HP<hero.HT*0.3 && hero.buffs(SurVolCooldown.class).isEmpty()){
 			int duration=1+hero.pointsInTalent(Talent.SURVIVAL_VOLITION);
 			Buff.affect(hero, Haste.class, duration);
@@ -2532,18 +2552,19 @@ public enum Talent {
 	}
 
 	public static class AquaticRecover extends Buff {
-		private int AquaticRecover_cnt=0;
+		private float AquaticRecover_cnt=0;
 
 		@Override
 		public  boolean act() {
 			//在水面上每10/5回合恢复一点生命值
 			if (((Hero) target).hasTalent(Talent.AQUATIC_RECOVER) && !((Hero) target).flying && Dungeon.level.water[((Hero) target).pos]) {
 				//if (Dungeon.level.water[((Hero)target).pos]){
-				if (((Hero) target).pointsInTalent(Talent.AQUATIC_RECOVER) >= 2) {
-					AquaticRecover_cnt += 2;
-				} else {
-					AquaticRecover_cnt += 1;
-
+				float partAquaticRecover = hero.pointsInTalent(Talent.AQUATIC_RECOVER);
+				if(((Hero)target).isStarving()){
+					partAquaticRecover*=0.5f;
+				}
+				if(((Hero) target).hasTalent(Talent.AQUATIC_RECOVER)){
+					AquaticRecover_cnt+=partAquaticRecover;
 				}
 				if (AquaticRecover_cnt >= 10 && ((Hero) target).HP < ((Hero) target).HT) {
 					((Hero) target).HP += 1;
@@ -2552,8 +2573,6 @@ public enum Talent {
 				}
 
 			}
-
-
 			spend(TICK);
 			return true;
 		}
@@ -2629,6 +2648,56 @@ public enum Talent {
 			object = bundle.getInt(OBJECT);
 		}
 	};
+	public static class SmokeMask extends Buff implements ActionIndicator.Action {
+		{
+			//always acts after other buffs, so invisibility effects can process first
+			actPriority = BUFF_PRIO - 1;
+		}
+		@Override
+		public void detach() {
+			super.detach();
+			ActionIndicator.clearAction(this);
+		}
+		@Override
+		public int icon() {
+			return BuffIndicator.SMOKEMASK;
+		}
+
+
+		@Override
+		public String actionName() {
+			return Messages.get(this, "action_name");
+		}
+		@Override
+		public int indicatorColor() {
+			return 0x505050;
+		}
+		@Override
+		public int actionIcon() {
+			return HeroIcon.SMOKEMASK;
+		}
+		@Override
+		public void doAction() {
+			Buff.affect(hero, SmokeCooldown.class, 24f);
+			GameScene.add( Blob.seed( hero.pos, 50+50*hero.pointsInTalent(SMOKE_MASK), SmokeScreen.class ) );
+			this.detach();
+		}
+		/*
+		@Override
+		public Visual secondaryVisual() {
+			BitmapText txt = new BitmapText(PixelScene.pixelFont);
+			txt.hardlight(CharSprite.POSITIVE);
+			txt.measure();
+			return txt;
+		}
+
+		@Override
+		public String iconTextDisplay() {
+			return Integer.toString((int)50+25*hero.pointsInTalent(SMOKE_MASK));
+		}
+
+		 */
+	}
 
 	public static final int MAX_TALENT_TIERS = 4;
 

@@ -310,7 +310,7 @@ public class MasterThievesArmband extends Artifact {
 				return false;
 			} else {
 				if(hero.pointsInTalent(Talent.STRENGTH_ARMBAND)==3){
-					chargesUsed=Math.min(1,chargesUsed-1);
+					chargesUsed=Math.max(1,chargesUsed-1);
 				}
 				charge -= chargesUsed;
 				exp += 4 * chargesUsed;

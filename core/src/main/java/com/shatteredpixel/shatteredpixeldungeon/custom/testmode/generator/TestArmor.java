@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.LeatherArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.MailArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.PlateArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ScaleArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.curses.*;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.*;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -67,6 +68,9 @@ public class TestArmor extends TestGenerator {
                 break;
             case 2:
                 armor = new LeatherArmor();
+                break;
+            case 0:
+                armor = new SlimeArmor();
                 break;
             default:
                 armor = new ClothArmor();
@@ -197,7 +201,7 @@ public class TestArmor extends TestGenerator {
         public SettingsWindow() {
             super();
 
-            o_tier = new OptionSlider(Messages.get(this, "tier"), "1", "5", 1, 5) {
+            o_tier = new OptionSlider(Messages.get(this, "tier"), "0", "5", 0, 5) {
                 @Override
                 protected void onChange() {
                     tier = getSelectedValue();

@@ -32,8 +32,9 @@ allprojects {
         appAndroidTargetSDK = 34
 
         gdxVersion = '1.12.1'
-        gdxControllersVersion = '2.2.4-SNAPSHOT'
-        robovmVersion = '2.3.21'
+        //gdxControllersVersion = '2.2.4-SNAPSHOT'
+        gdxControllersVersion = '2.2.4'
+        robovmVersion = '2.3.23'
     }
     version = appVersionName
 
@@ -42,5 +43,4 @@ allprojects {
         mavenCentral()
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
-
 }

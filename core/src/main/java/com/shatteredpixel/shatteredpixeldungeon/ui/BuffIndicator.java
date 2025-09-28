@@ -157,6 +157,7 @@ public class BuffIndicator extends Component {
 	public  static  final  int THROW_SKILL = 97;
 	public  static  final  int DECOY = 98;
 	public  static  final  int ONESWORD = 99;
+	public  static  final  int SMOKEMASK = 100;
 
 
 

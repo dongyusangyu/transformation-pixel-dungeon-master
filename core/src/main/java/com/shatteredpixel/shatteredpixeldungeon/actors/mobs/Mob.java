@@ -1024,7 +1024,9 @@ public abstract class Mob extends Char {
 				&& hero.hasTalent(Talent.WATER_GHOST) && Random.Int(5)==1){
 			Wraith w = Wraith.spawnAt(pos, Wraith.class);
 			if(w!=null){
-				if(hero.pointsInTalent(Talent.WATER_GHOST)==2){
+				if(hero.pointsInTalent(Talent.WATER_GHOST)>1){
+					Buff.affect(w, Corruption.class);
+				}else{
 					Buff.affect(w, Amok.class,5);
 				}
 				if (Dungeon.level.heroFOV[pos]) {
