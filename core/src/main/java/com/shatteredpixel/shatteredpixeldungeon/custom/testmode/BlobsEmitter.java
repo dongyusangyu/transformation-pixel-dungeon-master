@@ -110,7 +110,7 @@ public class BlobsEmitter extends TestItem {
                 @Override
                 public void onSelect(Integer cell) {
                     if (cell!= null) {
-                        GameScene.add(Blob.seed(cell, 2,blobs.get(index)));
+                        GameScene.add(Blob.seed(cell, 50,blobs.get(index)));
 //                        GLog.i(blobs.get(index).getSimpleName());
                     }
                 }

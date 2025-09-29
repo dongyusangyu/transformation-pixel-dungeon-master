@@ -299,25 +299,6 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 					}
 				}
 			}
-			/*
-			for (HeroClass cls : HeroClass.values()){
-				if(cls== HeroClass.FREEMAN){
-					continue;
-				}
-				if (cls==HeroClass.ADVANCED){
-					break;
-				}
-				ArrayList<LinkedHashMap<Talent, Integer>> clsTalents = new ArrayList<>();
-				Talent.initClassTalents(cls, clsTalents);
-
-				Set<Talent> clsTalentsAtTier = clsTalents.get(tier-1).keySet();
-				for (Talent talent : clsTalentsAtTier){
-					if (!curTalentsAtTier.contains(talent)){
-						availableTalents.add(talent);
-					}
-				}
-			}
-			 */
 			int cnt=4;
 
 			if(hero.pointsInTalent(Talent.MORE_TALENT)>Random.Int(2)){
@@ -336,15 +317,6 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 				}
 
 			}
-			/*
-			List<Talent> ClericTalent=getClericTalent(tier);
-			for(Talent talent : ClericTalent){
-				if(!curTalentsAtTier.contains(talent) && !selectedTalents.contains(talent)){
-					selectedTalents.add(talent);
-					break;
-				}
-			}
-			 */
 			for (Talent talent : selectedTalents) {
 				options.put(talent, hero.pointsInTalent(replacing));
 			}

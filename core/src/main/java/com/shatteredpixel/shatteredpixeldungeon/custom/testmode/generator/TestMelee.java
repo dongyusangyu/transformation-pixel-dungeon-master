@@ -11,6 +11,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Dazzling;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Displacing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Explosive;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Friendly;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Heavy;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Polarized;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Sacrificial;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Wayward;
@@ -25,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Kineti
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Lucky;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Sweeping;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Unstable;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Vampiric;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
@@ -153,6 +155,8 @@ public class TestMelee extends TestGenerator {
                 return Grim.class;
             case 2:
                 return Vampiric.class;
+            case 3:
+                return Sweeping.class;
             default:
                 return null;
         }
@@ -173,6 +177,8 @@ public class TestMelee extends TestGenerator {
                 return Sacrificial.class;
             case 7:
                 return Wayward.class;
+            case 8:
+                return Heavy.class;
             default:
                 return null;
         }
@@ -214,7 +220,7 @@ public class TestMelee extends TestGenerator {
 
     private class SettingsWindow extends Window {
         private static final int WIDTH = 120;
-        private static final int BTN_SIZE = 18;
+        private static final int BTN_SIZE = 16;
         private static final int GAP = 2;
         private OptionSlider o_tier;
         private OptionSlider o_level;
@@ -279,7 +285,7 @@ public class TestMelee extends TestGenerator {
             o_enchant_rarity.setSelectedValue(enchant_rarity);
             add(o_enchant_rarity);
 
-            o_enchant_id = new OptionSlider(Messages.get(this, "enchant_id"), "0", "7", 0, 7) {
+            o_enchant_id = new OptionSlider(Messages.get(this, "enchant_id"), "0", "8", 0, 8) {
                 @Override
                 protected void onChange() {
                     enchant_id = getSelectedValue();
@@ -315,7 +321,7 @@ public class TestMelee extends TestGenerator {
             float top = o_tier.bottom() + GAP;
             int placed = 0;
             int length = all.length;
-            left = (WIDTH - BTN_SIZE * length) / 2f;
+            left = (WIDTH - BTN_SIZE * 7) / 2f;
             for (int i = 0; i < length; ++i) {
                 final int j = i;
                 IconButton btn = new IconButton() {
@@ -330,7 +336,7 @@ public class TestMelee extends TestGenerator {
                 im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(all[i])).image));
                 im.scale.set(1f);
                 btn.icon(im);
-                btn.setRect(left + placed * BTN_SIZE, top, BTN_SIZE, BTN_SIZE);
+                btn.setRect(left + Math.floorMod(placed,7) * BTN_SIZE, top+(int)(placed/7)*BTN_SIZE, BTN_SIZE, BTN_SIZE);
                 add(btn);
                 placed++;
                 iconButtons.add(btn);
@@ -340,7 +346,7 @@ public class TestMelee extends TestGenerator {
         private void layout() {
             o_tier.setRect(0, GAP, WIDTH, 24);
             //createWeaponImage(all);
-            t_selectedWeapon.setPos(0, GAP * 2 + o_tier.bottom() + BTN_SIZE);
+            t_selectedWeapon.setPos(0, GAP * 2 + o_tier.bottom() + BTN_SIZE*2);
             o_level.setRect(0, t_selectedWeapon.bottom() + GAP, WIDTH, 24);
             t_infoEnchant.setPos(0, GAP + o_level.bottom());
             o_enchant_rarity.setRect(0, GAP + t_infoEnchant.bottom(), WIDTH, 24);

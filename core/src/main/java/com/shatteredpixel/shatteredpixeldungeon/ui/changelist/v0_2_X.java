@@ -438,9 +438,41 @@ public class v0_2_X {
     }
     public static void add_v0_2_6fixChanges( ArrayList<ChangeInfo> changeInfos ) {
 
-        ChangeInfo changes = new ChangeInfo("v0.2.6fix", true, "");
+        ChangeInfo changes = new ChangeInfo("v0.2.6", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+
+        changes = new ChangeInfo( "v0.2.6fix4", false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+
+
+        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
+                "_-_ 为天赋图鉴的天赋背景根据类型设置了不同的颜色区分\n"
+
+        ));
+
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年9月29日\n"+
+                        "_-_  更新绝大多数的天赋描述\n"+
+                        "_-_  战士初始力量上调至11点\n"+
+                        "_-_ 加强天赋：\n"+
+                        "_-_ _十全大补_：效果翻倍\n"+
+                        "_-_ _震撼爆炸，爆破狂魔_：升级立即获取1个炸弹，且不占用上限\n"+
+                        "_-_ _人身攻击_：升级此天赋额外获得一张盛怒卷轴\n"+
+                        "_-_ _水鬼索命_：+1时的怨灵给予5回合狂乱效果，+2给予腐化效果\n"+
+                        "_-_ _健康食物，万灵药水_：在原效果基础上增加1回合持续时长n"+
+                        "_-_ 调整和削弱天赋：\n"+
+                        "_-_ _烟雾掩护_：cd从20回合上调至25回合，可以自由释放，烟雾量上调至100/150\n"+
+                        "_-_ _吓我一跳_：闪避给予的护盾量上升至+2/+3，叠加上限分别为4/6点\n"+
+                        "_-_ _水灵回复_：如果玩家处于极度饥饿状态，该天赋回复效率减半\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 实装多数测试工具\n"+
+                        "_-_ 修复天赋_强化袖章_生效异常问题\n"+
+                        "_-_ 修复天赋_虚假之力_生效异常问题\n"
+
+        ));
 
         changes = new ChangeInfo( "v0.2.6fix3", false, null);
         changes.hardlight( Window.TITLE_COLOR );
@@ -501,6 +533,8 @@ public class v0_2_X {
                         "_-_ 修复魔杖灌注和文章贴附异常问题\n"
 
         ));
+
+
 
 
 

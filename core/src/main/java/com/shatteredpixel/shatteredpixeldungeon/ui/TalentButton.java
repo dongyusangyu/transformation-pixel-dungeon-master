@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.ShopBoss;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
@@ -84,7 +85,7 @@ public class TalentButton extends Button {
 		METAMORPH_REPLACE,
 		SUBLIMATION,
 		NEGATIVE,
-		METAMORPH_TYPE,
+		METAMORPH_ALL,
 	}
 
 	public TalentButton(int tier, Talent talent, int points, Mode mode){
@@ -155,29 +156,6 @@ public class TalentButton extends Button {
 				}
 			});
 		} else if (mode == Mode.METAMORPH_CHOOSE && Dungeon.hero != null && Dungeon.hero.isAlive()) {
-			/*
-			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
-
-				@Override
-				public String prompt() {
-					return Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, "metamorphose_talent"));
-				}
-
-				@Override
-				public boolean metamorphDesc() {
-					return true;
-				}
-
-				@Override
-				public void call() {
-					if (ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE != null){
-						ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE.hide();
-					}
-					GameScene.show(new ScrollOfMetamorphosis.WndMetamorphReplace(talent, tier));
-				}
-			});
-
-			 */
 			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
 
 				@Override
@@ -196,29 +174,29 @@ public class TalentButton extends Button {
 						ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE.hide();
 					}
 					GameScene.show(new ScrollOfMetamorphosis.WndType(tier,talent));
-					/*
-					Game.runOnRenderThread(new Callback() {
-						@Override
-						public void call() {
-							GameScene.show(new WndOptions(new TalentIcon( talent ),
-									Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, "type_name")),
-									Messages.get(ScrollOfMetamorphosis.class, "type_desc"),
-									Messages.get(ScrollOfMetamorphosis.class, "attack"),
-									Messages.get(ScrollOfMetamorphosis.class, "magic"),
-									Messages.get(ScrollOfMetamorphosis.class, "effect"),
-									Messages.get(ScrollOfMetamorphosis.class, "resource"),
-									Messages.get(ScrollOfMetamorphosis.class, "spell"),
-									Messages.get(ScrollOfMetamorphosis.class, "assist"),
-									Messages.get(ScrollOfMetamorphosis.class, "other") ) {
-								@Override
-								protected void onSelect( int index ) {
-									GameScene.show(new ScrollOfMetamorphosis.WndMetamorphReplace(talent, tier,index));
-								}
-							} );
-						}
-					});
 
-					 */
+				}
+			});
+		}else if (mode == Mode.METAMORPH_ALL && Dungeon.hero != null && Dungeon.hero.isAlive()) {
+			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
+
+				@Override
+				public String prompt() {
+					return Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, "metamorphose_talent"));
+				}
+
+				@Override
+				public boolean metamorphDesc() {
+					return true;
+				}
+
+				@Override
+				public void call() {
+					if (TestTalent.WndMetamorphChoose.INSTANCE != null){
+						TestTalent.WndMetamorphChoose.INSTANCE.hide();
+					}
+					GameScene.show(new TestTalent.WndType(tier,talent));
+
 				}
 			});
 		} else if (mode == Mode.METAMORPH_REPLACE && Dungeon.hero != null && Dungeon.hero.isAlive()) {

@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
@@ -106,6 +107,7 @@ public class TestArtifact extends TestGenerator {
             case 11: return TimekeepersHourglass.class;
             case 12: default: return UnstableSpellbook.class;
             case 13: return Shuriken_Box.class;
+            case 14: return HolyTome.class;
         }
     }
 
@@ -120,7 +122,7 @@ public class TestArtifact extends TestGenerator {
     private static ArrayList<Class<? extends Artifact>> artifactList = new ArrayList<Class<? extends Artifact>>();
     private void buildArtifactArray(){
         if(!artifactList.isEmpty()) return;
-        for(int i=0;i<13;++i){
+        for(int i=0;i<15;++i){
             artifactList.add(idToArtifact(i));
         }
     }
@@ -175,7 +177,7 @@ public class TestArtifact extends TestGenerator {
         }
 
         private void layout(){
-            t_selected.setPos(0, 3*GAP + BTN_SIZE *2);
+            t_selected.setPos(0, 3*GAP + BTN_SIZE *4);
             o_level.setRect(0, t_selected.bottom() + GAP, WIDTH, 24);
             c_curse.setRect(0, o_level.bottom() + GAP, WIDTH, 18);
             b_create.setRect(0, c_curse.bottom() + GAP, WIDTH, 16);
@@ -187,7 +189,7 @@ public class TestArtifact extends TestGenerator {
             float top = GAP;
             int placed = 0;
             int length = artifactList.size();
-            for (int i = 0; i < length; ++i) {
+            for (int i = 0; i < length; i++) {
                 final int j = i;
                 IconButton btn = new IconButton() {
                     @Override
@@ -201,14 +203,19 @@ public class TestArtifact extends TestGenerator {
                 im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(artifactList.get(i))).image));
                 im.scale.set(1f);
                 btn.icon(im);
+                left=0f;
+                btn.setRect(left + Math.floorMod(i,7) *  BTN_SIZE, top+(int)(i/7)*BTN_SIZE, BTN_SIZE, BTN_SIZE);
+                /*
                 if(i<7) {
                     left = (WIDTH - BTN_SIZE * 7) / 2f;
                     btn.setRect(left + placed * BTN_SIZE, top, BTN_SIZE, BTN_SIZE);
                 }
                 else {
-                    left = (WIDTH - BTN_SIZE * 6) / 2f;
+                    left = (WIDTH - BTN_SIZE * 8) / 2f;
                     btn.setRect(left + (placed-7) * BTN_SIZE, top + GAP + BTN_SIZE, BTN_SIZE, BTN_SIZE);
                 }
+
+                 */
                 add(btn);
                 placed++;
                 artifactSprites.add(btn);

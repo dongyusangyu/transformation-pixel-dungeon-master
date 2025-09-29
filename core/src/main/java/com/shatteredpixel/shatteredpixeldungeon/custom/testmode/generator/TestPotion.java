@@ -723,7 +723,7 @@ public class TestPotion extends TestGenerator {
         }
 
         private void layout() {
-            t_select.setPos(0, TITLE_BTM +7*GAP + 5*BTN_SIZE + 6);
+            t_select.setPos(0, TITLE_BTM +7*GAP + 6*BTN_SIZE + 6);
             o_quantity.setRect(0, t_select.bottom() + 2 * GAP, WIDTH, 24);
             c_multiply.setRect(0, o_quantity.bottom() + GAP, WIDTH/2f - GAP/2f, 16);
             b_create.setRect(WIDTH/2f + GAP/2f, o_quantity.bottom() + GAP, WIDTH/2f - GAP/2f, 16);
@@ -875,14 +875,23 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     }
                 }
-
-                if (i < firstRow) {
-                    left = (WIDTH - BTN_SIZE * firstRow) / 2f;
-                    btn.setRect(left + placed * BTN_SIZE, top, BTN_SIZE, BTN_SIZE);
-                } else {
-                    left = (WIDTH - BTN_SIZE * (length - firstRow)) / 2f;
-                    btn.setRect(left + (placed - firstRow) * BTN_SIZE, top + GAP + BTN_SIZE, BTN_SIZE, BTN_SIZE);
+                if(cateSelected==13){
+                    left = (WIDTH - BTN_SIZE * 7) / 2f;
+                    btn.setRect( left+Math.floorMod(placed,7) * BTN_SIZE, top+(int)(placed/7)*BTN_SIZE, BTN_SIZE, BTN_SIZE);
+                }else{
+                    if (i < firstRow) {
+                        left = (WIDTH - BTN_SIZE * firstRow) / 2f;
+                        btn.setRect(left + placed * BTN_SIZE, top, BTN_SIZE, BTN_SIZE);
+                    } else {
+                        left = (WIDTH - BTN_SIZE * (length - firstRow)) / 2f;
+                        btn.setRect(left + (placed - firstRow) * BTN_SIZE, top + GAP + BTN_SIZE, BTN_SIZE, BTN_SIZE);
+                    }
                 }
+
+                /*
+
+
+                 */
                 add(btn);
                 placed++;
                 buttonList.add(btn);

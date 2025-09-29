@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.testmode;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invulnerability;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -38,7 +39,7 @@ public class ImmortalShieldAffecter extends TestItem {
         return target.buff(ImmortalShield.class)!=null;
     }
 
-    public static class ImmortalShield extends Buff{
+    public static class ImmortalShield extends Buff {
         {
             type = buffType.NEUTRAL;
             announced = false;

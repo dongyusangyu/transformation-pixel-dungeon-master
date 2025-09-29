@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator1;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -239,12 +240,12 @@ public class HolyTome extends Artifact {
 		if (quickSpell == spell){
 			quickSpell = null; //re-assigning the same spell clears the quick spell
 			if (passiveBuff != null){
-				ActionIndicator.clearAction((ActionIndicator.Action) passiveBuff);
+				ActionIndicator1.clearAction((ActionIndicator1.Action) passiveBuff);
 			}
 		} else {
 			quickSpell = spell;
 			if (passiveBuff != null){
-				ActionIndicator.setAction((ActionIndicator.Action) passiveBuff);
+				ActionIndicator1.setAction((ActionIndicator1.Action) passiveBuff);
 			}
 		}
 	}

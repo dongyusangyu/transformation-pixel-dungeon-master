@@ -218,6 +218,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator1;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
@@ -708,7 +709,7 @@ public enum Talent {
 		public void detach(){
 			if(hero.hasTalent(SMOKE_MASK)) {
 				Buff.affect(Dungeon.hero, SmokeMask.class);
-				ActionIndicator.setAction( hero.buff(SmokeMask.class) );
+				ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 			}
 			BuffIndicator.refreshHero();
 			super.detach();
@@ -1151,7 +1152,7 @@ public enum Talent {
 		if (talent == SMOKE_MASK && hero.buff(SmokeCooldown.class)==null){
 
 			Buff.affect(hero, SmokeMask.class);
-			ActionIndicator.setAction( hero.buff(SmokeMask.class) );
+			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 			BuffIndicator.refreshHero();
 		}
 
@@ -1441,6 +1442,14 @@ public enum Talent {
 		}
 		if(hero.subClass==HeroSubClass.DARKSLIME && hero.buffs(DarkHookCooldown.class).isEmpty() && hero.buffs(DarkHook.class).isEmpty()){
 			Buff.affect(hero, DarkHook.class);
+		}
+		if(hero.subClass==HeroSubClass.NINJA_MASTER && hero.buffs(Ninja_Energy.class).isEmpty()){
+			Buff.affect(hero, Ninja_Energy.class);
+		}
+		if(hero.hasTalent(SMOKE_MASK) && hero.buffs(SmokeCooldown.class).isEmpty() && hero.buffs(SmokeMask.class).isEmpty()){
+			Buff.affect(hero, SmokeMask.class);
+			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
+			BuffIndicator.refreshHero();
 		}
 		if(hero.hasTalent(Talent.ICE_MEAL)){
 			Buff.affect(hero, FrostImbue.class,Math.min(4,2*hero.pointsInTalent(Talent.ICE_MEAL)));
@@ -2648,7 +2657,7 @@ public enum Talent {
 			object = bundle.getInt(OBJECT);
 		}
 	};
-	public static class SmokeMask extends Buff implements ActionIndicator.Action {
+	public static class SmokeMask extends Buff implements ActionIndicator1.Action {
 		{
 			//always acts after other buffs, so invisibility effects can process first
 			actPriority = BUFF_PRIO - 1;
@@ -2656,7 +2665,7 @@ public enum Talent {
 		@Override
 		public void detach() {
 			super.detach();
-			ActionIndicator.clearAction(this);
+			ActionIndicator1.clearAction(this);
 		}
 		@Override
 		public int icon() {

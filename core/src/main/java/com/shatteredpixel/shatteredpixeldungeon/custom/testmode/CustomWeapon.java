@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Dazzling;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Displacing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Explosive;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Friendly;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Heavy;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Polarized;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Sacrificial;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Wayward;
@@ -23,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Kineti
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Lucky;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Sweeping;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Vampiric;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -84,6 +86,7 @@ public class CustomWeapon extends MeleeWeapon {
         enchPrio.put(Projecting.class, 2);
         enchPrio.put(Shocking.class, 1);
         enchPrio.put(Vampiric.class, 1);
+        enchPrio.put(Sweeping.class, 1);
 
         enchPrio.put(Annoying.class, 0);
         enchPrio.put(Displacing.class, 1);
@@ -93,6 +96,7 @@ public class CustomWeapon extends MeleeWeapon {
         enchPrio.put(Polarized.class, 2);
         enchPrio.put(Sacrificial.class, 1);
         enchPrio.put(Wayward.class, 2);
+        enchPrio.put(Heavy.class, 1);
     }
 
     @Override
