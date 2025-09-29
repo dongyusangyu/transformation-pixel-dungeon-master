@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -206,19 +207,21 @@ public class TalentButton extends Button {
 				public String prompt() {
 					return Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, "metamorphose_talent"));
 				}
-
 				@Override
 				public boolean metamorphDesc() {
 					return true;
 				}
 
-
-
 				@Override
 				public void call() {
-
-					Talent replacing = ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE.replacing;
-
+					Talent replacing;
+					if (ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE != null){
+						replacing = ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE.replacing;
+					}else if(TestTalent.WndMetamorphReplace.INSTANCE != null){
+						replacing = TestTalent.WndMetamorphReplace.INSTANCE.replacing;
+					}else{
+						replacing = TestTalent.WndMetamorphReplace.INSTANCE.replacing;
+					}
 					for (LinkedHashMap<Talent, Integer> tier : Dungeon.hero.talents){
 						if (tier.containsKey(replacing)){
 							LinkedHashMap<Talent, Integer> newTier = new LinkedHashMap<>();
@@ -249,18 +252,24 @@ public class TalentButton extends Button {
 									newTier.put(t, tier.get(t));
 								}
 							}
-
-							Dungeon.hero.talents.set(ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE.tier-1, newTier);
+							if(ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE!=null){
+								Dungeon.hero.talents.set(ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE.tier-1, newTier);
+							}else if(TestTalent.WndMetamorphReplace.INSTANCE!=null){
+								Dungeon.hero.talents.set(TestTalent.WndMetamorphReplace.INSTANCE.tier-1, newTier);
+							}
 							break;
 						}
 					}
 
 					ScrollOfMetamorphosis.onMetamorph(replacing, talent);
+
 					Statistics.metamorphosis++;
 					Badges.validateFreemanUnlock();
 
 					if (ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE != null){
 						ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE.hide();
+					}else if(TestTalent.WndMetamorphReplace.INSTANCE != null){
+						TestTalent.WndMetamorphReplace.INSTANCE.hide();
 					}
 
 				}

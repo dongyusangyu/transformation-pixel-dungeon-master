@@ -3,7 +3,15 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DM300;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Goo;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Tengu;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.WarriorBoss;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogDzewa;
+import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.spawner.MobList;
 import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
 import com.shatteredpixel.shatteredpixeldungeon.items.ArcaneResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.Dewdrop;
@@ -106,6 +114,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Spell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.SummonElemental;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
@@ -170,6 +179,8 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.Sungrass;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.GreatShoperSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
@@ -180,6 +191,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.RectF;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
@@ -280,6 +292,7 @@ public class TestPotion extends TestGenerator {
             case 11: default: return ItemSpriteSheet.CHEST;
             case 12: return ItemSpriteSheet.SEAL_SHARD;
             case 13: return ItemSpriteSheet.TRINKET_CATA;
+            case 14: return ItemSpriteSheet.SCROLL_SUBLITION;
         }
     }
 
@@ -476,6 +489,7 @@ public class TestPotion extends TestGenerator {
             case 8: return TelekineticGrab.class;
             case 9: return UnstableSpell.class;
             case 10: return WildEnergy.class;
+            case 11: return TransformSpell.class;
         }
     }
 
@@ -552,15 +566,27 @@ public class TestPotion extends TestGenerator {
 
         }
     }
+    private Class<? extends Mob> idToMob(int id){
+        switch (id){
+            case 0: default:return Goo.class;
+            case 1: return Tengu.class;
+            case 2: return DM300.class;
+            case 3: return DwarfKing.class;
+            case 4: return YogDzewa.class;
+            case 5: return WarriorBoss.class;
+
+        }
+    }
 
     private int maxIndex(int cate){
         if(cate == 7) return 10;
         if(cate == 8) return 13;
-        if(cate == 9) return 10;
+        if(cate == 9) return 11;
         if(cate == 10) return 10;
         if(cate == 11) return 13;
         if(cate == 12) return 8;
         if(cate == 13) return 17;
+        if(cate == 14) return 5;
         return 11;
     }
 
@@ -582,6 +608,7 @@ public class TestPotion extends TestGenerator {
     private static ArrayList<Class<? extends Item>> miscList = new ArrayList<>();
     private static ArrayList<Class<? extends Item>> remainList = new ArrayList<>();
     private static ArrayList<Class<? extends Item>> trinketList = new ArrayList<>();
+    private static ArrayList<Class<? extends Mob>> SublimationList = new ArrayList<>();
     private void buildList() {
         if (potionList.isEmpty()) {
             for (int i = 0; i < maxIndex(0)+1; ++i) {
@@ -662,6 +689,11 @@ public class TestPotion extends TestGenerator {
         if(trinketList.isEmpty()){
             for(int i=0; i<maxIndex(13)+1; ++i){
                 trinketList.add(idToTrinket(i));
+            }
+        }
+        if(SublimationList.isEmpty()){
+            for(int i=0; i<maxIndex(14)+1; ++i){
+                SublimationList.add(idToMob(i));
             }
         }
     }
@@ -872,6 +904,29 @@ public class TestPotion extends TestGenerator {
                         Image im = new Image(Assets.Sprites.ITEMS);
                         im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(trinketList.get(i))).image));
                         im.scale.set(1.0f);
+                        btn.icon(im);
+                    }
+                    case 14:{
+                        Mob mob = (Mob) Reflection.newInstance(SublimationList.get(i));
+                        CharSprite sprite = mob.sprite();
+                        sprite.idle();
+
+                        Image im = new Image(sprite);
+                        if (im.width() >= 17 || im.height() >= 17) {
+                            RectF frame = im.frame();
+
+                            float wShrink = frame.width() * (1f - 17f / im.width());
+                            if (wShrink > 0) {
+                                frame.left += wShrink / 2f;
+                                frame.right -= wShrink / 2f;
+                            }
+                            float hShrink = frame.height() * (1f - 17f / im.height());
+                            if (hShrink > 0) {
+                                frame.top += hShrink / 2f;
+                                frame.bottom -= hShrink / 2f;
+                            }
+                            im.frame(frame);
+                        }
                         btn.icon(im);
                     }
                 }

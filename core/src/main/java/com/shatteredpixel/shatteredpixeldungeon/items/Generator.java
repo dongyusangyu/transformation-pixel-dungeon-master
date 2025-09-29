@@ -519,9 +519,10 @@ public class Generator {
 					ThrowingStone.class,
 					ThrowingKnife.class,
 					ThrowingSpike.class,
-					Dart.class,
+					
 					LuckyCoin.class,
-					SlimeBall.class
+					SlimeBall.class,
+					Dart.class
 			};
 			MIS_T1.defaultProbs = new float[]{ 3, 3, 3, 0 ,3,3};
 			MIS_T1.probs = MIS_T1.defaultProbs.clone();

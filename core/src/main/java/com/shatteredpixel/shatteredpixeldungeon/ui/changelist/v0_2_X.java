@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ui.changelist;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.SpecialPackage;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.curses.Bulk;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.GoldIngot;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Heavy;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Sweeping;
@@ -438,14 +439,17 @@ public class v0_2_X {
     }
     public static void add_v0_2_6fixChanges( ArrayList<ChangeInfo> changeInfos ) {
 
-        ChangeInfo changes = new ChangeInfo("v0.2.6", true, "");
+        ChangeInfo changes = new ChangeInfo("v0.2.6fix", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
 
         changes = new ChangeInfo( "v0.2.6fix4", false, null);
         changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
-
+        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.TRANSFORM_SPELL, new Bulk().glowing()), "New Curses",
+                "新增蜕变结晶和蜕变晶柱\n\n" +
+                        "_-_ _蜕变结晶_：它会允许使用者对任一通用天赋进行定向蜕变。可以通过使用蜕变秘卷合成获取\n" +
+                        "_-_ _蜕变晶柱_：可以无限蜕变指定天赋，不会消耗自身。测试道具，只能在特定挑战下获取\n" ));
 
         changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
                 "_-_ 为天赋图鉴的天赋背景根据类型设置了不同的颜色区分\n"
@@ -465,7 +469,8 @@ public class v0_2_X {
                         "_-_ 调整和削弱天赋：\n"+
                         "_-_ _烟雾掩护_：cd从20回合上调至25回合，可以自由释放，烟雾量上调至100/150\n"+
                         "_-_ _吓我一跳_：闪避给予的护盾量上升至+2/+3，叠加上限分别为4/6点\n"+
-                        "_-_ _水灵回复_：如果玩家处于极度饥饿状态，该天赋回复效率减半\n"
+                        "_-_ _水灵回复_：如果玩家处于极度饥饿状态，该天赋回复效率减半\n"+
+                        "_-_ _NO集群_：移入其他类\n"
         ));
         changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
                 "_-_ 实装多数测试工具\n"+

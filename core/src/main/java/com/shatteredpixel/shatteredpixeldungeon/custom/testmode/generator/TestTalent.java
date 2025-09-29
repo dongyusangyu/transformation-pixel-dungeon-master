@@ -4,9 +4,11 @@ import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -142,9 +144,11 @@ public class TestTalent  extends TestGenerator {
     public static class WndMetamorphReplace extends Window {
 
         public static WndMetamorphReplace INSTANCE;
+        private static final int WIDTH		= 120;
 
         public Talent replacing;
         public int tier;
+        public int number= Statistics.metamorphosis;
         private static final int BUTTON_HEIGHT = 26;
         private static final int GAP        = 1;
         protected static final int MARGIN 		= 2;
@@ -169,27 +173,23 @@ public class TestTalent  extends TestGenerator {
         public WndMetamorphReplace(Talent replacing, int tier,int type){
             super();
             INSTANCE = this;
-
             this.replacing = replacing;
             this.tier = tier;
 
 
+
             LinkedHashMap<Talent, Integer> options = new LinkedHashMap<>();
             Set<Talent> curTalentsAtTier = hero.talents.get(tier-1).keySet();
-            List<Talent> availableTalents = Talent.typeTalent.get(tier).get(type);
+            List<Talent> availableTalents = Talent.typeTalent.get(tier-1).get(type);
 
 
             List<Talent> selectedTalents = new ArrayList<>();
-            while (!availableTalents.isEmpty()) {
-                Talent randomTalent = Random.element(availableTalents);
+            for(Talent randomTalent :availableTalents){
                 if(!selectedTalents.contains(randomTalent)){
                     selectedTalents.add(randomTalent);
-                    availableTalents.remove(randomTalent);
-                }else{
-                    availableTalents.remove(randomTalent);
                 }
-
             }
+
             for (Talent talent : selectedTalents) {
                 options.put(talent, hero.pointsInTalent(replacing));
             }
@@ -199,23 +199,28 @@ public class TestTalent  extends TestGenerator {
         }
 
         private void setup(Talent replacing, int tier, LinkedHashMap<Talent, Integer> replaceOptions){
-            float top = 0;
 
+            float top = 0;
+            this.replacing = replacing;
             IconTitle title = new IconTitle( curItem );
             title.color( TITLE_COLOR );
-            title.setRect(0, 0, 120, 0);
+            title.setRect(0, 0, WIDTH, 0);
             add(title);
 
             top = title.bottom() + 2;
 
             RenderedTextBlock text = PixelScene.renderTextBlock(Messages.get(ScrollOfMetamorphosis.class, "replace_desc"), 6);
-            text.maxWidth(120);
+            text.maxWidth(WIDTH);
             text.setPos(0, top);
             add(text);
+            int bottom=(int)text.bottom();
+            resize(WIDTH, bottom+82);
             float x = 0;
             ScrollingGridPane pane = new ScrollingGridPane();
             add(pane);
-            pane.setRect(0, text.bottom()+2,120,80);
+            pane.setRect(0, text.bottom()+2,WIDTH,80);
+
+
             Component content = pane.content();
             int pos = 2 ;
 
@@ -226,18 +231,21 @@ public class TestTalent  extends TestGenerator {
                 content.add(gridItem);
                 gridItem.setPos(x,pos);
                 x += BUTTON_WIDTH;
-                if(x >= 120){
+                if(x >= WIDTH){
                     x=0;
                     pos+=BUTTON_HEIGHT;
                 }
             }
-            content.setRect(0,0,120, pos+BUTTON_HEIGHT);
+            content.setRect(0,0,WIDTH, pos+BUTTON_HEIGHT);
             pane.update();
-            resize(120, (int)pane.bottom());
+            //resize(120, (int)pane.bottom());
         }
 
         @Override
         public void hide() {
+            if(curItem instanceof TransformSpell && number<Statistics.metamorphosis && hero.pointsInTalent(Talent.MORE_CHANCE)<=Random.Int(10)){
+                curItem.detach(curUser.belongings.backpack);
+            }
             super.hide();
 
             if (INSTANCE == this) {
@@ -247,7 +255,17 @@ public class TestTalent  extends TestGenerator {
 
         @Override
         public void onBackPressed() {
+
             super.onBackPressed();
+            /*
+            if(curItem instanceof TransformSpell){
+                ((TransformSpell)curItem).confirmCancelation(this);
+            }else{
+                super.onBackPressed();
+            }
+
+             */
+
         }
     }
 
@@ -300,7 +318,7 @@ public class TestTalent  extends TestGenerator {
                 if (i > 0) {
                     pos += GAP;
                 }
-                cb.setRect( 0, pos, WIDTH-16, BTN_HEIGHT );
+                cb.setRect( 0, pos, WIDTH, BTN_HEIGHT );
 
                 add( cb );
                 boxes.add( cb );

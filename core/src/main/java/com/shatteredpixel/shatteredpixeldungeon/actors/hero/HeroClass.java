@@ -596,7 +596,7 @@ public enum HeroClass {
 
 			//	new WandOfReflectDisintegration().identify().collect();
 			new ScrollOfSublimation().type("TENGU").collect();
-			new EnemyAttributeModifier().collect();
+			//new EnemyAttributeModifier().collect();
 
 			new MobAttributeViewer().collect();
 

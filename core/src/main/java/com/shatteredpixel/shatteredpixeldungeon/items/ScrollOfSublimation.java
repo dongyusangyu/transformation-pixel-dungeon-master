@@ -87,6 +87,35 @@ public class ScrollOfSublimation extends Item{
     public String targetingPrompt() {
         return Messages.get(this, "prompt",this.type);
     }
+
+
+    public String desc() {
+        return Messages.get(this, "desc",getBoss(this.type));
+    }
+    public String getBoss(String type){
+        String name ="";
+        switch(this.type){
+            case "GOO" : default:
+                name="_粘咕_";
+                break;
+            case "WARRIOR":
+                name="_战士？_";
+                break;
+            case "TENGU" :
+                name="_天狗_";
+                break;
+            case "DM300":
+                name="_DM300_";
+                break;
+            case "DWARFKING":
+                name="_矮人国王_";
+                break;
+            case "YOG":
+                name="_Yog-Dzewa_";
+                break;
+        }
+        return name;
+    }
     public static void onSublimation( Talent oldTalent, Talent newTalent ){
         if (curItem instanceof ScrollOfMetamorphosis) {
             ((ScrollOfMetamorphosis) curItem).readAnimation();
