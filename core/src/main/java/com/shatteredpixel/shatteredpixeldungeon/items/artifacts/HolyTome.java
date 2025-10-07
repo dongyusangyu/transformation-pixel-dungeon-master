@@ -240,12 +240,12 @@ public class HolyTome extends Artifact {
 		if (quickSpell == spell){
 			quickSpell = null; //re-assigning the same spell clears the quick spell
 			if (passiveBuff != null){
-				ActionIndicator1.clearAction((ActionIndicator1.Action) passiveBuff);
+				ActionIndicator.clearAction((ActionIndicator.Action) passiveBuff);
 			}
 		} else {
 			quickSpell = spell;
 			if (passiveBuff != null){
-				ActionIndicator1.setAction((ActionIndicator1.Action) passiveBuff);
+				ActionIndicator.setAction((ActionIndicator.Action) passiveBuff);
 			}
 		}
 	}

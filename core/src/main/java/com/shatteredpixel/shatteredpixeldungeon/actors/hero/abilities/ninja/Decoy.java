@@ -247,12 +247,6 @@ public class Decoy extends ArmorAbility {
 
         @Override
         public boolean isImmune(Class effect) {
-            if (effect == Burning.class
-                    && Random.Int(4) < hero.pointsInTalent(Talent.CLONED_ARMOR)
-                    && hero.belongings.armor() != null
-                    && hero.belongings.armor().hasGlyph(Brimstone.class, this)){
-                return true;
-            }
             return super.isImmune(effect);
         }
 

@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bandit;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bat;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Brute;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CausticSlime;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.ChaosDisciples;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Crab;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalGuardian;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalMimic;
@@ -35,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollSapper;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollTrickster;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldenMimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Golem;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatCrab;
@@ -194,8 +196,8 @@ public class MobPlacer extends TestItem {
             case 4: return DataPack.ELE_CHAOS.ordinal() - DataPack.DM201.ordinal() - 1;
             case 5: return DataPack.ACIDIC.ordinal() - DataPack.ELE_CHAOS.ordinal() - 1;
             case 6: return DataPack.LAND_PHANTOM_PIRANHA.ordinal() - DataPack.ACIDIC.ordinal() - 1;
-            case 7: default: return DataPack.GNOLL_SAPPER.ordinal() - DataPack.LAND_PHANTOM_PIRANHA.ordinal() - 1;
-            case 8: return DataPack.PHANTOM_PIRANHA.ordinal() - DataPack.PHANTOM_PIRANHA.ordinal() - 1;
+            case 7: return DataPack.GNOLL_SAPPER.ordinal() - DataPack.LAND_PHANTOM_PIRANHA.ordinal() - 1;
+            case 8: default: return DataPack.THYMOR.ordinal() - DataPack.GNOLL_SAPPER.ordinal() - 1;
         }
     }
     private int dataThreshold(int tier){
@@ -215,7 +217,7 @@ public class MobPlacer extends TestItem {
             case 7:
                 return DataPack.LAND_PHANTOM_PIRANHA.ordinal() + 1;
             case 8:
-                return DataPack.LAND_PHANTOM_PIRANHA.ordinal() + 1;
+                return DataPack.GNOLL_SAPPER.ordinal() + 1;
         }
     }
 
@@ -259,8 +261,8 @@ public class MobPlacer extends TestItem {
                 @Override
                 public void onClick(){
                     mobTier--;
-                    if(mobTier < 1 || mobTier>7){
-                        mobTier = 7;
+                    if(mobTier < 1 || mobTier>8){
+                        mobTier = 8;
                     }
                     mobIndex = Math.min(mobIndex, maxMobIndex(mobTier));
                     refreshImage();
@@ -274,7 +276,7 @@ public class MobPlacer extends TestItem {
                 @Override
                 public void onClick(){
                     mobTier++;
-                    if(mobTier < 1 || mobTier > 7){
+                    if(mobTier < 1 || mobTier > 8){
                         mobTier = 1;
                     }
                     mobIndex = Math.min(mobIndex, maxMobIndex(mobTier));
@@ -338,7 +340,7 @@ public class MobPlacer extends TestItem {
         private void updateSelectedMob(){
             int selected = mobTier;
             StringBuilder sb = new StringBuilder();
-            for(int i=1;i<=7;++i){
+            for(int i=1;i<=8;++i){
                 sb.append((i==selected? "* ":"- "));
             }
             selectedPage.text(sb.toString());
@@ -496,7 +498,16 @@ public class MobPlacer extends TestItem {
         CRYSTAL_WISP(CrystalWisp.class,DictSpriteSheet.CRYSTAL_WISP),
         GNOLL_GEOMANCER(GnollGeomancer.class,DictSpriteSheet.GNOLL_GEOMANCER),
         GNOLL_GUARD(GnollGuard.class,DictSpriteSheet.GNOLL_GUARD),
-        GNOLL_SAPPER(GnollSapper.class,DictSpriteSheet.GNOLL_SAPPER);
+        GNOLL_SAPPER(GnollSapper.class,DictSpriteSheet.GNOLL_SAPPER),
+
+        SCORPIOBOSS(ChaosDisciples.ScorpioBoss.class,DictSpriteSheet.GNOLL_SAPPER),
+        EYEBOSS(ChaosDisciples.EyeBoss.class,DictSpriteSheet.GNOLL_SAPPER),
+        RIPPERBOSS(ChaosDisciples.RipperBoss.class,DictSpriteSheet.GNOLL_SAPPER),
+        SUCCBOSS(ChaosDisciples.SuccBoss.class,DictSpriteSheet.GNOLL_SAPPER),
+        MONKMASTER(GoldBoss.MonkMaster.class,DictSpriteSheet.GNOLL_SAPPER),
+        GOLDELEMENTAL(GoldBoss.GoldElemental.class,DictSpriteSheet.GNOLL_SAPPER),
+        GOLDGOLEM(GoldBoss.GoldGolem.class,DictSpriteSheet.GNOLL_SAPPER),
+        THYMOR(GoldBoss.Thymor.class,DictSpriteSheet.GNOLL_SAPPER);
 
         private Class<? extends Mob> mobClass;
         private int imageId;

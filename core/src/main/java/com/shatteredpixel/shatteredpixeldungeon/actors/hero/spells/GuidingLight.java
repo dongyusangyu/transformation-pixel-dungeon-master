@@ -139,6 +139,11 @@ public class GuidingLight extends TargetedClericSpell {
 
 		public float iconFadePercent() { return Math.max(0, visualcooldown() / 100); }
 
+		public void detach(){
+			super.detach();
+			ActionIndicator.refresh();
+		}
+
 	}
 
 	public static class Illuminated extends Buff {

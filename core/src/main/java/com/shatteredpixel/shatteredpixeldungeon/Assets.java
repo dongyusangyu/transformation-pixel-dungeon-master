@@ -368,5 +368,6 @@ public class Assets {
 
 		public static final String SLIMEMUCUS    = "sprites/slimemucus.png";
 		public static final String DECOY    = "sprites/decoy.png";
+		public static final String DRONES    = "sprites/drones.png";
 	}
 }

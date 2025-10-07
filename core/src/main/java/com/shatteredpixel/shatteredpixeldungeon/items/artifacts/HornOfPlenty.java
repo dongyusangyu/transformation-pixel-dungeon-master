@@ -155,6 +155,8 @@ public class HornOfPlenty extends Artifact {
 				|| hero.hasTalent(Talent.YUNYING_MEAL)
 				||hero.hasTalent(Talent.ICE_MEAL)){
 			hero.spend(Food.TIME_TO_EAT - 2);
+		}else if(hero.hasTalent(Talent.OVER_MEAL)){
+			hero.spend(Food.TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f);
 		} else {
 			hero.spend(Food.TIME_TO_EAT);
 		}

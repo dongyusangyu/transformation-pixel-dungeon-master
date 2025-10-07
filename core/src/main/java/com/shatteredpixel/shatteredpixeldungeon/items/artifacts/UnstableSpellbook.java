@@ -270,121 +270,7 @@ public class UnstableSpellbook extends Artifact {
 		}
 	}
 
-	/*
 
-	@Override
-	public void execute( Hero hero, String action ) {
-
-		super.execute( hero, action );
-
-		if (hero.buff(MagicImmune.class) != null) return;
-
-		if (action.equals( AC_READ )) {
-
-			if (hero.buff( Blindness.class ) != null) GLog.w( Messages.get(this, "blinded") );
-			else if (!isEquipped( hero ))             GLog.i( Messages.get(Artifact.class, "need_to_equip") );
-			else if (charge <= 0)                     GLog.i( Messages.get(this, "no_charge") );
-			else if (cursed)                          GLog.i( Messages.get(this, "cursed") );
-			else {
-				charge--;
-				if(hero.hasTalent(Talent.MAGIC_GIRL)){
-					Buff.affect(hero, HeroDisguise.class,15+15*hero.pointsInTalent(Talent.MAGIC_GIRL));
-					if(hero.pointsInTalent(Talent.MAGIC_GIRL)==2){
-						Buff.affect(hero, Light.class,10);
-					}
-				}
-
-				Scroll scroll;
-				if(hero.hasTalent(Talent.STRENGTH_BOOK)){
-					//Scroll scroll = null;
-					if (hero.visibleEnemies() == 0){//视野中敌人为0，即非战斗状态
-						do {
-							scroll = (Scroll) Generator.randomUsingDefaults(Generator.Category.SCROLL);
-						} while (scroll == null
-								//将这些卷轴的频率减半
-								||((scroll instanceof ScrollOfIdentify ||
-								scroll instanceof ScrollOfRemoveCurse ||
-								scroll instanceof ScrollOfMagicMapping) && Random.Int(2) == 0)
-								//非战斗状态不能随机出以下卷轴，即只能出现鉴定、驱邪、充能、传送、催眠、探地
-								|| (scroll instanceof ScrollOfMirrorImage)
-								|| (scroll instanceof ScrollOfRetribution)
-								|| (scroll instanceof ScrollOfRage)
-								|| (scroll instanceof ScrollOfTerror)
-								|| (scroll instanceof ScrollOfTransmutation));
-					} else {
-						do {
-							scroll = (Scroll) Generator.randomUsingDefaults(Generator.Category.SCROLL);
-						} while (scroll == null
-								//战斗状态不能随机出以下卷轴，即只能出现镜像、充能、传送、催眠、盛怒、复仇、恐惧
-								||(scroll instanceof ScrollOfIdentify
-								|| scroll instanceof ScrollOfRemoveCurse
-								|| scroll instanceof ScrollOfMagicMapping)
-								|| (scroll instanceof ScrollOfTransmutation));
-					}
-				}else{
-					do {
-						scroll = (Scroll) Generator.randomUsingDefaults(Generator.Category.SCROLL);
-					} while (scroll == null
-							//reduce the frequency of these scrolls by half
-							||((scroll instanceof ScrollOfIdentify ||
-							scroll instanceof ScrollOfRemoveCurse ||
-							scroll instanceof ScrollOfMagicMapping) && Random.Int(2) == 0)
-							//cannot roll transmutation
-							|| (scroll instanceof ScrollOfTransmutation));
-				}
-
-				
-				scroll.anonymize();
-				curItem = scroll;
-				curUser = hero;
-
-				//if there are charges left and the scroll has been given to the book
-				if (charge > 0 && !scrolls.contains(scroll.getClass())) {
-					final Scroll fScroll = scroll;
-
-					final ExploitHandler handler = Buff.affect(hero, ExploitHandler.class);
-					handler.scroll = scroll;
-
-					GameScene.show(new WndOptions(new ItemSprite(this),
-							Messages.get(this, "prompt"),
-							Messages.get(this, "read_empowered"),
-							scroll.trueName(),
-							Messages.get(ExoticScroll.regToExo.get(scroll.getClass()), "name")){
-						@Override
-						protected void onSelect(int index) {
-							handler.detach();
-							if (index == 1){
-								Scroll scroll = Reflection.newInstance(ExoticScroll.regToExo.get(fScroll.getClass()));
-								curItem = scroll;
-								charge--;
-								scroll.anonymize();
-								scroll.doRead();
-								Talent.onArtifactUsed(Dungeon.hero);
-							} else {
-								fScroll.doRead();
-								Talent.onArtifactUsed(Dungeon.hero);
-							}
-							updateQuickslot();
-						}
-						
-						@Override
-						public void onBackPressed() {
-							//do nothing
-						}
-					});
-				} else {
-					scroll.doRead();
-					Talent.onArtifactUsed(Dungeon.hero);
-				}
-				updateQuickslot();
-			}
-
-		} else if (action.equals( AC_ADD )) {
-			GameScene.selectItem(itemSelector);
-		}
-	}
-
-	 */
 
 	//forces the reading of a regular scroll if the player tried to exploit by quitting the game when the menu was up
 	public static class ExploitHandler extends Buff {
@@ -538,6 +424,7 @@ public class UnstableSpellbook extends Artifact {
 			return true;
 		}
 	}
+
 
 	protected WndBag.ItemSelector itemSelector = new WndBag.ItemSelector() {
 

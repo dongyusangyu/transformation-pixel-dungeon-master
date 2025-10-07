@@ -30,6 +30,8 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIcon;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -84,6 +86,9 @@ public class WndHeroInfo extends WndTabbed {
 				break;
 			case NINJA:
 				tabIcon = new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN,null);
+				break;
+			case DM400:
+				tabIcon = new ItemSprite(ItemSpriteSheet.ARTIFACT_TOOL,null);
 				break;
 		}
 
@@ -231,6 +236,12 @@ public class WndHeroInfo extends WndTabbed {
 				case NINJA:
 					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN),
 							new ItemSprite(ItemSpriteSheet.SHURIKEN),
+							new ItemSprite(ItemSpriteSheet.WAKIZASHI),
+							new ItemSprite(ItemSpriteSheet.SCROLL_ISAZ)};
+					break;
+				case DM400:
+					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.ARTIFACT_TOOL),
+							new BuffIcon(BuffIndicator.DM400MARK,true),
 							new ItemSprite(ItemSpriteSheet.WAKIZASHI),
 							new ItemSprite(ItemSpriteSheet.SCROLL_ISAZ)};
 					break;

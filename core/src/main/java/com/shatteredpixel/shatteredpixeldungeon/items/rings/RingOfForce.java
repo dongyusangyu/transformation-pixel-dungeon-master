@@ -93,7 +93,12 @@ public class RingOfForce extends Ring {
 			return dmg;
 		} else {
 			//attack without any ring of force influence
-			return Hero.heroDamageIntRange(1, Math.max(hero.STR()-8, 1));
+			if(hero.heroClass == HeroClass.DM400){
+				return Hero.heroDamageIntRange(1, 8);
+			}else{
+				return Hero.heroDamageIntRange(1, Math.max(hero.STR()-8, 1));
+			}
+
 		}
 	}
 

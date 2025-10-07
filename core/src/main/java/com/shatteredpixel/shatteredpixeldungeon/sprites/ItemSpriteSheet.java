@@ -495,6 +495,7 @@ public class ItemSpriteSheet {
 	public static final int ARTIFACT_ROSE3      = ARTIFACTS+22;
 	public static final int ARTIFACT_TOME       = ARTIFACTS+23;
 	public static final int ARTIFACT_SHURIKEN  =  ARTIFACTS+41;
+	public static final int ARTIFACT_TOOL  =  ARTIFACTS+42;
 	static{
 		assignItemRect(ARTIFACT_CLOAK,      9,  15);
 		assignItemRect(ARTIFACT_ARMBAND,    16, 13);
@@ -521,6 +522,7 @@ public class ItemSpriteSheet {
 		assignItemRect(ARTIFACT_ROSE3,      14, 14);
 		assignItemRect(ARTIFACT_TOME,       14, 16);
 		assignItemRect(ARTIFACT_SHURIKEN,       16, 14);
+		assignItemRect(ARTIFACT_TOOL,       16, 16);
 
 	}
 

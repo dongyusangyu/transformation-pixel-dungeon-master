@@ -177,6 +177,7 @@ public class GameScene extends PixelScene {
 	private GameLog log;
 	
 	private static CellSelector cellSelector;
+	private static CellSelector cellSelector2;
 	
 	private Group terrain;
 	private Group customTiles;
@@ -1495,6 +1496,8 @@ public class GameScene extends PixelScene {
 			scene.prompt(listener.prompt());
 		}
 	}
+
+
 	
 	public static boolean cancelCellSelector() {
 		if (cellSelector.listener != null && cellSelector.listener != defaultCellListener) {

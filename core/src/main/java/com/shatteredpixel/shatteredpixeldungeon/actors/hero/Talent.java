@@ -149,6 +149,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
@@ -366,6 +367,11 @@ public enum Talent {
 
 	//OneSword
 	OFFENSIVE(471,4),GLIMPSE(472,4),KILL_CONTINUE(473,4),
+	//DM400
+	MARK_MEAL(480),TARGET_TARGETING(482),
+	OVER_MEAL(484),RECOVER_CHARGE(485),BODY_REINFORCE(486),
+	QUICK_TOOL(490,3),
+
 
 	//GOO
 	AQUATIC_RECOVER(160,2),PUMP_ATTACK(161,2),OOZE_ATTACK(162,2),
@@ -563,6 +569,49 @@ public enum Talent {
 			left = Math.max(left, shots);
 		}
 		private static final String LEFT 	= "left";
+		@Override
+		public void storeInBundle( Bundle bundle ) {
+			super.storeInBundle(bundle);
+			bundle.put( LEFT, left );
+		}
+
+		@Override
+		public void restoreFromBundle( Bundle bundle ) {
+			super.restoreFromBundle( bundle );
+			left = bundle.getInt( LEFT );
+		}
+	}
+	public static class MarkMeal extends Buff {
+
+		{
+			type = buffType.POSITIVE;
+		}
+		@Override
+		public int icon() {
+			return BuffIndicator.ARMOR;
+		}
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(1, 1, 0);
+		}
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, (3-left) / 3f);
+		}
+		@Override
+		public String iconTextDisplay() {
+			return Integer.toString(left);
+		}
+		@Override
+		public String desc() {
+			return Messages.get(this, "desc", left);
+		}
+		public int left;
+		public void set(int shots){
+			left = Math.max(left, shots);
+		}
+		private static final String LEFT 	= "left";
+
 		@Override
 		public void storeInBundle( Bundle bundle ) {
 			super.storeInBundle(bundle);
@@ -1373,7 +1422,7 @@ public enum Talent {
 		}
 		if(hero.hasTalent(GOLD_MEAL) && Dungeon.eat_item<maxeat){
 			Dungeon.level.drop(new Gold().quantity(15+10*hero.pointsInTalent(GOLD_MEAL)), hero.pos).sprite.drop();
-			Dungeon.eat_item++;
+
 		}
 		if(hero.hasTalent(ENDLESS_MEAL)){
 			Buff.affect(hero, Swiftthistle.TimeBubble.class).reset1(2*hero.pointsInTalent(ENDLESS_MEAL));
@@ -1438,7 +1487,7 @@ public enum Talent {
 			}
 		}
 		if(Dungeon.eat_item>=maxeat && eat_item>oldeat){
-			GLog.i("无敌一餐，饭里藏金，吃出经验、生日礼物等天赋此后不再触发。");
+			GLog.i("无敌一餐，吃出经验、生日礼物等天赋此后不再触发。");
 		}
 		if(hero.subClass==HeroSubClass.DARKSLIME && hero.buffs(DarkHookCooldown.class).isEmpty() && hero.buffs(DarkHook.class).isEmpty()){
 			Buff.affect(hero, DarkHook.class);
@@ -1450,6 +1499,8 @@ public enum Talent {
 			Buff.affect(hero, SmokeMask.class);
 			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 			BuffIndicator.refreshHero();
+		}else if(hero.hasTalent(SMOKE_MASK) && hero.buff(SmokeMask.class)!=null){
+			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 		}
 		if(hero.hasTalent(Talent.ICE_MEAL)){
 			Buff.affect(hero, FrostImbue.class,Math.min(4,2*hero.pointsInTalent(Talent.ICE_MEAL)));
@@ -1463,6 +1514,11 @@ public enum Talent {
 
 				}
 			}
+		}
+		if (hero.hasTalent(MARK_MEAL)){
+			//2/3 bonus wand damage for next 3 zaps
+			Buff.affect( hero, MarkMeal.class);
+
 		}
 	}
 
@@ -1656,6 +1712,9 @@ public enum Talent {
 		}
 		if(hero.hasTalent(XIA)){
 			Buff.affect(hero,XiaDef.class,(1+2*hero.pointsInTalent(XIA))*factor);
+		}
+		if(hero.hasTalent(RECOVER_CHARGE) && hero.heroClass!=HeroClass.DM400){
+			Buff.affect(hero, ArtifactRecharge.class).extend(2*hero.pointsInTalent(RECOVER_CHARGE));
 		}
 	}
 	public static void onRunestoneUsed( Hero hero, int pos, Class<?extends Item> cls ){
@@ -1944,6 +2003,14 @@ public enum Talent {
 			hero.buff(AgileAttack.class).detach();
 			dmg+=1+2*hero.pointsInTalent(AGILE_ATTACK);
 		}
+		if(hero.hasTalent(TARGET_TARGETING)){
+			if(enemy.buff(InstructionTool.InstructionMark.class)!=null){
+				dmg+=hero.pointsInTalent(TARGET_TARGETING);
+			}else if(hero.heroClass!=HeroClass.DM400 && enemy.buff(Vertigo.class)!=null){
+				dmg+=hero.pointsInTalent(TARGET_TARGETING);
+			}
+		}
+
 		return dmg;
 	}
 
@@ -2096,6 +2163,29 @@ public enum Talent {
 				hero.buff(NinjaSocial.class).detach();
 			}
 		}
+		MarkMeal b = hero.buff(MarkMeal.class);
+		if(hero.heroClass==HeroClass.DM400){
+			int turn =3;
+
+			if(b!=null){
+				turn +=1+hero.pointsInTalent(MARK_MEAL);
+				b.left-=1;
+				if(b.left<=0){
+					b.detach();
+				}
+			}
+			Buff.affect(enemy, InstructionTool.InstructionMark.class).reset(turn);
+		}else{
+			if(b!=null){
+				Buff.affect(enemy, Vertigo.class,1+hero.pointsInTalent(MARK_MEAL));
+				b.left-=1;
+				if(b.left<=0){
+					b.detach();
+				}
+			}
+		}
+
+
 
 		return dmg;
 	}
@@ -2242,6 +2332,9 @@ public enum Talent {
 	public static int onDamage(  int dmg, Object src  ){
 		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
 			dmg*=1-hero.pointsInTalent(Talent.WELLFED_MEAL)*0.15f;
+		}
+		if(hero.hasTalent(BODY_REINFORCE) && hero.heroClass!=HeroClass.DM400){
+			dmg*=1f-0.05f*hero.pointsInTalent(BODY_REINFORCE);
 		}
 		if(!hero.buffs(Talent.NoSleep.class).isEmpty() &&  hero.hasTalent(Talent.GET_UP)){
 			Buff.affect(hero, Adrenaline.class,2*hero.pointsInTalent(Talent.GET_UP)+1);
@@ -2730,7 +2823,7 @@ public enum Talent {
 
 	public static ArrayList<Talent> getNegativeTalent(){
 		//版本限定
-		int xianding = 3;
+		int xianding = 4;
 
 		ArrayList<Talent> Negatives=new ArrayList<>();
 		for(Talent t:negativeTalent.get(0)){
@@ -2795,13 +2888,13 @@ public enum Talent {
 		}
 		Collections.addAll(typeTalent.get(0).get(ATTACK),PROVOKED_ANGER,LINGERING_MAGIC,SUCKER_PUNCH,FOLLOWUP_STRIKE,STRENGTHENING_MEAL,
 				PATIENT_STRIKE,STRONG_ATTACK,FEAR_INCARNATION,DISTURB_ATTACK,WATER_ATTACK,COVER_SCAR,STRENGTH_GREATEST,POSION_DAGGER,
-				ATTACK_DOOR,WATER_WAVE,AGILE_ATTACK);
+				ATTACK_DOOR,WATER_WAVE,AGILE_ATTACK,TARGET_TARGETING);
 		Collections.addAll(typeTalent.get(0).get(MAGIC),EMPOWERING_MEAL,ICE_BREAKING,DAMAGED_CORE,INSINUATION,LIGHT_CROP,MARKSMAN,
 				STATIC_LIGHT,FIRE_BALL);
 		Collections.addAll(typeTalent.get(0).get(EFFECT),HEARTY_MEAL,BACKUP_BARRIER,PROTECTIVE_SHADOWS,NATURES_AID,AGGRESSIVE_BARRIER,
 				POWERFUL_CALCULATIONS,INSERT_BID,MEAL_SHIELD,TREAT_MEAL,NURTRITIOUS_MEAL,SHOCK_BOMB,AID_STOMACH,EATEN_SLOWLY,
 				THORNY_ROSE,ASH_LEDGER,SECRET_LIGHTING,ANESTHESIA,JASMINE_TEA,PERSONAL_ATTACK,FLASH_GENIUS,RESILIENT_MEAL,NINJA_MEAL,
-				COLLECTION_GOLD);
+				COLLECTION_GOLD,MARK_MEAL);
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
 				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION,
 				MORE_FAVORS,INVISIBILITY_SHADOWS);
@@ -2821,7 +2914,8 @@ public enum Talent {
 				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,EAT_MIND);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
 				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,BLESS_MEAL,GET_UP,INVINCIBLE,
-				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE,YUNYING_MEAL,XIA,FEINT);
+				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE,YUNYING_MEAL,XIA,FEINT,
+				OVER_MEAL,RECOVER_CHARGE);
 		Collections.addAll(typeTalent.get(1).get(RESOURCE),WAND_PRESERVATION,ROGUES_FORESIGHT,PRECIOUS_EXPERIENCE,MORE_CHANCE,WANT_ALL,
 				SEED_RECYCLING,INSTANT_REFINING,FAST_BREAK,KEBI,MIRACLE_ALCHEMY);
 		Collections.addAll(typeTalent.get(1).get(SPELL),STRENGTHEN_CHAIN,STRENGTHEN_CHALICE,JOURNEY_NATURE,STRENGTH_BOOK,RECALL_INSCRIPTION,
@@ -2830,7 +2924,7 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(1).get(ASSIST),WIDE_SEARCH,SILENT_STEPS,REJUVENATING_STEPS,HEIGHTENED_SENSES,DURABLE_PROJECTILES,
 				WEAPON_RECHARGING,SWIFT_EQUIP,LIGHT_APPLICATION,HEAVY_APPLICATION,GOD_LEFTHAND,GOD_RIGHTHAND,BURNING_BLOOD,
 				HEAVY_BURDEN,EXPLORATION_INTUITION,PROTECT_CURSE,NIRVANA,RUNIC_TRANSFERENCE,ENERGY_ABSORPTION,
-				NATURAL_AFFINITY,QUALITY_ABSORPTION,QUICK_SEARCH);
+				NATURAL_AFFINITY,QUALITY_ABSORPTION,QUICK_SEARCH,BODY_REINFORCE);
 		Collections.addAll(typeTalent.get(1).get(OTHER),WAKE_SNAKE,ENGINEER_REFIT,SHOOT_SATELLITE);
 
 		//tier=3
@@ -2846,7 +2940,7 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(2).get(SPELL),ALLY_WARP,TIME_SAND,STRENGTH_CLOAK,STRENGTH_ARMBAND,CLEANSE, LIGHT_READING,PURIFYING_EVIL,
 				DIVINE_STORM,RESURRECTION,ZHUANYU_SPELL,HOLY_GRENADE,BLADE_STAR,SACRED_BLADE);
 		Collections.addAll(typeTalent.get(2).get(ASSIST),HOLD_FAST,STRONGMAN,LIGHT_CLOAK,BEHEST,AFRAID_DEATH,HERO_NAME,HOMETOWN_CLOUD,WIDE_KNOWLEDGE,
-				CONCEPT_GRID,ACTIVE_MUSCLES,SEA_WIND,BEYOND_LIMIT,EXTREME_REACTION,HOLY_FAITH,ORIGINAL_MONSTER,LIGHT_BOX);
+				CONCEPT_GRID,ACTIVE_MUSCLES,SEA_WIND,BEYOND_LIMIT,EXTREME_REACTION,HOLY_FAITH,ORIGINAL_MONSTER,LIGHT_BOX,QUICK_TOOL);
 		Collections.addAll(typeTalent.get(2).get(OTHER),SHARP_HEAD);
 	}
 
@@ -2910,6 +3004,10 @@ public enum Talent {
 				break;
 			case NINJA:
 				Collections.addAll(tierTalents, NINJA_MEAL, HUNTING_INTUITION);
+				break;
+			case DM400:
+				Collections.addAll(tierTalents, MARK_MEAL, TARGET_TARGETING);
+
 				break;
 				/*
 			case COMMON:
@@ -2977,6 +3075,9 @@ public enum Talent {
 			case NINJA:
 				Collections.addAll(tierTalents, YUNYING_MEAL, XIA,FEINT);
 				break;
+			case DM400:
+				Collections.addAll(tierTalents, OVER_MEAL, RECOVER_CHARGE,BODY_REINFORCE);
+				break;
 				/*
 			case COMMON:
 				Collections.addAll(tierTalents, LETHAL_MOMENTUM, IMPROVISED_PROJECTILES, ARCANE_VISION, SHIELD_BATTERY,
@@ -3042,6 +3143,9 @@ public enum Talent {
 				break;
 			case NINJA:
 				Collections.addAll(tierTalents, LIGHT_BOX);
+				break;
+			case DM400:
+				Collections.addAll(tierTalents, QUICK_TOOL);
 				break;
 				/*
 			case COMMON:

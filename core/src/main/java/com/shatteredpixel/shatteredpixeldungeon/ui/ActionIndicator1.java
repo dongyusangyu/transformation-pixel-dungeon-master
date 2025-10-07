@@ -180,7 +180,7 @@ public class ActionIndicator1 extends Tag {
         }
     }
 
-    public interface Action {
+    public interface Action{
 
         String actionName();
 

@@ -905,7 +905,7 @@ public class TestPotion extends TestGenerator {
                         im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(trinketList.get(i))).image));
                         im.scale.set(1.0f);
                         btn.icon(im);
-                    }
+                    }break;
                     case 14:{
                         Mob mob = (Mob) Reflection.newInstance(SublimationList.get(i));
                         CharSprite sprite = mob.sprite();

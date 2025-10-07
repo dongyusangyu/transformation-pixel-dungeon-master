@@ -184,9 +184,9 @@ public class TestTalent  extends TestGenerator {
 
 
             List<Talent> selectedTalents = new ArrayList<>();
-            for(Talent randomTalent :availableTalents){
-                if(!selectedTalents.contains(randomTalent)){
-                    selectedTalents.add(randomTalent);
+            for(Talent talent :availableTalents){
+                if (!curTalentsAtTier.contains(talent)){
+                    selectedTalents.add(talent);
                 }
             }
 

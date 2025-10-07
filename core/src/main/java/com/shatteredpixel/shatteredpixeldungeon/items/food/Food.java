@@ -118,7 +118,9 @@ public class Food extends Item {
 			|| hero.hasTalent(Talent.YUNYING_MEAL)
 			||hero.hasTalent(Talent.ICE_MEAL)){
 			return TIME_TO_EAT - 2;
-		} else {
+		}else if(hero.hasTalent(Talent.OVER_MEAL)){
+			return TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f;
+		}  else {
 			return TIME_TO_EAT;
 		}
 	}

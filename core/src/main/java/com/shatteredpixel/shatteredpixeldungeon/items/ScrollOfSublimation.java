@@ -88,30 +88,35 @@ public class ScrollOfSublimation extends Item{
         return Messages.get(this, "prompt",this.type);
     }
 
+    @Override
+    public String title() {
+        return super.title()+":"+getBoss(this.type);
+    }
+
 
     public String desc() {
-        return Messages.get(this, "desc",getBoss(this.type));
+        return Messages.get(this, "desc","_"+getBoss(this.type)+"_");
     }
     public String getBoss(String type){
         String name ="";
         switch(this.type){
             case "GOO" : default:
-                name="_粘咕_";
+                name="粘咕";
                 break;
             case "WARRIOR":
-                name="_战士？_";
+                name="战士？";
                 break;
             case "TENGU" :
-                name="_天狗_";
+                name="天狗";
                 break;
             case "DM300":
-                name="_DM300_";
+                name="DM300";
                 break;
             case "DWARFKING":
-                name="_矮人国王_";
+                name="矮人国王";
                 break;
             case "YOG":
-                name="_Yog-Dzewa_";
+                name="Yog-Dzewa";
                 break;
         }
         return name;

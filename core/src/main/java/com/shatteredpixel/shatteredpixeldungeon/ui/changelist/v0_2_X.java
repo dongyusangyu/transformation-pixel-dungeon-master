@@ -446,13 +446,14 @@ public class v0_2_X {
         changes = new ChangeInfo( "v0.2.6fix4", false, null);
         changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
-        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.TRANSFORM_SPELL, new Bulk().glowing()), "New Curses",
+        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.TRANSFORM_SPELL), "新物品",
                 "新增蜕变结晶和蜕变晶柱\n\n" +
                         "_-_ _蜕变结晶_：它会允许使用者对任一通用天赋进行定向蜕变。可以通过使用蜕变秘卷合成获取\n" +
                         "_-_ _蜕变晶柱_：可以无限蜕变指定天赋，不会消耗自身。测试道具，只能在特定挑战下获取\n" ));
 
         changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
-                "_-_ 为天赋图鉴的天赋背景根据类型设置了不同的颜色区分\n"
+                "_-_ 为天赋图鉴的天赋背景根据类型设置了不同的颜色区分\n"+
+                        "_-_ 为升华秘卷在文本上添加区分\n"
 
         ));
 

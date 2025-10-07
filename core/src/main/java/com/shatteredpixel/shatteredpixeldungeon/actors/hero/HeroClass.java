@@ -75,6 +75,7 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMe
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMissile;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestPotion;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestRing;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -84,6 +85,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
@@ -91,6 +93,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
@@ -106,6 +109,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
 import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
@@ -140,7 +144,8 @@ public enum HeroClass {
 	CLERIC( HeroSubClass.PRIEST, HeroSubClass.PALADIN ),
 	FREEMAN(HeroSubClass.FREEMAN),
 	SLIMEGIRL( HeroSubClass.WATERSLIME, HeroSubClass.DARKSLIME),
-	NINJA(HeroSubClass.TATTEKI_NINJA,HeroSubClass.NINJA_MASTER);
+	NINJA(HeroSubClass.TATTEKI_NINJA,HeroSubClass.NINJA_MASTER),
+	DM400(HeroSubClass.AT400,HeroSubClass.AU400);
 	//COMMON( HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
     //ADVANCED(HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR );
 
@@ -165,71 +170,6 @@ public enum HeroClass {
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
 		doChallengeSpawn(hero);
-
-
-
-		/*
-		Buff.affect( hero, Awareness.class, Awareness.DURATION );
-		new MagicalHolster().collect();
-		new PotionBandolier().collect();
-		new ScrollHolder().collect();
-		new ScrollOfRemoveCurse().quantity(2).collect();
-		new ScrollOfRemoveCurse().identify();
-		new ScrollOfMetamorphosis().quantity(666666).collect();
-		new PotionOfExperience().quantity(99).collect();
-		new KingsCrown().collect();
-		new TengusMask().collect();
-		new RedEnvelope().quantity(500000).collect();
-		new PotionOfDivineInspiration().quantity(99).collect();
-		new ScrollOfSublimation().type("WARRIOR").collect();
-		new Berry().quantity(99).collect();
-		new Ankh().collect();
-		new ScrollOfTransmutation().quantity(99).collect();
-		new ScrollOfUpgrade().quantity(114514).collect();
-		new WandOfLightning().collect();
-        new PotionOfStrength().quantity(99).collect();
-		new Amulet().collect();
-		new AlchemistsToolkit().collect();
-		new PotionOfShroudingFog().quantity(66).collect();
-		new PlateArmor().upgrade(60).collect();
-		new RubbingsTome().identify().collect();
-		new Pickaxe().collect();
-		//Buff.affect(hero, Swiftthistle.TimeBubble.class).reset1(100000);
-		Greataxe g=new Greataxe();
-		g.enchant(new Sweeping());
-		g.collect();
-		RingOfArcana a=new RingOfArcana();
-		//a.cursed=true;
-		a.collect();
-		new Stylus().quantity(99).collect();
-		new EtherealChains().collect();
-		new ReclaimTrap().quantity(666666).collect();
-		new CurseInfusion().quantity(666666).collect();
-		new Blandfruit().quantity(666666).collect();
-		new TrinketCatalyst().collect();
-		new TrinketCatalyst().collect();
-		new PotionOfLevitation().collect();
-		new Rotberry.Seed().quantity(10).identify().collect();
-		new Sungrass.Seed().quantity(10).identify().collect();
-		new GooBlob().quantity(10).collect();
-		new MetalShard().quantity(10).collect();
-		new Swiftthistle.Seed().quantity(10).identify().collect();
-		new RingOfElements().identify().collect();
-		Buff.affect(hero, Ooze.class).set(1000);
-		//Buff.affect(hero,GreatDemon.MeleesDefence.class,5);
-		//Buff.affect(hero,SlimeBall.SlimeOoze.class,100);
-		new Amulet().collect();
-
-		 */
-
-
-
-
-
-
-
-
-
 
 
 		Waterskin waterskin = new Waterskin();
@@ -270,6 +210,9 @@ public enum HeroClass {
 				break;
 			case NINJA:
 				initNinja( hero );
+				break;
+			case DM400:
+				initDM400(hero);
 				break;
 		}
 
@@ -420,6 +363,16 @@ public enum HeroClass {
 		Dungeon.quickslot.setSlot(0, box);
 		new PotionOfToxicGas().identify();
 		new ScrollOfTeleportation().identify();
+	}
+	private static void initDM400( Hero hero ) {
+
+		hero.updateHT(true);
+		InstructionTool tool = new InstructionTool();
+		(hero.belongings.artifact =tool).identify();
+		hero.belongings.artifact.activate( hero );
+		Dungeon.quickslot.setSlot(0, tool);
+		new PotionOfFrost().identify();
+		new ScrollOfTerror().identify();
 	}
 
 	public String title() {
@@ -606,6 +559,7 @@ public enum HeroClass {
 
 			new StrengthSetting().collect();
 			new TestTalent().collect();
+			new TestSublimation().collect();
 /*
 			HDKItem.KingAmulet ka = new HDKItem.KingAmulet();
 			ka.setUses(999);
