@@ -125,6 +125,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SpearOfConque
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WalkStick;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.DamageGear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.SlimeBall;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingKnife;
@@ -370,7 +371,10 @@ public enum HeroClass {
 		InstructionTool tool = new InstructionTool();
 		(hero.belongings.artifact =tool).identify();
 		hero.belongings.artifact.activate( hero );
+		DamageGear g = new DamageGear();
+		g.quantity(2).identify().collect();
 		Dungeon.quickslot.setSlot(0, tool);
+		Dungeon.quickslot.setSlot(1, g);
 		new PotionOfFrost().identify();
 		new ScrollOfTerror().identify();
 	}

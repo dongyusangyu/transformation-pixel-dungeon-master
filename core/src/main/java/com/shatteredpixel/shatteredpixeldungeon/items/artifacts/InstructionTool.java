@@ -474,7 +474,7 @@ public class InstructionTool extends Artifact {
         public int drRoll() {
             int dr = super.drRoll();
             if(hero!=null && hero.hasTalent(Talent.BODY_REINFORCE)){
-                dr+= (int)(hero.drRoll()*(0.25f+0.25f*hero.pointsInTalent(Talent.BODY_REINFORCE)));
+                dr+= (int)(hero.drRoll()*(0.5f*hero.pointsInTalent(Talent.BODY_REINFORCE)));
             }
             return dr;
         }

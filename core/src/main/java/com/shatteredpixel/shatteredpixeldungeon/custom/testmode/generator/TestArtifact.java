@@ -12,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
@@ -108,6 +109,7 @@ public class TestArtifact extends TestGenerator {
             case 12: default: return UnstableSpellbook.class;
             case 13: return Shuriken_Box.class;
             case 14: return HolyTome.class;
+            case 15: return InstructionTool.class;
         }
     }
 
@@ -122,7 +124,7 @@ public class TestArtifact extends TestGenerator {
     private static ArrayList<Class<? extends Artifact>> artifactList = new ArrayList<Class<? extends Artifact>>();
     private void buildArtifactArray(){
         if(!artifactList.isEmpty()) return;
-        for(int i=0;i<15;++i){
+        for(int i=0;i<16;++i){
             artifactList.add(idToArtifact(i));
         }
     }

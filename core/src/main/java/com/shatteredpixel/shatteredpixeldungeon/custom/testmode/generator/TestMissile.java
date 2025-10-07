@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.DamageGear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ForceCube;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.HeavyBoomerang;
@@ -126,34 +127,36 @@ public class TestMissile extends TestGenerator {
             case 5:
                 return SlimeBall.class;
             case 6:
-                return Shuriken.class;
+                return DamageGear.class;
             case 7:
-                return ThrowingClub.class;
+                return Shuriken.class;
             case 8:
-                return ThrowingSpear.class;
+                return ThrowingClub.class;
             case 9:
-                return Kunai.class;
+                return ThrowingSpear.class;
             case 10:
-                return Bolas.class;
+                return Kunai.class;
             case 11:
-                return Javelin.class;
+                return Bolas.class;
             case 12:
-                return HeavyBoomerang.class;
+                return Javelin.class;
             case 13:
+                return HeavyBoomerang.class;
+            case 14:
             default:
                 return Tomahawk.class;
-            case 14:
-                return ThrowingHammer.class;
             case 15:
-                return Trident.class;
+                return ThrowingHammer.class;
             case 16:
+                return Trident.class;
+            case 17:
                 return ForceCube.class;
         }
     }
 
     private void buildList() {
         if (missileList.isEmpty()) {
-            for (int i = 0; i <= 16; ++i) {
+            for (int i = 0; i <= 17; ++i) {
                 missileList.add(idToMissile(i));
             }
         }

@@ -388,12 +388,14 @@ public class ItemSpriteSheet {
 	public static final int BLINDING_DART   = DARTS+12;
 	public static final int LUCKYCOIN = DARTS+ 13;
 	public static final int SLIMEBALL = DARTS+ 14;
+	public static final int GEAR = DARTS+ 15;
 	static {
 		for (int i = DARTS; i < LUCKYCOIN; i++){
 			assignItemRect(i, 15, 15);
 		}
 		assignItemRect(LUCKYCOIN, 13, 13);
 		assignItemRect(SLIMEBALL, 11, 13);
+		assignItemRect(GEAR, 10, 10);
 	}
 	
 	private static final int ARMOR          =                               xy(1, 12);  //16 slots

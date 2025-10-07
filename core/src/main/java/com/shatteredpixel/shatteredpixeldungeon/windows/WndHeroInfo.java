@@ -242,7 +242,7 @@ public class WndHeroInfo extends WndTabbed {
 				case DM400:
 					icons = new Image[]{ new ItemSprite(ItemSpriteSheet.ARTIFACT_TOOL),
 							new BuffIcon(BuffIndicator.DM400MARK,true),
-							new ItemSprite(ItemSpriteSheet.WAKIZASHI),
+							new ItemSprite(ItemSpriteSheet.GEAR),
 							new ItemSprite(ItemSpriteSheet.SCROLL_ISAZ)};
 					break;
 			}
