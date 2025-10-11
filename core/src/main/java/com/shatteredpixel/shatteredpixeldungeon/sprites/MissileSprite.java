@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyLance;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Sacred_Blade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
@@ -107,6 +108,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 		ANGULAR_SPEEDS.put(ScorpioBossSprite.Shot.class,   0);
 		ANGULAR_SPEEDS.put(GreatDemonSprite.Shot.class,   0);
 		ANGULAR_SPEEDS.put(HolyLance.HolyLanceVFX.class,   0);
+		ANGULAR_SPEEDS.put(DronesSprite.Bullet.class,   0);
 
 		ANGULAR_SPEEDS.put(GreatShoperSprite.MissileGold.class,   0);
 		ANGULAR_SPEEDS.put(Tatteki.Tamaru.class,   0);
@@ -176,7 +178,9 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 			
 		} else if (item instanceof SpiritBow.SpiritArrow
 				|| item instanceof ScorpioSprite.ScorpioShot
-				|| item instanceof TenguSprite.TenguShuriken){
+				|| item instanceof TenguSprite.TenguShuriken
+				|| item instanceof Tatteki.Tamaru
+				|| item instanceof DronesSprite.Bullet){
 			speed *= 1.5f;
 		}
 		

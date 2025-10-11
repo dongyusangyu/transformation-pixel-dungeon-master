@@ -524,7 +524,7 @@ public class ItemSpriteSheet {
 		assignItemRect(ARTIFACT_ROSE3,      14, 14);
 		assignItemRect(ARTIFACT_TOME,       14, 16);
 		assignItemRect(ARTIFACT_SHURIKEN,       16, 14);
-		assignItemRect(ARTIFACT_TOOL,       16, 16);
+		assignItemRect(ARTIFACT_TOOL,       16, 15);
 
 	}
 

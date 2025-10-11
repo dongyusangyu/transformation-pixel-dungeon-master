@@ -89,6 +89,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Pow
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Challenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.DeathMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Endure;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.AuraOfProtection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.BeamingRay;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
@@ -684,6 +685,9 @@ public abstract class Char extends Actor {
 		if (defender instanceof Hero && ((Hero) defender).damageInterrupt){
 			((Hero) defender).interrupt();
 		}
+		if(attacker instanceof  Hero && hero.hasTalent(Talent.SPECIAL_MARK) && defender.buff(InstructionTool.InstructionMark.class)!=null){
+			acuStat*=1.25f+0.25f*hero.pointsInTalent(Talent.SPECIAL_MARK);
+		}
 
 		//invisible chars always hit (for the hero this is surprise attacking)
 		if (attacker.invisible > 0 && attacker.canSurpriseAttack()){
@@ -947,6 +951,9 @@ public abstract class Char extends Actor {
 		}
 		if (alignment != Alignment.ALLY && this.buff(DeathMark.DeathMarkTracker.class) != null){
 			damage *= 1.25f;
+		}
+		if(this.buff(AuxiliaryDrone.WeaknessMark.class)!=null){
+			damage *= 1.3f;
 		}
 
 		if (buff(Sickle.HarvestBleedTracker.class) != null){

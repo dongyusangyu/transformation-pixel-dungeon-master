@@ -159,8 +159,10 @@ public class BuffIndicator extends Component {
 	public  static  final  int ONESWORD = 99;
 	public  static  final  int SMOKEMASK = 100;
 	public  static  final  int DM400MARK=101;
-	public  static  final  int AT400MARK=101;
-	public  static  final  int AU400MARK=102;
+	public  static  final  int AT400MARK=102;
+	public  static  final  int AU400MARK=103;
+
+	public  static  final  int WEAKMARK=104;
 
 
 

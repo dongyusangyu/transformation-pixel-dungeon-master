@@ -281,6 +281,7 @@ public class Assets {
 		public static final String MAGICGIRL  = "sprites/magic_girl.png";
 		public static final String SLIMEGIRL= "sprites/slimegirl.png";
 		public static final String NINJA= "sprites/ninja.png";
+		public static final String DM400= "sprites/dm400.png";
 		public static final String AVATARS  = "sprites/avatars.png";
 		public static final String AVATARS1  = "sprites/avatars1.png";
 		public static final String PET      = "sprites/pet.png";

@@ -178,6 +178,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.SummonElemental;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
@@ -371,6 +372,11 @@ public enum Talent {
 	MARK_MEAL(480),TARGET_TARGETING(482),
 	OVER_MEAL(484),RECOVER_CHARGE(485),BODY_REINFORCE(486),
 	QUICK_TOOL(490,3),
+
+	//AT400
+	SUSTAIN_MARK(491,3),BATTLE_UPGRADE(492,3),FLY_DRONE(493,3),
+	//AU400
+	SPECIAL_MARK(494,3),ASSIST_UPGRADE(495,3),FAST_CRUISE(496,3),
 
 
 	//GOO
@@ -606,7 +612,7 @@ public enum Talent {
 		public String desc() {
 			return Messages.get(this, "desc", left);
 		}
-		public int left;
+		public int left=3;
 		public void set(int shots){
 			left = Math.max(left, shots);
 		}
@@ -1517,7 +1523,7 @@ public enum Talent {
 		}
 		if (hero.hasTalent(MARK_MEAL)){
 			//2/3 bonus wand damage for next 3 zaps
-			Buff.affect( hero, MarkMeal.class);
+			Buff.affect( hero, MarkMeal.class).left=3;
 
 		}
 	}
@@ -1937,6 +1943,9 @@ public enum Talent {
 		if(hero.hasTalent(QIANFA_THROWING) && hero.pointsInTalent(QIANFA_THROWING)>Random.Int(10) && hero.belongings.attackingWeapon() instanceof MissileWeapon){
 			dmg *=3;
 		}
+		if(hero.subClass==HeroSubClass.AT400 && enemy.buff(InstructionTool.InstructionMark.class)!=null){
+			dmg *=1.3f;
+		}
 		return dmg;
 	}
 	public static int onAttackProcBonus( Hero hero, Char enemy){
@@ -2166,7 +2175,6 @@ public enum Talent {
 		MarkMeal b = hero.buff(MarkMeal.class);
 		if(hero.heroClass==HeroClass.DM400){
 			int turn =3;
-
 			if(b!=null){
 				turn +=1+hero.pointsInTalent(MARK_MEAL);
 				b.left-=1;
@@ -2183,6 +2191,9 @@ public enum Talent {
 					b.detach();
 				}
 			}
+		}
+		if(enemy.buff(InstructionTool.InstructionMark.class)!=null && hero.pointsInTalent(SPECIAL_MARK)>Random.Int(6)){
+			Buff.affect(enemy, StoneOfAggression.Aggression.class,3);
 		}
 
 
@@ -2324,6 +2335,9 @@ public enum Talent {
 		if(hero.hasTalent(SPIDER_SENSE) && !Dungeon.level.heroFOV[enemy.pos]){
 			Buff.affect(hero,Swiftthistle.TimeBubble.class).reset1(hero.pointsInTalent(SPIDER_SENSE));
 		}
+		if(hero.subClass==HeroSubClass.AU400 && enemy.buff(InstructionTool.InstructionMark.class)!=null){
+			damage*=0.8f;
+		}
 		return (int)damage;
 	}
 
@@ -2406,6 +2420,7 @@ public enum Talent {
 		if(hero.pointsNegative(HAND_SLIP)>0 && hero.lastAction instanceof HeroAction.Move){
 			dmg *= 1 + 0.25f * hero.pointsNegative(HAND_SLIP);
 		}
+
 		if (AntiMagic.RESISTS.contains(src.getClass()) && hero.belongings.armor() != null){
 			int armDr = Random.NormalIntRange( hero.belongings.armor().DRMin(), hero.belongings.armor().DRMax());
 			if (hero.STR() < hero.belongings.armor().STRReq()){
@@ -3246,6 +3261,10 @@ public enum Talent {
 			case NINJA_MASTER:
 				Collections.addAll(tierTalents, SOUL_HUNTING, USE_ENVIRONMENT, MIND_WATER);
 				break;
+			case AT400:
+				Collections.addAll(tierTalents, SUSTAIN_MARK, BATTLE_UPGRADE, FLY_DRONE);
+			case AU400:
+				Collections.addAll(tierTalents, SPECIAL_MARK,ASSIST_UPGRADE,FAST_CRUISE);
 			case FREEMAN:
 				break;
 		}

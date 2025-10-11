@@ -19,6 +19,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -30,13 +33,25 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.InventoryScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -70,6 +85,8 @@ public class InstructionTool extends Artifact {
 
     }
     private final ArrayList<Class> scrolls = new ArrayList<>();
+
+    private Class scroll;
     public static final String AC_MAKE = "make";
     public static final String AC_ENTER = "enter";
 
@@ -82,7 +99,7 @@ public class InstructionTool extends Artifact {
         if ((isEquipped( hero ) || hero.hasTalent(Talent.QUICK_TOOL)) && !cursed && hero.buff(MagicImmune.class) == null) {
             actions.add(AC_MAKE);
             actions.add(AC_ENTER);
-            //actions.add(AC_GUIDE);
+            actions.add(AC_GUIDE);
         }
         return actions;
     }
@@ -113,13 +130,12 @@ public class InstructionTool extends Artifact {
                 }
                 createDrone(chargeuse);
             }
-
         }else if(action.equals(AC_ENTER)){
             GameScene.selectItem(itemSelector);
         }else if(action.equals(AC_GUIDE)){
             ArrayList<Drone> drone = getDroneAlly();
             if(drone != null){
-                GameScene.selectCell(selectDrone);
+                GameScene.selectCell(droneDirector);
 
                 /*
                 if(curdrone!=null){
@@ -158,12 +174,13 @@ public class InstructionTool extends Artifact {
         @Override
         public void onSelect(Integer cell) {
             if (cell == null) return;
-            if(curdrone==null){
-                GLog.w( Messages.get(InstructionTool.class, "no_drone") );
-                return;
+            ArrayList<Drone> drone = getDroneAlly();
+            if(drone !=null){
+                for(Drone d:drone){
+                    d.directTocell(cell);
+                }
             }
-            curdrone.directTocell(cell);
-            curdrone=null;
+
             return;
         }
         @Override
@@ -185,12 +202,41 @@ public class InstructionTool extends Artifact {
             return;
         }
         charge-=chargeUse;
-        GLog.w(Messages.get(InstructionTool.class,"usecharge",chargeUse-1,chargeUse));
+        //GLog.w(Messages.get(InstructionTool.class,"usecharge",chargeUse-1,chargeUse));
         int spawned = 0;
         int maxSpawned=1;
         while (spawned < maxSpawned && respawnPoints.size() > 0) {
             int index = Random.index( respawnPoints );
-            Drone mob = new Drone();
+            Mob mob = null;
+            if(scroll==null){
+                mob = new Drone();
+            }else{
+                if(scroll==ScrollOfRemoveCurse.class){
+                    mob = new AttackDrone.FlashDrone();
+                }else if(scroll== ScrollOfRecharging.class){
+                    mob = new AttackDrone.LaserDrone();
+                }else if(scroll== ScrollOfLullaby.class){
+                    mob = new AttackDrone.AnesthesiaDrone();
+                }else if(scroll== ScrollOfRage.class){
+                    mob = new AttackDrone.RaidDrone();
+                }else if(scroll== ScrollOfTerror.class){
+                    mob = new AttackDrone.ShockDrone();
+                }else if(scroll== ScrollOfIdentify.class){
+                    mob = new AuxiliaryDrone.ScoutDrone();
+                }else if(scroll== ScrollOfMirrorImage.class){
+                    mob = new AuxiliaryDrone.MirrorDrone();
+                }else if(scroll== ScrollOfTeleportation.class){
+                    mob = new AuxiliaryDrone.ProtectDrone();
+                }else if(scroll== ScrollOfMagicMapping.class){
+                    mob = new AuxiliaryDrone.EscortDrone();
+                }else if(scroll== ScrollOfRetribution.class){
+                    mob = new AuxiliaryDrone.BombDrone();
+                }else if(scroll== ScrollOfTransmutation.class){
+                    mob = new AuxiliaryDrone.ChaosDrone();
+                }else{
+                    mob = new Drone();
+                }
+            }
             GameScene.add(mob);
             Drone.appear( mob, respawnPoints.get( index ) );
             respawnPoints.remove( index );
@@ -198,6 +244,32 @@ public class InstructionTool extends Artifact {
         }
         Invisibility.dispel();
         hero.spendAndNext(Actor.TICK);
+    }
+
+
+
+    public void createDrone(int chargeUse,int pos){
+
+        Mob mob = null;
+        if(scroll==null){
+            mob = new Drone();
+        }else{
+            if(scroll==ScrollOfRemoveCurse.class){
+                mob = new AttackDrone.FlashDrone();
+            }else if(scroll== ScrollOfRecharging.class){
+                mob = new AttackDrone.LaserDrone();
+            }else if(scroll== ScrollOfLullaby.class){
+                mob = new AttackDrone.AnesthesiaDrone();
+            }else if(scroll== ScrollOfRetribution.class){
+                mob = new AttackDrone.RaidDrone();
+            }else if(scroll== ScrollOfRage.class){
+                mob = new AttackDrone.ShockDrone();
+            }else{
+                mob = new Drone();
+            }
+        }
+        GameScene.add(mob);
+        Drone.appear( mob, pos);
     }
 
     public static ArrayList<Drone> getDroneAlly(){
@@ -225,10 +297,13 @@ public class InstructionTool extends Artifact {
 
     private static final String SCROLLS =   "scrolls";
 
+    private static final String SCROLL =   "scroll";
+
     @Override
     public void storeInBundle( Bundle bundle ) {
         super.storeInBundle(bundle);
         bundle.put( SCROLLS, scrolls.toArray(new Class[scrolls.size()]) );
+        bundle.put( SCROLL, scroll );
 
     }
 
@@ -241,6 +316,7 @@ public class InstructionTool extends Artifact {
                 if (scroll != null) scrolls.add(scroll);
             }
         }
+        scroll = bundle.getClass(SCROLL);
 
     }
 
@@ -314,9 +390,9 @@ public class InstructionTool extends Artifact {
     public static class InstructionMark extends Buff {
         private float left;
         public int icon() {
-            if(hero.subClass== HeroSubClass.AT400){
+            if(hero.subClass == HeroSubClass.AT400){
                 return BuffIndicator.AT400MARK;
-            }else if(hero.subClass== HeroSubClass.AU400){
+            }else if(hero.subClass == HeroSubClass.AU400){
                 return BuffIndicator.AU400MARK;
             }else{
                 return BuffIndicator.DM400MARK;
@@ -327,6 +403,9 @@ public class InstructionTool extends Artifact {
             left = 3f;
         }
         public void reset(int turns){
+            if(hero!=null && hero.hasTalent(Talent.SUSTAIN_MARK)){
+                turns+=2*hero.pointsInTalent(Talent.SUSTAIN_MARK);
+            }
             left = turns + 1; //add 1 as we're spending it on our action
         }
 
@@ -342,9 +421,9 @@ public class InstructionTool extends Artifact {
         }
         @Override
         public String desc() {
-            if(hero.subClass== HeroSubClass.AT400){
+            if(hero.subClass == HeroSubClass.AT400){
                 return Messages.get(this, "desc_at", left);
-            }else if(hero.subClass== HeroSubClass.AU400){
+            }else if(hero.subClass == HeroSubClass.AU400){
                 return Messages.get(this, "desc_au", left);
             }else{
                 return Messages.get(this, "desc", left);
@@ -367,6 +446,12 @@ public class InstructionTool extends Artifact {
         }
     }
 
+    private static final String CUR_SEED_EFFECT = "cur_seed_effect";
+
+
+
+
+
 
     public static class Drone extends DirectableAlly {
 
@@ -383,6 +468,49 @@ public class InstructionTool extends Artifact {
         }
 
         private float partHP;
+
+        public void onZapComplete() {
+            zap();
+            next();
+        }
+
+        @Override
+        public int attackSkill(Char target) {
+            return defenseSkill+5; //equal to base hero attack skill
+        }
+
+        protected void zap() {
+            spend( 1f );
+
+            Invisibility.dispel(this);
+            Char enemy = this.enemy;
+            if (hit( this, enemy, true )) {
+
+                attack( enemy );
+
+            } else {
+                enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+            }
+        }
+
+        protected boolean doAttack( Char enemy ) {
+
+            if (Dungeon.level.adjacent( pos, enemy.pos )
+                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos != enemy.pos) {
+
+                return super.doAttack( enemy );
+
+            } else {
+
+                if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+                    sprite.zap( enemy.pos );
+                    return false;
+                } else {
+                    zap();
+                    return true;
+                }
+            }
+        }
 
         public Drone(){
             super();
@@ -423,6 +551,15 @@ public class InstructionTool extends Artifact {
             return result;
         }
 
+        public static int getTool(){
+            InstructionTool tool = Dungeon.hero.belongings.getItem(InstructionTool.class);
+            if(tool==null){
+                return 0;
+            }else{
+                return tool.level()+1;
+            }
+        }
+
         @Override
         public void defendPos(int cell) {
             yell(Messages.get(this, "direct_defend"));
@@ -441,18 +578,6 @@ public class InstructionTool extends Artifact {
             super.targetChar(ch);
         }
 
-        @Override
-        public int attackSkill(Char target) {
-            return defenseSkill+5; //equal to base hero attack skill
-        }
-        public int getTool(){
-            InstructionTool tool = Dungeon.hero.belongings.getItem(InstructionTool.class);
-            if(tool==null){
-                return 0;
-            }else{
-                return tool.level();
-            }
-        }
 
         @Override
         public int damageRoll() {
@@ -464,9 +589,14 @@ public class InstructionTool extends Artifact {
         @Override
         public int attackProc( Char enemy, int damage ) {
             damage = super.attackProc( enemy, damage );
-
+            if(hero!=null && hero.hasTalent(Talent.BATTLE_UPGRADE)){
+                damage *= 1.075f+0.075f*hero.pointsInTalent(Talent.BATTLE_UPGRADE);
+                damage += (int)(enemy.drRoll()*0.8f/3*hero.pointsInTalent(Talent.BATTLE_UPGRADE));
+            }
             return damage;
         }
+
+
 
 
 
@@ -474,7 +604,7 @@ public class InstructionTool extends Artifact {
         public int drRoll() {
             int dr = super.drRoll();
             if(hero!=null && hero.hasTalent(Talent.BODY_REINFORCE)){
-                dr+= (int)(hero.drRoll()*(0.5f*hero.pointsInTalent(Talent.BODY_REINFORCE)));
+                dr+= (int)(hero.drRoll()*(0.25f+0.25f*hero.pointsInTalent(Talent.BODY_REINFORCE)));
             }
             return dr;
         }
@@ -534,7 +664,7 @@ public class InstructionTool extends Artifact {
 
         @Override
         public boolean interact(Char c) {
-            if(c instanceof Hero){
+            if(c instanceof Hero && distance(c)>1){
                 Game.runOnRenderThread(new Callback() {
                     @Override
                     public void call() {
@@ -608,7 +738,20 @@ public class InstructionTool extends Artifact {
 
         @Override
         public boolean itemSelectable(Item item) {
-            return item instanceof Scroll && item.isIdentified();
+            if(curUser.subClass==HeroSubClass.AT400){
+                return ((item instanceof ScrollOfUpgrade) || (item instanceof ScrollOfRemoveCurse)
+                        || (item instanceof ScrollOfRecharging) || (item instanceof ScrollOfLullaby)
+                        || (item instanceof ScrollOfRage) ||  (item instanceof ScrollOfTerror)
+                        ||  (item instanceof ScrollOfTransmutation)) && item.isIdentified();
+            }else if(curUser.subClass==HeroSubClass.AU400){
+                return ((item instanceof ScrollOfUpgrade) || (item instanceof ScrollOfIdentify)
+                        || (item instanceof ScrollOfMirrorImage) || (item instanceof ScrollOfMagicMapping)
+                        || (item instanceof ScrollOfRetribution) ||  (item instanceof ScrollOfTeleportation)
+                        ||  (item instanceof ScrollOfTransmutation)) && item.isIdentified();
+            }else{
+                return item instanceof ScrollOfUpgrade && item.isIdentified();
+            }
+
         }
 
         @Override
@@ -632,7 +775,21 @@ public class InstructionTool extends Artifact {
                         charge+=Math.min(10-charge,hero.pointsInTalent(Talent.RECOVER_CHARGE));
                     }
                 }else{
-                    GLog.w( Messages.get(InstructionTool.class, "unable_scroll") );
+                    scroll=item.getClass();
+                    ArrayList<Drone> drones = getDroneAlly();
+                    if(drones!=null){
+                        for(Drone drone:drones){
+                            if(drone.getClass()==Drone.class){
+                                int pos=drone.pos;
+                                Actor.remove( drone );
+                                drone.sprite.killAndErase();
+                                Dungeon.level.mobs.remove(drone);
+
+                                createDrone(0,pos);
+                            }
+                        }
+                    }
+
                 }
             }else if (item instanceof Scroll && !item.isIdentified()) {
                 GLog.w( Messages.get(InstructionTool.class, "unknown_scroll") );
@@ -651,7 +808,37 @@ public class InstructionTool extends Artifact {
                 desc += Messages.get(this, "desc_cursed");
             }else{
                 desc += Messages.get(this, "desc_equipped");
-                desc += Messages.get(this, "desc_noenter");
+                if(scroll==null){
+                    desc += Messages.get(this, "desc_noenter");
+                }else{
+                    if(scroll==ScrollOfRemoveCurse.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AttackDrone.FlashDrone.class, "name")));
+                    }else if(scroll== ScrollOfRecharging.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AttackDrone.LaserDrone.class, "name")));
+                    }else if(scroll== ScrollOfLullaby.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AttackDrone.AnesthesiaDrone.class, "name")));
+                    }else if(scroll== ScrollOfRage.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AttackDrone.RaidDrone.class, "name")));
+                    }else if(scroll== ScrollOfTerror.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AttackDrone.ShockDrone.class, "name")));
+                    }
+                    else if(scroll== ScrollOfIdentify.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AuxiliaryDrone.ScoutDrone.class, "name")));
+                    }else if(scroll== ScrollOfMirrorImage.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AuxiliaryDrone.MirrorDrone.class, "name")));
+                    }else if(scroll== ScrollOfTeleportation.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AuxiliaryDrone.ProtectDrone.class, "name")));
+                    }else if(scroll== ScrollOfMagicMapping.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AuxiliaryDrone.EscortDrone.class, "name")));
+                    }else if(scroll== ScrollOfRetribution.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AuxiliaryDrone.BombDrone.class, "name")));
+                    }else if(scroll== ScrollOfTransmutation.class){
+                        desc += Messages.get(this, "desc_enter",Messages.titleCase(Messages.get(scroll, "name")),Messages.titleCase(Messages.get(AuxiliaryDrone.ChaosDrone.class, "name")));
+                    }else{
+                        desc += Messages.get(this, "desc_noenter");
+                    }
+                }
+
                 ArrayList<Drone> drone = getDroneAlly();
                 desc += "\n\n";
                 if(drone==null){

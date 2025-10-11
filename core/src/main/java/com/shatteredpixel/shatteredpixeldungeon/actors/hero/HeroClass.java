@@ -439,6 +439,8 @@ public enum HeroClass {
 				return Assets.Sprites.SLIMEGIRL;
 			case NINJA:
 				return Assets.Sprites.NINJA;
+			case DM400:
+				return Assets.Sprites.DM400;
 
 		}
 	}
