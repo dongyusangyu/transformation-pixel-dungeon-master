@@ -36,6 +36,7 @@ public class Effects {
 		DEATH_RAY,
 		LIGHT_RAY,
 		HEALTH_RAY,
+		HOLY_RAY,
 		WLIP,
 		DARK_HOOK
 	}
@@ -75,6 +76,9 @@ public class Effects {
 				break;
 			case DARK_HOOK:
 				icon.frame(icon.texture.uvRect(11, 22, 16, 28));
+				break;
+			case HOLY_RAY:
+				icon.frame(icon.texture.uvRect(16, 37, 32, 45));
 				break;
 		}
 		return icon;

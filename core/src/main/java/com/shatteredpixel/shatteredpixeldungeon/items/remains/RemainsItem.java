@@ -98,6 +98,8 @@ public abstract class RemainsItem extends Item {
 				return new MatchaPudding();
 			case NINJA:
 				return new MetalFragment();
+			case DM400:
+				return new BrokenTool();
 		}
 	}
 

@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
@@ -46,7 +47,10 @@ public class DamageGear  extends MissileWeapon{
     @Override
     public ArrayList<String> actions(Hero hero ) {
         ArrayList<String> actions = super.actions( hero );
-        actions.add(AC_FIX);
+        if(hero.heroClass== HeroClass.DM400){
+            actions.add(AC_FIX);
+        }
+
         return actions;
     }
     @Override
@@ -55,11 +59,13 @@ public class DamageGear  extends MissileWeapon{
         super.execute(hero, action);
 
         if (action.equals(AC_FIX)) {
-            int recover=Math.min((int) Math.ceil(durability / durabilityPerUse()),hero.HT-hero.HP);
+            int heal=Math.min((int) Math.ceil(durability / durabilityPerUse()),hero.HT/2);
+            int recover=Math.min(heal,hero.HT-hero.HP);
             detach(hero.belongings.backpack);
             hero.HP+=recover;
             hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(recover), FloatingText.HEALING);
             durability=MAX_DURABILITY;
+            hero.spendAndNext(1f);
         }
     }
 }

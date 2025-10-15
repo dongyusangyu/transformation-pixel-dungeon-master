@@ -164,6 +164,7 @@ public class ItemSpriteSheet {
 	public static final int BROKEN_PACKAGE  = MISC_CONSUMABLE +22;
 	public static final int TORN_PAGE       = MISC_CONSUMABLE +23;
 	public static final int MATCHAPUDDING       = MISC_CONSUMABLE +24;
+	public static final int BROKEN_TOOL       = MISC_CONSUMABLE +25;
 
 	static{
 		assignItemRect(ANKH,            10, 16);
@@ -196,6 +197,7 @@ public class ItemSpriteSheet {
 		assignItemRect(BROKEN_PACKAGE,      15,  11);
 		assignItemRect(TORN_PAGE,       11, 13);
 		assignItemRect(MATCHAPUDDING,       14, 13);
+		assignItemRect(BROKEN_TOOL,       14, 13);
 	}
 	
 	private static final int BOMBS          =                               xy(1, 6);   //16 slots
@@ -414,6 +416,7 @@ public class ItemSpriteSheet {
 	public static final int ARMOR_SLIME     = ARMOR+12;
 	public static final int ARMOR_SLIMEGIRL     = ARMOR+13;
 	public static final int ARMOR_NINJA     = ARMOR+14;
+	public static final int ARMOR_DM400     = ARMOR+15;
 	static{
 		assignItemRect(ARMOR_CLOTH,     15, 12);
 		assignItemRect(ARMOR_LEATHER,   14, 13);
@@ -430,6 +433,7 @@ public class ItemSpriteSheet {
 		assignItemRect(ARMOR_SLIME,     14, 13);
 		assignItemRect(ARMOR_SLIMEGIRL,     12, 11);
 		assignItemRect(ARMOR_NINJA,     14, 13);
+		assignItemRect(ARMOR_DM400,     14, 15);
 	}
 
 	                                                                                    //16 free slots

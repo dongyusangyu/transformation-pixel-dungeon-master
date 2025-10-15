@@ -626,6 +626,7 @@ public class DM300 extends Mob {
 		}
 
 		Badges.validateBossSlain();
+		Badges.validateDM400Unlock();
 		if (Statistics.qualifiedForBossChallengeBadge){
 			Badges.validateBossChallengeCompleted();
 		}

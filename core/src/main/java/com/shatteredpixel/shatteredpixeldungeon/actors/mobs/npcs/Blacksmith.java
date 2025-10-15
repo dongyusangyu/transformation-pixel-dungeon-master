@@ -107,6 +107,7 @@ public class Blacksmith extends NPC {
 					case FREEMAN: msg1 += Messages.get(Blacksmith.this, "intro_quest_freeman"); break;
 					case SLIMEGIRL: msg1 += Messages.get(Blacksmith.this, "intro_quest_slimegirl"); break;
 					case NINJA: msg1 += Messages.get(Blacksmith.this, "intro_quest_ninja"); break;
+					case DM400: msg1 += Messages.get(Blacksmith.this, "intro_quest_dm400"); break;
 				}
 
 				msg1 += "\n\n" + Messages.get(Blacksmith.this, "intro_quest_start");

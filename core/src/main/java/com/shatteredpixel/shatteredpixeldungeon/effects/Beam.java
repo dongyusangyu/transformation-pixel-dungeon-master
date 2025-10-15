@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.effects;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
@@ -57,6 +59,12 @@ public class Beam extends Image {
 	public static class DeathRay extends Beam{
 		public DeathRay(PointF s, PointF e){
 			super(s, e, Effects.Type.DEATH_RAY, 0.5f);
+		}
+	}
+
+	public static class HolyRay extends Beam{
+		public HolyRay(PointF s, PointF e){
+			super(s, e, Effects.Type.HOLY_RAY, 0.5f);
 		}
 	}
 

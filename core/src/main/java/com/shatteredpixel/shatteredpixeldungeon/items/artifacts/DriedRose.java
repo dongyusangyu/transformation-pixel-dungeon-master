@@ -761,8 +761,7 @@ public class DriedRose extends Artifact {
 
 		@Override
 		public void die(Object cause) {
-			if(hero.pointsInTalent(Talent.BEHEST)>=1){
-				Buff.affect(hero, Adrenaline.class,hero.pointsInTalent(Talent.BEHEST)*5);}
+
 			sayDefeated();
 			super.die(cause);
 		}

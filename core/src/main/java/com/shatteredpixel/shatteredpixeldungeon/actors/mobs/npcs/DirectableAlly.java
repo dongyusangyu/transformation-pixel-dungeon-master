@@ -21,9 +21,15 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.watabou.utils.Bundle;
 
@@ -46,9 +52,12 @@ public class DirectableAlly extends NPC {
 	protected int defendingPos = -1;
 	protected boolean movingToDefendPos = false;
 
+	protected boolean movingToHeroPos = false;
+
 	public void defendPos( int cell ){
 		defendingPos = cell;
 		movingToDefendPos = true;
+		movingToHeroPos = false;
 		aggro(null);
 		state = WANDERING;
 	}
@@ -56,11 +65,13 @@ public class DirectableAlly extends NPC {
 	public void clearDefensingPos(){
 		defendingPos = -1;
 		movingToDefendPos = false;
+		movingToHeroPos = false;
 	}
 
 	public void followHero(){
 		defendingPos = -1;
 		movingToDefendPos = false;
+		movingToHeroPos = true;
 		aggro(null);
 		state = WANDERING;
 	}
@@ -68,8 +79,17 @@ public class DirectableAlly extends NPC {
 	public void targetChar( Char ch ){
 		defendingPos = -1;
 		movingToDefendPos = false;
+		movingToHeroPos = false;
 		aggro(ch);
 		target = ch.pos;
+	}
+
+	public void wander( Char ch ){
+		defendingPos = -1;
+		movingToDefendPos = false;
+		movingToHeroPos = false;
+		aggro(null);
+		state = WANDERING;
 	}
 
 	@Override
@@ -83,7 +103,9 @@ public class DirectableAlly extends NPC {
 	public void directTocell( int cell ){
 		if (!Dungeon.level.heroFOV[cell]
 				|| Actor.findChar(cell) == null
-				|| (Actor.findChar(cell) != Dungeon.hero && Actor.findChar(cell).alignment != Char.Alignment.ENEMY)){
+				|| (Actor.findChar(cell) != Dungeon.hero
+				&& Actor.findChar(cell).alignment != Char.Alignment.ENEMY
+				&& Actor.findChar(cell).alignment != Char.Alignment.ALLY)){
 			defendPos( cell );
 			return;
 		}
@@ -94,24 +116,39 @@ public class DirectableAlly extends NPC {
 		} else if (Actor.findChar(cell).alignment == Char.Alignment.ENEMY){
 			targetChar(Actor.findChar(cell));
 
+		}else if (Actor.findChar(cell).alignment == Alignment.ALLY){
+			wander(this);
+
 		}
+
 	}
 
 	private static final String DEFEND_POS = "defend_pos";
 	private static final String MOVING_TO_DEFEND = "moving_to_defend";
+	private static final String MOVING_TO_HERO = "moving_to_hero";
 
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(DEFEND_POS, defendingPos);
 		bundle.put(MOVING_TO_DEFEND, movingToDefendPos);
+		bundle.put(MOVING_TO_HERO, movingToHeroPos);
 	}
+
+	@Override
+	public void die( Object cause ) {
+		if(hero.pointsInTalent(Talent.BEHEST)>=1){
+			Buff.affect(hero, Adrenaline.class,hero.pointsInTalent(Talent.BEHEST)*5);}
+		super.die(cause);
+	}
+
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		if (bundle.contains(DEFEND_POS)) defendingPos = bundle.getInt(DEFEND_POS);
 		movingToDefendPos = bundle.getBoolean(MOVING_TO_DEFEND);
+		movingToHeroPos= bundle.getBoolean(MOVING_TO_HERO);
 	}
 
 	private class Wandering extends Mob.Wandering {
@@ -135,7 +172,13 @@ public class DirectableAlly extends NPC {
 				enemySeen = false;
 
 				int oldPos = pos;
-				target = defendingPos != -1 ? defendingPos : Dungeon.hero.pos;
+				//
+				if(movingToHeroPos){
+					target = defendingPos != -1 ? defendingPos : Dungeon.hero.pos;
+				}else{
+					target = defendingPos != -1 ? defendingPos : randomDestination();
+				}
+
 				//always move towards the hero when wandering
 				if (getCloser( target )) {
 					spend( 1 / speed() );

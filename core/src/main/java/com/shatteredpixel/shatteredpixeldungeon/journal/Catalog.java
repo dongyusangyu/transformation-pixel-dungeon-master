@@ -99,6 +99,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.remains.BowFragment;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenHilt;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenPackage;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenStaff;
+import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.CloakScrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.MatchaPudding;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.MetalFragment;
@@ -269,7 +270,7 @@ public enum Catalog {
 				GooBlob.class, TengusMask.class, MetalShard.class, KingsCrown.class,
 				LiquidMetal.class, ArcaneResin.class,
 				SealShard.class, BrokenStaff.class, CloakScrap.class, BowFragment.class, BrokenHilt.class,
-				TornPage.class,BrokenPackage.class, MatchaPudding.class, MetalFragment.class,
+				TornPage.class,BrokenPackage.class, MatchaPudding.class, MetalFragment.class, BrokenTool.class,
 				ScrollOfSublimation.class, RedEnvelope.class, SpecialPackage.class, RubbingsTome.class);
 
 	}

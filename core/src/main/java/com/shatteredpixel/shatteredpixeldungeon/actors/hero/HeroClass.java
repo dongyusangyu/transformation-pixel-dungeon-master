@@ -21,17 +21,23 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.QuickSlot;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.AscendedForm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Trinity;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Discharge_Gas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.HoneyComb;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Routine;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Challenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Feint;
@@ -178,7 +184,7 @@ public enum HeroClass {
 		//new ScrollOfSublimation().identify();
 		new ScrollOfIdentify().identify();
 		new ScrollOfMetamorphosis().identify();
-
+		hero.updateHT(true);
 		switch (this) {
 			case WARRIOR: default:
 				initWarrior( hero );
@@ -345,7 +351,7 @@ public enum HeroClass {
 	private static void initSlimeGirl( Hero hero ) {
 		hero.STR = 9;
 		//hero.HTBoost = 5;
-		hero.updateHT(true);
+		;
 		SlimeBall ball = new SlimeBall();
 		ball.quantity(2).identify().collect();
 		Dungeon.quickslot.setSlot(0, ball);
@@ -372,6 +378,7 @@ public enum HeroClass {
 		(hero.belongings.artifact =tool).identify();
 		hero.belongings.artifact.activate( hero );
 		DamageGear g = new DamageGear();
+		hero.addProperties(Char.Property.INORGANIC);
 		g.quantity(2).identify().collect();
 		Dungeon.quickslot.setSlot(0, tool);
 		Dungeon.quickslot.setSlot(1, g);
@@ -415,7 +422,8 @@ public enum HeroClass {
 				return new ArmorAbility[]{new SpringSpell(), new RapidWaterfall(), new MadSlime()};
 			case NINJA:
 				return new ArmorAbility[]{new Decoy(), new SpiderJar(), new OneSword()};
-
+			case DM400:
+				return new ArmorAbility[]{new Routine(),new Discharge_Gas(),new HoneyComb()};
 		}
 	}
 
@@ -465,6 +473,8 @@ public enum HeroClass {
 				return Assets.Splashes.SLIMEGRIL;
 			case NINJA:
 				return Assets.Splashes.NINJA;
+			case DM400:
+				return Assets.Splashes.DM400;
 
 		}
 	}

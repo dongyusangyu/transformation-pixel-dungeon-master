@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClericArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.DM400Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.DuelistArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.FreemanArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.HuntressArmor;
@@ -509,9 +510,10 @@ public class Generator {
 					FreemanArmor.class,
 					SlimeArmor.class,
 					SlimeGirlArmor.class,
-					NinjaArmor.class
+					NinjaArmor.class,
+					DM400Armor.class
 			};
-			ARMOR.probs = new float[]{ 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,0};
+			ARMOR.probs = new float[]{ 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0};
 			
 			//see Generator.randomMissile
 			MISSILE.classes = new Class<?>[]{};
@@ -980,10 +982,9 @@ public class Generator {
 					cat.seed = bundle.getLong(cat.name().toLowerCase() + CATEGORY_SEED);
 					cat.dropped = bundle.getInt(cat.name().toLowerCase() + CATEGORY_DROPPED);
 				}
-
+				/*
 				//pre-v3.0.0 conversion for artifacts specifically
 				if (cat == Category.ARTIFACT && probs.length != cat.defaultProbs.length){
-					int tomeIDX = 5;
 					int j = 0;
 					for (int i = 0; i < probs.length; i++){
 						if (i == tomeIDX){
@@ -995,6 +996,8 @@ public class Generator {
 					}
 
 				}
+
+				 */
 
 			}
 		}

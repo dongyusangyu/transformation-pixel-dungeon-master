@@ -30,7 +30,8 @@ import java.util.ArrayList;
 
 public class v0_2_X {
     public static void addAllChanges( ArrayList<ChangeInfo> changeInfos ){
-        add_v0_2_6fixChanges(changeInfos);
+        add_v0_2_7fixChanges(changeInfos);
+        add_v0_2_7Changes( changeInfos);
         add_v0_2_6Changes(changeInfos);
         add_v0_2_5Changes(changeInfos);
         add_v0_2_4Changes(changeInfos);
@@ -284,8 +285,6 @@ public class v0_2_X {
                         "_-_ 修复成就_光荣凯旋_获取异常问题\n"+
                         "_-_ 于_fix1_修复神圣精英敌人坠落导致游戏卡死的问题，同时修复天赋_溃决之手_触发异常问题\n"
         ));
-
-
     }
 
     public static void add_v0_2_5Changes( ArrayList<ChangeInfo> changeInfos ) {
@@ -408,17 +407,33 @@ public class v0_2_X {
                         "_-_ 新增共计_5_个正面天赋\n"+
                         "_-_ _1层：_敏捷反击，吓我一跳\n"+
                         "_-_ _2层：_快速搜索，忍者应酬\n" +
-                        "_-_ _3层：_千发投掷\n"
+                        "_-_ _3层：_千发投掷\n"+
+                        "于_fix3_新增共计_10_个正面天赋\n"+
+                        "_-_ _1层：_虚假之力，魔弹射手，蜘蛛感应，NO集群，更多人情，静滞电流\n"+
+                        "_-_ _2层：_刻笔·布莱恩特，奇迹炼金\n" +
+                        "_-_ _3层：_炎烬化身，冰能一餐，五金元素\n"
         ));
         changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.NINJA, 6), "忍者",
                 "_-_ 忍者初始携带一件_独特的手里剑箱_，可从箱中快速取出并投射小小手里剑以打击甚至是干扰敌人。忍者能从更远的距离_探测秘密与陷阱_，并且行动_更难被敌人察觉_。击败天狗以解锁忍者\n" +
                         "_-_ _两个转职：_铁炮忍者和忍术大师\n" +
                         "_-_ _三个护甲技能：_影武者、平蜘蛛釜和一之太刀\n"+
                         "_-_ 角色由_东榆桑榆_和_幻影食人杂鱼_设计，_DM-216_绘制美术素材，_东榆桑榆_制作\n"+
-                        "_-_ 追加一则关于忍者的英雄故事并新增相关成就\n"
+                        "_-_ 追加一则关于忍者的英雄故事并新增相关成就\n"+
+                        "_-_ 于_fix1_将_手里剑箱_初始伤害由4~8下调至2~4，并且重新调整了瞄准判定\n"+
+                        "_-_ _铁炮忍者的铁炮_现在伤害下限恒定为0，而恐惧效果调整为只对敌人生效\n"+
+                        "_-_ _忍术大师_通过_遁术-草木复苏_召唤的沉沦触手现在可以通过交互清除\n"
 
         ));
-
+        changes.addButton(new ChangeButton(Icons.get(Icons.CATALOG), "内容更新",
+                "_-_ 于_fix4_新增_2_个物品\n"+
+                        "_-_ _蜕变结晶：_它会允许使用者对任一通用天赋进行定向蜕变。可以通过使用蜕变秘卷合成获取\n"+
+                        "_-_ _蜕变晶柱：_可以无限蜕变指定天赋，不会消耗自身。测试道具，只能在测试时间使用\n"
+        ));
+        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
+                "_-_ 于_fix2_调整紫色ui的饱和度，使按键颜色不会过于明亮\n" +
+                        "_-_ 于_fix3_为挑战界面增加图标，由_咕(Q1323933183)_协助完成\n" +
+                        "_-_ 挑战图标的美术素材，由_DM-216_绘制\n"
+        ));
 
 
         changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
@@ -426,79 +441,15 @@ public class v0_2_X {
         changeInfos.add(changes);
         changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
                 "_-_ 获得道具的最大次数从16次上调至26次，绅士仍保留额外的13次上限\n" +
-                        "_-_ _长启书室_共用获得道具的最大次数\n"
-        ));
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_  更新日期：2025年8月23日\n"
-        ));
-        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
-                "_-_ 修复天赋_自然亲和_和_盈能生命_生效异常的问题\n"
-
-        ));
-
-    }
-    public static void add_v0_2_6fixChanges( ArrayList<ChangeInfo> changeInfos ) {
-
-        ChangeInfo changes = new ChangeInfo("v0.2.6fix", true, "");
-        changes.hardlight(Window.TITLE_COLOR);
-        changeInfos.add(changes);
-
-        changes = new ChangeInfo( "v0.2.6fix4", false, null);
-        changes.hardlight( Window.TITLE_COLOR );
-        changeInfos.add(changes);
-        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.TRANSFORM_SPELL), "新物品",
-                "新增蜕变结晶和蜕变晶柱\n\n" +
-                        "_-_ _蜕变结晶_：它会允许使用者对任一通用天赋进行定向蜕变。可以通过使用蜕变秘卷合成获取\n" +
-                        "_-_ _蜕变晶柱_：可以无限蜕变指定天赋，不会消耗自身。测试道具，只能在特定挑战下获取\n" ));
-
-        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
-                "_-_ 为天赋图鉴的天赋背景根据类型设置了不同的颜色区分\n"+
-                        "_-_ 为升华秘卷在文本上添加区分\n"
-
-        ));
-
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_  更新日期：2025年9月29日\n"+
-                        "_-_  更新绝大多数的天赋描述\n"+
-                        "_-_  战士初始力量上调至11点\n"+
-                        "_-_ 加强天赋：\n"+
-                        "_-_ _十全大补_：效果翻倍\n"+
-                        "_-_ _震撼爆炸，爆破狂魔_：升级立即获取1个炸弹，且不占用上限\n"+
-                        "_-_ _人身攻击_：升级此天赋额外获得一张盛怒卷轴\n"+
-                        "_-_ _水鬼索命_：+1时的怨灵给予5回合狂乱效果，+2给予腐化效果\n"+
-                        "_-_ _健康食物，万灵药水_：在原效果基础上增加1回合持续时长n"+
-                        "_-_ 调整和削弱天赋：\n"+
-                        "_-_ _烟雾掩护_：cd从20回合上调至25回合，可以自由释放，烟雾量上调至100/150\n"+
-                        "_-_ _吓我一跳_：闪避给予的护盾量上升至+2/+3，叠加上限分别为4/6点\n"+
-                        "_-_ _水灵回复_：如果玩家处于极度饥饿状态，该天赋回复效率减半\n"+
-                        "_-_ _NO集群_：移入其他类\n"
-        ));
-        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
-                "_-_ 实装多数测试工具\n"+
-                        "_-_ 修复天赋_强化袖章_生效异常问题\n"+
-                        "_-_ 修复天赋_虚假之力_生效异常问题\n"
-
-        ));
-
-        changes = new ChangeInfo( "v0.2.6fix3", false, null);
-        changes.hardlight( Window.TITLE_COLOR );
-        changeInfos.add(changes);
-        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
-                        "_-_ 新增共计_10_个正面天赋\n"+
-                        "_-_ _1层：_虚假之力，魔弹射手，蜘蛛感应，no集群，更多人情，静滞电流\n"+
-                        "_-_ _2层：_刻笔·布莱恩特，奇迹炼金\n" +
-                        "_-_ _3层：_炎烬化身，冰能一餐，五金元素\n"
-        ));
-
-        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
-                "_-_ 为挑战界面增加不同等级的贴图，由咕(Q1323933183)协助完成\n" +
-                        "_-_ 挑战等级的美术素材，由_DM-216_绘制\n"
-
-        ));
-
-        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_  更新日期：2025年9月14日\n"+
-                        "_-_ 加强天赋：\n"+
+                        "_-_ _长启书室_共用获得道具的最大次数\n"+
+                        "_-_  fix2改动：\n"+
+                        "_-_  天赋_女巫媚药_给予的魅惑效果由5回合提高至15回合\n"+
+                        "_-_  天赋_燃咒+2_给予的恐惧效果改为眩晕\n"+
+                        "_-_  天赋_量子骇入_给予的眩晕效果由2/3回合下调至1/2回合\n"+
+                        "_-_  负面天赋_干柴烈火_给予的魅惑效果由3回合提高至10回合\n"+
+                        "_-_  暗液史莱姆天赋_暗气释放_不再有cd限制，且给予的净化屏障持续时间上调至4回合\n"+
+                        "_-_  调整护甲技能_狂史日记_造成的伤害\n",
+                "_-_ fix3加强天赋：\n"+
                         "_-_ _脑袋尖尖_：力量提升3/6/9\n"+
                         "_-_ _陷阱专家_：回收概率提升至66%，75%，80%\n"+
                         "_-_ _引火上身_：提供的烈焰之力回合数提升至5/8\n"+
@@ -513,82 +464,142 @@ public class v0_2_X {
                         "_-_ _长期素食_：肉食给予的饱食度降低从50%下调到30%\n"+
                         "_-_ _打草惊蛇_：巨蛇从狂乱改变为腐化\n"+
                         "_-_ _卧榻之侧_：激素涌动回合提升至3/5\n",
-                        "_-_ 加强天赋：\n"+
+                "_-_ fix3加强天赋：\n"+
                         "_-_ _爆破狂魔_：升级该天赋可额外获得一个炸弹\n"+
                         "_-_ _饭里藏金_：升级该天赋可获得量提升至25/35\n"+
                         "_-_ _麻醉酊剂_：护盾量上调至5/8\n"+
                         "_-_ _反戈一击_：固定对敌人造成0.5倍等级的反伤\n"+
                         "_-_ _活动肌肉_：升级获得的力量翻倍，持续时间延长\n"+
                         "_-_ _盛食厉兵_：增伤和伤害减免上调至15%/30%/45%和10%/20%/30%\n",
+                "_-_ fix3调整和削弱天赋：\n"+
+                        "_-_ _暗液缠身_：8回合法杖充能+5回合神器充能\n"+
+                        "_-_ _工程技师_：下放到2层\n"+
+                        "_-_ _所向披靡_：上调到2层\n"+
+                        "_-_ _火球术_，_金币护盾_，_势能转换_，_掠阵之影_：下放到1层\n"+
+                        "_-_ _击落卫星_：调整类型为其他类\n"+
+                        "_-_ _燃咒_：+1给予残废，+2给予失明\n"+
+                        "_-_ _极限施法_：极限施法的降低充能速度从原来的10%/20%/30%上调至13%/26%/39%\n"+
+                        "_-_ _借痛排毒_：获得全面净化效果概率从25%下调至15%\n"+
+                        "_-_ _黄金回旋_：+2增伤取消，+3对恶魔亡灵增伤降低至30%\n",
+                "_-_ fix4加强和削弱天赋：\n"+
+                        "_-_ 加强天赋：\n"+
+                        "_-_ _十全大补_：效果翻倍\n"+
+                        "_-_ _震撼爆炸，爆破狂魔_：升级立即获取1个炸弹，且不占用上限\n"+
+                        "_-_ _人身攻击_：升级此天赋额外获得一张盛怒卷轴\n"+
+                        "_-_ _水鬼索命_：+1时的怨灵给予5回合狂乱效果，+2给予腐化效果\n"+
+                        "_-_ _健康食物，万灵药水_：在原效果基础上增加1回合持续时长n"+
                         "_-_ 调整和削弱天赋：\n"+
-                                "_-_ _暗液缠身_：8回合法杖充能+5回合神器充能\n"+
-                                "_-_ _工程技师_：下放到2层\n"+
-                                "_-_ _所向披靡_：上调到2层\n"+
-                                "_-_ _火球术_，_金币护盾_，_势能转换_，_掠阵之影_：下放到1层\n"+
-                                "_-_ _击落卫星_：调整类型为其他类\n"+
-                                "_-_ _燃咒_：+1给予残废，+2给予失明\n"+
-                                "_-_ _极限施法_：极限施法的降低充能速度从原来的10%/20%/30%上调至13%/26%/39%\n"+
-                                "_-_ _借痛排毒_：获得全面净化效果概率从25%下调至15%\n"+
-                                "_-_ _黄金回旋_：+2增伤取消，+3对恶魔亡灵增伤降低至30%\n"
+                        "_-_ _烟雾掩护_：cd从20回合上调至25回合，可以自由释放，烟雾量上调至100/150\n"+
+                        "_-_ _吓我一跳_：闪避给予的护盾量上升至+2/+3，叠加上限分别为4/6点\n"+
+                        "_-_ _水灵回复_：如果玩家处于极度饥饿状态，该天赋回复效率减半\n"+
+                        "_-_ _NO集群_：移入其他类\n"
+
+        ));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年8月23日-9月29日\n"+
+                        "_-_  于_fix4_为天赋图鉴的天赋背景根据类型设置了不同的颜色区分\n"+
+                        "_-_  为不同Boss掉落的_升华秘卷_在文本上添加区分\n\n"+
+                        "_-_  更新绝大多数的_天赋描述_\n"+
+                        "_-_  _战士_初始力量上调至11点\n"
         ));
         changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
-                "_-_ 修复盗贼的检测范围缩小的问题\n"+
+                "_-_ 修复天赋_自然亲和_和_盈能生命_生效异常的问题\n"+
+                        "_-_ 于_fix1_修复天赋_目光短浅_和觉察之泉的视野问题\n"+
+                        "_-_ 修复天赋_云隐一餐_对号角的减回合不生效的问题\n"+
+                        "_-_ 修复护甲技能平蜘蛛釜不触发其他天赋的问题\n"+
+                        "_-_ 修复腐化触手异常掉落问题\n"+
+                        "_-_ 于_fix2_试修复忍术大师释放遁术导致的游戏崩溃\n"+
+                        "_-_ 修复击杀英雄boss无法获得徽章问题\n"+
+                        "_-_ 于_fix3_修复盗贼的检测范围缩小的问题\n"+
                         "_-_ 修复天赋_怨灵爪牙_生效异常问题\n"+
                         "_-_ 修复天赋_马猴烧酒_变身时长异常的问题\n"+
                         "_-_ 修复天赋_原生魔物_生效异常的问题\n"+
-                        "_-_ 修复魔杖灌注和文章贴附异常问题\n"
+                        "_-_ 修复魔杖灌注和文章贴附异常问题\n"+
+                        "_-_ 于_fix4_实装多数测试工具\n"+
+                        "_-_ 修复天赋_强化袖章_生效异常问题\n"+
+                        "_-_ 修复天赋_虚假之力_生效异常问题\n"
 
         ));
 
+    }
 
+    public static void add_v0_2_7Changes( ArrayList<ChangeInfo> changeInfos ) {
 
-
-
-        changes = new ChangeInfo( "v0.2.6fix2", false, null);
+        ChangeInfo changes = new ChangeInfo("v0.2.7", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( Messages.get( ChangesScene.class, "new"), false, null);
         changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT), "天赋更新",
+                        "_-_ 本版本限定负面天赋组为：_限定4_\n"+
+                        "_-_ 新增共计_5_个正面天赋\n"+
+                        "_-_ _1层：_超算代码，定期维护\n"+
+                        "_-_ _2层：_高效指令，火箭拳头\n" +
+                        "_-_ _3层：_重拳出击\n"
+        ));
+        changes.addButton( new ChangeButton(HeroSprite.avatar(HeroClass.DM400, 6), "DM-400",
+                "_-_ DM-400可以借助_指令集合工具_生产无人机协助作战，同时它的物理攻击还会_强化_战斗型无人机对敌人造成的效果。它还拥有_非生物_属性。击败DM300以解锁DM-400\n" +
+                        "_-_ _两个转职：_AT400和AU400\n" +
+                        "_-_ _三个护甲技能：_例行维护、废气排出和蜂巢集群\n"+
+                        "_-_ 角色由_DM216_设计，_DM-216_绘制美术素材，_东榆桑榆_制作\n"+
+                        "_-_ 追加一则关于DM-400的英雄故事并新增相关成就\n"
+        ));
 
+
+
+        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
+        changes.hardlight( CharSprite.WARNING );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),"平衡性调整",
+                "_-_ 加强天赋_优质吸收_：露珠回复从+1/+2提升至+2/+3\n" +
+                        "_-_ 加强天赋_极限施法_：每级降低的法杖充能速度从13%下调至10%\n"+
+                        "_-_ 加强天赋_破损核心_：+2时伤害从1-2点上调至2点\n"
+        ));
         changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_  更新日期：2025年8月25日\n"+
-                        "_-_  调节ui按键色彩饱和度，使之更柔和\n"+
-                        "_-_  天赋_女巫媚药_给予的魅惑效果由5回合提高至15回合\n"+
-                        "_-_  天赋_燃咒+2_给予的恐惧效果改为眩晕\n"+
-                        "_-_  天赋_量子骇入_给予的眩晕效果由2/3回合下调至1/2回合\n"+
-                        "_-_  负面天赋_干柴烈火_给予的魅惑效果由3回合提高至10回合\n"+
-                        "_-_  暗液史莱姆天赋_暗气释放_不再有cd限制，且给予的净化屏障持续时间上调至4回合\n"+
-                        "_-_  调整护甲技能_狂史日记_造成的伤害\n"
+                "_-_  更新日期：2025年10月13日\n"
         ));
         changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
-                "_-_ 试修复忍术大师释放遁术导致的游戏崩溃\n"+
-                        "_-_ 修复击杀英雄boss无法获得徽章问题\n"
+                "_-_ 修复天赋_烟雾掩护_生效异常的问题\n"+
+                        "_-_ 修复物品_蜕变结晶_导致天赋丢失的问题\n"
 
         ));
-        changes = new ChangeInfo( "v0.2.6fix1", false, null);
+
+    }
+    public static void add_v0_2_7fixChanges( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.7fix", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes = new ChangeInfo( "v0.2.7fix1", false, null);
         changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);
-        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN), "手里剑箱",
-                "_-_ 手里剑箱丢出的手里剑从2阶降低至1阶，手里剑箱每升2级,所丢出的手里剑提升1级保持不变\n"+
-                        "_-_ 尝试修复因为报错导致的手里剑箱充能异常问题\n"
+        changes.addButton(new ChangeButton(HeroSprite.avatar(HeroClass.DM400, 6), "DM-400改动",
+                "_-_ 僚机无人机增加1~2点初始护甲\n"+
+                        "_-_ 激光无人机增加2倍命中，标记点燃概率上调至50%\n"+
+                        "_-_ 迷乱无人机的血量上调至_3+玩家33%_\n"+
+                        "_-_ 袭扰和震慑无人机的伤害统一上调至_神器效果等级~5+神器效果等级_\n"+
+                        "_-_ 混沌无人机的变化所需时间减少10回合\n"+
+                        "_-_ 所有辅助型无人机每架可为玩家提供0.3潜行点（护航无人机为0.8）\n"+
+                        "_-_ 增加游荡和回收功能，回收时若无人机血量≥80%则返还1点工具充能\n"+
+                        "_-_ 增加卷轴记录功能，使AT-400/AU-400可以自由制造已录入卷轴对应的无人机\n"+
+                        "_-_ 自爆无人机自动掉血距离缩短\n"
         ));
-        changes.addButton( new ChangeButton(new ItemSprite(ItemSpriteSheet.TATTEKI), "铁炮",
-                "_-_ 铁炮的伤害下限成长从原来的2下调为0，不再有伤害下限成长\n"
 
-        ));
 
         changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
-                "_-_  更新日期：2025年8月24日\n"+
-                        "_-_  调整手里剑箱和铁炮的准心判定\n"+
-                        "_-_  沉沦触手可通过玩家临近交互清除\n"
+                "_-_  更新日期：2025年10月15日\n"+
+                        "_-_  调整无人机群体指挥\n"+
+                        "_-_  调整辅助无人机的行动逻辑\n"+
+                        "_-_  允许蓝底法杖拆成树脂\n"
         ));
         changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
-                "_-_ 修复天赋_目光短浅_和觉察之泉的视野问题\n"+
-                        "_-_ 修复天赋_云隐一餐_对号角的减回合不生效的问题\n"+
-                        "_-_ 修复护甲技能平蜘蛛釜不触发其他天赋的问题\n"+
-                        "_-_ 修复腐化触手异常掉落问题\n"
+                "_-_ 修复天赋_快捷工具_生效异常问题\n"+
+                        "_-_ 修复天赋_法杖回收_生效异常问题\n"+
+                        "_-_ 修复护甲刻印_涌流_、_迅捷_、_臃肿_生效异常问题\n"+
+                        "_-_ 修复神器_无序魔典_阅读异常问题\n"
 
         ));
-
-
     }
 
 }

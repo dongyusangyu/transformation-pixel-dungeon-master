@@ -163,6 +163,8 @@ public class BuffIndicator extends Component {
 	public  static  final  int AU400MARK=103;
 
 	public  static  final  int WEAKMARK=104;
+	public  static  final  int OVERLOAD=105;
+	public  static  final  int HONEYCOMB=106;
 
 
 

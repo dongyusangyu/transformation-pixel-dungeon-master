@@ -92,6 +92,7 @@ public class Badges {
 		UNLOCK_FREEMAN              (copper+6),
 		UNLOCK_SLIME              (copper+7),
 		UNLOCK_NINJA             ( copper+8 ),
+		UNLOCK_DM400             ( copper+9 ),
 		MONSTERS_SLAIN_1            ( copper+12 ),
 		MONSTERS_SLAIN_2            ( copper+13 ),
 		GOLD_COLLECTED_1            ( copper+14 ),
@@ -148,6 +149,7 @@ public class Badges {
 		BOSS_SLAIN_1_FREEMAN,
 		BOSS_SLAIN_1_SLIMEGIRL,
 		BOSS_SLAIN_1_NINJA,
+		BOSS_SLAIN_1_DM400,
 		BOSS_SLAIN_1_ALL_CLASSES    ( silver+22, BadgeType.GLOBAL ),
 
 		RESEARCHER_2                ( silver+23, BadgeType.JOURNAL ),
@@ -190,6 +192,7 @@ public class Badges {
 		HEROBOSS_SLAIN_2            (gold+25 ),
 		HEROBOSS_COUNTER_1             (gold+28 ),
 		HEROBOSS_COUNTER_2             (gold+29 ),
+		HEROBOSS_COUNTER_3             (gold+30 ),
 
 
 		//platinum
@@ -211,6 +214,7 @@ public class Badges {
 		VICTORY_FREEMAN,
 		VICTORY_SLIMEGIRL,
 		VICTORY_NINJA,
+		VICTORY_DM400,
 		VICTORY_ALL_CLASSES         ( platinum+5, BadgeType.GLOBAL ),
 		DEATH_FROM_ALL              ( platinum+6, BadgeType.GLOBAL ),
 		BOSS_SLAIN_3_GLADIATOR,
@@ -230,6 +234,8 @@ public class Badges {
 		BOSS_SLAIN_3_DARKSLIME,
 		BOSS_SLAIN_3_TATTEKI,
 		BOSS_SLAIN_3_NINJA_MASTER,
+		BOSS_SLAIN_3_AT400,
+		BOSS_SLAIN_3_AU400,
 
 		BOSS_SLAIN_3_ALL_SUBCLASSES ( platinum+7, BadgeType.GLOBAL ),
 		BOSS_CHALLENGE_3            ( platinum+8 ),
@@ -862,6 +868,7 @@ public class Badges {
 		firstBossClassBadges.put(HeroClass.FREEMAN, Badge.BOSS_SLAIN_1_FREEMAN);
 		firstBossClassBadges.put(HeroClass.SLIMEGIRL, Badge.BOSS_SLAIN_1_SLIMEGIRL);
 		firstBossClassBadges.put(HeroClass.NINJA, Badge.BOSS_SLAIN_1_NINJA);
+		firstBossClassBadges.put(HeroClass.DM400, Badge.BOSS_SLAIN_1_DM400);
 	}
 
 	private static LinkedHashMap<HeroClass, Badge> victoryClassBadges = new LinkedHashMap<>();
@@ -875,6 +882,7 @@ public class Badges {
 		victoryClassBadges.put(HeroClass.FREEMAN, Badge.VICTORY_FREEMAN);
 		victoryClassBadges.put(HeroClass.SLIMEGIRL, Badge.VICTORY_SLIMEGIRL);
 		victoryClassBadges.put(HeroClass.NINJA, Badge.VICTORY_NINJA);
+		victoryClassBadges.put(HeroClass.DM400, Badge.VICTORY_DM400);
 	}
 
 	private static LinkedHashMap<HeroSubClass, Badge> thirdBossSubclassBadges = new LinkedHashMap<>();
@@ -896,6 +904,8 @@ public class Badges {
 		thirdBossSubclassBadges.put(HeroSubClass.DARKSLIME, Badge.BOSS_SLAIN_3_DARKSLIME);
 		thirdBossSubclassBadges.put(HeroSubClass.TATTEKI_NINJA, Badge.BOSS_SLAIN_3_TATTEKI);
 		thirdBossSubclassBadges.put(HeroSubClass.NINJA_MASTER, Badge.BOSS_SLAIN_3_NINJA_MASTER);
+		thirdBossSubclassBadges.put(HeroSubClass.AT400, Badge.BOSS_SLAIN_3_AT400);
+		thirdBossSubclassBadges.put(HeroSubClass.AU400, Badge.BOSS_SLAIN_3_AU400);
 	}
 	public static void validateHeroBossSlain() {
 		if (!isUnlocked(Badge.HEROBOSS_SLAIN_1) && Dungeon.depth==5){
@@ -930,6 +940,11 @@ public class Badges {
 			}
 			break;
 		case 15:
+			if(hero.heroClass== HeroClass.DM400){
+				if (!isUnlocked(Badge.HEROBOSS_COUNTER_3)) {
+					displayBadge(Badge.HEROBOSS_COUNTER_3 );
+				}
+			}
 			badge = Badge.BOSS_SLAIN_3;
 			break;
 		case 20:
@@ -1086,6 +1101,11 @@ public class Badges {
 	public static void validateNinjaUnlock(){
 		if (!isUnlocked(Badge.UNLOCK_NINJA)){
 			displayBadge( Badge.UNLOCK_NINJA );
+		}
+	}
+	public static void validateDM400Unlock(){
+		if (!isUnlocked(Badge.UNLOCK_DM400) && !isUnlocked(Badge.UNLOCK_DM400)){
+			displayBadge( Badge.UNLOCK_DM400 );
 		}
 	}
 	public static void validateClericUnlock(){

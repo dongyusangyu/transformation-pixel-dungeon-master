@@ -229,7 +229,7 @@ public class UnstableSpellbook extends Artifact {
 						Invisibility.dispel();
 						Talent.onArtifactUsed(Dungeon.hero);
 					} else {
-						fScroll.doRead();
+						//fScroll.doRead();
 						checkForArtifactProc(curUser, fScroll);
 						fScroll.doRead();
 						Invisibility.dispel();

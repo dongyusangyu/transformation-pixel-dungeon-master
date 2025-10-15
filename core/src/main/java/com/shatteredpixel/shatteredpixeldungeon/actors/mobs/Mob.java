@@ -69,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Routine;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Feint;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.ClericSpell;
@@ -269,6 +270,12 @@ public abstract class Mob extends Char {
 
 		if (buff(Terror.class) != null || buff(Dread.class) != null ){
 			state = FLEEING;
+		}
+		if(hero!=null && alignment != Char.Alignment.ALLY && fieldOfView[hero.pos]
+				&& hero.buff(Routine.OverLoad.class)!=null && buff(Routine.TerrorCd.class)==null
+				&& hero.hasTalent(Talent.TERROR_MACH) && state != SLEEPING){
+			Buff.affect(this,Terror.class,2*hero.pointsInTalent(Talent.TERROR_MACH)).object=hero.id();
+			Buff.affect(this,Routine.TerrorCd.class);
 		}
 		
 		enemy = chooseEnemy();
@@ -829,11 +836,14 @@ public abstract class Mob extends Char {
 	@Override
 	public float speed() {
 		float speed=super.speed();
-		if(hero.pointsNegative(Talent.DUMP_TRUCK)>0 && properties().contains(Property.LARGE)){
+		if(hero!=null && hero.pointsNegative(Talent.DUMP_TRUCK)>0 && properties().contains(Property.LARGE)){
 			speed*=1+0.5f*hero.pointsNegative(Talent.DUMP_TRUCK);
 		}
 		for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
 			speed*= buff.speedFactor();
+		}
+		if(hero!=null && alignment==Char.Alignment.ALLY && hero.hasTalent(Talent.EFFICIENT_ORDER)){
+			speed*= 1.15f+0.15f*hero.pointsInTalent(Talent.EFFICIENT_ORDER);
 		}
 		return speed * AscensionChallenge.enemySpeedModifier(this);
 	}
@@ -894,6 +904,9 @@ public abstract class Mob extends Char {
 		}
 		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
 			dmg*=1+hero.pointsInTalent(Talent.WELLFED_MEAL)*0.1f;
+		}
+		if(hero.hasTalent(Talent.QUICK_TOOL) && hero.heroClass!=HeroClass.DM400 && alignment==Alignment.ALLY){
+			dmg*=1-hero.pointsInTalent(Talent.QUICK_TOOL)*0.1f;
 		}
 		super.damage( dmg, src );
 	}

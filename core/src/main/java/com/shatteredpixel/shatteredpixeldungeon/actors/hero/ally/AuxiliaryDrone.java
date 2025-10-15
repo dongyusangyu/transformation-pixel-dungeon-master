@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
@@ -22,6 +23,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -68,6 +70,14 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         }
 
     }
+    @Override
+    protected boolean getCloser( int target ) {
+        if (enemy!=null && enemySeen && !(this instanceof  BombDrone)) {
+            return enemySeen && getFurther( target );
+        } else {
+            return super.getCloser( target );
+        }
+    }
 
     private int shieldCooldown = 50;
     private int fastCooldown = 80;
@@ -78,6 +88,7 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
 
     @Override
     protected boolean act() {
+
         boolean result = super.act();
         return result;
     }
@@ -133,7 +144,7 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
             boolean result = super.act();
             if(result){
                 for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
-                    if (mob.alignment != Char.Alignment.ALLY && fieldOfView[enemy.pos]) {
+                    if (mob.alignment != Char.Alignment.ALLY && fieldOfView[mob.pos]) {
                         Buff.affect(mob,WeaknessMark.class,1);
                     }
                 }
@@ -252,14 +263,13 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         @Override
         protected boolean act() {
             boolean result = super.act();
-
             return result;
         }
     }
 
     public static class BombDrone extends AuxiliaryDrone {
         {
-            spriteClass = DronesSprite.EscortDroneSprite.class;
+            spriteClass = DronesSprite.BombDroneSprite.class;
             HP = HT = 3;
             immunities.add(AllyBuff.class);
             defenseSkill=5;
@@ -278,17 +288,19 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                 defenseSkill = hero.lvl+5;
             }
         }
+
+
         @Override
         protected boolean act() {
             boolean result = super.act();
-            if(hero!=null && distance(hero)>1){
-                this.damage(1,null);
+            if(enemy!=null && distance(enemy)<2){
+                damage(3,this);
             }
             return result;
         }
         @Override
         public void die( Object cause ) {
-            new Bomb.ConjuredBomb().explode(this.pos);
+            new DroneBomb().explode(this.pos);
             super.die(cause);
         }
 
@@ -303,7 +315,6 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
             defenseSkill=5;
             flying = true;
             properties.add(Property.INORGANIC);
-            baseSpeed=2f;
         }
         public ChaosDrone(){
             super();
@@ -317,14 +328,23 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
             }
         }
         @Override
+        protected boolean getCloser( int target ) {
+            if (enemy!=null && enemySeen) {
+                return enemySeen && getFurther( target );
+            } else {
+                return super.getCloser( target );
+            }
+        }
+        @Override
         protected boolean act() {
             boolean result = super.act();
             int lvl = InstructionTool.Drone.getTool();
             left++;
-            if(left>31-lvl){
-                RollDrone(this.pos);
-                destroy();
+            if(left>21-lvl){
+                int p = pos;
+                RollDrone(p);
                 sprite.emitter().start(Speck.factory(Speck.CHANGE), 0.2f, 10);
+                destroy();
                 sprite.killAndErase();
                 Sample.INSTANCE.play(Assets.Sounds.PUFF);
                 return true;
@@ -443,14 +463,14 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                 }
                 for (Char ch : affected){
                     //if they have already been killed by another bomb
-                    if(!ch.isAlive() && (ch instanceof  Hero || ch instanceof InstructionTool.Drone)){
+                    if(!ch.isAlive() && ((ch instanceof  Hero) || (ch instanceof InstructionTool.Drone))){
                         continue;
                     }
                     int dmg = Random.NormalIntRange(4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth())*3/2;                    if(hero.hasTalent(Talent.BOMB_MANIAC)){
                         dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25f;
                     }
                     dmg -= ch.drRoll();
-                    if (dmg > 0) {
+                    if (dmg > 0 && !((ch instanceof  Hero) || (ch instanceof InstructionTool.Drone))) {
                         ch.damage(dmg, this);
                     }
                     if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
@@ -488,12 +508,17 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         public int icon() { return BuffIndicator.NONE; }
         @Override
         public boolean act() {
-            left++;
-            if(left>60-hero.pointsInTalent(Talent.ASSIST_UPGRADE)*10 && target.shielding()<target.HT/2){
-                Buff.affect(target, ShieldBuff.class).incShield(4);
-                left=0;
+            if(hero!=null && hero.pointsInTalent(Talent.ASSIST_UPGRADE)>0){
+                left++;
+                //GLog.w("1");
             }
-            spend( TICK );
+            if(target.isAlive()){
+                if(hero!=null && left>60-hero.pointsInTalent(Talent.ASSIST_UPGRADE)*10 && hero.shielding()<hero.HT/2){
+                    Buff.affect(hero, Barrier.class).incShield(4);
+                    left=0;
+                }
+            }
+            spend(TICK);
             return true;
         }
         public int left = 0;
@@ -515,11 +540,17 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
 
         @Override
         public boolean act() {
-            left++;
-            if(left>90-hero.pointsInTalent(Talent.ASSIST_UPGRADE)*10){
-                Buff.affect(target, Haste.class,2);
+            if(hero!=null && hero.pointsInTalent(Talent.FAST_CRUISE)>0){
+                left++;
+
             }
-            spend( TICK );
+            if(target.isAlive()){
+                if(hero!=null && left>90-hero.pointsInTalent(Talent.FAST_CRUISE)*10){
+                    Buff.affect(hero, Haste.class,2);
+                    left=0;
+                }
+            }
+            spend(TICK);
             return true;
         }
         public int left = 0;
@@ -547,7 +578,8 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                     Buff.affect(hero, Invisibility.class,4);
                 }else{
                     Buff.affect(target, Invisibility.class,4);
-                }left=0;
+                }
+                left=0;
             }
             spend( TICK );
             return true;

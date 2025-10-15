@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -92,9 +93,13 @@ public class RingOfForce extends Ring {
 			}
 			return dmg;
 		} else {
+			if(hero.hasTalent(Talent.BIG_FIST)){
+				return Hero.heroDamageIntRange(2+hero.pointsInTalent(Talent.BIG_FIST), 15+5*hero.pointsInTalent(Talent.BIG_FIST));
+			}
 			//attack without any ring of force influence
 			if(hero.heroClass == HeroClass.DM400){
 				return Hero.heroDamageIntRange(1, 8);
+
 			}else{
 				return Hero.heroDamageIntRange(1, Math.max(hero.STR()-8, 1));
 			}

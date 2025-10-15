@@ -120,7 +120,7 @@ public class Waterskin extends Item {
 				int dropsNeeded = (int)Math.ceil((missingHealthPercent / 0.05f) - 0.01f);
 				dropsNeeded = (int)GameMath.gate(1, dropsNeeded, volume);
 				if(hero.hasTalent(Talent.QUALITY_ABSORPTION)){
-					int dropsNeeded1 = (int)Math.ceil((missingHealthPercent/(0.05f+ (float)(hero.pointsInTalent(Talent.QUALITY_ABSORPTION)/hero.HT))) - 0.01f);
+					int dropsNeeded1 = (int)Math.ceil((missingHealthPercent/(0.05f+ (float)((hero.pointsInTalent(Talent.QUALITY_ABSORPTION)+1)/hero.HT))) - 0.01f);
 					dropsNeeded1 = (int)GameMath.gate(1, dropsNeeded1, volume);
 					dropsNeeded=Math.max(1,dropsNeeded1);
 				}

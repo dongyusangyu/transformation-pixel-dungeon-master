@@ -88,7 +88,7 @@ public abstract class DronesSprite extends MobSprite {
             super.zap( cell, null );
 
             ((InstructionTool.Drone)ch).onZapComplete();
-            parent.add( new Beam.DeathRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell)));
+            parent.add( new Beam.HolyRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell)));
         }
     }
 

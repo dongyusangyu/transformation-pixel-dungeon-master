@@ -87,6 +87,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.AscendedForm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Routine;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Challenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.NaturesPower;
@@ -301,6 +302,10 @@ public class Hero extends Char {
 		//史莱姆
 		if (heroClass == HeroClass.SLIMEGIRL){
 			HT = 25 + 6*(lvl-1) + HTBoost;
+		}else if(heroClass == HeroClass.DM400){
+			HT = 15 + 5*(lvl-1) + HTBoost;
+
+
 		}else{
 			HT = 20 + 5*(lvl-1) + HTBoost;
 		}
@@ -417,7 +422,9 @@ public class Hero extends Char {
 		subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class );
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
 		Talent.restoreTalentsFromBundle( bundle, this );
-
+		if(heroClass==HeroClass.DM400){
+			addProperties(Char.Property.INORGANIC);
+		}
 		
 		attackSkill = bundle.getInt( ATTACK );
 		defenseSkill = bundle.getInt( DEFENSE );
@@ -904,10 +911,11 @@ public class Hero extends Char {
 		float speed = super.speed();
 
 		speed *= RingOfHaste.speedMultiplier(this);
-		
+
 		if (belongings.armor() != null) {
 			speed = belongings.armor().speedFactor(this, speed);
 		}
+
 		
 		Momentum momentum = buff(Momentum.class);
 		if (momentum != null){
@@ -949,6 +957,9 @@ public class Hero extends Char {
 				onespd+=0.375f*pointsInTalent(Talent.GLIMPSE);
 			}
 			speed*=onespd;
+		}
+		if(hero.buff(Routine.OverLoad.class)!=null){
+			speed*=2f;
 		}
 		return speed;
 		
@@ -1007,6 +1018,9 @@ public class Hero extends Char {
 			}
 			delay/=spd;
 		}
+		if(hero.buff(Routine.OverLoad.class)!=null){
+			delay/=2;
+		}
 		if (!RingOfForce.fightingUnarmed(this)) {
 			
 			return delay * belongings.attackingWeapon().delayFactor( this );
@@ -1029,6 +1043,8 @@ public class Hero extends Char {
 			if (RingOfForce.unarmedGetsWeaponAugment(this)){
 				delay = ((Weapon)belongings.weapon).augment.delayFactor(delay);
 			}
+
+
 
 
 			return delay/speed;
@@ -2762,7 +2778,7 @@ public class Hero extends Char {
 		int distance = heroClass == HeroClass.ROGUE ? 2 : 1;
 		distance = heroClass == HeroClass.NINJA ? 2 : distance;
 		if (hasTalent(Talent.WIDE_SEARCH)) distance++;
-		
+
 		boolean foresight = buff(Foresight.class) != null;
 		boolean foresightScan = foresight && !Dungeon.level.mapped[pos];
 
@@ -2936,6 +2952,8 @@ public class Hero extends Char {
 				((HolyTome) i).activate(this);
 			} else if (i instanceof Shuriken_Box  && i.keptThroughLostInventory() && hasTalent(Talent.LIGHT_BOX)) {
 				((Shuriken_Box) i).activate(this);
+			}else if (i instanceof InstructionTool  && i.keptThroughLostInventory() && hasTalent(Talent.QUICK_TOOL)) {
+				((InstructionTool) i).activate(this);
 			} else if (i instanceof Wand && i.keptThroughLostInventory()){
 				if (holster != null && holster.contains(i)){
 					((Wand) i).charge(this, MagicalHolster.HOLSTER_SCALE_FACTOR);

@@ -841,10 +841,12 @@ public abstract class Char extends Actor {
 		if(buff(Ninja_Energy.WaterSmooth.class)!=null && Dungeon.level.water[this.pos]){
 			speed *= 2f;
 		}
+		if(this!=hero){
+			speed *= Swiftness.speedBoost(this, glyphLevel(Swiftness.class));
+			speed *= Flow.speedBoost(this, glyphLevel(Flow.class));
+			speed *= Bulk.speedBoost(this, glyphLevel(Bulk.class));
+		}
 
-		speed *= Swiftness.speedBoost(this, glyphLevel(Swiftness.class));
-		speed *= Flow.speedBoost(this, glyphLevel(Flow.class));
-		speed *= Bulk.speedBoost(this, glyphLevel(Bulk.class));
 
 		return speed;
 	}
@@ -1094,8 +1096,10 @@ public abstract class Char extends Actor {
 				icon = hitMissIcon;
 			}
 			hitMissIcon = -1;
+			if(dmg+shielded>=0){
+				sprite.showStatusWithIcon(CharSprite.NEGATIVE, Integer.toString(dmg + shielded), icon);
+			}
 
-			sprite.showStatusWithIcon(CharSprite.NEGATIVE, Integer.toString(dmg + shielded), icon);
 		}
 
 		if (HP < 0) HP = 0;
@@ -1317,6 +1321,15 @@ public abstract class Char extends Actor {
 		if(this instanceof Hero && ((Hero)this).heroClass==HeroClass.NINJA){
 			stealth += 2;
 		}
+		float bonusDis=0;
+		for (Char ch : Actor.chars()){
+			if(ch instanceof AuxiliaryDrone.EscortDrone){
+				bonusDis+=0.8f;
+			}else if(ch instanceof AuxiliaryDrone){
+				bonusDis+=0.3f;
+			}
+		}
+		stealth+=(int)bonusDis;
 		return stealth;
 	}
 
@@ -1428,6 +1441,10 @@ public abstract class Char extends Actor {
 
 	protected HashSet<Property> properties = new HashSet<>();
 
+	public void addProperties(Property p){
+		properties.add(p);
+	}
+
 	public HashSet<Property> properties() {
 		HashSet<Property> props = new HashSet<>(properties);
 		//TODO any more of these and we should make it a property of the buff, like with resistances/immunities
@@ -1437,6 +1454,7 @@ public abstract class Char extends Actor {
 		if(buff(ChampionEnemy.Corrosion.class) != null){
 			props.add(Property.ACIDIC);
 		}
+
 		return props;
 	}
 

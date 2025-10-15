@@ -158,7 +158,7 @@ public class ArcaneResin extends Item {
 		public boolean testIngredients(ArrayList<Item> ingredients) {
 			return ingredients.size() == 1
 					&& ingredients.get(0) instanceof Wand
-					&& ingredients.get(0).isIdentified()
+					&& ingredients.get(0).cursedKnown
 					&& !ingredients.get(0).cursed;
 		}
 
@@ -180,14 +180,12 @@ public class ArcaneResin extends Item {
 		public Item sampleOutput(ArrayList<Item> ingredients) {
 			Wand w = (Wand)ingredients.get(0);
 			int level = w.level() - w.resinBonus;
-
 			Item result = new ArcaneResin();
-
+			int outQuantity = 2*(level+1);
 			if (Dungeon.hero.heroClass != HeroClass.MAGE && Dungeon.hero.hasTalent(Talent.WAND_PRESERVATION)){
-				result.quantity(result.quantity() + Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION));
+				result.quantity(outQuantity + Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION));
 			}
 			try {
-				int outQuantity = 2*(level+1);
 				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
 					result.quantity(outQuantity+1);
 				}else{

@@ -15,7 +15,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.DronesSprite;
 import com.watabou.utils.Bundle;
@@ -99,6 +102,7 @@ public class AttackDrone  extends InstructionTool.Drone {
 
         @Override
         public int attackProc( Char enemy, int damage ) {
+            //enemy.damage(damageRoll(),new WandOfMagicMissile());
             damage = super.attackProc( enemy, damage );
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null){
                 Buff.affect(enemy, Blindness.class,3);
@@ -133,6 +137,10 @@ public class AttackDrone  extends InstructionTool.Drone {
             }
 
         }
+        @Override
+        public int attackSkill(Char target) {
+            return 2*super.attackSkill(this);
+        }
 
         @Override
         protected boolean canAttack( Char enemy ) {
@@ -147,12 +155,11 @@ public class AttackDrone  extends InstructionTool.Drone {
 
         @Override
         public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
-            if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(3)==0){
+            enemy.damage(damageRoll(),new WandOfMagicMissile());
+            if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(2)==0){
                 Buff.affect(enemy, Burning.class).extend(3);
             }
-            enemy.damage(damage,new WandOfMagicMissile());
-            return 0;
+            return -1;
         }
 
     }
@@ -169,7 +176,7 @@ public class AttackDrone  extends InstructionTool.Drone {
         public AnesthesiaDrone(){
             super();
             if(hero!=null){
-                int hpBonus = (int)(hero.HT*0.25f);
+                int hpBonus = (int)(hero.HT*0.33f);
                 if (hpBonus > 0){
                     HT += hpBonus;
                     HP += hpBonus;
@@ -190,6 +197,18 @@ public class AttackDrone  extends InstructionTool.Drone {
             damage = super.attackProc( enemy, damage );
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(3)==0){
                 Buff.affect(enemy, Vertigo.class,3);
+                if(Random.Int(2)==1){
+                    Ballistica trajectory = new Ballistica(this.pos, enemy.pos, Ballistica.STOP_TARGET);
+                    //trim it to just be the part that goes past them
+                    trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size()-1), Ballistica.PROJECTILE);
+                    //knock them back along that ballistica
+                    WandOfBlastWave.throwChar(enemy,
+                            trajectory,
+                            1,
+                            false,
+                            true,
+                            this);
+                }
             }
             return damage;
         }
@@ -224,7 +243,7 @@ public class AttackDrone  extends InstructionTool.Drone {
         @Override
         public int damageRoll() {
             int lvl = InstructionTool.Drone.getTool();
-            int damage = Random.NormalIntRange(lvl/2, 2+lvl);
+            int damage = Random.NormalIntRange(lvl, 5+lvl);
             return damage;
         }
 
@@ -271,7 +290,7 @@ public class AttackDrone  extends InstructionTool.Drone {
         @Override
         public int damageRoll() {
             int lvl = InstructionTool.Drone.getTool();
-            int damage = Random.NormalIntRange(lvl/2, 2+lvl);
+            int damage = Random.NormalIntRange(lvl, 5+lvl);
             return damage;
         }
 
@@ -284,7 +303,7 @@ public class AttackDrone  extends InstructionTool.Drone {
         public int attackProc( Char enemy, int damage ) {
             damage = super.attackProc( enemy, damage );
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(3)==0){
-                Buff.affect(enemy, Terror.class,3).object = id();;
+                Buff.affect(enemy, Terror.class,8).object = id();;
             }else if(Random.Int(6)==0){
                 Buff.affect(enemy, InstructionTool.InstructionMark.class).reset(3);
             }

@@ -84,6 +84,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.remains.BowFragment;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenHilt;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenPackage;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenStaff;
+import com.shatteredpixel.shatteredpixeldungeon.items.remains.BrokenTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.CloakScrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.MatchaPudding;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.MetalFragment;
@@ -124,6 +125,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlast;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfBlink;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfClairvoyance;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDeepSleep;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDetectMagic;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDisarming;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfFear;
@@ -428,7 +430,8 @@ public class TestPotion extends TestGenerator {
             case 6:
                 return StoneOfBlast.class;
             case 7:
-                return StoneOfDisarming.class;
+                //return StoneOfDisarming.class;
+                return StoneOfDetectMagic.class;
             case 8:
                 return StoneOfBlink.class;
             case 9:
@@ -540,6 +543,7 @@ public class TestPotion extends TestGenerator {
             case 6: return BrokenPackage.class;
             case 7: return MatchaPudding.class;
             case 8: return MetalFragment.class;
+            case 9: return BrokenTool.class;
         }
     }
 
@@ -584,7 +588,7 @@ public class TestPotion extends TestGenerator {
         if(cate == 9) return 11;
         if(cate == 10) return 10;
         if(cate == 11) return 13;
-        if(cate == 12) return 8;
+        if(cate == 12) return 9;
         if(cate == 13) return 17;
         if(cate == 14) return 5;
         return 11;

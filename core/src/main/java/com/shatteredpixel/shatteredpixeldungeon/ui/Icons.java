@@ -485,6 +485,8 @@ public enum Icons {
 				return new ItemSprite(ItemSpriteSheet.ARMOR_SLIME);
 			case NINJA:
 				return new ItemSprite(ItemSpriteSheet.ARTIFACT_SHURIKEN);
+			case DM400:
+				return new ItemSprite(ItemSpriteSheet.ARTIFACT_TOOL);
 			default:
 				return new ItemSprite(ItemSpriteSheet.SEAL);
 		}

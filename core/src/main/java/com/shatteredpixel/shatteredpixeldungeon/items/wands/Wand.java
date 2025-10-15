@@ -877,7 +877,10 @@ public abstract class Wand extends Item {
 					+ (SCALING_CHARGE_ADDITION * Math.pow(scalingFactor, missingCharges)));
 			float gainCharge=1f/turnsToCharge;
 			if(hero.hasTalent(Talent.EXTREME_CASTING)){
-				gainCharge*=1f-0.13f*hero.pointsInTalent(Talent.EXTREME_CASTING);
+				gainCharge*=1f-0.10f*hero.pointsInTalent(Talent.EXTREME_CASTING);
+			}
+			if(hero.hasTalent(Talent.LIGHT_READING) && hero.heroClass!=HeroClass.CLERIC){
+				gainCharge*=1f+0.2f/3*hero.pointsInTalent(Talent.LIGHT_READING);
 			}
 			int cnt=hero.pointsInTalent(Talent.ENERGY_CONVERSION);
 			if (Regeneration.regenOn())

@@ -73,6 +73,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
@@ -1502,6 +1503,10 @@ public abstract class Level implements Bundlable {
 						Dungeon.level.updateFieldOfView( m, m.fieldOfView );
 					}
 					BArray.or(heroMindFov, m.fieldOfView, heroMindFov);
+				}else if(m instanceof InstructionTool.Drone){
+					boolean[] thispos = new boolean[length()];
+					thispos[m.pos]=true;
+					BArray.or(heroMindFov, thispos, heroMindFov);
 				}
 			}
 

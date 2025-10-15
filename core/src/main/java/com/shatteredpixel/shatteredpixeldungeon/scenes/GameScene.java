@@ -929,6 +929,7 @@ public class GameScene extends PixelScene {
 		if (scene.tagAction1) {
 			scene.action1.setRect( tagLeft, pos - Tag.SIZE, tagWidth, Tag.SIZE );
 			scene.action1.flip(tagsOnLeft);
+			pos = scene.action1.top();
 		}
 
 		if (scene.tagResume) {

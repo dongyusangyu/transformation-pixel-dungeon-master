@@ -103,6 +103,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.WellFed;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Routine;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.DivineSense;
@@ -183,6 +184,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
@@ -225,6 +227,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.TalentIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
@@ -369,14 +372,17 @@ public enum Talent {
 	//OneSword
 	OFFENSIVE(471,4),GLIMPSE(472,4),KILL_CONTINUE(473,4),
 	//DM400
-	MARK_MEAL(480),TARGET_TARGETING(482),
-	OVER_MEAL(484),RECOVER_CHARGE(485),BODY_REINFORCE(486),
-	QUICK_TOOL(490,3),
+	MARK_MEAL(480),OVER_CODE(481),TARGET_TARGETING(482),TBM(483),
+	OVER_MEAL(484),RECOVER_CHARGE(485),BODY_REINFORCE(486),EFFICIENT_ORDER(487),ROCKET_FIST(488),
+	BIG_FIST(489,3),QUICK_TOOL(490,3),
 
 	//AT400
 	SUSTAIN_MARK(491,3),BATTLE_UPGRADE(492,3),FLY_DRONE(493,3),
 	//AU400
 	SPECIAL_MARK(494,3),ASSIST_UPGRADE(495,3),FAST_CRUISE(496,3),
+	OVER_EXTEND(497,4),TERROR_MACH(498,4),STRONG_PERSERVE(499,4),
+	OVER_TIME(500,4),DEADLY_GAS(501,4),DISCHARGE_HAPPY(502,4),
+	PROCESS_EXTEND(503,4),GLORIOUS_DEAD(504,4),UPON_WAVE(505,4),
 
 
 	//GOO
@@ -594,11 +600,21 @@ public enum Talent {
 		}
 		@Override
 		public int icon() {
-			return BuffIndicator.ARMOR;
+			if(hero!=null && hero.heroClass==HeroClass.DM400){
+				return BuffIndicator.DM400MARK;
+			}else{
+				return BuffIndicator.MARK;
+			}
+
 		}
 		@Override
 		public void tintIcon(Image icon) {
-			icon.hardlight(1, 1, 0);
+			if(hero!=null && hero.heroClass==HeroClass.DM400){
+				super.tintIcon(icon);
+			}else{
+				icon.hardlight(0, 1, 0);
+			}
+
 		}
 		@Override
 		public float iconFadePercent() {
@@ -684,6 +700,14 @@ public enum Talent {
 			if(visualcooldown()<=0){
 				detach();
 			}
+		}
+	};
+	public static class TBMCooldown extends FlavourBuff{
+		public int icon() { return BuffIndicator.NONE; }
+		@Override
+		public void detach(){
+			Buff.affect(hero, Barrier.class).incShield(1+2*hero.pointsInTalent(TBM));
+			Buff.affect(hero,TBMCooldown.class,60);
 		}
 	};
 	public static class LightBox extends FlavourBuff{
@@ -1055,6 +1079,8 @@ public enum Talent {
 					return 442;
 				case NINJA:
 					return 474;
+				case DM400:
+					return 506;
 			}
 		} else {
 			return icon;
@@ -1265,6 +1291,15 @@ public enum Talent {
 				}
 			}
 		}
+		if (talent == QUICK_TOOL && hero.heroClass == HeroClass.DM400){
+			for (Item item : Dungeon.hero.belongings.backpack){
+				if (item instanceof InstructionTool){
+					if (!hero.belongings.lostInventory() || item.keptThroughLostInventory()) {
+						((InstructionTool) item).activate(Dungeon.hero);
+					}
+				}
+			}
+		}
 		if (talent == TRAP_MASTER){
 			new ReclaimTrap().collect();
 		}
@@ -1312,6 +1347,10 @@ public enum Talent {
 			if (!toGive.collect()){
 				Dungeon.level.drop(toGive, hero.pos).sprite.drop();
 			}
+		}
+		if(talent ==TBM && hero.buff(TBMCooldown.class)==null){
+			Buff.affect(hero,Barrier.class).incShield(1+2*hero.pointsInTalent(TBM));
+			Buff.affect(hero,TBMCooldown.class,60);
 		}
 
 	}
@@ -1657,7 +1696,7 @@ public enum Talent {
 				}
 				
 			}
-			GameScene.show(new WndDivination(IDed));
+			GameScene.show(new WndDivination(IDed,LIQUID_PERCEPTION));
 		}
 	}
 
@@ -1721,6 +1760,26 @@ public enum Talent {
 		}
 		if(hero.hasTalent(RECOVER_CHARGE) && hero.heroClass!=HeroClass.DM400){
 			Buff.affect(hero, ArtifactRecharge.class).extend(2*hero.pointsInTalent(RECOVER_CHARGE));
+		}
+		if(hero.hasTalent(OVER_CODE) && factor==2){
+			HashSet<Class<? extends Potion>> potions = Potion.getUnknown();
+			HashSet<Class<? extends Scroll>> scrolls = Scroll.getUnknown();
+			ArrayList<Item> IDed = new ArrayList<>();
+			Scroll s = Reflection.newInstance(Random.element(scrolls));
+			if(hero.pointsInTalent(OVER_CODE)==2 && Random.Int(2)==1){
+				Potion p = Reflection.newInstance(Random.element(potions));
+				if(p!=null){
+					p.identify();
+					IDed.add(p);
+				}
+			}else{
+				if(s!=null){
+					s.identify();
+					IDed.add(s);
+				}
+
+			}
+			GameScene.show(new WndDivination(IDed,OVER_CODE));
 		}
 	}
 	public static void onRunestoneUsed( Hero hero, int pos, Class<?extends Item> cls ){
@@ -2019,6 +2078,9 @@ public enum Talent {
 				dmg+=hero.pointsInTalent(TARGET_TARGETING);
 			}
 		}
+		if(hero.hasTalent(BIG_FIST) && hero.belongings.attackingWeapon()==null){
+			dmg+=enemy.drRoll();
+		}
 
 		return dmg;
 	}
@@ -2081,7 +2143,7 @@ public enum Talent {
 		}
 		if(hero.hasTalent(DAMAGED_CORE)){
 			//enemy.damage(hero.pointsInTalent(DAMAGED_CORE), new WandOfMagicMissile());
-			enemy.damage(1+ Random.Int(hero.pointsInTalent(DAMAGED_CORE)-1), new WandOfMagicMissile());
+			enemy.damage(hero.pointsInTalent(DAMAGED_CORE), new WandOfMagicMissile());
 		}
 		if(hero.pointsInTalent(FUDI_CHOUXIN)> Random.Int(4)){
 			Buff.affect(enemy, Weakness.class,2);
@@ -2194,6 +2256,33 @@ public enum Talent {
 		}
 		if(enemy.buff(InstructionTool.InstructionMark.class)!=null && hero.pointsInTalent(SPECIAL_MARK)>Random.Int(6)){
 			Buff.affect(enemy, StoneOfAggression.Aggression.class,3);
+		}
+		if(hero.hasTalent(ROCKET_FIST)){
+			if(Random.Int(10)<6 && hero.belongings.attackingWeapon()==null){
+				Ballistica trajectory = new Ballistica(hero.pos, enemy.pos, Ballistica.STOP_TARGET);
+				//trim it to just be the part that goes past them
+				trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size()-1), Ballistica.PROJECTILE);
+				//knock them back along that ballistica
+				WandOfBlastWave.throwChar(enemy,
+						trajectory,
+						hero.pointsInTalent(ROCKET_FIST),
+						false,
+						true,
+						hero);
+
+			}else if(Random.Int(10)<3 && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+				Ballistica trajectory = new Ballistica(hero.pos, enemy.pos, Ballistica.STOP_TARGET);
+				//trim it to just be the part that goes past them
+				trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size()-1), Ballistica.PROJECTILE);
+				//knock them back along that ballistica
+				WandOfBlastWave.throwChar(enemy,
+						trajectory,
+						hero.pointsInTalent(ROCKET_FIST),
+						false,
+						true,
+						hero);
+			}
+
 		}
 
 
@@ -2344,6 +2433,10 @@ public enum Talent {
 
 
 	public static int onDamage(  int dmg, Object src  ){
+		if(hero.hasTalent(TBM) && hero.buff(TBMCooldown.class)==null){
+			Buff.affect(hero,Barrier.class).incShield(1+2*hero.pointsInTalent(TBM));
+			Buff.affect(hero,TBMCooldown.class,60);
+		}
 		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
 			dmg*=1-hero.pointsInTalent(Talent.WELLFED_MEAL)*0.15f;
 		}
@@ -2419,6 +2512,16 @@ public enum Talent {
 		}
 		if(hero.pointsNegative(HAND_SLIP)>0 && hero.lastAction instanceof HeroAction.Move){
 			dmg *= 1 + 0.25f * hero.pointsNegative(HAND_SLIP);
+		}
+		if(hero.buff(Routine.preOverLoad.class)!=null){
+			dmg*=0.5f;
+		}
+		if(hero.buff(Routine.OverLoad.class)!=null){
+			if(hero.hasTalent(STRONG_PERSERVE)){
+				dmg*=1-0.05f*hero.pointsInTalent(STRONG_PERSERVE);
+			}else if(hero.buff(Routine.preOverLoad.class)==null){
+				dmg*=1.5f;
+			}
 		}
 
 		if (AntiMagic.RESISTS.contains(src.getClass()) && hero.belongings.armor() != null){
@@ -2799,21 +2902,18 @@ public enum Talent {
 			GameScene.add( Blob.seed( hero.pos, 50+50*hero.pointsInTalent(SMOKE_MASK), SmokeScreen.class ) );
 			this.detach();
 		}
-		/*
 		@Override
-		public Visual secondaryVisual() {
-			BitmapText txt = new BitmapText(PixelScene.pixelFont);
-			txt.hardlight(CharSprite.POSITIVE);
-			txt.measure();
-			return txt;
+		public void storeInBundle(Bundle bundle) {
+			super.storeInBundle(bundle);
+
 		}
 
 		@Override
-		public String iconTextDisplay() {
-			return Integer.toString((int)50+25*hero.pointsInTalent(SMOKE_MASK));
-		}
+		public void restoreFromBundle(Bundle bundle) {
+			super.restoreFromBundle(bundle);
 
-		 */
+			ActionIndicator1.setAction(this);
+		}
 	}
 
 	public static final int MAX_TALENT_TIERS = 4;
@@ -2912,19 +3012,19 @@ public enum Talent {
 				COLLECTION_GOLD,MARK_MEAL);
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
 				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION,
-				MORE_FAVORS,INVISIBILITY_SHADOWS);
+				MORE_FAVORS,INVISIBILITY_SHADOWS,OVER_CODE);
 		Collections.addAll(typeTalent.get(0).get(SPELL),SATIATED_SPELLS, HOLY_INTUITION, SEARING_LIGHT, SHIELD_OF_LIGHT,
 				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT,HEALATTACK);
 		Collections.addAll(typeTalent.get(0).get(ASSIST),VETERANS_INTUITION,IRON_WILL,SCHOLARS_INTUITION,THIEFS_INTUITION,
 				SURVIVALISTS_INTUITION,ADVENTURERS_INTUITION,BOMB_MANIAC,THICKENED_ARMOR,STRENGTH_TRAIN,SAVAGE_PHYSIQUE,
 				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME,DROP_RESISTANT,POTENTIAL_ENERGY,
-                FALSEHOOD_POWER,SPIDER_SENSE);
+                FALSEHOOD_POWER,SPIDER_SENSE,TBM);
 		Collections.addAll(typeTalent.get(0).get(OTHER),FISHING_TIME,WATER_GHOST,HONEY_FISH,CHOCOLATE_COINS,NO_MORE_MOB);
 
 		//tier=2
 		Collections.addAll(typeTalent.get(1).get(ATTACK),LETHAL_MOMENTUM,IMPROVISED_PROJECTILES,STRONG_THROW,JUSTICE_PUNISH,GHOLL_WITCHCRAFT,
 				WEIRD_THROW,AMAZING_EYESIGHT,GIANT_KILLER,ARROW_PENETRATION,FRENZIED_ATTACK,FUDI_CHOUXIN,POISON_INBODY,HEDONISM,
-				LETHAL_HASTE,NINJA_SOCIAL);
+				LETHAL_HASTE,NINJA_SOCIAL,ROCKET_FIST);
 		Collections.addAll(typeTalent.get(1).get(MAGIC),ENERGIZING_MEAL,INSCRIBED_POWER,ARCANE_VISION,SHIELD_BATTERY,BURNING_CURSE,
 				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,EAT_MIND);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
@@ -2939,13 +3039,13 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(1).get(ASSIST),WIDE_SEARCH,SILENT_STEPS,REJUVENATING_STEPS,HEIGHTENED_SENSES,DURABLE_PROJECTILES,
 				WEAPON_RECHARGING,SWIFT_EQUIP,LIGHT_APPLICATION,HEAVY_APPLICATION,GOD_LEFTHAND,GOD_RIGHTHAND,BURNING_BLOOD,
 				HEAVY_BURDEN,EXPLORATION_INTUITION,PROTECT_CURSE,NIRVANA,RUNIC_TRANSFERENCE,ENERGY_ABSORPTION,
-				NATURAL_AFFINITY,QUALITY_ABSORPTION,QUICK_SEARCH,BODY_REINFORCE);
+				NATURAL_AFFINITY,QUALITY_ABSORPTION,QUICK_SEARCH,BODY_REINFORCE,EFFICIENT_ORDER);
 		Collections.addAll(typeTalent.get(1).get(OTHER),WAKE_SNAKE,ENGINEER_REFIT,SHOOT_SATELLITE);
 
 		//tier=3
 		Collections.addAll(typeTalent.get(2).get(ATTACK),POINT_BLANK,PRECISE_ASSAULT,DEADLY_FOLLOWUP,COUNTER_ATTACK,OVERWHELMING,PHANTOM_SHOOTER,
 				MARTIAL_TRAIN,RAGE_ATTACK,ACCUMULATE_STEADILY,WELLFED_MEAL,SKY_EARTH,DEEP_FREEZE,LOVE_BACKSTAB,ABACUS,PRECISE_SHOT,CICADA_DANCE,
-				ASHES_BOW,HAND_DESTRUCTION,THROWING_RECYCLING,QIANFA_THROWING);
+				ASHES_BOW,HAND_DESTRUCTION,THROWING_RECYCLING,QIANFA_THROWING,BIG_FIST);
 		Collections.addAll(typeTalent.get(2).get(MAGIC),DESPERATE_POWER,MAGIC_RECYCLING,ANGEL_STANCE,MORONITY,EXTREME_CASTING,SWIFT_CHURCH,
 				EMPOWERING_LIFE,DISABLIITY_POSION,DEVIL_FLAME);
 		Collections.addAll(typeTalent.get(2).get(EFFECT),ENHANCED_RINGS,SEER_SHOT,INVINCIBLE_MEAL,DETOX_DAMAGE,EARTH_MEAL,REVERSE_POLARITY,
@@ -3263,6 +3363,7 @@ public enum Talent {
 				break;
 			case AT400:
 				Collections.addAll(tierTalents, SUSTAIN_MARK, BATTLE_UPGRADE, FLY_DRONE);
+				break;
 			case AU400:
 				Collections.addAll(tierTalents, SPECIAL_MARK,ASSIST_UPGRADE,FAST_CRUISE);
 			case FREEMAN:
@@ -3444,23 +3545,12 @@ public enum Talent {
 
 		private static final int WIDTH = 120;
 
-		WndDivination(ArrayList<Item> IDed ){
-			/*
-			IconTitle cur = new IconTitle(null,
-					Messages.titleCase(Messages.get(LIQUID_PERCEPTION, "title")));
-			cur.setRect(0, 0, WIDTH, 0);
-			add(cur);
-
-			 */
-			/*
-			RenderedTextBlock msg = PixelScene.renderTextBlock(Messages.get(this, "desc"), 6);
-			msg.maxWidth(120);
-			msg.setPos(0, cur.bottom() + 2);
-			add(msg);
-
-			 */
+		WndDivination(ArrayList<Item> IDed,Talent talent ){
+			IconTitle tfTitle = new IconTitle(new TalentIcon( talent ), talent.title());
+			tfTitle.setRect(0, 0, WIDTH, 0);
+			add(tfTitle);
 			IconTitle cur = null;
-			float pos = 10;
+			float pos = tfTitle.bottom()+4;
 
 			for (Item i : IDed){
 

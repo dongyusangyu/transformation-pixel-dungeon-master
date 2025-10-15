@@ -91,7 +91,7 @@ public class Dewdrop extends Item {
 		//20 drops for a full heal
 		int heal = Math.round( hero.HT * 0.05f * quantity );
 		if(hero.hasTalent(Talent.QUALITY_ABSORPTION)){
-			heal+=hero.pointsInTalent(Talent.QUALITY_ABSORPTION);
+			heal+=hero.pointsInTalent(Talent.QUALITY_ABSORPTION)+1;
 		}
 		int effect = Math.min( hero.HT - hero.HP, heal );
 

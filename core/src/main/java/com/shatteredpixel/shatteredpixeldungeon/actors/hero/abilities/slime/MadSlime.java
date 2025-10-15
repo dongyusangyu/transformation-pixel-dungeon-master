@@ -15,7 +15,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.HeroicLeap;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfChallenge;
@@ -66,7 +68,7 @@ public class MadSlime extends ArmorAbility {
             GLog.w(Messages.get(this, "more_distance"));
             return;
         }
-        if (c.alignment != Char.Alignment.ENEMY
+        if ((c.alignment != Char.Alignment.ENEMY && !(c instanceof  DemonSpawner))
                 || (c.properties().contains(Char.Property.BOSS_MINION)
                 || c.properties().contains(Char.Property.BOSS)
                 || !c.buffs(ChampionEnemy.class).isEmpty())) {
