@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
@@ -123,7 +124,11 @@ public class Hunger extends Buff implements Hero.Doom {
 				}
 				if (newLevel >= STARVING) {
 
-					GLog.n( Messages.get(this, "onstarving") );
+					if(hero.heroClass== HeroClass.DM400){
+						GLog.n( Messages.get(this, "ondmstarving") );
+					}else{
+						GLog.n( Messages.get(this, "onstarving") );
+					}
 					hero.damage( 1, this );
 
 					hero.interrupt();
@@ -131,7 +136,11 @@ public class Hunger extends Buff implements Hero.Doom {
 
 				} else if (newLevel >= HUNGRY && level < HUNGRY) {
 
-					GLog.w( Messages.get(this, "onhungry") );
+					if(hero.heroClass== HeroClass.DM400){
+						GLog.w( Messages.get(this, "ondmhungry") );
+					}else{
+						GLog.w( Messages.get(this, "onhungry") );
+					}
 
 					if (!Document.ADVENTURERS_GUIDE.isPageRead(Document.GUIDE_FOOD)){
 						GameScene.flashForDocument(Document.ADVENTURERS_GUIDE, Document.GUIDE_FOOD);
@@ -186,9 +195,19 @@ public class Hunger extends Buff implements Hero.Doom {
 		}
 
 		if (oldLevel < HUNGRY && level >= HUNGRY){
-			GLog.w( Messages.get(this, "onhungry") );
+			if(hero.heroClass== HeroClass.DM400){
+				GLog.w( Messages.get(this, "ondmhungry") );
+			}else{
+				GLog.w( Messages.get(this, "onhungry") );
+			}
+
 		} else if (oldLevel < STARVING && level >= STARVING){
-			GLog.n( Messages.get(this, "onstarving") );
+			if(hero.heroClass== HeroClass.DM400){
+				GLog.n( Messages.get(this, "ondmstarving") );
+			}else{
+				GLog.n( Messages.get(this, "onstarving") );
+			}
+
 			target.damage( 1, this );
 		}
 
@@ -208,18 +227,37 @@ public class Hunger extends Buff implements Hero.Doom {
 		if (level < HUNGRY) {
 			return BuffIndicator.NONE;
 		} else if (level < STARVING) {
-			return BuffIndicator.HUNGER;
+			if(hero.heroClass== HeroClass.DM400){
+				return BuffIndicator.DMHUNGER;
+			}else{
+				return BuffIndicator.HUNGER;
+			}
+
 		} else {
-			return BuffIndicator.STARVATION;
+			if(hero.heroClass== HeroClass.DM400){
+				return BuffIndicator.DMSTARVATION;
+			}else{
+				return BuffIndicator.STARVATION;
+			}
+
 		}
 	}
 
 	@Override
 	public String name() {
 		if (level < STARVING) {
-			return Messages.get(this, "hungry");
+			if(hero.heroClass== HeroClass.DM400){
+				return Messages.get(this, "dmhungry");
+			}else{
+				return Messages.get(this, "hungry");
+			}
+
 		} else {
-			return Messages.get(this, "starving");
+			if(hero.heroClass== HeroClass.DM400){
+				return Messages.get(this, "dmstarving");
+			}else{
+				return Messages.get(this, "starving");
+			}
 		}
 	}
 
@@ -227,12 +265,27 @@ public class Hunger extends Buff implements Hero.Doom {
 	public String desc() {
 		String result;
 		if (level < STARVING) {
-			result = Messages.get(this, "desc_intro_hungry");
+			if(hero.heroClass== HeroClass.DM400){
+				result = Messages.get(this, "desc_intro_dmhungry");
+			}else{
+				result = Messages.get(this, "desc_intro_hungry");
+			}
+
 		} else {
-			result = Messages.get(this, "desc_intro_starving");
+			if(hero.heroClass== HeroClass.DM400){
+				result = Messages.get(this, "desc_intro_dmstarving");
+			}else{
+				result = Messages.get(this, "desc_intro_starving");
+			}
+
+		}
+		if(hero.heroClass== HeroClass.DM400){
+			result += Messages.get(this, "dmdesc");
+		}else{
+			result += Messages.get(this, "desc");
 		}
 
-		result += Messages.get(this, "desc");
+
 
 		return result;
 	}

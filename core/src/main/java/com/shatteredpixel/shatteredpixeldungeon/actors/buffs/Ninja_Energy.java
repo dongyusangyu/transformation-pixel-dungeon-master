@@ -49,7 +49,6 @@ import java.util.HashMap;
 public class Ninja_Energy extends Buff implements ActionIndicator.Action {
 
     {
-        type = Buff.buffType.POSITIVE;
         revivePersists = true;
     }
     public float energy=5f;

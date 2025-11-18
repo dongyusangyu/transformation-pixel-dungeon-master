@@ -214,6 +214,8 @@ public class GameScene extends PixelScene {
 	{
 		inGameScene = true;
 	}
+
+
 	
 	@Override
 	public void create() {

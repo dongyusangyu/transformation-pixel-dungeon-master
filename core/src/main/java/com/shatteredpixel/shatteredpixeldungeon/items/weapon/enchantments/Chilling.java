@@ -49,7 +49,6 @@ public class Chilling extends Weapon.Enchantment {
 		float procChance = (level+1f)/(level+4f) * procChanceMultiplier(attacker);
 		if (Random.Float() < procChance) {
 			if(hero.hasTalent(Talent.DEEP_FREEZE) && attacker==hero){
-				Buff.affect(defender, Frost.class,3);
 				damage*=6/5;
 			}
 

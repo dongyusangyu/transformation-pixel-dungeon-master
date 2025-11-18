@@ -114,7 +114,7 @@ public class TestMissile extends TestGenerator {
 
     private Class<? extends MissileWeapon> idToMissile(int id) {
         switch (id) {
-            case 0:
+            case 0:default:
                 return Dart.class;
             case 1:
                 return ThrowingStone.class;
@@ -143,7 +143,6 @@ public class TestMissile extends TestGenerator {
             case 13:
                 return HeavyBoomerang.class;
             case 14:
-            default:
                 return Tomahawk.class;
             case 15:
                 return ThrowingHammer.class;
@@ -156,7 +155,7 @@ public class TestMissile extends TestGenerator {
 
     private void buildList() {
         if (missileList.isEmpty()) {
-            for (int i = 0; i <= 17; ++i) {
+            for (int i = 0; i <= 17; i++) {
                 missileList.add(idToMissile(i));
             }
         }
@@ -237,7 +236,7 @@ public class TestMissile extends TestGenerator {
                 IconButton btn = new IconButton() {
                     @Override
                     protected void onClick() {
-                        selected = Math.min(j, 15);
+                        selected = Math.min(j, len-1);
                         super.onClick();
                         updateText();
                     }

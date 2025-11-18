@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -13,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
@@ -86,6 +89,7 @@ public class Blade_Star extends TargetedClericSpell {
                 Char ch = Actor.findChar(i);
                 if (ch != null){
                     affected.add(ch);
+
                 }
             }
         }
@@ -109,12 +113,16 @@ public class Blade_Star extends TargetedClericSpell {
             int dmg = Random.Int(4,9);
             ch.damage(dmg,this);
             Buff.affect(ch,Cripple.class,3);
+            if (ch.isAlive() && hero.subClass== HeroSubClass.PRIEST){
+
+                Buff.affect(ch, GuidingLight.Illuminated.class);
+            }
         }
     }
 
     public String desc(){
-        int area = 1 + 2*Dungeon.hero.pointsInTalent(Talent.BLADE_STAR);
-        return Messages.get(this, "desc", area) + "\n\n" + Messages.get(this, "charge_cost", (int)chargeUse(Dungeon.hero));
+        int area = 1 + 2* hero.pointsInTalent(Talent.BLADE_STAR);
+        return Messages.get(this, "desc", area) + "\n\n" + Messages.get(this, "charge_cost", (int)chargeUse(hero));
     }
 
     public static class Blade_Stair extends Blob {

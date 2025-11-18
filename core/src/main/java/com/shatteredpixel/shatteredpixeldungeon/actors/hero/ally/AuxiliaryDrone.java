@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally;
 
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.newLevel;
 
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -24,6 +25,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -59,16 +62,13 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
     public AuxiliaryDrone(){
         super();
         if(hero!=null){
-            int hpBonus = (int)(hero.HT*0.1f);
+            int hpBonus = (int)(hero.HT*0.33f);
             if (hpBonus > 0){
                 HT += hpBonus;
                 HP += hpBonus;
             }
             defenseSkill = hero.lvl+5;
-            Buff.affect(this, DroneShield.class);
-            Buff.affect(this, DroneFast.class);
         }
-
     }
     @Override
     protected boolean getCloser( int target ) {
@@ -88,6 +88,10 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
 
     @Override
     protected boolean act() {
+        if(buff(DroneFast.class)==null){
+            Buff.affect(this, DroneShield.class);
+            Buff.affect(this, DroneFast.class);
+        }
 
         boolean result = super.act();
         return result;
@@ -129,7 +133,7 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         public ScoutDrone(){
             super();
             if(hero!=null){
-                int hpBonus = (int)(hero.HT*0.15f);
+                int hpBonus = (int)(hero.HT*0.33f);
                 if (hpBonus > 0){
                     HT += hpBonus;
                     HP += hpBonus;
@@ -169,7 +173,7 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         public MirrorDrone(){
             super();
             if(hero!=null){
-                int hpBonus = (int)(hero.HT*0.1f);
+                int hpBonus = (int)(hero.HT*0.33f);
                 if (hpBonus > 0){
                     HT += hpBonus;
                     HP += hpBonus;
@@ -185,7 +189,7 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
             if(result){
                 int lvl = InstructionTool.Drone.getTool();
                 mirrorCooldown++;
-                if(mirrorCooldown > 49-lvl){
+                if(mirrorCooldown > 41-lvl){
                     mirrorCooldown=0;
                     if(hero!=null){
                         ScrollOfMirrorImage.spawnImages(hero,pos,1);
@@ -251,17 +255,21 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         public EscortDrone(){
             super();
             if(hero!=null){
-                int hpBonus = (int)(hero.HT*0.1f);
+                int hpBonus = (int)(hero.HT*0.33f);
                 if (hpBonus > 0){
                     HT += hpBonus;
                     HP += hpBonus;
                 }
                 defenseSkill = hero.lvl+5;
-                Buff.affect(this,DroneEscort.class);
+
             }
         }
         @Override
         protected boolean act() {
+            if(buff(DroneEscort.class)==null){
+                Buff.affect(this,DroneEscort.class);
+            }
+
             boolean result = super.act();
             return result;
         }
@@ -316,10 +324,15 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
             flying = true;
             properties.add(Property.INORGANIC);
         }
+
+        @Override
+        protected boolean canAttack( Char enemy ) {
+            return false;
+        }
         public ChaosDrone(){
             super();
             if(hero!=null){
-                int hpBonus = (int)(hero.HT*0.1f);
+                int hpBonus = (int)(hero.HT*0.33f);
                 if (hpBonus > 0){
                     HT += hpBonus;
                     HP += hpBonus;
@@ -352,9 +365,9 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
             return result;
         }
         public void RollDrone(int pos){
-            InstructionTool.Drone d = null;
-            if(hero!=null && hero.subClass==HeroSubClass.AT400){
-                switch (Random.Int(5)){
+            Mob d = null;
+            if(hero!=null && hero.subClass==HeroSubClass.AU400){
+                switch (Random.Int(8)){
                     case 0: default:
                         d = new AttackDrone.FlashDrone();
                         break;
@@ -370,9 +383,26 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                     case 4:
                         d = new AttackDrone.ShockDrone();
                         break;
+                    case 5:
+                        d = new Sheep();
+                        ((Sheep)d).initialize(50);
+                        break;
+                    case 6:
+                        d = new MirrorImage();
+                        ((MirrorImage)d).duplicate( hero );
+                        break;
+                    case 7:
+                        switch (Random.Int(2)){
+                            case 0:
+                                d = new InstructionTool.Drone();
+                                break;
+                            case 1:
+                                d = Dungeon.level.createMob();
+                                break;
+                        }
                 }
-            }else if(hero!=null && hero.subClass==HeroSubClass.AU400){
-                switch (Random.Int(5)){
+            }else if(hero!=null && hero.subClass==HeroSubClass.AT400){
+                switch (Random.Int(8)){
                     case 0: default:
                         d = new AuxiliaryDrone.ScoutDrone();
                         break;
@@ -388,6 +418,23 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                     case 4:
                         d = new AuxiliaryDrone.MirrorDrone();
                         break;
+                    case 5:
+                        d = new Sheep();
+                        ((Sheep)d).initialize(50);
+                        break;
+                    case 6:
+                        d = new MirrorImage();
+                        ((MirrorImage)d).duplicate( hero );
+                        break;
+                    case 7:
+                        switch (Random.Int(2)){
+                            case 0:
+                                d = new InstructionTool.Drone();
+                                break;
+                            case 1:
+                                d = Dungeon.level.createMob();
+                                break;
+                        }
                 }
             }else{
                 d = new InstructionTool.Drone();
@@ -508,30 +555,31 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
         public int icon() { return BuffIndicator.NONE; }
         @Override
         public boolean act() {
-            if(hero!=null && hero.pointsInTalent(Talent.ASSIST_UPGRADE)>0){
-                left++;
-                //GLog.w("1");
-            }
+
             if(target.isAlive()){
-                if(hero!=null && left>60-hero.pointsInTalent(Talent.ASSIST_UPGRADE)*10 && hero.shielding()<hero.HT/2){
+                if(hero!=null && hero.pointsInTalent(Talent.ASSIST_UPGRADE)>0){
+                    left1++;
+                    //
+                }
+                if(hero!=null && left1>60-hero.pointsInTalent(Talent.ASSIST_UPGRADE)*10 && hero.shielding()<hero.HT/2){
                     Buff.affect(hero, Barrier.class).incShield(4);
-                    left=0;
+                    left1=0;
                 }
             }
             spend(TICK);
             return true;
         }
-        public int left = 0;
-        private static final String LEFT     = "left";
+        public int left1 = 0;
+        private static final String LEFT1     = "left1";
         @Override
         public void storeInBundle(Bundle bundle) {
             super.storeInBundle(bundle);
-            bundle.put(LEFT, left);
+            bundle.put(LEFT1, left1);
         }
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            left = bundle.getInt(LEFT);
+            left1 = bundle.getInt(LEFT1);
         }
     };
 
@@ -540,30 +588,31 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
 
         @Override
         public boolean act() {
-            if(hero!=null && hero.pointsInTalent(Talent.FAST_CRUISE)>0){
-                left++;
 
-            }
             if(target.isAlive()){
-                if(hero!=null && left>90-hero.pointsInTalent(Talent.FAST_CRUISE)*10){
+                if(hero!=null && hero.pointsInTalent(Talent.FAST_CRUISE)>0){
+                    left1++;
+                    //GLog.w("1");
+                }
+                if(hero!=null && left1>90-hero.pointsInTalent(Talent.FAST_CRUISE)*10){
                     Buff.affect(hero, Haste.class,2);
-                    left=0;
+                    left1=0;
                 }
             }
             spend(TICK);
             return true;
         }
-        public int left = 0;
-        private static final String LEFT     = "left";
+        public int left1= 0;
+        private static final String LEFT1     = "left1";
         @Override
         public void storeInBundle(Bundle bundle) {
             super.storeInBundle(bundle);
-            bundle.put(LEFT, left);
+            bundle.put(LEFT1, left1);
         }
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            left = bundle.getInt(LEFT);
+            left1 = bundle.getInt(LEFT1);
         }
     };
 

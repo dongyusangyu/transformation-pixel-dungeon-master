@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.freeman.SalesContract;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ChallengeParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.RatSkull;
@@ -150,6 +151,7 @@ public class Wraith extends Mob {
 				}
 			} else {
 				w = Reflection.newInstance(wraithClass);
+
 			}
 			w.adjustStats( Dungeon.scalingDepth() );
 			w.pos = pos;

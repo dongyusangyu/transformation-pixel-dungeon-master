@@ -21,9 +21,12 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -79,7 +82,11 @@ public class WellFed extends Buff {
 	
 	@Override
 	public int icon() {
-		return BuffIndicator.WELL_FED;
+		if(hero.heroClass== HeroClass.DM400){
+			return BuffIndicator.DMWELL_FED;
+		}else{
+			return BuffIndicator.WELL_FED;
+		}
 	}
 
 	@Override
@@ -96,8 +103,23 @@ public class WellFed extends Buff {
 	@Override
 	public String desc() {
 		int visualLeft = (int)(left / SaltCube.hungerGainMultiplier());
-		return Messages.get(this, "desc", visualLeft + 1);
+		if(hero.heroClass== HeroClass.DM400){
+			return Messages.get(this, "dmdesc", visualLeft + 1);
+		}else{
+			return Messages.get(this, "desc", visualLeft + 1);
+		}
+
 	}
+	@Override
+	public String name() {
+		if(hero.heroClass== HeroClass.DM400){
+			return Messages.get(this, "dmname");
+		}else{
+			return Messages.get(this, "name");
+		}
+
+	}
+
 	
 	private static final String LEFT = "left";
 	

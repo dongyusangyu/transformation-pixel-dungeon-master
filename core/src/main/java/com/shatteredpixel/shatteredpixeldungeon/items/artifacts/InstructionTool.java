@@ -140,7 +140,7 @@ public class InstructionTool extends Artifact {
 
         if (action.equals(AC_MAKE)) {
             ArrayList<Drone> drone = getDroneAlly();
-            if(drone != null && drone.size()+1>charge){
+            if((drone != null && drone.size()+1>charge) || charge<1){
                 GLog.w( Messages.get(InstructionTool.class, "more_drone") );
                 return;
             }else{
@@ -217,7 +217,7 @@ public class InstructionTool extends Artifact {
                     d.directTocell(cell);
                 }
             }
-
+            Sample.INSTANCE.play( Assets.Sounds.INTERCOM,1f );
             return;
         }
         @Override
@@ -236,17 +236,10 @@ public class InstructionTool extends Artifact {
                     InstructionTool.this.charging(1);
                     updateQuickslot();
                 }
-                Sample.INSTANCE.play(Assets.Sounds.SCAN);
+                Sample.INSTANCE.play( Assets.Sounds.RECYCLE,1f );
                 hero.sprite.emitter().burst(EnergyParticle.FACTORY, 10);
                 drone.destroy();
                 drone.sprite.die();
-                /*
-                drone.sprite.die();
-                Actor.remove( drone );
-                drone.sprite.killAndErase();
-                Dungeon.level.mobs.remove(drone);
-
-                 */
             }
             return;
         }
@@ -256,8 +249,9 @@ public class InstructionTool extends Artifact {
         }
     };
 
-    public void createDrone(int chargeUse){
+    public Mob createDrone(int chargeUse,Class s){
         ArrayList<Integer> respawnPoints = new ArrayList<>();
+        Mob mob1 = null;
         for (int i = 0; i < PathFinder.NEIGHBOURS9.length; i++) {
             int p = hero.pos + PathFinder.NEIGHBOURS9[i];
             if (Actor.findChar( p ) == null && !Dungeon.level.solid[p]) {
@@ -266,7 +260,7 @@ public class InstructionTool extends Artifact {
         }
         if(respawnPoints.isEmpty()){
             GLog.w(Messages.get(InstructionTool.class,"less"));
-            return;
+            return mob1;
         }
         charge-=chargeUse;
         //GLog.w(Messages.get(InstructionTool.class,"usecharge",chargeUse-1,chargeUse));
@@ -275,44 +269,7 @@ public class InstructionTool extends Artifact {
         while (spawned < maxSpawned && respawnPoints.size() > 0) {
             int index = Random.index( respawnPoints );
             Mob mob = null;
-            if(scroll==null){
-                mob = new Drone();
-            }else{
-                if(types.containsKey(scroll)){
-                    mob = Reflection.newInstance(types.get(scroll));
-                }else{
-                    mob = new Drone();
-                }
-            }
-            GameScene.add(mob);
-            Drone.appear( mob, respawnPoints.get( index ) );
-            respawnPoints.remove( index );
-            spawned++;
-        }
-        Invisibility.dispel();
-        hero.spendAndNext(Actor.TICK);
-    }
-
-    public void createDrone(int chargeUse,Class s){
-        ArrayList<Integer> respawnPoints = new ArrayList<>();
-        for (int i = 0; i < PathFinder.NEIGHBOURS9.length; i++) {
-            int p = hero.pos + PathFinder.NEIGHBOURS9[i];
-            if (Actor.findChar( p ) == null && !Dungeon.level.solid[p]) {
-                respawnPoints.add( p );
-            }
-        }
-        if(respawnPoints.isEmpty()){
-            GLog.w(Messages.get(InstructionTool.class,"less"));
-            return;
-        }
-        charge-=chargeUse;
-        //GLog.w(Messages.get(InstructionTool.class,"usecharge",chargeUse-1,chargeUse));
-        int spawned = 0;
-        int maxSpawned=1;
-        while (spawned < maxSpawned && respawnPoints.size() > 0) {
-            int index = Random.index( respawnPoints );
-            Mob mob = null;
-            if(scroll==null){
+            if(s==null){
                 mob = new Drone();
             }else{
                 if(types.containsKey(s)){
@@ -322,12 +279,17 @@ public class InstructionTool extends Artifact {
                 }
             }
             GameScene.add(mob);
+            mob1 =mob;
             Drone.appear( mob, respawnPoints.get( index ) );
             respawnPoints.remove( index );
             spawned++;
         }
+
+
+
         Invisibility.dispel();
         hero.spendAndNext(Actor.TICK);
+        return mob1;
     }
 
 
@@ -731,8 +693,6 @@ public class InstructionTool extends Artifact {
             if ((pos == target || oldPos == pos) && sprite.looping()){
                 sprite.idle();
             }
-            Dungeon.level.updateFieldOfView( this, fieldOfView );
-            GameScene.updateFog(pos, 1+(int)Math.ceil(speed()));
             return result;
         }
 
@@ -833,7 +793,8 @@ public class InstructionTool extends Artifact {
 
             }
             //Dungeon.level.updateFieldOfView( this, fieldOfView );
-            GameScene.updateFog(pos, 1+(int)Math.ceil(speed()));
+            //GameScene.updateFog(pos, 1+(int)Math.ceil(speed()));
+            Sample.INSTANCE.play( Assets.Sounds.DRONEDIED,1f );
             super.die(cause);
         }
 
@@ -843,16 +804,6 @@ public class InstructionTool extends Artifact {
             if(hero!=null){
                 speed*=hero.speed();
             }
-            //moves 2 tiles at a time when returning to the hero
-            /*
-            if (state == WANDERING
-                    && defendingPos == -1
-                    && Dungeon.level.distance(pos, hero.pos) > 1){
-                speed *= 2;
-            }
-
-             */
-
             return speed;
         }
 
@@ -873,12 +824,41 @@ public class InstructionTool extends Artifact {
         @Override
         public boolean interact(Char c) {
             if(c instanceof Hero && distance(c)>1){
-                Game.runOnRenderThread(new Callback() {
-                    @Override
-                    public void call() {
-                        GameScene.selectCell(droneDirector2);
-                    }
-                });
+                if(hero.hasTalent(Talent.ALLY_WARP) && Dungeon.level.distance(pos, c.pos) <= 2* hero.pointsInTalent(Talent.ALLY_WARP)){
+                    Game.runOnRenderThread(new Callback() {
+                        @Override
+                        public void call() {
+                            GameScene.show(new WndOptions(new ItemSprite(ItemSpriteSheet.ARTIFACT_TOOL),
+                                    Messages.get(InstructionTool.class, "name"),
+                                    Messages.get(InstructionTool.class, "prompt3"),
+                                    Messages.get(InstructionTool.class, "huanwei"),
+                                    Messages.get(InstructionTool.class, "guide2")){
+                                @Override
+                                protected void onSelect(int index) {
+                                    if (index == 0){
+                                        //((Mob)(Drone.this)).interact(hero);
+                                        Drone.super.interact(hero);
+                                        //GLog.i("2");
+                                    } else if(index == 1){
+                                        Game.runOnRenderThread(new Callback() {
+                                            @Override
+                                            public void call() {
+                                                GameScene.selectCell(droneDirector2);
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }else{
+                    Game.runOnRenderThread(new Callback() {
+                        @Override
+                        public void call() {
+                            GameScene.selectCell(droneDirector2);
+                        }
+                    });
+                }
                 return true;
             }else{
                 return super.interact(c);
@@ -889,6 +869,15 @@ public class InstructionTool extends Artifact {
             public void onSelect(Integer cell) {
                 if (cell == null) return;
                 Drone.this.directTocell(cell);
+                if(Drone.this instanceof AuxiliaryDrone.ChaosDrone){
+                    Sample.INSTANCE.play( Assets.Sounds.CONTROLM,1f);
+                }else if(Drone.this instanceof AuxiliaryDrone){
+                    Sample.INSTANCE.play( Assets.Sounds.CONTROLU ,1f);
+                }else if(Drone.this instanceof AttackDrone){
+                    Sample.INSTANCE.play( Assets.Sounds.CONTROLA ,1f);
+                }else{
+                    Sample.INSTANCE.play( Assets.Sounds.CONTROL ,1f);
+                }
             }
             @Override
             public String prompt() {
@@ -901,7 +890,7 @@ public class InstructionTool extends Artifact {
             ch.sprite.interruptMotion();
 
             if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[ch.pos]){
-                Sample.INSTANCE.play(Assets.Sounds.SCAN);
+                Sample.INSTANCE.play( Assets.Sounds.MANUFACTURING ,1f);
             }
 
             ch.move( pos );
@@ -974,7 +963,7 @@ public class InstructionTool extends Artifact {
                     hero.sprite.operate( hero.pos );
                     hero.busy();
                     hero.spend( 1f );
-                    Sample.INSTANCE.play(Assets.Sounds.BURNING);
+                    Sample.INSTANCE.play(Assets.Sounds.ENTRY,1f);
                     hero.sprite.emitter().burst( ElmoParticle.FACTORY, 12 );
                     upgrade();
                     upgrade();
@@ -1001,7 +990,7 @@ public class InstructionTool extends Artifact {
                     hero.sprite.operate( hero.pos );
                     hero.busy();
                     hero.spend( 1f );
-                    Sample.INSTANCE.play(Assets.Sounds.BURNING);
+                    Sample.INSTANCE.play(Assets.Sounds.ENTRY,1f);
                     hero.sprite.emitter().burst( ElmoParticle.FACTORY, 12 );
                     Talent.onScrollUsed(hero,hero.pos,1,item.getClass());
                     if(!scrolls.contains(item.getClass())){

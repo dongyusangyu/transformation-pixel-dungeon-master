@@ -571,6 +571,64 @@ public class v0_2_X {
         ChangeInfo changes = new ChangeInfo("v0.2.7fix", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+        changes = new ChangeInfo( "v0.2.7fix3", false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.CATALOG), "内容更新",
+                        "_-_ _青铜怀表：_这件饰物通常会使你身上拥有的一切效果的持续时间降低_2/4/6/8回合_。\n"+
+                                "_-_ _卖身契约：_绅士与敌人耗费大量精力，与敌人签订卖身契约，说服敌人为绅士卖命。\n"
+
+
+        ));
+        changes.addButton( new ChangeButton(Icons.get(Icons.DISPLAY), "视觉更新",
+                "_-_ 新增多样饥饿条ui，在界面设置中调整，多数情况下需要重启游戏才能生效\n"+
+                        "_-_ 新增DM-400的饥饿相关改动\n"+
+                        "_-_ 以上均由_DM-216_绘制\n"
+        ));
+
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年11月6日\n"+
+                        "_-_  混沌无人机：将at和au的“一半概率敌人一半概率闪光无人机”中的闪光无人机改为僚机无人机\n"+
+                        "_-_  集群3无法影响盟友\n"+
+                        "_-_  _废弃齿轮_取消中矢效果\n"+
+                        "_-_  同步_破损纹章_换甲可直接贴附的功能\n"+
+                        "_-_  _升华秘卷_文本调整\n"+
+                        "_-_  天赋_极度深寒_去掉实战本就不生效的冻结效果\n"+
+                        "_-_  牧师护甲技能_三位一体_界面调整，其他文本改动，追加新神器的三位一体效果\n"+
+                        "_-_  追加若干法术的祭司圣晖效果\n"+
+                        "_-_  烟雾掩护、暗液钩爪等机制调整\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 天赋_见异思迁_，_法杖回收_，_圣餐真言_，_胃有强酸_，_顷刻炼化_生效异常问题\n"+
+                        "_-_ 护甲技能_狂史日记_生效异常问题\n"+
+                        "_-_ 神器_指令集合工具_充能消耗异常问题\n"+
+                        "_-_ 修复魔杖灌注的显示错误\n"+
+                        "_-_ 试修复返程boss战中十字架复活导致楼层重置问题\n"
+
+        ));
+        changes = new ChangeInfo( "v0.2.7fix2", false, null);
+        changes.hardlight( Window.TITLE_COLOR );
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(HeroSprite.avatar(HeroClass.DM400, 6), "DM-400改动",
+                "_-_ 侦察无人机：生命提升至3+玩家最大生命值33%\n"+
+                        "_-_ 映像无人机：产生镜像所需回合-8（+10工具为30回合一镜像），生命提升至3+玩家最大生命值33%\n"+
+                        "_-_ 护航无人机：生命提升至3+玩家最大生命值33%\n"+
+                        "_-_ 庇佑无人机：给予玩家的护甲加成提升至1~3\n"+
+                        "_-_ 混沌无人机的变化所需时间减少10回合\n"+
+                        "_-_ 混沌无人机会随机变化为另一转职的无人机类型和随机魔法生物\n"
+        ));
+
+
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS), "改动",
+                "_-_  更新日期：2025年10月16日\n"+
+                        "_-_  调整天赋_移形换位_和单独指挥无人机的逻辑\n"+
+                        "_-_  更新无人机相关音频，本音频由_['lefted]_制作\n"
+        ));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),"Bug修复",
+                "_-_ 修复AU-400天赋生效异常问题\n"+
+                        "_-_ 修复无人机视野问题，但是部分情况下存在少量显示错误\n"
+
+        ));
         changes = new ChangeInfo( "v0.2.7fix1", false, null);
         changes.hardlight( Window.TITLE_COLOR );
         changeInfos.add(changes);

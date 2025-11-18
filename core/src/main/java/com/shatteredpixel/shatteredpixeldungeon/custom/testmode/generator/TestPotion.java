@@ -132,6 +132,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfFear;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfFlock;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfShock;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ChaoticCenser;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.DimensionalSundial;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ExoticCrystals;
@@ -567,6 +568,7 @@ public class TestPotion extends TestGenerator {
             case 15: return ChaoticCenser.class;
             case 16: return GoldIngot.class;
             case 17: return FerretTuft.class;
+            case 18: return BronzeWatch.class;
 
         }
     }
@@ -589,7 +591,7 @@ public class TestPotion extends TestGenerator {
         if(cate == 10) return 10;
         if(cate == 11) return 13;
         if(cate == 12) return 9;
-        if(cate == 13) return 17;
+        if(cate == 13) return 18;
         if(cate == 14) return 5;
         return 11;
     }

@@ -120,6 +120,10 @@ public class MobPlacer extends TestItem {
         eliteBuffs.add(ChampionEnemy.Giant.class);
         eliteBuffs.add(ChampionEnemy.Growing.class);
         eliteBuffs.add(ChampionEnemy.Projecting.class);
+        eliteBuffs.add(ChampionEnemy.Corrosion.class);
+        eliteBuffs.add(ChampionEnemy.Haste.class);
+        eliteBuffs.add(ChampionEnemy.Holy.class);
+        eliteBuffs.add(ChampionEnemy.Transform.class);
     };
 
     @Override
@@ -145,6 +149,9 @@ public class MobPlacer extends TestItem {
                                 if(m instanceof Statue) {
                                     ((Statue)m).createWeapon(false);
                                 }
+                                    if(m instanceof Wraith) {
+                                    ((Wraith)m).adjustStats(Dungeon.scalingDepth());
+                                }
                                 if (m instanceof Mimic) {
                                     ((Mimic)m).items = null;
                                     ((Mimic)m).setLevel(Dungeon.depth);
@@ -155,7 +162,7 @@ public class MobPlacer extends TestItem {
                                 }
                                 GameScene.add(m);
                                 if(elite_op>0){
-                                    for(int i=0;i<6;++i){
+                                    for(int i=0;i<10;++i){
                                         if((elite_op & (1<<i))>0){
                                             Buff.affect(m, eliteBuffs.get(i));
                                         }
@@ -309,7 +316,7 @@ public class MobPlacer extends TestItem {
 
  */
             float pos = 92;
-            for(int i=0;i<6;++i){
+            for(int i=0;i<10;++i){
                 CheckBox cb = new CheckBox(M.L(MobPlacer.class, "elite_name"+Integer.toString(i)));
                 cb.active = true;
                 cb.checked((elite_op & (1<<i))>0);
@@ -331,7 +338,7 @@ public class MobPlacer extends TestItem {
 
         private void updateEliteSettings(){
             int el = 0;
-            for(int i=0;i<6;++i){
+            for(int i=0;i<10;++i){
                 el += eliteOptions.get(i).checked() ? (1<<i) : 0;
             }
             elite_op = el;
@@ -358,7 +365,7 @@ public class MobPlacer extends TestItem {
             selectedPage.setPos((WIDTH - selectedPage.width())/2, 5);
             selectedMob.maxWidth(WIDTH);
             selectedMob.setPos((WIDTH - selectedMob.width())/2, 80);
-            resize(WIDTH, (int)eliteOptions.get(5).bottom() + 1);
+            resize(WIDTH, (int)eliteOptions.get(9).bottom() + 1);
         }
 
         private void createMobImage() {

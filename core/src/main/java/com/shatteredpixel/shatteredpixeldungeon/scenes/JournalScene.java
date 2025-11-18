@@ -116,7 +116,7 @@ public class JournalScene extends PixelScene {
 						panel.y + panel.marginTop(),
 						panel.width() - panel.marginHor(),
 						panel.height() - panel.marginVer());
-				catalog.updateList();
+				catalog.updateList(true);
 				break;
 			case 2:
 				WndJournal.GuideTab guidebook = new WndJournal.GuideTab();

@@ -479,6 +479,9 @@ public class GreatShoper extends Mob {
     }
 
     public  static class GoldCurse extends Buff {
+        {
+            revivePersists = true;
+        }
 
         @Override
         public int icon() {

@@ -125,7 +125,7 @@ public class ElementalStrike extends ArmorAbility {
 		effectTypes.put(Corrupting.class,   MagicMissile.SHADOW_CONE);
 		effectTypes.put(Grim.class,         MagicMissile.SHADOW_CONE);
 		effectTypes.put(Vampiric.class,     MagicMissile.BLOOD_CONE);
-		effectTypes.put(Sweeping.class,     MagicMissile.PURPLE_CONE);
+		effectTypes.put(Sweeping.class,     MagicMissile.MAGIC_MISS_CONE);
 
 		effectTypes.put(Annoying.class,     MagicMissile.SHADOW_CONE);
 		effectTypes.put(Displacing.class,   MagicMissile.SHADOW_CONE);
@@ -230,7 +230,14 @@ public class ElementalStrike extends ArmorAbility {
 				perCharEffect(cone, hero, enemy, finalEnchantment);
 
 				Invisibility.dispel();
-				hero.spendAndNext(hero.attackDelay());
+				if (reactivate) {
+					reactivate = false;
+					activate(armor,hero,target);
+					armor.charge += chargeUse(hero);
+				}else{
+					hero.spendAndNext(hero.attackDelay());
+				}
+
 			}
 		});
 
@@ -579,9 +586,7 @@ public class ElementalStrike extends ArmorAbility {
 			for (Char ch : affected) {
 				ch.damage(Math.round(powerMulti * Hero.heroDamageIntRange(6, 12)), ench);
 
-				if (!ch.isAlive()) {
-					reactivate = true;
-				}
+
 			}
 		}
 

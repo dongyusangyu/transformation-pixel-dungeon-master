@@ -71,6 +71,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbili
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Routine;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Feint;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.freeman.SalesContract;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.ClericSpell;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
@@ -321,6 +322,13 @@ public abstract class Mob extends Char {
 		if(enemy == hero && hero.pointsNegative(Talent.DISASTER_CURSE)> Random.Int(4)){
 			Buff.affect(enemy, Slow.class,1);
 			Buff.affect(enemy, Weakness.class,1);
+		}
+		if(buff(SalesContract.SaleSelf.class)!=null && hero!=null && hero.hasTalent(Talent.PRIM_ACCU)){
+			int quantity = hero.pointsInTalent(Talent.PRIM_ACCU)*10;
+			Dungeon.gold+= quantity;
+			Statistics.goldCollected += quantity;
+			Badges.validateGoldCollected();
+			hero.sprite.showStatusWithIcon( CharSprite.NEUTRAL, Integer.toString(quantity), FloatingText.GOLD );
 		}
 		return damage;
 	}
@@ -1007,6 +1015,10 @@ public abstract class Mob extends Char {
 		if(hero.pointsInTalent(Talent.ZHUOJUN_BUTCHER)>Random.Int(10) && this.properties().isEmpty() && (!(this instanceof NPC) && hero.lvl <= mlvl + 2)){
 			Dungeon.level.drop(new MysteryMeat(),pos).sprite.drop(pos);
 		}
+		if(hero.hasTalent(Talent.INSTANT_REFINING) && hero.pointsInTalent(Talent.INSTANT_REFINING)+1>Random.Int(5) && (!(this instanceof NPC) && hero.lvl <= mlvl + 2)){
+			Dungeon.energy+=1;
+			hero.sprite.showStatusWithIcon( 0x44CCFF, Integer.toString(1), FloatingText.ENERGY );
+		}
 		if (hero.isAlive() && !Dungeon.level.heroFOV[pos] ) {
 			GLog.i( Messages.get(this, "died") );
 			if(hero.hasTalent(Talent.POWERFUL_CALCULATIONS)){
@@ -1016,6 +1028,7 @@ public abstract class Mob extends Char {
 		}
 		Talent.onMobDie(this,cause);
 		boolean soulMarked = buff(SoulMark.class) != null;
+		boolean saleself = buff(SalesContract.SaleSelf.class) != null;
 
 
 		super.die( cause );
@@ -1025,6 +1038,35 @@ public abstract class Mob extends Char {
 			Wraith w = Wraith.spawnAt(pos, Wraith.class);
 			if (w != null) {
 				Buff.affect(w, Corruption.class);
+				if (Dungeon.level.heroFOV[pos]) {
+					CellEmitter.get(pos).burst(ShadowParticle.CURSE, 6);
+					Sample.INSTANCE.play(Assets.Sounds.CURSED);
+				}
+			}
+		}
+		if (hero!=null && hero.hasTalent(Talent.SOUL_CONTRACT) && !(this instanceof SalesContract.WorkerWraith)
+		&& saleself){
+
+			Wraith w = SalesContract.WorkerWraith.spawnAt(pos, SalesContract.WorkerWraith.class);
+			if (w != null) {
+				Dungeon.gold+= 100;
+				Statistics.goldCollected += 100;
+				Badges.validateGoldCollected();
+				hero.sprite.showStatusWithIcon( CharSprite.NEUTRAL, Integer.toString(100), FloatingText.GOLD );
+				if (hero.pointsInTalent(Talent.SOUL_CONTRACT)>1){
+					Buff.affect(w, SalesContract.SaleSelf.class);
+				}else{
+					Buff.affect(w, Corruption.class);
+				}
+				if (hero.pointsInTalent(Talent.SOUL_CONTRACT)>2){
+					ChampionEnemy.rollGiveChampion(w);
+				}
+				if (hero.pointsInTalent(Talent.SOUL_CONTRACT)>3){
+					w.HT=this.HT;
+					w.HP=w.HT;
+				}
+
+
 				if (Dungeon.level.heroFOV[pos]) {
 					CellEmitter.get(pos).burst(ShadowParticle.CURSE, 6);
 					Sample.INSTANCE.play(Assets.Sounds.CURSED);
@@ -1293,7 +1335,7 @@ public abstract class Mob extends Char {
 				}
 				for (Mob mob : Dungeon.level.mobs) {
 					if (mob.paralysed <= 0
-							&& Dungeon.level.distance(pos, mob.pos) <= distance
+							&& Dungeon.level.distance(pos, mob.pos) <= distance && mob.alignment != Char.Alignment.ALLY
 							&& mob.state != mob.HUNTING && !(hero.hasTalent(Talent.NO_MORE_MOB) && Random.Int(2)==1)) {
 						if(hero.pointsInTalent(Talent.NO_MORE_MOB)>1){
 							state = WANDERING;

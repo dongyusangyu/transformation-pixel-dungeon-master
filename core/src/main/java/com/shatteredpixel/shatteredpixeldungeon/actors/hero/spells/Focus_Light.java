@@ -76,6 +76,9 @@ public class Focus_Light extends TargetedClericSpell {
                 if (ch != null) {
                     ch.damage(Random.NormalIntRange(2+2*hero.pointsInTalent(Talent.FOCUS_LIGHT), 6+2*hero.pointsInTalent(Talent.FOCUS_LIGHT)), new WandOfMagicMissile());
                     Sample.INSTANCE.play( Assets.Sounds.BURNING );
+                    if (ch.isAlive() && hero.subClass== HeroSubClass.PRIEST){
+                        Buff.affect(ch, GuidingLight.Illuminated.class);
+                    }
 
                 } else {
                     Dungeon.level.pressCell(aim.collisionPos);

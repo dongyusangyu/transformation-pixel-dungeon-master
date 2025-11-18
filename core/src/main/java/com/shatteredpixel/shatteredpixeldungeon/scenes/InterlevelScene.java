@@ -741,7 +741,7 @@ public class InterlevelScene extends PixelScene {
 		Mob.holdAllies( Dungeon.level );
 
 		Level level;
-		if (Dungeon.level.locked) {
+		if (Dungeon.level.locked && !(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1])) {
 			ArrayList<Item> preservedItems = Dungeon.level.getItemsToPreserveFromSealedResurrect();
 
 			Dungeon.hero.resurrect();
@@ -766,7 +766,12 @@ public class InterlevelScene extends PixelScene {
 			int invPos = Dungeon.hero.pos;
 			int tries = 0;
 			do {
-				Dungeon.hero.pos = level.randomRespawnCell(Dungeon.hero);
+				if(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1]){
+
+				}else{
+					Dungeon.hero.pos = level.randomRespawnCell(Dungeon.hero);
+				}
+
 				tries++;
 
 			//prevents spawning on traps or plants, prefers farther locations first
@@ -779,6 +784,9 @@ public class InterlevelScene extends PixelScene {
 				level.map[Dungeon.hero.pos] = Terrain.GRASS;
 			}
 			Dungeon.hero.resurrect();
+			if(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1]){
+				Dungeon.hero.HP=1;
+			}
 			level.drop(new LostBackpack(), invPos);
 		}
 

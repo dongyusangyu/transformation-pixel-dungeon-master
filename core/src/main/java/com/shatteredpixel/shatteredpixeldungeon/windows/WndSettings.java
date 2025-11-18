@@ -23,8 +23,16 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -32,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.services.news.News;
 import com.shatteredpixel.shatteredpixeldungeon.services.updates.Updates;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
@@ -229,6 +238,7 @@ public class WndSettings extends WndTabbed {
 		OptionSlider optFollowIntensity;
 		OptionSlider optScreenShake;
 
+
 		@Override
 		protected void createChildren() {
 			title = PixelScene.renderTextBlock(Messages.get(this, "title"), 9);
@@ -346,6 +356,7 @@ public class WndSettings extends WndTabbed {
 			optScreenShake.setSelectedValue(SPDSettings.screenShake());
 			add(optScreenShake);
 
+
 		}
 
 		@Override
@@ -393,12 +404,14 @@ public class WndSettings extends WndTabbed {
 
 				optFollowIntensity.setRect(0, optVisGrid.bottom() + GAP, width/2-GAP/2, SLIDER_HEIGHT);
 				optScreenShake.setRect(optFollowIntensity.right() + GAP, optFollowIntensity.top(), width/2-GAP/2, SLIDER_HEIGHT);
+
 			} else {
 				optBrightness.setRect(0, bottom + GAP, width, SLIDER_HEIGHT);
 				optVisGrid.setRect(0, optBrightness.bottom() + GAP, width, SLIDER_HEIGHT);
 
 				optFollowIntensity.setRect(0, optVisGrid.bottom() + GAP, width, SLIDER_HEIGHT);
 				optScreenShake.setRect(0, optFollowIntensity.bottom() + GAP, width, SLIDER_HEIGHT);
+
 			}
 
 			height = optScreenShake.bottom();
@@ -418,6 +431,7 @@ public class WndSettings extends WndTabbed {
 		ColorBlock sep2;
 		CheckBox chkFont;
 		CheckBox chkVibrate;
+		RedButton optScreenHunger;
 
 		@Override
 		protected void createChildren() {
@@ -651,6 +665,29 @@ public class WndSettings extends WndTabbed {
 				chkVibrate.checked(SPDSettings.vibration());
 			}
 			add(chkVibrate);
+			optScreenHunger = new RedButton(Messages.get(this, "hunger")) {
+				@Override
+				protected void onClick() {
+					ShatteredPixelDungeon.scene().addToFront(new WndOptions(Messages.get(WndSettings.UITab.class, "hunger_prompt"),
+							Messages.get(WndSettings.UITab.class, "hunger_warning"),
+							Messages.get(WndSettings.UITab.class, "tpd"),
+							Messages.get(WndSettings.UITab.class, "tpd1"),
+							Messages.get(WndSettings.UITab.class, "tpd2"),
+							Messages.get(WndSettings.UITab.class, "mc"),
+							Messages.get(WndSettings.UITab.class, "energy")){
+						@Override
+						protected void onSelect(int index) {
+							SPDSettings.hunger(index);
+
+						}
+						@Override
+						public void onBackPressed() {
+							super.onBackPressed();
+						}
+					});
+				}
+			};
+			add(optScreenHunger);
 		}
 
 		@Override
@@ -684,9 +721,10 @@ public class WndSettings extends WndTabbed {
 				chkFlipTags.setRect(0, height + GAP, width, BTN_HEIGHT);
 				height = chkFlipTags.bottom();
 			}
+			optScreenHunger.setRect(0, height + GAP, width, BTN_HEIGHT);
 
 			sep2.size(width, 1);
-			sep2.y = height + GAP;
+			sep2.y = optScreenHunger.bottom() + GAP;
 
 			if (width > 200) {
 				chkFont.setRect(0, sep2.y + 1 + GAP, width/2-1, BTN_HEIGHT);
@@ -698,6 +736,7 @@ public class WndSettings extends WndTabbed {
 				chkVibrate.setRect(0, chkFont.bottom() + GAP, width, BTN_HEIGHT);
 				height = chkVibrate.bottom();
 			}
+
 		}
 
 	}

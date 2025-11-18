@@ -44,7 +44,7 @@ public class Discharge_Gas extends ArmorAbility {
     protected void activate(ClassArmor armor, Hero hero, Integer target) {
 
         for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
-            if (mob.alignment != Char.Alignment.ALLY && Dungeon.level.heroFOV[mob.pos]) {
+            if (mob.alignment == Char.Alignment.ENEMY && Dungeon.level.heroFOV[mob.pos]) {
                 MagicMissile.boltFromChar(hero.sprite.parent,
                         MagicMissile.SPECK + Speck.TOXIC,
                         hero.sprite,

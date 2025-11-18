@@ -172,6 +172,7 @@ public class HeroIcon extends Image {
 	public static final int ROUTINE = 194;
 	public static final int DM400GAS = 195;
 	public static final int HONEYCOMB = 196;
+	public static final int SALESCONTRACT = 197;
 
 
 

@@ -27,6 +27,9 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
 public class LockedFloor extends Buff {
+	{
+		revivePersists = true;
+	}
 
 	//the amount of turns remaining before beneficial passive effects turn off
 	//starts at 50 turns normally, 20 with badder bosses

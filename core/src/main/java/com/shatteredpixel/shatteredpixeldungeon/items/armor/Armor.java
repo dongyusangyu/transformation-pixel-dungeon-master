@@ -75,10 +75,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
@@ -267,7 +269,38 @@ public class Armor extends EquipableItem {
 			((HeroSprite)hero.sprite).updateArmor();
 			activate(hero);
 			Talent.onItemEquipped(hero, this);
-			hero.spendAndNext( timeToEquip( hero ) );
+			hero.spend( timeToEquip( hero ) );
+
+			if (Dungeon.hero.heroClass == HeroClass.WARRIOR && checkSeal() == null){
+				BrokenSeal seal = oldArmor != null ? oldArmor.checkSeal() : null;
+				if (seal != null && (!cursed || (seal.getGlyph() != null && seal.getGlyph().curse()))){
+
+					GameScene.show(new WndOptions(new ItemSprite(ItemSpriteSheet.SEAL),
+							Messages.titleCase(seal.title()),
+							Messages.get(Armor.class, "seal_transfer"),
+							Messages.get(Armor.class, "seal_transfer_yes"),
+							Messages.get(Armor.class, "seal_transfer_no")){
+						@Override
+						protected void onSelect(int index) {
+							super.onSelect(index);
+							if (index == 0){
+								seal.affixToArmor(Armor.this, oldArmor);
+								updateQuickslot();
+							}
+							super.hide();
+						}
+
+						@Override
+						public void hide() {
+							//do nothing, must press button
+						}
+					});
+				} else {
+					hero.next();
+				}
+			} else {
+				hero.next();
+			}
 			return true;
 			
 		} else {
@@ -360,6 +393,31 @@ public class Armor extends EquipableItem {
 				return max;
 			}
 
+		}
+	}
+
+	public BrokenSeal detachSeal(){
+		if (seal != null){
+
+			if (isEquipped(Dungeon.hero)) {
+				BrokenSeal.WarriorShield sealBuff = Dungeon.hero.buff(BrokenSeal.WarriorShield.class);
+				if (sealBuff != null) sealBuff.setArmor(null);
+			}
+
+			BrokenSeal detaching = seal;
+			seal = null;
+
+			if (detaching.level() > 0){
+				degrade();
+			}
+			if (detaching.canTransferGlyph()){
+				inscribe(null);
+			} else {
+				detaching.setGlyph(null);
+			}
+			return detaching;
+		} else {
+			return null;
 		}
 	}
 

@@ -90,7 +90,7 @@ public class ScrollOfSublimation extends Item{
 
     @Override
     public String title() {
-        return super.title()+":"+getBoss(this.type);
+        return super.title()+"："+getBoss(this.type);
     }
 
 
@@ -110,7 +110,7 @@ public class ScrollOfSublimation extends Item{
                 name="天狗";
                 break;
             case "DM300":
-                name="DM300";
+                name="DM-300";
                 break;
             case "DWARFKING":
                 name="矮人国王";

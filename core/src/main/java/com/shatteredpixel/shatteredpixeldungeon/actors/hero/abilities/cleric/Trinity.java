@@ -56,6 +56,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourg
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
@@ -67,16 +68,22 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWea
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
+import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingGridPane;
+import com.shatteredpixel.shatteredpixeldungeon.ui.TalentIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
@@ -84,6 +91,7 @@ import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 public class Trinity extends ArmorAbility {
 
@@ -119,9 +127,11 @@ public class Trinity extends ArmorAbility {
 		public WndUseTrinity(ClassArmor armor) {
 			super(new HeroIcon(Trinity.this),
 					Messages.titleCase(Trinity.this.name()),
-					Messages.get(WndUseTrinity.class, "text"), WIDTH_MIN);
+					Messages.get(WndUseTrinity.class, "text"));
 
 			int top = height;
+
+			ArrayList<Component> toAdd = new ArrayList<>();
 
 			if (bodyForm != null){
 				RedButton btnBody = null;
@@ -200,8 +210,7 @@ public class Trinity extends ArmorAbility {
 				btnBody.multiline = true;
 				btnBody.setSize(width, 100); //for text layout
 				btnBody.setRect(0, top + 2, width, btnBody.reqHeight());
-				add(btnBody);
-				//addToBottom(btnBody);
+				toAdd.add(btnBody);
 				top = (int)btnBody.bottom();
 
 				btnBody.enable(hero.buff(MagicImmune.class) == null && armor.charge >= trinityChargeUsePerEffect(bodyForm.getClass()));
@@ -230,7 +239,7 @@ public class Trinity extends ArmorAbility {
 				btnMind.multiline = true;
 				btnMind.setSize(width, 100); //for text layout
 				btnMind.setRect(0, top + 2, width, btnMind.reqHeight());
-				add(btnMind);
+				toAdd.add(btnMind);
 				top = (int)btnMind.bottom();
 
 				btnMind.enable(armor.charge >= trinityChargeUsePerEffect(mindForm.getClass()));
@@ -278,12 +287,12 @@ public class Trinity extends ArmorAbility {
 				btnSpirit.multiline = true;
 				btnSpirit.setSize(width, 100); //for text layout
 				btnSpirit.setRect(0, top + 2, width, btnSpirit.reqHeight());
-				add(btnSpirit);
+				toAdd.add(btnSpirit);
 				top = (int)btnSpirit.bottom();
 
 				btnSpirit.enable(hero.buff(MagicImmune.class) == null && armor.charge >= trinityChargeUsePerEffect(spiritForm.getClass()));
 			}
-
+			addToBottom(toAdd.toArray(new Component[0]));
 			resize(width, top);
 
 		}
@@ -320,11 +329,35 @@ public class Trinity extends ArmorAbility {
 		return new Talent[]{Talent.BODY_FORM, Talent.MIND_FORM, Talent.SPIRIT_FORM, Talent.HEROIC_ENERGY};
 	}
 
-	public static class WndItemtypeSelect extends WndTitledMessage {
+	public static class WndItemtypeSelect extends Window {
+		private static final int WIDTH		= 100;
+		private static final int TTL_HEIGHT = 16;
+		private static final int BUTTON_HEIGHT = 20;
+		private static final int GAP        = 1;
+		protected static final int MARGIN 		= 2;
+		protected static final int BUTTON_WIDTH	= 20;
 
 		//probably want a callback here?
 		public WndItemtypeSelect(HolyTome tome, ClericSpell spell) {
-			super(new HeroIcon(spell), Messages.titleCase(spell.name()), Messages.get(WndItemtypeSelect.class, "text"), WIDTH_MIN);
+			super();
+			float pos = 0;
+
+			IconTitle tfTitle = new IconTitle(new HeroIcon(spell), Messages.titleCase(spell.name()));
+			tfTitle.setRect(0, pos, WIDTH, 0);
+			add(tfTitle);
+
+			pos = tfTitle.bottom() + 2*MARGIN;
+
+			RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
+			tfMesage.text(Messages.get(WndItemtypeSelect.class, "text"), WIDTH);
+			tfMesage.setPos( 0, pos );
+			add( tfMesage );
+
+
+			pos = tfMesage.bottom() + 2*MARGIN;
+			resize( WIDTH, (int)pos+110);
+			float x = 0;
+
 
 			//start by filtering and sorting
 			ArrayList<Class<?>> discoveredClasses = new ArrayList<>();
@@ -405,9 +438,13 @@ public class Trinity extends ArmorAbility {
 				}
 			}
 
-			int top = height + 20;
-			int left = 0;
 
+			int left = 0;
+			ScrollingGridPane pane = new ScrollingGridPane();
+			add(pane);
+			pane.setRect(0, pos,width,80);
+			Component content = pane.content();
+			int top = 2;
 			for (Item item : options){
 				ItemButton btn = new ItemButton(){
 					@Override
@@ -415,10 +452,15 @@ public class Trinity extends ArmorAbility {
 						GameScene.show(new WndItemConfirm(WndItemtypeSelect.this, item, tome, spell));
 					}
 				};
+
 				btn.item(item);
 				btn.slot().textVisible(false);
+				//btn.setRect(left, top, 19, 19);
+				//add(btn);
 				btn.setRect(left, top, 19, 19);
-				add(btn);
+				content.add(btn);
+
+
 
 				left += 20;
 				if (left >= width - 19){
@@ -432,7 +474,8 @@ public class Trinity extends ArmorAbility {
 				left = 0;
 			}
 
-			resize(width, top);
+			content.setRect(0,0,width, top+20);
+			pane.update();
 
 		}
 
@@ -475,7 +518,7 @@ public class Trinity extends ArmorAbility {
 				}
 			};
 			btnConfirm.setRect(0, height+2, width, 16);
-			add(btnConfirm);
+			addToBottom(btnConfirm);
 
 			resize(width, (int)btnConfirm.bottom());
 

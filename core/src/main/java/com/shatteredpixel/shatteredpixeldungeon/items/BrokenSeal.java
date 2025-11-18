@@ -159,6 +159,8 @@ public class BrokenSeal extends Item {
 
 						if (outgoing == BrokenSeal.this) {
 							detach(Dungeon.hero.belongings.backpack);
+						} else if (outgoing instanceof Armor){
+							((Armor) outgoing).detachSeal();
 						}
 
 						if (index == 0) setGlyph(null);
@@ -180,6 +182,8 @@ public class BrokenSeal extends Item {
 			} else {
 				if (outgoing == this) {
 					detach(Dungeon.hero.belongings.backpack);
+				} else if (outgoing instanceof Armor){
+					((Armor) outgoing).detachSeal();
 				}
 
 				GLog.p(Messages.get(BrokenSeal.class, "affix"));

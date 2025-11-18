@@ -31,6 +31,7 @@ public class DamageGear  extends MissileWeapon{
 
         tier = 1;
         baseUses = 5;
+        sticky = false;
     }
 
 

@@ -21,15 +21,18 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene.landscape;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CircleArc;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -53,7 +56,7 @@ import com.watabou.utils.GameMath;
 public class StatusPane extends Component {
 
 	private NinePatch bg;
-	private Image hungerbg;
+	public Image hungerbg;
 	private Image hunger;
 	private Image avatar;
 	private Button heroInfo;
@@ -85,9 +88,24 @@ public class StatusPane extends Component {
 
 	private static String asset = Assets.Interfaces.STATUS;
 
-	private static String hunger_bar = Assets.Interfaces.HUNGER_BAR;
+	private static String hunger_bar = getHungerBar(SPDSettings.hunger());
 
 	private boolean large;
+
+	public static String getHungerBar(int index){
+		switch(index){
+			case 0: default:
+				return Assets.Interfaces.HUNGER_BAR;
+			case 1:
+				return Assets.Interfaces.HUNGER_TPD1;
+			case 2:
+				return Assets.Interfaces.HUNGER_TPD2;
+			case 3:
+				return Assets.Interfaces.HUNGER_MC;
+			case 4:
+				return Assets.Interfaces.HUNGER_ENERGY;
+		}
+	}
 
 	public StatusPane( boolean large ){
 		super();
@@ -105,7 +123,7 @@ public class StatusPane extends Component {
 		heroInfo = new Button(){
 			@Override
 			protected void onClick () {
-				Camera.main.panTo( Dungeon.hero.sprite.center(), 5f );
+				Camera.main.panTo( hero.sprite.center(), 5f );
 				GameScene.show( new WndHero() );
 			}
 			
@@ -121,7 +139,7 @@ public class StatusPane extends Component {
 		};
 		add(heroInfo);
 
-		avatar = HeroSprite.avatar( Dungeon.hero );
+		avatar = HeroSprite.avatar( hero );
 		add( avatar );
 
 		talentBlink = 0;
@@ -142,6 +160,7 @@ public class StatusPane extends Component {
 		if (large)  hp = new Image(asset, 0, 103, 128, 9);
 		else        hp = new Image(asset, 0, 36, 50, 4);
 		add( hp );
+
 		if (large)  hungerbg = new Image(hunger_bar, 27, 0, 9, 81);
 		else        hungerbg = new Image(hunger_bar, 9, 0, 9, 81);
 		add( hungerbg );
@@ -158,7 +177,7 @@ public class StatusPane extends Component {
 		heroInfoOnBar = new Button(){
 			@Override
 			protected void onClick () {
-				Camera.main.panTo( Dungeon.hero.sprite.center(), 5f );
+				Camera.main.panTo( hero.sprite.center(), 5f );
 				GameScene.show( new WndHero() );
 			}
 		};
@@ -179,7 +198,7 @@ public class StatusPane extends Component {
 		level.hardlight( 0xFFFFAA );
 		add( level );
 
-		buffs = new BuffIndicator( Dungeon.hero, large );
+		buffs = new BuffIndicator( hero, large );
 		add( buffs );
 
 		busy = new BusyIndicator();
@@ -276,17 +295,17 @@ public class StatusPane extends Component {
 	public void update() {
 		super.update();
 		
-		int health = Dungeon.hero.HP;
-		int shield = Dungeon.hero.shielding();
-		int max = Dungeon.hero.HT;
-		Hunger hunger2=Dungeon.hero.buff(Hunger.class);
+		int health = hero.HP;
+		int shield = hero.shielding();
+		int max = hero.HT;
+		Hunger hunger2= hero.buff(Hunger.class);
 		float hunger_float=0;
 		if(hunger2!=null){
 			hunger_float = 450-hunger2.level;
 		}
 
 
-		if (!Dungeon.hero.isAlive()) {
+		if (!hero.isAlive()) {
 			avatar.tint(0x000000, 0.5f);
 		} else if ((health/(float)max) <= 0.3f) {
 			warning += Game.elapsed * 5f *(0.4f - (health/(float)max));
@@ -322,12 +341,12 @@ public class StatusPane extends Component {
 		}
 
 		if (large) {
-			exp.scale.x = (128 / exp.width) * Dungeon.hero.exp / Dungeon.hero.maxExp();
+			exp.scale.x = (128 / exp.width) * hero.exp / hero.maxExp();
 
 			hpText.measure();
 			hpText.x = hp.x + (128 - hpText.width())/2f;
 
-			expText.text(Dungeon.hero.exp + "/" + Dungeon.hero.maxExp());
+			expText.text(hero.exp + "/" + hero.maxExp());
 			expText.measure();
 			expText.x = hp.x + (128 - expText.width())/2f;
 
@@ -337,20 +356,20 @@ public class StatusPane extends Component {
 			hunger.frame(0,0,9,(int)(Math.ceil(81*hunger_float/450)));
 
 		}else {
-			exp.scale.x = (width / exp.width) * Dungeon.hero.exp / Dungeon.hero.maxExp();
+			exp.scale.x = (width / exp.width) * hero.exp / hero.maxExp();
 			//int locate=(int)(Math.round(81-81*hunger_float/450));
 			//hunger.frame(0,0,9,(int)(Math.ceil(81*hunger_float/450)));
 			//hunger.y=115+locate;
 			hunger.frame(0,0,9,(int)(Math.ceil(81*hunger_float/450)));
 		}
 
-		if (Dungeon.hero.lvl != lastLvl) {
+		if (hero.lvl != lastLvl) {
 
 			if (lastLvl != -1) {
 				showStarParticles();
 			}
 
-			lastLvl = Dungeon.hero.lvl;
+			lastLvl = hero.lvl;
 
 			if (large){
 				level.text( "lv. " + lastLvl );
@@ -366,17 +385,17 @@ public class StatusPane extends Component {
 			PixelScene.align(level);
 		}
 
-		int tier = Dungeon.hero.tier();
+		int tier = hero.tier();
 		if (tier != lastTier) {
 			lastTier = tier;
-			avatar.copy( HeroSprite.avatar( Dungeon.hero ) );
+			avatar.copy( HeroSprite.avatar( hero ) );
 		}
 
 		counter.setSweep((1f - Actor.now()%1f)%1f);
 	}
 
 	public void updateAvatar(){
-		avatar.copy( HeroSprite.avatar( Dungeon.hero ) );
+		avatar.copy( HeroSprite.avatar( hero ) );
 	}
 
 	public void alpha( float value ){

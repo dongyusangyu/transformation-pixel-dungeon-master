@@ -165,6 +165,11 @@ public class BuffIndicator extends Component {
 	public  static  final  int WEAKMARK=104;
 	public  static  final  int OVERLOAD=105;
 	public  static  final  int HONEYCOMB=106;
+	public  static  final  int DMHUNGER=107;
+	public  static  final  int DMSTARVATION=108;
+	public  static  final  int DMWELL_FED=109;
+
+	public  static  final  int SALESELF=110;
 
 
 

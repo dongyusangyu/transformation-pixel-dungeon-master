@@ -2,9 +2,11 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.StrengthSetting;
+import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.EnergyCrystal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
+import com.shatteredpixel.shatteredpixeldungeon.items.KingsCrown;
 import com.shatteredpixel.shatteredpixeldungeon.items.TengusMask;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.PlateArmor;
@@ -99,7 +101,8 @@ public class LazyTest extends TestGenerator {
             new ScrollOfTerror().quantity(100).identify().collect();
             new ScrollOfTransmutation().quantity(100).identify().collect();
             new ScrollOfUpgrade().quantity(100).identify().collect();
-
+            new KingsCrown().collect();
+            new Amulet().collect();
             PlateArmor plateArmor = new PlateArmor();
             plateArmor.level(15);
             plateArmor.identify().collect();

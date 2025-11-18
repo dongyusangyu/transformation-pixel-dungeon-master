@@ -164,7 +164,7 @@ public class Shuriken_Box extends Artifact {
 
     private int targetPos;
 
-    private CellSelector.Listener shooter = new CellSelector.Listener() {
+    public CellSelector.Listener shooter = new CellSelector.Listener() {
         @Override
         public void onSelect( Integer target ) {
             if (target != null) {

@@ -136,6 +136,9 @@ public class Food extends Item {
 		if(hero.hasTalent(Talent.EATEN_SLOWLY)){
 			foodVal*=1+0.3*hero.pointsInTalent(Talent.EATEN_SLOWLY);
 		}
+		if(hero.pointsInTalent(Talent.AID_STOMACH)==2 && this instanceof MysteryMeat){
+			foodVal*=4/3f;
+		}
 
 		Artifact.ArtifactBuff buff = hero.buff( HornOfPlenty.hornRecharge.class );
 		if (buff != null && buff.isCursed()){

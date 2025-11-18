@@ -141,7 +141,8 @@ public class RubbingsTome extends Item {
 
     @Override
     public int energyVal() {
-        return Math.min(2 * charge * quantity,15);
+        return 0;
+        //return Math.min(2 * charge * quantity,15);
     }
 
     public static class Recipe extends com.shatteredpixel.shatteredpixeldungeon.items.Recipe {

@@ -86,7 +86,8 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	protected float shadowOffset    = 0.25f;
 
 	public enum State {
-		BURNING, LEVITATING, INVISIBLE, PARALYSED, FROZEN, ILLUMINATED, CHILLED, DARKENED, MARKED, HEALING, SHIELDED, HEARTS, GLOWING, AURA
+		BURNING, LEVITATING, INVISIBLE, PARALYSED, FROZEN, ILLUMINATED, CHILLED, DARKENED, MARKED, HEALING, SHIELDED,
+		HEARTS, GLOWING, AURA, COIN
 	}
 	
 	protected Animation idle;
@@ -124,6 +125,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	protected float flashTime = 0;
 	
 	protected boolean sleeping = false;
+	private Emitter coin;
 
 	public Char ch;
 
@@ -447,6 +449,11 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				hearts = emitter();
 				hearts.pour(Speck.factory(Speck.HEART), 0.5f);
 				break;
+			case COIN:
+				if (coin != null) coin.on = false;
+				coin = emitter();
+				coin.pour(Speck.factory(Speck.COIN), 0.5f);
+				break;
 			case GLOWING:
 				if (glowBlock != null) glowBlock.killAndErase();
 				glowBlock = GlowBlock.lighten(this);
@@ -556,6 +563,12 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 					hearts = null;
 				}
 				break;
+			case COIN:
+				if (coin != null) {
+					coin.on = false;
+					coin = null;
+				}
+				break;
 			case GLOWING:
 				if (glowBlock != null){
 					glowBlock.darken();
@@ -621,6 +634,9 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		}
 		if (hearts != null) {
 			hearts.visible = visible;
+		}
+		if (coin != null) {
+			coin.visible = visible;
 		}
 		//shield fx updates its own visibility
 		if (aura != null) {

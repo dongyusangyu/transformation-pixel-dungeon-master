@@ -249,6 +249,7 @@ public class MagesStaff extends MeleeWeapon {
 		
 		level(targetLevel);
 		this.wand = wand;
+		wand.levelKnown = wand.curChargeKnown = true;
 		updateWand(false);
 		wand.curCharges = Math.min(wand.maxCharges, wand.curCharges+oldStaffcharges);
 		if (owner != null){

@@ -21,24 +21,31 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Trinity;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
@@ -77,7 +84,7 @@ public class SpiritForm extends ClericSpell {
 
 	@Override
 	public String desc() {
-		return Messages.get(this, "desc", ringLevel(), artifactLevel()) + "\n\n" + Messages.get(this, "charge_cost", (int)chargeUse(Dungeon.hero));
+		return Messages.get(this, "desc", ringLevel(), artifactLevel()) + "\n\n" + Messages.get(this, "charge_cost", (int)chargeUse(hero));
 	}
 
 	@Override
@@ -98,11 +105,11 @@ public class SpiritForm extends ClericSpell {
 	}
 
 	public static int ringLevel(){
-		return Dungeon.hero.pointsInTalent(Talent.SPIRIT_FORM);
+		return hero.pointsInTalent(Talent.SPIRIT_FORM);
 	}
 
 	public static int artifactLevel(){
-		return 2 + 2*Dungeon.hero.pointsInTalent(Talent.SPIRIT_FORM);
+		return 2 + 2* hero.pointsInTalent(Talent.SPIRIT_FORM);
 	}
 
 	public static class SpiritFormBuff extends FlavourBuff{
@@ -134,7 +141,7 @@ public class SpiritForm extends ClericSpell {
 			this.effect = effect;
 			if (effect instanceof RingOfMight){
 				((Ring) effect).level(ringLevel());
-				Dungeon.hero.updateHT( false );
+				hero.updateHT( false );
 			}
 		}
 
@@ -142,7 +149,7 @@ public class SpiritForm extends ClericSpell {
 		public void detach() {
 			super.detach();
 			if (effect instanceof RingOfMight){
-				Dungeon.hero.updateHT( false );
+				hero.updateHT( false );
 			}
 		}
 
@@ -192,14 +199,14 @@ public class SpiritForm extends ClericSpell {
 
 	public static void applyActiveArtifactEffect(ClassArmor armor, Artifact effect){
 		if (effect instanceof AlchemistsToolkit){
-			Talent.onArtifactUsed(Dungeon.hero);
+			Talent.onArtifactUsed(hero);
 			AlchemyScene.assignToolkit((AlchemistsToolkit) effect);
 			Game.switchScene(AlchemyScene.class);
 
 		} else if (effect instanceof DriedRose){
 			ArrayList<Integer> spawnPoints = new ArrayList<>();
 			for (int i = 0; i < PathFinder.NEIGHBOURS8.length; i++) {
-				int p = Dungeon.hero.pos + PathFinder.NEIGHBOURS8[i];
+				int p = hero.pos + PathFinder.NEIGHBOURS8[i];
 				if (Actor.findChar(p) == null && !Dungeon.level.solid[p]) {
 					spawnPoints.add(p);
 				}
@@ -210,8 +217,8 @@ public class SpiritForm extends ClericSpell {
 				w.HP = w.HT = 20 + 8*artifactLevel();
 				Buff.affect(w, Corruption.class);
 			}
-			Talent.onArtifactUsed(Dungeon.hero);
-			Dungeon.hero.spendAndNext(1f);
+			Talent.onArtifactUsed(hero);
+			hero.spendAndNext(1f);
 
 		} else if (effect instanceof EtherealChains){
 			GameScene.selectCell(((EtherealChains) effect).caster);
@@ -220,7 +227,7 @@ public class SpiritForm extends ClericSpell {
 			}
 
 		} else if (effect instanceof HornOfPlenty){
-			((HornOfPlenty) effect).doEatEffect(Dungeon.hero, 1);
+			((HornOfPlenty) effect).doEatEffect(hero, 1);
 
 		} else if (effect instanceof MasterThievesArmband){
 			GameScene.selectCell(((MasterThievesArmband) effect).targeter);
@@ -243,11 +250,19 @@ public class SpiritForm extends ClericSpell {
 			GameScene.selectCell(((TalismanOfForesight) effect).scry);
 
 		} else if (effect instanceof TimekeepersHourglass){
-			Buff.affect(Dungeon.hero, Swiftthistle.TimeBubble.class).reset(artifactLevel());
-			Dungeon.hero.spendAndNext(1f);
+			Buff.affect(hero, Swiftthistle.TimeBubble.class).reset(artifactLevel());
+			hero.spendAndNext(1f);
 
-		} else if (effect instanceof UnstableSpellbook){
-			((UnstableSpellbook) effect).doReadEffect(Dungeon.hero);
+		} else if (effect instanceof UnstableSpellbook) {
+			((UnstableSpellbook) effect).doReadEffect(hero);
+		} else if (effect instanceof InstructionTool){
+			Mob m = ((InstructionTool) effect).createDrone(1,InstructionTool.Drone.class);
+			m.HT=(int)(0.1f*artifactLevel()*hero.HT);
+			m.HP=m.HT;
+		} else if (effect instanceof Shuriken_Box){
+			GameScene.selectCell((( Shuriken_Box) effect).shooter);
+		} else if (effect instanceof CloakOfShadows){
+			Buff.affect(hero, Invisibility.class,artifactLevel());
 		}
 	}
 

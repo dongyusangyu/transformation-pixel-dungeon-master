@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
@@ -112,6 +113,24 @@ public abstract class ChampionEnemy extends Buff {
 	public float attackSpeedFactor(){
 		return 1f;
 	}
+	public static void rollGiveChampion(Char m){
+		Class<?extends ChampionEnemy> buffCls;
+		int random = 10;
+		switch (Random.Int(random)){
+			case 0: default:    buffCls = ChampionEnemy.Blazing.class;      break;
+			case 1:             buffCls = ChampionEnemy.Projecting.class;   break;
+			case 2:             buffCls = ChampionEnemy.AntiMagic.class;    break;
+			case 3:             buffCls = ChampionEnemy.Giant.class;        break;
+			case 4:             buffCls = ChampionEnemy.Blessed.class;      break;
+			case 5:             buffCls = ChampionEnemy.Growing.class;      break;
+			case 6:				buffCls = ChampionEnemy.Corrosion.class;      break;
+			case 7:				buffCls = ChampionEnemy.Haste.class;      break;
+			case 8:				buffCls = ChampionEnemy.Holy.class;      break;
+			case 9:				buffCls = ChampionEnemy.Transform.class;      break;
+		}
+		Buff.affect(m, buffCls);
+	}
+
 
 	public static void rollForChampion(Mob m){
 		if (Dungeon.mobsToChampion <= 0) Dungeon.mobsToChampion = 8;

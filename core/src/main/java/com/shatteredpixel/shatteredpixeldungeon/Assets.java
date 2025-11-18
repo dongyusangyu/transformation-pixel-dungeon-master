@@ -100,6 +100,10 @@ public class Assets {
 
 		public static final String HUNGER_BAR      = "interfaces/hunger_bar.png";
 		public static final String CHALLENGES_ICONS      = "interfaces/Challenge_icons.png";
+		public static final String HUNGER_MC      = "interfaces/hunger_MC.png";
+		public static final String HUNGER_TPD1      = "interfaces/hunger_tpd1.png";
+		public static final String HUNGER_TPD2      = "interfaces/hunger_tpd2.png";
+		public static final String HUNGER_ENERGY      = "interfaces/hunger_energy.png";
 
 	}
 
@@ -157,6 +161,7 @@ public class Assets {
 		public static final String BACKS1_1    = "music/combat_area.ogg";
 		public static final String BACKS1_2    = "music/chuboss.ogg";
 		public static final String BACKS2    = "music/Oh-Boss.ogg";
+
 
 
 	}
@@ -233,6 +238,15 @@ public class Assets {
 		public static final String SHEEP    = "sounds/sheep.mp3";
 		public static final String MINE    = "sounds/mine.mp3";
 		public static final String HOLY_HAND    = "sounds/HolyHandHal.ogg";
+		public static final String CONTROLM    = "sounds/controlM.ogg";
+		public static final String CONTROLU    = "sounds/controlU.ogg";
+		public static final String CONTROLA    = "sounds/controlA.ogg";
+		public static final String CONTROL    = "sounds/control.ogg";
+		public static final String RECYCLE    = "sounds/recycle.ogg";
+		public static final String INTERCOM    = "sounds/intercom.ogg";
+		public static final String DRONEDIED    = "sounds/died.ogg";
+		public static final String ENTRY    = "sounds/entry.ogg";
+		public static final String MANUFACTURING    = "sounds/manufacturing.ogg";
 
 		public static final String[] all = new String[]{
 				CLICK, BADGE, GOLD,
@@ -245,7 +259,8 @@ public class Assets {
 				DESCEND, EAT, READ, LULLABY, DRINK, SHATTER, ZAP, LIGHTNING, LEVELUP, DEATH,
 				CHALLENGE, CURSED, TRAP, EVOKE, TOMB, ALERT, MELD, BOSS, BLAST, PLANT, RAY, BEACON,
 				TELEPORT, CHARMS, MASTERY, PUFF, ROCKS, BURNING, FALLING, GHOST, SECRET, BONES,
-				BEE, DEGRADE, MIMIC, DEBUFF, CHARGEUP, GAS, CHAINS, SCAN, SHEEP, MINE,HOLY_HAND
+				BEE, DEGRADE, MIMIC, DEBUFF, CHARGEUP, GAS, CHAINS, SCAN, SHEEP, MINE,HOLY_HAND,
+				CONTROLM,CONTROLU,CONTROLA,CONTROL,RECYCLE,INTERCOM,DRONEDIED,ENTRY,MANUFACTURING
 		};
 	}
 

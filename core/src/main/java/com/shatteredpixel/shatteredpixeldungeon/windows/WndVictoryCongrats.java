@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -115,10 +116,26 @@ public class WndVictoryCongrats extends Window {
 		RedButton btnSupport = new RedButton(Messages.get(this, "support")) {
 			@Override
 			protected void onClick() {
-				ShatteredPixelDungeon.switchScene(SupporterScene.class);
+				super.onClick();
+				/*
+				String link = "https://www.patreon.com/ShatteredPixel";
+				//tracking codes, so that the website knows where this pageview came from
+				link += "?utm_source=shatteredpd";
+				link += "&utm_medium=supporter_prompt";
+				link += "&utm_campaign=ingame_link";
+
+				 */
+				String link = "https://qm.qq.com/q/FmNw25jGUg";
+				ShatteredPixelDungeon.platform.openURI(link);
+				SPDSettings.supportNagged(true);
+				WndVictoryCongrats.super.hide();
 			}
+			//protected void onClick() {
+				//ShatteredPixelDungeon.switchScene(SupporterScene.class);
+			//}
 		};
-		btnSupport.icon(Icons.GOLD.get());
+		//btnSupport.icon(Icons.GOLD.get());
+		btnSupport.icon(Icons.TPX.get());
 		btnSupport.setRect(0, height, width / 2, 18);
 		add(btnSupport);
 

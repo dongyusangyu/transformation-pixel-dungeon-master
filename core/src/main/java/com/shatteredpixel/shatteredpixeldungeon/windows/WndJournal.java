@@ -23,10 +23,13 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
+import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -37,6 +40,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Pylon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Rat;
+import com.shatteredpixel.shatteredpixeldungeon.custom.seedfinder.SeedFindScene;
+import com.shatteredpixel.shatteredpixeldungeon.custom.seedfinder.SeedFinder;
 import com.shatteredpixel.shatteredpixeldungeon.items.EnergyCrystal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -64,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -79,13 +85,16 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingGridPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingListPane;
+import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentsPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.shatteredpixel.shatteredpixeldungeon.utils.DungeonSeed;
 import com.watabou.input.KeyBindings;
 import com.watabou.input.KeyEvent;
 import com.watabou.noosa.BitmapText;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.Visual;
@@ -94,6 +103,7 @@ import com.watabou.utils.RectF;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 
@@ -117,6 +127,7 @@ public class WndJournal extends WndTabbed {
 	
 	public static int last_index = 0;
 	private static WndJournal INSTANCE = null;
+	private static String inputtext = "";
 	public WndJournal(){
 		if (INSTANCE != null){
 			INSTANCE.hide();
@@ -144,7 +155,7 @@ public class WndJournal extends WndTabbed {
 		catalogTab = new CatalogTab();
 		add(catalogTab);
 		catalogTab.setRect(0, 0, width, height);
-		catalogTab.updateList();
+		catalogTab.updateList(true);
 
 		badgesTab = new BadgesTab();
 		add(badgesTab);
@@ -241,6 +252,7 @@ public class WndJournal extends WndTabbed {
 		alchemyTab.layout();
 		notesTab.layout();
 		catalogTab.layout();
+
 	}
 	
 	public static class GuideTab extends Component {
@@ -581,6 +593,9 @@ public class WndJournal extends WndTabbed {
 		private static final int NUM_BUTTONS = 5;
 
 		public static int currentItemIdx   = 0;
+
+		public static int lastItemIdx   = -1;
+
 		private static float[] scrollPositions = new float[NUM_BUTTONS];
 		
 		//sprite locations
@@ -602,7 +617,7 @@ public class WndJournal extends WndTabbed {
 					@Override
 					protected void onClick() {
 						currentItemIdx = idx;
-						updateList();
+						updateList(true);
 					}
 				};
 				add( itemButtons[i] );
@@ -625,7 +640,8 @@ public class WndJournal extends WndTabbed {
 		@Override
 		protected void layout() {
 			super.layout();
-			
+			lastItemIdx=-1;
+			inputtext = "";
 			int perRow = NUM_BUTTONS;
 			float buttonWidth = width()/perRow;
 			
@@ -642,7 +658,8 @@ public class WndJournal extends WndTabbed {
 					height - itemButtons[NUM_BUTTONS-1].height() - 1);
 		}
 		
-		public void updateList() {
+		public void updateList(boolean isup) {
+			WndTextInput wndTextInput;
 			
 			grid.clear();
 			
@@ -653,8 +670,28 @@ public class WndJournal extends WndTabbed {
 					itemButtons[i].icon().resetColor();
 				}
 			}
+			if(currentItemIdx == lastItemIdx && currentItemIdx!=LORE_IDX && isup){
+				ShatteredPixelDungeon.scene().addToFront(new WndTextInput("筛选内容", "请输入文本", inputtext,
+						100, false, "查找", "取消") {
+					@Override
+					public void onSelect(boolean positive, String text) {
+						if (positive){
+							inputtext = text;
+							updateList(false);
+
+						}
+						//updateList();
+					}
+				});
+			}else if(currentItemIdx == lastItemIdx && currentItemIdx!=LORE_IDX){
+
+			}else{
+				inputtext = "";
+			}
+			lastItemIdx = currentItemIdx;
 			
 			grid.scrollTo( 0, 0 );
+
 
 			if (currentItemIdx == EQUIP_IDX) {
 				int totalItems = 0;
@@ -708,6 +745,9 @@ public class WndJournal extends WndTabbed {
 				}
 
 				 */
+
+
+
 				grid.addHeader("_" + Messages.get(this, "title_talent") + "_ " , 9, true);
 
 				for (TalentCatalog talent: TalentCatalog.values()){
@@ -904,7 +944,10 @@ public class WndJournal extends WndTabbed {
 			if (!seen) {
 				gridItem.hardLightBG(2f, 1f, 2f);
 			}
-			grid.addItem(gridItem);
+			if(title.contains(inputtext) || desc.contains(inputtext) || inputtext.length()==0){
+				grid.addItem(gridItem);
+			}
+			//grid.addItem(gridItem);
 		}
 	}
 
@@ -1041,7 +1084,10 @@ public class WndJournal extends WndTabbed {
 			if (!seen) {
 				gridItem.hardLightBG(2f, 1f, 2f);
 			}
-			grid.addItem(gridItem);
+			if(title.contains(inputtext) || desc.contains(inputtext) || inputtext.length()==0){
+				grid.addItem(gridItem);
+			}
+			//grid.addItem(gridItem);
 		}
 	};
 
@@ -1099,6 +1145,7 @@ public class WndJournal extends WndTabbed {
 				gridItem.hardLightBG(2.2f, 1f, 2.2f);
 			}
 			grid.addItem(gridItem);
+
 		}
 	}
 
@@ -1155,7 +1202,9 @@ public class WndJournal extends WndTabbed {
 			}
 
 			//gridItem.hardLightBG(1f, 1f, 2f);
-			grid.addItem(gridItem);
+			if(title.contains(inputtext) || desc.contains(inputtext) || inputtext.length()==0){
+				grid.addItem(gridItem);
+			}
 		}
 	}
 
@@ -1248,5 +1297,7 @@ public class WndJournal extends WndTabbed {
 		}
 
 	}
+
+
 	
 }

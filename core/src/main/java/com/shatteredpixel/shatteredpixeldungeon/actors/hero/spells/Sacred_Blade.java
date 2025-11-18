@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -86,18 +88,11 @@ public class Sacred_Blade extends TargetedClericSpell {
                             new Callback() {
                                 @Override
                                 public void call() {
-                                    int max = hero.damageRoll();
+                                    int max = hero.belongings.weapon.damageRoll(hero);
 
                                     if(hero.pointsInTalent(Talent.SACRED_BLADE)>1){
                                         if (Char.hasProp(enemy, Char.Property.UNDEAD) || Char.hasProp(enemy, Char.Property.DEMONIC)){
-                                            int i=0;
-                                            while(i<100){
-                                                i++;
-                                                int a = hero.damageRoll();
-                                                if(a>max){
-                                                    max=a;
-                                                }
-                                            }
+                                            max = hero.belongings.weapon.max();
                                         }
                                     }
                                     if(hero.pointsInTalent(Talent.SACRED_BLADE)>2 && (Char.hasProp(enemy, Char.Property.UNDEAD) || Char.hasProp(enemy, Char.Property.DEMONIC))){
@@ -106,7 +101,7 @@ public class Sacred_Blade extends TargetedClericSpell {
                                     enemy.damage(max, Sacred_Blade.this);
                                     Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, Random.Float(0.8f, 1f) );
                                     Sample.INSTANCE.play( Assets.Sounds.HIT_STAB, 1, Random.Float(0.8f, 1f) );
-                                    if (enemy.isActive()){
+                                    if (enemy.isActive() && hero.subClass== HeroSubClass.PRIEST){
                                         Buff.affect(enemy, GuidingLight.Illuminated.class);
                                     }
                                     enemy.sprite.burst(0xFFFFFFFF, 10);

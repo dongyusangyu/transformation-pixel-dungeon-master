@@ -483,7 +483,7 @@ public enum Talent {
 	LIGHT_CROP(408),DEVIL_FLAME(409,3),FAST_BREAK(410),CRAZY_DANCER(411),THROWING_RECYCLING(412,3),
     FALSEHOOD_POWER(413),FLAME_INCARNATION(414,3),MARKSMAN(415),SPIDER_SENSE(443),NO_MORE_MOB(444),
 	KEBI(445),ICE_MEAL(446,3),MORE_FAVORS(447),HARDWARE_ELEMENTS(475,3),STATIC_LIGHT(476),
-	MIRACLE_ALCHEMY(477);
+	MIRACLE_ALCHEMY(477),ELITE_RECRUIT(507,4),PRIM_ACCU(508,4),SOUL_CONTRACT(509,4);
 
 	public static final int ATTACK = 0;
 	public static final int MAGIC = 1;
@@ -706,8 +706,14 @@ public enum Talent {
 		public int icon() { return BuffIndicator.NONE; }
 		@Override
 		public void detach(){
-			Buff.affect(hero, Barrier.class).incShield(1+2*hero.pointsInTalent(TBM));
-			Buff.affect(hero,TBMCooldown.class,60);
+			if(hero.hasTalent(TBM)){
+				Buff.affect(hero, Barrier.class).incShield(1+2*hero.pointsInTalent(TBM));
+				Buff.affect(hero,TBMCooldown.class,60);
+			}else{
+				super.detach();
+			}
+
+
 		}
 	};
 	public static class LightBox extends FlavourBuff{
@@ -725,7 +731,10 @@ public enum Talent {
 		public float iconFadePercent() { return Math.max(0, visualcooldown() / 100); }
 		@Override
 		public void detach(){
-			Buff.affect(Dungeon.hero, DarkHook.class);
+			if(hero.subClass==HeroSubClass.DARKSLIME){
+				ActionIndicator.setAction(hero.buff(DarkHook.class));
+				BuffIndicator.refreshHero();
+			}
 			if (target.remove( this ) && target.sprite != null) fx( false );
 		}
 	};
@@ -787,7 +796,7 @@ public enum Talent {
 		public float iconFadePercent() { return Math.max(0, visualcooldown() / 20); }
 		public void detach(){
 			if(hero.hasTalent(SMOKE_MASK)) {
-				Buff.affect(Dungeon.hero, SmokeMask.class);
+				//Buff.affect(Dungeon.hero, SmokeMask.class);
 				ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 			}
 			BuffIndicator.refreshHero();
@@ -1065,7 +1074,7 @@ public enum Talent {
 			switch (cls){
 				case WARRIOR: default:
 					return 26;
-				case MAGE:case FREEMAN:
+				case MAGE:
 					return 58;
 				case ROGUE:
 					return 90;
@@ -1081,6 +1090,8 @@ public enum Talent {
 					return 474;
 				case DM400:
 					return 506;
+				case FREEMAN:
+					return 510;
 			}
 		} else {
 			return icon;
@@ -1448,7 +1459,7 @@ public enum Talent {
 			}
 		}
         if (hero.hasTalent(BLESS_MEAL)){
-            Buff.affect( hero, Bless.class,hero.pointsInTalent(BLESS_MEAL)*10+5);
+            Buff.affect( hero, Bless.class,hero.pointsInTalent(BLESS_MEAL)*10+15);
         }
 		if (hero.hasTalent(MEAL_SHIELD)){
 			Buff.affect( hero, Barrier.class).setShield(hero.pointsInTalent(MEAL_SHIELD)*4);
@@ -1493,17 +1504,7 @@ public enum Talent {
 			Dungeon.gold-=(int)((0.1f*hero.pointsNegative(VIP_MEAL))*Dungeon.gold);
 		}
 		if (hero.hasTalent(SATIATED_SPELLS)){
-			if (hero.heroClass == HeroClass.CLERIC) {
-				Buff.affect(hero, SatiatedSpellsTracker.class);
-			} else {
-				//3/5 shielding, delayed up to 10 turns
-				int amount = 1 + 2*hero.pointsInTalent(SATIATED_SPELLS);
-				Barrier b = Buff.affect(hero, Barrier.class);
-				if (b.shielding() <= amount){
-					b.setShield(amount);
-					b.delay(Math.max(10-b.cooldown(), 0));
-				}
-			}
+			Buff.affect(hero, SatiatedSpellsTracker.class);
 		}
 		//史莱姆娘
 		if (hero.hasTalent(RESILIENT_MEAL)){
@@ -1534,12 +1535,7 @@ public enum Talent {
 		if(Dungeon.eat_item>=maxeat && eat_item>oldeat){
 			GLog.i("无敌一餐，吃出经验、生日礼物等天赋此后不再触发。");
 		}
-		if(hero.subClass==HeroSubClass.DARKSLIME && hero.buffs(DarkHookCooldown.class).isEmpty() && hero.buffs(DarkHook.class).isEmpty()){
-			Buff.affect(hero, DarkHook.class);
-		}
-		if(hero.subClass==HeroSubClass.NINJA_MASTER && hero.buffs(Ninja_Energy.class).isEmpty()){
-			Buff.affect(hero, Ninja_Energy.class);
-		}
+		/*
 		if(hero.hasTalent(SMOKE_MASK) && hero.buffs(SmokeCooldown.class).isEmpty() && hero.buffs(SmokeMask.class).isEmpty()){
 			Buff.affect(hero, SmokeMask.class);
 			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
@@ -1547,6 +1543,8 @@ public enum Talent {
 		}else if(hero.hasTalent(SMOKE_MASK) && hero.buff(SmokeMask.class)!=null){
 			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 		}
+
+		 */
 		if(hero.hasTalent(Talent.ICE_MEAL)){
 			Buff.affect(hero, FrostImbue.class,Math.min(4,2*hero.pointsInTalent(Talent.ICE_MEAL)));
 			if(hero.pointsInTalent(Talent.ICE_MEAL)>2){
@@ -2180,7 +2178,7 @@ public enum Talent {
 		if(hero.hasTalent(COMBO_PACKAGE) && c!=null && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			c.left++;
 			if(c.left>=8-2*hero.pointsInTalent(COMBO_PACKAGE)){
-				onFoodEaten(hero,0,null);
+				onFoodEaten(hero,0,new HornOfPlenty());
 				c.left-=8-2*hero.pointsInTalent(COMBO_PACKAGE);
 				if(c.left<=0){
 					c.detach();
@@ -2440,7 +2438,7 @@ public enum Talent {
 		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
 			dmg*=1-hero.pointsInTalent(Talent.WELLFED_MEAL)*0.15f;
 		}
-		if(hero.hasTalent(BODY_REINFORCE) && hero.heroClass!=HeroClass.DM400){
+		if(hero.hasTalent(BODY_REINFORCE) && hero.heroClass!=HeroClass.DM400 && dmg>=20){
 			dmg*=1f-0.05f*hero.pointsInTalent(BODY_REINFORCE);
 		}
 		if(!hero.buffs(Talent.NoSleep.class).isEmpty() &&  hero.hasTalent(Talent.GET_UP)){
@@ -2698,10 +2696,7 @@ public enum Talent {
 		if( hero.pointsInTalent(Talent.JUSTICE_PUNISH)>=1 && (emeny.properties().contains(Char.Property.UNDEAD)|| emeny.properties().contains(Char.Property.DEMONIC))) {
 			Buff.affect(hero, Bless.class, hero.pointsInTalent(Talent.JUSTICE_PUNISH));
 		}
-		if(hero.hasTalent(Talent.INSTANT_REFINING) && hero.pointsInTalent(Talent.INSTANT_REFINING)+1>Random.Int(5) && (emeny instanceof Mob && (((Mob) emeny).maxLvl+2<hero.lvl))){
-			Dungeon.energy+=1;
-			hero.sprite.showStatusWithIcon( 0x44CCFF, Integer.toString(1), FloatingText.ENERGY );
-		}
+
 		if(hero != null && hero.subClass==HeroSubClass.DARKSLIME && hero.pointsInTalent(Talent.DARK_LIQUID)==3 && emeny.buff(Roots.class)!=null){
 			Buff.affect(hero, Recharging.class,8);
 			Buff.affect(hero, ArtifactRecharge.class).extend(5);
@@ -2872,6 +2867,7 @@ public enum Talent {
 		{
 			//always acts after other buffs, so invisibility effects can process first
 			actPriority = BUFF_PRIO - 1;
+			revivePersists = true;
 		}
 		@Override
 		public void detach() {
@@ -2881,6 +2877,18 @@ public enum Talent {
 		@Override
 		public int icon() {
 			return BuffIndicator.SMOKEMASK;
+		}
+		@Override
+		public boolean act() {
+			if(target.buff(SmokeCooldown.class)!=null){
+				ActionIndicator1.clearAction(this);
+			}else if(hero.hasTalent(SMOKE_MASK)){
+				ActionIndicator1.setAction(this);
+				BuffIndicator.refreshHero();
+			}
+
+			spend(TICK);
+			return true;
 		}
 
 
@@ -2900,7 +2908,8 @@ public enum Talent {
 		public void doAction() {
 			Buff.affect(hero, SmokeCooldown.class, 24f);
 			GameScene.add( Blob.seed( hero.pos, 50+50*hero.pointsInTalent(SMOKE_MASK), SmokeScreen.class ) );
-			this.detach();
+			ActionIndicator1.clearAction(this);
+			BuffIndicator.refreshHero();
 		}
 		@Override
 		public void storeInBundle(Bundle bundle) {

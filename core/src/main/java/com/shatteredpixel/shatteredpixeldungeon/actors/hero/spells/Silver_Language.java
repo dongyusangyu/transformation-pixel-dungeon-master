@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
@@ -51,7 +52,9 @@ public class Silver_Language extends TargetedClericSpell {
         Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
 
         Buff.affect(ch, Amok.class,1+2*hero.pointsInTalent(Talent.SILVER_LANGUAGE));
-
+        if (ch.isAlive() && hero.subClass== HeroSubClass.PRIEST){
+            Buff.affect(ch, GuidingLight.Illuminated.class);
+        }
 
         hero.busy();
         hero.sprite.operate(ch.pos);

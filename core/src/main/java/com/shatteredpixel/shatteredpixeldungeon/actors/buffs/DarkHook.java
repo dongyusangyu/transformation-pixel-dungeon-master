@@ -29,7 +29,6 @@ import sun.security.provider.JavaKeyStore;
 public class DarkHook extends Buff implements ActionIndicator.Action{
 
     {
-        type = buffType.POSITIVE;
         revivePersists = true;
     }
     public boolean usesTargeting;
@@ -40,7 +39,13 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
 
     @Override
     public boolean act() {
-        ActionIndicator.setAction(this);
+        if(target.buff(Talent.DarkHookCooldown.class)!=null){
+            ActionIndicator.clearAction(this);
+        }else{
+            ActionIndicator.setAction(this);
+            BuffIndicator.refreshHero();
+        }
+
         spend(TICK);
         return true;
     }
@@ -147,10 +152,8 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
                                     hero.next();
                                 }
                             }));
-
-                    detach();
                     Buff.affect(Dungeon.hero, Talent.DarkHookCooldown.class, 65f);
-
+                    ActionIndicator.clearAction(hero.buff(DarkHook.class));
                     if (Dungeon.hero.pointsInTalent(Talent.DARK_LIQUID) >= 1){
                         Buff.affect(ch, Roots.class, 5f);
                     }else {

@@ -44,9 +44,7 @@ public class MysteryMeat extends Food {
 	
 	@Override
 	protected void satisfy(Hero hero) {
-		if(hero.pointsInTalent(Talent.AID_STOMACH)==2){
-			this.energy+=(int)(this.energy*0.33);
-		}
+
 		super.satisfy(hero);
 		effect(hero);
 	}

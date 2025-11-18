@@ -114,7 +114,7 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public boolean doPickUp(Hero hero, int pos) {
 		boolean pick=super.doPickUp(hero,pos);
-		if(hero.pointsNegative(Talent.BE_INCONSTANT)>Random.Int(10) && pick){
+		if(hero.pointsNegative(Talent.BE_INCONSTANT)>Random.Int(10) && pick && hero.subClass!=HeroSubClass.CHAMPION){
 			execute(hero,AC_EQUIP);
 		}
 		return pick;

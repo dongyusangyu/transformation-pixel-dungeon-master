@@ -65,6 +65,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Blacksmith;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SacrificialParticle;
@@ -1503,8 +1504,9 @@ public abstract class Level implements Bundlable {
 						Dungeon.level.updateFieldOfView( m, m.fieldOfView );
 					}
 					BArray.or(heroMindFov, m.fieldOfView, heroMindFov);
-				}else if(m instanceof InstructionTool.Drone){
+				}else if(m instanceof InstructionTool.Drone || m instanceof SlimeMucus){
 					boolean[] thispos = new boolean[length()];
+					BArray.setFalse(thispos);
 					thispos[m.pos]=true;
 					BArray.or(heroMindFov, thispos, heroMindFov);
 				}

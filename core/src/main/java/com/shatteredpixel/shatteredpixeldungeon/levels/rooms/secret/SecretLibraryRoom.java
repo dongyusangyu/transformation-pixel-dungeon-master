@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportat
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ExoticCrystals;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -104,6 +105,11 @@ public class SecretLibraryRoom extends SecretRoom {
 
 			level.drop( Reflection.newInstance(scrollCls), pos );
 		}
+		int pos;
+		do {
+			pos = level.pointToCell(random());
+		} while (level.map[pos] != Terrain.EMPTY_SP || level.heaps.get( pos ) != null);
+		level.drop( new RubbingsTome(), pos );
 	}
 	
 }

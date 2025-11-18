@@ -74,7 +74,6 @@ public class Brute extends Mob {
 	@Override
 	public void die(Object cause) {
 		super.die(cause);
-
 		if (cause == Chasm.class){
 			hasRaged = true; //don't let enrage trigger for chasm deaths
 		}

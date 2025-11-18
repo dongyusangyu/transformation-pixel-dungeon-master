@@ -58,6 +58,8 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_CAMERA_FOLLOW= "camera_follow";
 	public static final String KEY_SCREEN_SHAKE = "screen_shake";
 	public static final String KEY_GAMES_SORT    = "games_sort";
+
+	public static final String KEY_GAMES_HUNGER   = "games_ui";
 	
 	public static void fullscreen( boolean value ) {
 		put( KEY_FULLSCREEN, value );
@@ -96,7 +98,7 @@ public class SPDSettings extends GameSettings {
 	public static void zoom( int value ) {
 		put( KEY_ZOOM, value );
 	}
-	
+
 	public static int zoom() {
 		return getInt( KEY_ZOOM, 0 );
 	}
@@ -113,6 +115,13 @@ public class SPDSettings extends GameSettings {
 	public static void visualGrid( int value ){
 		put( KEY_GRID, value );
 		GameScene.updateMap();
+	}
+	public static void hunger( int value ) {
+		put( KEY_GAMES_HUNGER, value );
+		ShatteredPixelDungeon.updateSystemUI();
+	}
+	public static int hunger() {
+		return getInt( KEY_GAMES_HUNGER, 0 );
 	}
 	
 	public static int visualGrid() {

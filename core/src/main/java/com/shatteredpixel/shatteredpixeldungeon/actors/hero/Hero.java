@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
@@ -75,6 +76,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PhysicalEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
@@ -208,6 +210,8 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.FistSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator1;
 import com.shatteredpixel.shatteredpixeldungeon.ui.AttackIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
@@ -581,6 +585,21 @@ public class Hero extends Char {
 		}
 		Buff.affect( this, Regeneration.class );
 		Buff.affect( this, Hunger.class );
+		if(subClass==HeroSubClass.DARKSLIME && buff(DarkHook.class)!=null && buff(Talent.DarkHookCooldown.class)==null){
+			ActionIndicator.setAction(buff(DarkHook.class));
+		}else if(subClass==HeroSubClass.DARKSLIME){
+			Buff.affect(this,DarkHook.class);
+		}
+		if(subClass==HeroSubClass.NINJA_MASTER && buff(Ninja_Energy.class)!=null){
+			ActionIndicator.setAction(buff(Ninja_Energy.class));
+		}else if(subClass==HeroSubClass.NINJA_MASTER){
+			Buff.affect(this,Ninja_Energy.class);
+		}
+		if(hasTalent(Talent.SMOKE_MASK) && buff(Talent.SmokeMask.class)!=null && buff(Talent.SmokeCooldown.class)==null){
+			ActionIndicator1.setAction(buff(Talent.SmokeMask.class));
+		}else if(hasTalent(Talent.SMOKE_MASK)){
+			Buff.affect(this,Talent.SmokeMask.class);
+		}
 	}
 	
 	public int tier() {
@@ -852,7 +871,7 @@ public class Hero extends Char {
 						num_drones++;
 					}
 				}
-				dr += num_drones * Random.IntRange(1,2);
+				dr += num_drones * Random.IntRange(1,3);
 			}
 		}
 
@@ -2964,6 +2983,7 @@ public class Hero extends Char {
 				((MagesStaff) i).applyWandChargeBuff(this);
 			}
 		}
+
 
 		updateHT(false);
 	}

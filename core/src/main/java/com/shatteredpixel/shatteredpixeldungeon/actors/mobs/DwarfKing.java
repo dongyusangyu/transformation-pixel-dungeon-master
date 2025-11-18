@@ -610,8 +610,9 @@ public class DwarfKing extends Mob {
 
 		} else {
 			Dungeon.level.drop(new KingsCrown(), pos).sprite.drop();
-			if(Statistics.deepestFloor<21){
+			if(!Statistics.subLimation[3]){
 				Dungeon.level.drop( new ScrollOfSublimation().type("DWARFKING"), pos ).sprite.drop();
+				Statistics.subLimation[3] = true;
 			}
 		}
 

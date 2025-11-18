@@ -213,7 +213,7 @@ public class TestMelee extends TestGenerator {
     }
 
     private int maxSlots(int t){
-        if(t <= 1) return 8;
+        if(t <= 1) return 9;
         if(t == 3) return 6;
         else return 7;
     }
