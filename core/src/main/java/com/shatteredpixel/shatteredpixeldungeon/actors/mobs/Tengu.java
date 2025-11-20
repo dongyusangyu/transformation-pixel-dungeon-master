@@ -226,23 +226,16 @@ public class Tengu extends Mob {
 
 	@Override
 	public void die( Object cause ) {
-		if(!this.buffs(Resurrection.REsurrection.class).isEmpty() && (!this.properties().contains(BOSS) && !this.properties().contains(BOSS_MINION))){
-			Buff b=this.buff(Resurrection.REsurrection.class);
-			b.detach();
-			this.HP=this.HT;
-			if(hero.pointsInTalent(Talent.RESURRECTION)==3){
-				Buff.affect(this, Bless.class,20);
-			}
-			return;
+
+		if(!Statistics.subLimation[1]){
+			Dungeon.level.drop( new ScrollOfSublimation().type("TENGU"), pos ).sprite.drop();
+			Statistics.subLimation[1] = true;
 		}
 		
 		if (Dungeon.hero.subClass == HeroSubClass.NONE) {
 			Dungeon.level.drop( new TengusMask(), pos ).sprite.drop();
 		}
-		if(!Statistics.subLimation[1]){
-			Dungeon.level.drop( new ScrollOfSublimation().type("TENGU"), pos ).sprite.drop();
-			Statistics.subLimation[1] = true;
-		}
+
 		
 		GameScene.bossSlain();
 		super.die( cause );

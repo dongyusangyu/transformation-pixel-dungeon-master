@@ -113,9 +113,11 @@ public class HighGrass {
 				Level.set(pos, Terrain.GRASS);
 				if(ch instanceof Mob && hero.pointsInTalent(Talent.WAKE_SNAKE)>Random.Int(10)){
 					Snake mob=new Snake();
-					Corruption.corruptionHeal(mob);
 					GameScene.add( mob );
+					AllyBuff.affectAndLoot(mob, hero, Corruption.class);
 					ScrollOfTeleportation.appear( mob, pos );
+
+
 				}
 
 			}

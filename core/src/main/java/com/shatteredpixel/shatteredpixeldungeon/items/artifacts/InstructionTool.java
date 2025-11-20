@@ -967,6 +967,7 @@ public class InstructionTool extends Artifact {
                     hero.sprite.emitter().burst( ElmoParticle.FACTORY, 12 );
                     upgrade();
                     upgrade();
+                    Catalog.countUses(InstructionTool.class, 2);
                     Talent.onScrollUsed(hero,hero.pos,2,item.getClass());
                     item.detach(hero.belongings.backpack);
                     if(hero.hasTalent(Talent.RECOVER_CHARGE)){

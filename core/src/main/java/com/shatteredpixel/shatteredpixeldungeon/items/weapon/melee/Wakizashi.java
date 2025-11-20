@@ -38,15 +38,15 @@ public class Wakizashi  extends MeleeWeapon {
     @Override
     public String abilityInfo() {
         if (levelKnown){
-            return Messages.get(this, "ability_desc", 5+buffedLvl());
+            return Messages.get(this, "ability_desc", 6+buffedLvl());
         } else {
-            return Messages.get(this, "typical_ability_desc", 5);
+            return Messages.get(this, "typical_ability_desc", 6);
         }
     }
 
     @Override
     public String upgradeAbilityStat(int level) {
-        return Integer.toString(5+level);
+        return Integer.toString(6+level);
     }
 
 

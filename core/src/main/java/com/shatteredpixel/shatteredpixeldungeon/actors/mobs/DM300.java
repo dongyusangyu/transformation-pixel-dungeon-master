@@ -596,15 +596,7 @@ public class DM300 extends Mob {
 
 	@Override
 	public void die( Object cause ) {
-		if(!this.buffs(Resurrection.REsurrection.class).isEmpty() && (!this.properties().contains(BOSS) && !this.properties().contains(BOSS_MINION))){
-			Buff b=this.buff(Resurrection.REsurrection.class);
-			b.detach();
-			this.HP=this.HT;
-			if(hero.pointsInTalent(Talent.RESURRECTION)==3){
-				Buff.affect(this, Bless.class,20);
-			}
-			return;
-		}
+
 
 		super.die( cause );
 

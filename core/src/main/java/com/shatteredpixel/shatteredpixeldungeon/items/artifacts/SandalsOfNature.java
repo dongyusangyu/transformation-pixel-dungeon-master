@@ -277,11 +277,11 @@ public class SandalsOfNature extends Artifact {
 			if (charge < chargeCap){
 				//0.5 charge per grass at +0, up to 1 at +10
 				float chargeGain = (3f + level())/6f;
-				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target)*Math.max(1,(hero.speed())*0.5f*hero.pointsInTalent(Talent.ENERGY_CONVERSION));
 				partialCharge += Math.max(0, chargeGain);
 				while (partialCharge >= 1){
-					charge++;
-					partialCharge--;
+					charge+=(int)partialCharge;
+					partialCharge-=(int)partialCharge;
 				}
 				charge = Math.min(charge, chargeCap);
 				updateQuickslot();

@@ -121,6 +121,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutat
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Cudgel;
@@ -185,6 +186,7 @@ public enum HeroClass {
 		//new ScrollOfSublimation().identify();
 		new ScrollOfIdentify().identify();
 		new ScrollOfMetamorphosis().identify();
+		//new TransformSpell().quantity(2000).collect();
 		hero.updateHT(true);
 		switch (this) {
 			case WARRIOR: default:

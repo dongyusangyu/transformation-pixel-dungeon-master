@@ -62,6 +62,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MobSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RogueBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Blacksmith;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
@@ -1357,6 +1358,12 @@ public abstract class Level implements Bundlable {
 				viewDist *= 1f + 0.25f*((Hero) c).pointsInTalent(Talent.FARSIGHT);
 				viewDist *= 1f-0.2f*((Hero) c).pointsNegative(Talent.SHORTSIGHTED);
 				viewDist *= EyeOfNewt.visionRangeMultiplier();
+				if(c.buff(RogueBoss.BLiness.class)!=null){
+					viewDist = 2;
+					if(Dungeon.isChallenged(Challenges.DARKNESS)){
+						viewDist = 1;
+					}
+				}
 			}
 
 			ShadowCaster.castShadow( cx, cy, width(), fieldOfView, blocking, Math.round(viewDist) );

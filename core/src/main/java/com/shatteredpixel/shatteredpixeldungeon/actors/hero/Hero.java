@@ -1712,9 +1712,10 @@ public class Hero extends Char {
 			if (heroClass != HeroClass.DUELIST
 					&& hasTalent(Talent.AGGRESSIVE_BARRIER)
 					&& buff(Talent.AggressiveBarrierCooldown.class) == null
-					&& (HP / (float)HT) < 0.20f*(1+pointsInTalent(Talent.AGGRESSIVE_BARRIER))){
-				Buff.affect(this, Barrier.class).setShield(3);
-				sprite.showStatusWithIcon(CharSprite.POSITIVE, "3", FloatingText.SHIELDING);
+					&& (HP / (float)HT) < 0.50f){
+				int heal = 1+2*pointsInTalent(Talent.AGGRESSIVE_BARRIER);
+				Buff.affect(this, Barrier.class).setShield(heal);
+				sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(heal), FloatingText.SHIELDING);
 				Buff.affect(this, Talent.AggressiveBarrierCooldown.class, 50f);
 
 			}
@@ -1752,7 +1753,7 @@ public class Hero extends Char {
 			Buff.affect(Dungeon.hero, Talent.PatientStrikeTracker.class).pos = Dungeon.hero.pos;
 		}
 		if(Dungeon.isChallenged(Challenges.NO_FOOD) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
-			buff(Hunger.class).affectHunger(-0.2f);
+			if(buff(Hunger.class)!=null){buff(Hunger.class).affectHunger(-0.2f);}
 		}
 		if (!fullRest) {
 			if (sprite != null) {

@@ -300,9 +300,6 @@ public class Statistics {
 			subLimation = 	new boolean[5];
 			for(int t = 0;t < subLimation.length;t++){
 				subLimation[t] = false;
-				if(bossScores[t] >0){
-					subLimation[t] = true;
-				}
 			}
 		}
 	}

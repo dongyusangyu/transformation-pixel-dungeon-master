@@ -41,6 +41,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
+import com.shatteredpixel.shatteredpixeldungeon.journal.TalentCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -294,7 +295,7 @@ public class TalentButton extends Button {
 					String type = ScrollOfSublimation.WndSublimation.INSTANCE.type;
 					int index = ScrollOfSublimation.WndSublimation.INSTANCE.index;
 					switch(type){
-						case "GOO" : case "TENGU" : default:
+						case "GOO" : case "TENGU" : case "WARRIOR":default:
 							tier=1;
 							break;
 						case "DM300":case "DWARFKING":
@@ -313,6 +314,8 @@ public class TalentButton extends Button {
 								newTier.put(t,  tiers.get(t));
 							}
 							newTier.put(talent, 0);
+							TalentCatalog.countUse(talent);
+							Talent.onTalentUpgraded(Dungeon.hero,talent);
 							Dungeon.hero.talents.set(tier-1, newTier);
 							Dungeon.hero.sublimationTalents.put(talent, type);
 							ArrayList<String> S= new ArrayList<String>();
@@ -368,8 +371,9 @@ public class TalentButton extends Button {
 							newTier.put(talent, 0);
 							Dungeon.hero.talents.set(tier-1, newTier);
 							Dungeon.hero.negativeTalents.add(talent);
+							TalentCatalog.countUse(talent);
 							Talent.onTalentUpgraded(Dungeon.hero,talent);
-							Dungeon.hero.updateHT(true);
+							//Dungeon.hero.updateHT(true);
 							GameScene.updateFog();
 							break;
 						}else{cnt++;}

@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.journal;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
@@ -309,7 +311,7 @@ public enum Bestiary {
 			cls = classConversions.get(cls);
 		}
 		for (Bestiary cat : values()) {
-			if (cat.seen.containsKey(cls) && !cat.seen.get(cls)) {
+			if (cat.seen.containsKey(cls) && !cat.seen.get(cls) && !Dungeon.isChallenged(Challenges.TEST_MODE)) {
 				cat.seen.put(cls, true);
 				Journal.saveNeeded = true;
 			}
@@ -341,7 +343,7 @@ public enum Bestiary {
 			cls = classConversions.get(cls);
 		}
 		for (Bestiary cat : values()) {
-			if (cat.encounterCount.containsKey(cls) && cat.encounterCount.get(cls) != Integer.MAX_VALUE){
+			if (cat.encounterCount.containsKey(cls) && cat.encounterCount.get(cls) != Integer.MAX_VALUE && !Dungeon.isChallenged(Challenges.TEST_MODE)){
 				cat.encounterCount.put(cls, cat.encounterCount.get(cls)+encounters);
 				if (cat.encounterCount.get(cls) < -1_000_000_000){ //to catch cases of overflow
 					cat.encounterCount.put(cls, Integer.MAX_VALUE);

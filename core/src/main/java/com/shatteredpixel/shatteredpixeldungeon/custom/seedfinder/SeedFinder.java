@@ -360,6 +360,8 @@ public class SeedFinder {
 
     private boolean testSeedALL(String seed, int floors) {
         SPDSettings.customSeed(seed);
+        int a = SPDSettings.challenges();
+        SPDSettings.challenges( Challenges.TEST_MODE);
         Dungeon.hero = null;
         Dungeon.daily = Dungeon.dailyReplay = false;
         Dungeon.initSeed();
@@ -420,6 +422,7 @@ public class SeedFinder {
         }
 
         GamesInProgress.selectedClass = HeroClass.WARRIOR;
+
         Dungeon.init();
 
         boolean[] itemsFound = new boolean[itemList.size()];
@@ -533,7 +536,7 @@ public class SeedFinder {
             }
             Dungeon.depth++;
         }
-
+        SPDSettings.challenges(a);
         return false;
     }
 
@@ -544,7 +547,8 @@ public class SeedFinder {
     }
 
     public String logSeedItems(String seed, int floors) {
-
+        int a = SPDSettings.challenges();
+        SPDSettings.challenges( Challenges.TEST_MODE);
         SPDSettings.customSeed(seed);
         Dungeon.initSeed();
         GamesInProgress.selectedClass = HeroClass.WARRIOR;
@@ -652,6 +656,7 @@ public class SeedFinder {
 
             Dungeon.depth++;
         }
+        SPDSettings.challenges(a);
         return result.toString();
     }
 

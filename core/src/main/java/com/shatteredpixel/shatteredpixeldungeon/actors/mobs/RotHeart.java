@@ -115,15 +115,7 @@ public class RotHeart extends Mob {
 
 	@Override
 	public void die(Object cause) {
-		if(!this.buffs(Resurrection.REsurrection.class).isEmpty() && (!this.properties().contains(BOSS) && !this.properties().contains(BOSS_MINION))){
-			Buff b=this.buff(Resurrection.REsurrection.class);
-			b.detach();
-			this.HP=this.HT;
-			if(hero.pointsInTalent(Talent.RESURRECTION)==3){
-				Buff.affect(this, Bless.class,20);
-			}
-			return;
-		}
+
 		super.die(cause);
 		Dungeon.level.drop( new Rotberry.Seed(), pos ).sprite.drop();
 		Statistics.questScores[1] = 2000;

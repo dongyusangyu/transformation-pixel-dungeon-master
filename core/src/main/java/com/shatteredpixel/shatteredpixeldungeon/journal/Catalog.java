@@ -22,6 +22,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.journal;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
@@ -328,7 +330,7 @@ public enum Catalog {
 	
 	public static void setSeen(Class<?> cls){
 		for (Catalog cat : values()) {
-			if (cat.seen.containsKey(cls) && !cat.seen.get(cls)) {
+			if (cat.seen.containsKey(cls) && !cat.seen.get(cls)  && !Dungeon.isChallenged(Challenges.TEST_MODE)) {
 				cat.seen.put(cls, true);
 				Journal.saveNeeded = true;
 			}
@@ -351,7 +353,7 @@ public enum Catalog {
 
 	public static void countUses(Class<?> cls, int uses){
 		for (Catalog cat : values()) {
-			if (cat.useCount.containsKey(cls) && cat.useCount.get(cls) != Integer.MAX_VALUE) {
+			if (cat.useCount.containsKey(cls) && cat.useCount.get(cls) != Integer.MAX_VALUE && !Dungeon.isChallenged(Challenges.TEST_MODE)) {
 				cat.useCount.put(cls, cat.useCount.get(cls)+uses);
 				if (cat.useCount.get(cls) < -1_000_000_000){ //to catch cases of overflow
 					cat.useCount.put(cls, Integer.MAX_VALUE);

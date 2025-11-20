@@ -56,6 +56,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -847,14 +848,14 @@ public class WndJournal extends WndTabbed {
 				} else {
 					title = Messages.titleCase( item.name() );
 					//some items don't include direct stats, generally when they're not applicable
-					if (item instanceof ClassArmor || item instanceof SpiritBow){
+					if (item instanceof ClassArmor || item instanceof SpiritBow || item instanceof Tatteki){
 						desc += item.desc();
 					} else {
 						desc += item.info();
 					}
 					if (item instanceof MeleeWeapon && hero == null){
 						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
-					}else if(item instanceof MeleeWeapon && hero.heroClass!=HeroClass.DUELIST){
+					}else if(item instanceof MeleeWeapon && hero.heroClass!=HeroClass.DUELIST && !hero.hasTalent(Talent.MARTIAL_TRAIN)){
 						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
 					}
 
@@ -1159,9 +1160,11 @@ public class WndJournal extends WndTabbed {
 					if (inside(x, y)) {
 						TalentIcon icon = new TalentIcon( talent );
 						if (ShatteredPixelDungeon.scene() instanceof GameScene){
-							GameScene.show(new WndJournalItem(new TalentIcon( talent.icon() ), title, desc));
+							GameScene.show(new WndJournalItem(new TalentIcon( talent.icon() ), title,
+									desc+Messages.get(TalentCatalog.class,"meta_this",TalentCatalog.useCount(talent))));
 						} else {
-							ShatteredPixelDungeon.scene().addToFront(new WndJournalItem(new TalentIcon( talent.icon() ), title, desc));
+							ShatteredPixelDungeon.scene().addToFront(new WndJournalItem(new TalentIcon( talent.icon() ), title,
+									desc+Messages.get(TalentCatalog.class,"meta_this",TalentCatalog.useCount(talent))));
 						}
 						return true;
 					} else {

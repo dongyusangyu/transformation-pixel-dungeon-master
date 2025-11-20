@@ -145,7 +145,9 @@ public class HornOfPlenty extends Artifact {
 		Sample.INSTANCE.play(Assets.Sounds.EAT);
 		GLog.i( Messages.get(this, "eat") );
 
-		if (hero.hasTalent(Talent.IRON_STOMACH)
+		if(hero.hasTalent(Talent.OVER_MEAL)){
+			hero.spend(Food.TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f);
+		} if (hero.hasTalent(Talent.IRON_STOMACH)
 				|| hero.hasTalent(Talent.ENERGIZING_MEAL)
 				|| hero.hasTalent(Talent.MYSTICAL_MEAL)
 				|| hero.hasTalent(Talent.INVIGORATING_MEAL)
@@ -155,9 +157,7 @@ public class HornOfPlenty extends Artifact {
 				|| hero.hasTalent(Talent.YUNYING_MEAL)
 				||hero.hasTalent(Talent.ICE_MEAL)){
 			hero.spend(Food.TIME_TO_EAT - 2);
-		}else if(hero.hasTalent(Talent.OVER_MEAL)){
-			hero.spend(Food.TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f);
-		} else {
+		}else {
 			hero.spend(Food.TIME_TO_EAT);
 		}
 
@@ -287,7 +287,7 @@ public class HornOfPlenty extends Artifact {
 				//to a max of 1.5x max hunger value per hero level
 				//This means that a standard ration will be recovered in ~5.333 hero levels
 				float chargeGain = Hunger.STARVING * levelPortion * (0.25f + (0.125f*level()));
-				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target)*Math.max(1,(hero.speed())*0.5f*hero.pointsInTalent(Talent.ENERGY_CONVERSION));
 
 				//each charge is equal to 1/5 the max hunger value
 				chargeGain /= Hunger.STARVING/5;
@@ -295,8 +295,8 @@ public class HornOfPlenty extends Artifact {
 
 				//charge is in increments of 1/5 max hunger value.
 				while (partialCharge >= 1) {
-					charge++;
-					partialCharge -= 1;
+					charge+=(int)partialCharge;
+					partialCharge -= (int)partialCharge;
 
 					if (charge >= 8)        image = ItemSpriteSheet.ARTIFACT_HORN4;
 					else if (charge >= 5)   image = ItemSpriteSheet.ARTIFACT_HORN3;

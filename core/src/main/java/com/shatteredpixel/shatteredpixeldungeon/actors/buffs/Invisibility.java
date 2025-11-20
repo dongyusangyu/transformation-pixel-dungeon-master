@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RoundShield;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.TargetHealthIndicator;
 
 public class Invisibility extends FlavourBuff {
 
@@ -79,8 +80,13 @@ public class Invisibility extends FlavourBuff {
 
 	@Override
 	public void fx(boolean on) {
-		if (on) target.sprite.add( CharSprite.State.INVISIBLE );
-		else if (target.invisible == 0) target.sprite.remove( CharSprite.State.INVISIBLE );
+		if (on){
+			target.sprite.add( CharSprite.State.INVISIBLE );
+		}
+		else if (target.invisible == 0){
+			target.sprite.remove( CharSprite.State.INVISIBLE );
+		}
+
 	}
 
 	public static void dispel() {

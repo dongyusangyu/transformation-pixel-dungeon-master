@@ -784,7 +784,7 @@ public class InterlevelScene extends PixelScene {
 				level.map[Dungeon.hero.pos] = Terrain.GRASS;
 			}
 			Dungeon.hero.resurrect();
-			if(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1]){
+			if(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1] && level.locked){
 				Dungeon.hero.HP=1;
 			}
 			level.drop(new LostBackpack(), invPos);

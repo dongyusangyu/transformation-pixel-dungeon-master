@@ -1127,10 +1127,6 @@ public enum Talent {
 		if(hero.heroClass==HeroClass.FREEMAN){
 			max_item+=13;
 		}
-		if(Dungeon.talent_item>max_item){
-			GLog.w("超出资源限制，无法通过升级天赋获取资源");
-			return ;
-		}
 		if(talent==SHOCK_BOMB && hero.hasTalent(SHOCK_BOMB)) {
 			Dungeon.level.drop(new Bomb(), hero.pos).sprite.drop();
 		}
@@ -1138,6 +1134,11 @@ public enum Talent {
 		if(talent==BOMB_MANIAC && hero.hasTalent(BOMB_MANIAC)) {
 			Dungeon.level.drop(new Bomb(), hero.pos).sprite.drop();
 		}
+		if(Dungeon.talent_item>max_item){
+			GLog.w("超出资源限制，无法通过升级天赋获取资源");
+			return ;
+		}
+
 		if(talent==POTENTIAL_1 && hero.pointsInTalent(POTENTIAL_1)==1){
 			Dungeon.talent_item+=1;
 			Dungeon.level.drop(new ScrollOfMetamorphosis(),hero.pos).sprite.drop();
@@ -1699,7 +1700,7 @@ public enum Talent {
 	}
 
 	public static void onScrollUsed( Hero hero, int pos, float factor, Class<?extends Item> cls ){
-		int max_item=15;
+		int max_item=26;
 		if(hero.heroClass==HeroClass.FREEMAN){
 			max_item+=13;
 		}

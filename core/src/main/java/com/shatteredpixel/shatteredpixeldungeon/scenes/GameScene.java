@@ -363,6 +363,7 @@ public class GameScene extends PixelScene {
 		add( healthIndicators );
 		//always appears ontop of other health indicators
 		add( new TargetHealthIndicator() );
+		TargetHealthIndicator.instance.target(null);
 		
 		add( emoicons );
 		

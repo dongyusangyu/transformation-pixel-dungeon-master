@@ -32,9 +32,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Transmuting;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.InventoryScroll;
+import com.shatteredpixel.shatteredpixeldungeon.journal.TalentCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -130,8 +132,10 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 		}
 		curUser.sprite.emitter().start(Speck.factory(Speck.CHANGE), 0.2f, 10);
 		Transmuting.show(curUser, oldTalent, newTalent);
+		TalentCatalog.countUse(newTalent);
 
 		if (hero.hasTalent(newTalent)) {
+
 			Talent.onTalentUpgraded(hero, newTalent);
 		}
 	}
@@ -456,6 +460,7 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 
 		private boolean editable;
 		private ArrayList<RedButton> boxes;
+		ScrollPane pane;
 
 
 		public WndShowTalent(int tier, int type,Talent talent0){
@@ -495,7 +500,9 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 			 */
 			//Component content=new Component();
 			//ScrollPane pane = new ScrollPane(content);
-			ScrollingGridPane pane = new ScrollingGridPane();
+			pane = new ScrollPane(new Component()){
+				public void onClick(float x, float y) { WndShowTalent.this.onClick(x, y);}
+			};;
 			add(pane);
 			pane.setRect(0, pos,WIDTH,80);
 			Component content = pane.content();
@@ -513,12 +520,21 @@ public class ScrollOfMetamorphosis extends ExoticScroll {
 				}
 			}
 			content.setRect(0,0,WIDTH, pos+BUTTON_HEIGHT);
+			pane.setRect(0, tfMesage.bottom() + 2*MARGIN,WIDTH,80);
+			pane.scrollTo(0, 0);
 			pane.update();
 		}
 		@Override
 		public void onBackPressed() {
 			super.onBackPressed();
 		}
+		@Override
+		public void offset(int xOffset, int yOffset) {
+			super.offset(xOffset, yOffset);
+			// refresh the scrollbar pane
+			pane.setPos(pane.left(), pane.top());
+		}
+		protected void onClick(float x, float y) {/* do nothing */}
 	}
 
 

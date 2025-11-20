@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Judgement;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.ElementalBlast;
@@ -134,6 +135,8 @@ public class AntiMagic extends Armor.Glyph {
 		RESISTS.add( Eye.DeathGaze.class );
 		RESISTS.add( YogFist.BrightFist.LightBeam.class );
 		RESISTS.add( YogFist.DarkFist.DarkBolt.class );
+		RESISTS.add( AttackDrone.LaserDrone.class );
+		RESISTS.add( AttackDrone.FlashDrone.class );
 	}
 	
 	@Override

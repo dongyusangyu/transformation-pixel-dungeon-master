@@ -17,12 +17,14 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollingGridPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TalentsPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Random;
 
@@ -153,6 +155,7 @@ public class TestTalent  extends TestGenerator {
         private static final int GAP        = 1;
         protected static final int MARGIN 		= 2;
         protected static final int BUTTON_WIDTH	= 20;
+        private ScrollPane pane;
         LinkedHashMap<Talent, Integer> replaceOptions;
 
         //for window restoring
@@ -176,8 +179,6 @@ public class TestTalent  extends TestGenerator {
             this.replacing = replacing;
             this.tier = tier;
 
-
-
             LinkedHashMap<Talent, Integer> options = new LinkedHashMap<>();
             Set<Talent> curTalentsAtTier = hero.talents.get(tier-1).keySet();
             List<Talent> availableTalents = Talent.typeTalent.get(tier-1).get(type);
@@ -199,8 +200,11 @@ public class TestTalent  extends TestGenerator {
         }
 
         private void setup(Talent replacing, int tier, LinkedHashMap<Talent, Integer> replaceOptions){
-
+            if(INSTANCE==null){
+                INSTANCE = this;
+            }
             float top = 0;
+
             this.replacing = replacing;
             IconTitle title = new IconTitle( curItem );
             title.color( TITLE_COLOR );
@@ -216,9 +220,11 @@ public class TestTalent  extends TestGenerator {
             int bottom=(int)text.bottom();
             resize(WIDTH, bottom+82);
             float x = 0;
-            ScrollingGridPane pane = new ScrollingGridPane();
+            pane = new ScrollPane(new Component()){
+                public void onClick(float x, float y) { WndMetamorphReplace.this.onClick(x, y);}
+            };
             add(pane);
-            pane.setRect(0, text.bottom()+2,WIDTH,80);
+
 
 
             Component content = pane.content();
@@ -229,6 +235,7 @@ public class TestTalent  extends TestGenerator {
                 TalentButton gridItem = new TalentButton(tier,talent,0,TalentButton.Mode.METAMORPH_REPLACE);
                 //content.add(gridItem);
                 content.add(gridItem);
+                gridItem.setRect(x,pos,BUTTON_WIDTH,BUTTON_HEIGHT);
                 gridItem.setPos(x,pos);
                 x += BUTTON_WIDTH;
                 if(x >= WIDTH){
@@ -237,9 +244,12 @@ public class TestTalent  extends TestGenerator {
                 }
             }
             content.setRect(0,0,WIDTH, pos+BUTTON_HEIGHT);
+            pane.setRect(0, text.bottom()+2,WIDTH,80);
+            pane.scrollTo(0, 0);
             pane.update();
             //resize(120, (int)pane.bottom());
         }
+        protected void onClick(float x, float y) {/* do nothing */}
 
         @Override
         public void hide() {
@@ -251,6 +261,12 @@ public class TestTalent  extends TestGenerator {
             if (INSTANCE == this) {
                 INSTANCE = null;
             }
+        }
+        @Override
+        public void offset(int xOffset, int yOffset) {
+            super.offset(xOffset, yOffset);
+            // refresh the scrollbar pane
+            pane.setPos(pane.left(), pane.top());
         }
 
         @Override

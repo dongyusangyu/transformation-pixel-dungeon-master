@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SparkParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
@@ -40,6 +41,15 @@ public abstract class DronesSprite extends MobSprite {
         zap = attack.clone();
 
         play( idle );
+    }
+    @Override
+    public void die() {
+        emitter().burst( Speck.factory( Speck.WOOL ), 5 );
+        super.die();
+    }
+    @Override
+    public int blood() {
+        return 0xFFFFFF88;
     }
 
     @Override

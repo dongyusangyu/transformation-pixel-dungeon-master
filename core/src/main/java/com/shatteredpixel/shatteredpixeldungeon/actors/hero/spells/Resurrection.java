@@ -8,11 +8,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -51,6 +53,14 @@ public class Resurrection extends TargetedClericSpell {
 
         Char ch = Actor.findChar(target);
         if (ch == null || !Dungeon.level.heroFOV[target]){
+            GLog.w(Messages.get(this, "no_target"));
+            return;
+        }
+        if (ch.alignment != Char.Alignment.ENEMY || ch instanceof DemonSpawner
+
+                || ch.properties().contains(Char.Property.BOSS)
+                || ch.properties().contains(Char.Property.MINIBOSS)
+                || !ch.buffs(ChampionEnemy.class).isEmpty()) {
             GLog.w(Messages.get(this, "no_target"));
             return;
         }

@@ -535,15 +535,7 @@ public class YogDzewa extends Mob {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void die( Object cause ) {
-		if(!this.buffs(Resurrection.REsurrection.class).isEmpty() && (!this.properties().contains(BOSS) && !this.properties().contains(BOSS_MINION))){
-			Buff b=this.buff(Resurrection.REsurrection.class);
-			b.detach();
-			this.HP=this.HT;
-			if(hero.pointsInTalent(Talent.RESURRECTION)==3){
-				Buff.affect(this, Bless.class,20);
-			}
-			return;
-		}
+
 
 		Bestiary.skipCountingEncounters = true;
 		for (Mob mob : (Iterable<Mob>)Dungeon.level.mobs.clone()) {

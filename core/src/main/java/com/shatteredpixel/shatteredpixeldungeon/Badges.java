@@ -908,11 +908,15 @@ public class Badges {
 		thirdBossSubclassBadges.put(HeroSubClass.AU400, Badge.BOSS_SLAIN_3_AU400);
 	}
 	public static void validateHeroBossSlain() {
-		if (!isUnlocked(Badge.HEROBOSS_SLAIN_1) && Dungeon.depth==5){
+		if (Dungeon.depth==5){
+			local.add( Badge.HEROBOSS_SLAIN_1 );
 			displayBadge( Badge.HEROBOSS_SLAIN_1 );
+			unlock(Badge.HEROBOSS_SLAIN_1 );
 		}
-		if (!isUnlocked(Badge.HEROBOSS_SLAIN_2) && Dungeon.depth==10){
+		if (Dungeon.depth==10){
+			local.add( Badge.HEROBOSS_SLAIN_2 );
 			displayBadge( Badge.HEROBOSS_SLAIN_2 );
+			unlock(Badge.HEROBOSS_SLAIN_2 );
 		}
 		if (Statistics.qualifiedForBossRemainsBadge && hero.belongings.getItem(RemainsItem.class) != null){
 			local.add( Badge.BOSS_SLAIN_REMAINS );
@@ -926,24 +930,24 @@ public class Badges {
 		case 5:
 			badge = Badge.BOSS_SLAIN_1;
 			if(hero.heroClass== HeroClass.SLIMEGIRL){
-				if (!isUnlocked(Badge.HEROBOSS_COUNTER_1)) {
-					displayBadge(Badge.HEROBOSS_COUNTER_1 );
-				}
+				local.add( Badge.HEROBOSS_COUNTER_1 );
+				displayBadge(Badge.HEROBOSS_COUNTER_1 );
+				unlock(Badge.HEROBOSS_COUNTER_1 );
 			}
 			break;
 		case 10:
 			badge = Badge.BOSS_SLAIN_2;
 			if(hero.heroClass== HeroClass.NINJA){
-				if (!isUnlocked(Badge.HEROBOSS_COUNTER_2)) {
-					displayBadge(Badge.HEROBOSS_COUNTER_2 );
-				}
+				local.add( Badge.HEROBOSS_COUNTER_2 );
+				displayBadge(Badge.HEROBOSS_COUNTER_2 );
+				unlock(Badge.HEROBOSS_COUNTER_2 );
 			}
 			break;
 		case 15:
 			if(hero.heroClass== HeroClass.DM400){
-				if (!isUnlocked(Badge.HEROBOSS_COUNTER_3)) {
-					displayBadge(Badge.HEROBOSS_COUNTER_3 );
-				}
+				local.add( Badge.HEROBOSS_COUNTER_3 );
+				displayBadge(Badge.HEROBOSS_COUNTER_3 );
+				unlock(Badge.HEROBOSS_COUNTER_3 );
 			}
 			badge = Badge.BOSS_SLAIN_3;
 			break;
@@ -1285,7 +1289,7 @@ public class Badges {
 	
 	private static void displayBadge( Badge badge ) {
 
-		if (badge == null || (badge.type != BadgeType.JOURNAL && !Dungeon.customSeedText.isEmpty())) {
+		if (badge == null || (badge.type != BadgeType.JOURNAL && !Dungeon.customSeedText.isEmpty())  ) {
 			return;
 		}
 		
@@ -1322,7 +1326,7 @@ public class Badges {
 	}
 	
 	public static void unlock( Badge badge ){
-		if (!isUnlocked(badge) && (badge.type == BadgeType.JOURNAL || Dungeon.customSeedText.isEmpty())){
+		if (!isUnlocked(badge) && (badge.type == BadgeType.JOURNAL || Dungeon.customSeedText.isEmpty()) && !Dungeon.isChallenged(Challenges.TEST_MODE)){
 			global.add( badge );
 			saveNeeded = true;
 		}

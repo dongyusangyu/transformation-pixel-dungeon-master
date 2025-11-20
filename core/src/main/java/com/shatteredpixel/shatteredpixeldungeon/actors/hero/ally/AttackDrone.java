@@ -13,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
@@ -107,11 +108,13 @@ public class AttackDrone  extends InstructionTool.Drone {
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null){
                 Buff.affect(enemy, Blindness.class,3);
                 if (Char.hasProp(enemy, Char.Property.UNDEAD) || Char.hasProp(enemy, Char.Property.DEMONIC)){
-                    enemy.damage(5, new WandOfMagicMissile());
+                    enemy.damage(5, this);
                 }
             }
             return damage;
         }
+
+
 
     }
 
@@ -155,7 +158,7 @@ public class AttackDrone  extends InstructionTool.Drone {
 
         @Override
         public int attackProc( Char enemy, int damage ) {
-            enemy.damage(damageRoll(),new WandOfMagicMissile());
+            enemy.damage(damageRoll(),this);
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(2)==0){
                 Buff.affect(enemy, Burning.class).extend(3);
             }

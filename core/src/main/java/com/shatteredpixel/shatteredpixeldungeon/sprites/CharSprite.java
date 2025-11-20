@@ -24,6 +24,8 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RogueBoss;
 import com.shatteredpixel.shatteredpixeldungeon.effects.DarkBlock;
 import com.shatteredpixel.shatteredpixeldungeon.effects.EmoIcon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
@@ -42,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CharHealthIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.TargetHealthIndicator;
 import com.watabou.glwrap.Matrix;
 import com.watabou.glwrap.Vertexbuffer;
 import com.watabou.noosa.Camera;
@@ -148,23 +151,27 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	//intended to be used for placing a character in the game world
 	public void link( Char ch ) {
 		linkVisuals( ch );
-		
+
 		this.ch = ch;
 		ch.sprite = this;
 		
 		place( ch.pos );
 		turnTo( ch.pos, Random.Int( Dungeon.level.length() ) );
 		renderShadow = true;
-
+		ch.updateSpriteState();
 		if (ch != Dungeon.hero) {
 			if (health == null) {
 				health = new CharHealthIndicator(ch);
 			} else {
 				health.target(ch);
 			}
+		}else{
+			health = null;
 		}
 
-		ch.updateSpriteState();
+
+
+
 	}
 
 	@Override
@@ -179,6 +186,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public void linkVisuals( Char ch ){
 		//do nothin by default
 	}
+
 	
 	public PointF worldToCamera( int cell ) {
 		
@@ -363,7 +371,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		flashTime = FLASH_INTERVAL;
 	}
 
-	private final HashSet<State> stateAdditions = new HashSet<>();
+	public final HashSet<State> stateAdditions = new HashSet<>();
 
 	public void add( State state ) {
 		//instant as it just changes an animation property that will get read later
@@ -375,6 +383,16 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				stateAdditions.add(state);
 			}
 		}
+
+	}
+	public boolean isState( State state ) {
+		//instant as it just changes an animation property that will get read later
+		if(stateAdditions.contains(state)){
+			return true;
+		}else{
+			return false;
+		}
+
 	}
 
 	private int auraColor = 0;
@@ -404,7 +422,19 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				break;
 			case INVISIBLE:
 				if (invisible != null) invisible.killAndErase();
-				invisible = new AlphaTweener(this, 0.4f, 0.4f);
+				if(this instanceof HeroSprite){
+					invisible = new AlphaTweener(this, 0.4f, 0.4f);
+				}else{
+					invisible = new AlphaTweener(this, 0.2f, 0.4f);
+				}
+				if(health!=null){
+					health.killAndErase();
+					health=null;
+				}
+
+
+
+
 				if (parent != null) {
 					parent.add(invisible);
 				} else

@@ -383,7 +383,7 @@ public class Shuriken_Box extends Artifact {
             if (exp > 100+level()*30 && level() < levelCap){
                 exp -= 100+level()*30;
                 GLog.p( Messages.get(this, "levelup") );
-                Catalog.countUses(Shuriken_Box.class, 2);
+                Catalog.countUses(Shuriken_Box.class, 1);
                 upgrade();
             }
 

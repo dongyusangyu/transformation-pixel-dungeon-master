@@ -22,8 +22,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RogueBoss;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 
 public class CharHealthIndicator extends HealthBar {
 	
@@ -32,6 +35,9 @@ public class CharHealthIndicator extends HealthBar {
 	private Char target;
 	
 	public CharHealthIndicator( Char c ){
+		if(c.sprite.isState(CharSprite.State.INVISIBLE)){
+			return;
+		}
 		target = c;
 		GameScene.add(this);
 	}
@@ -46,7 +52,7 @@ public class CharHealthIndicator extends HealthBar {
 	public void update() {
 		super.update();
 		
-		if (target != null && target.isAlive() && target.isActive() && target.sprite.visible) {
+		if (target != null && target.isAlive() && target.isActive() && target.sprite.visible ){
 			CharSprite sprite = target.sprite;
 			width = sprite.width()*(4/6f);
 			x = sprite.x + sprite.width()/6f;
@@ -55,11 +61,12 @@ public class CharHealthIndicator extends HealthBar {
 			visible = target.HP < target.HT || target.shielding() > 0;
 		} else {
 			visible = false;
+
 		}
 	}
 	
 	public void target( Char ch ) {
-		if (ch != null && ch.isAlive() && ch.isActive()) {
+		if (ch != null && ch.isAlive() && ch.isActive() && !ch.sprite.isState(CharSprite.State.INVISIBLE)) {
 			target = ch;
 		} else {
 			target = null;

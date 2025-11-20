@@ -449,6 +449,17 @@ public class Bundle {
 		}
 	}
 
+	public void put( String key, Enum[] array ){
+		try {
+			JSONArray jsonArray = new JSONArray();
+			for (int i=0; i < array.length; i++) {
+				jsonArray.put( i, array[i].name() );
+			}
+			data.put( key, jsonArray );
+		} catch (JSONException e) {
+			Game.reportException(e);
+		}
+	}
 	public void put( String key, Class[] array ){
 		try {
 			JSONArray jsonArray = new JSONArray();

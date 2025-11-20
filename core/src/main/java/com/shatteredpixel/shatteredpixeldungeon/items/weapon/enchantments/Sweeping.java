@@ -50,12 +50,12 @@ public class Sweeping extends Weapon.Enchantment {
         Char closest = null;
         for (Char ch : Actor.chars()) {
             if (ch.alignment == Char.Alignment.ENEMY//属于敌人（似乎不包括宝箱怪）
-                    && !hero.isCharmedBy(ch)        //未被敌人魅惑
-                    && Dungeon.level.heroFOV[ch.pos]//？
-                    && hero.canAttack(ch)           //能够攻击到
-                    && ch != defender) {            //被攻击的敌人不会受到横扫
+                    && !attacker.isCharmedBy(ch)        //未被敌人魅惑
+                    && attacker.distance(ch)<=weapon.RCH*procChanceMultiplier(attacker)          //能够攻击到
+                    && ch != defender
+                    && ch !=attacker) {            //被攻击的敌人不会受到横扫
                 targets.add(ch);
-                if (closest == null || Dungeon.level.trueDistance(hero.pos, closest.pos) > Dungeon.level.trueDistance(hero.pos, ch.pos)) {
+                if (closest == null || Dungeon.level.trueDistance(attacker.pos, closest.pos) > Dungeon.level.trueDistance(attacker.pos, ch.pos)) {
                     closest = ch;
                 }
             }
@@ -63,8 +63,8 @@ public class Sweeping extends Weapon.Enchantment {
 
         for (Char ch : targets) {
             //横扫攻击
-            int sweepingdmg = (int) Math.ceil(damage * (procChanceMultiplier(attacker) + 1f+level) / (procChanceMultiplier(attacker) + 10f+level));
-            ch.damage(sweepingdmg, hero);
+            int sweepingdmg = (int) Math.ceil(damage * (1f+level) / ( 10f+level));
+            ch.damage(sweepingdmg, attacker);
         }
 
         return damage;

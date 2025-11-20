@@ -108,7 +108,9 @@ public class Food extends Item {
 		if(hero.hasTalent(Talent.EATEN_SLOWLY)){
 			return 13;
 		}
-		if (hero.hasTalent(Talent.IRON_STOMACH)
+		if(hero.hasTalent(Talent.OVER_MEAL)){
+			return TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f;
+		}else if (hero.hasTalent(Talent.IRON_STOMACH)
 			|| hero.hasTalent(Talent.ENERGIZING_MEAL)
 			|| hero.hasTalent(Talent.MYSTICAL_MEAL)
 			|| hero.hasTalent(Talent.INVIGORATING_MEAL)
@@ -118,9 +120,7 @@ public class Food extends Item {
 			|| hero.hasTalent(Talent.YUNYING_MEAL)
 			||hero.hasTalent(Talent.ICE_MEAL)){
 			return TIME_TO_EAT - 2;
-		}else if(hero.hasTalent(Talent.OVER_MEAL)){
-			return TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f;
-		}  else {
+		}else {
 			return TIME_TO_EAT;
 		}
 	}

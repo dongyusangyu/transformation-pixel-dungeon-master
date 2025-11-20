@@ -422,12 +422,12 @@ public class DriedRose extends Artifact {
 				int cnt=hero.pointsInTalent(Talent.ENERGY_CONVERSION);
 
 				if (ghost.HP < ghost.HT && Regeneration.regenOn()) {
-					partialCharge += (ghost.HT / 500f) * RingOfEnergy.artifactChargeMultiplier(target);
+					partialCharge += (ghost.HT / 500f) * RingOfEnergy.artifactChargeMultiplier(target)*Math.max(1,(hero.speed())*0.5f*hero.pointsInTalent(Talent.ENERGY_CONVERSION));
 					updateQuickslot();
 					
 					while (partialCharge > 1) {
-						ghost.HP++;
-						partialCharge--;
+						ghost.HP+=(int)partialCharge;
+						partialCharge-=(int)partialCharge;
 					}
 				} else {
 					partialCharge = 0;
@@ -442,7 +442,7 @@ public class DriedRose extends Artifact {
 					&& Regeneration.regenOn()) {
 				int cnt=hero.pointsInTalent(Talent.ENERGY_CONVERSION);
 				//500 turns to a full charge
-				partialCharge += (1/5f * RingOfEnergy.artifactChargeMultiplier(target));
+				partialCharge += (float)(1/5f * RingOfEnergy.artifactChargeMultiplier(target)*Math.max(1,(hero.speed())*0.5*hero.pointsInTalent(Talent.ENERGY_CONVERSION)));
 				while (partialCharge > 1){
 					charge++;
 					partialCharge--;

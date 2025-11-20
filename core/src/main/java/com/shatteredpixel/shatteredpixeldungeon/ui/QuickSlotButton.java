@@ -29,7 +29,9 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.TengusMask;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.IronKey;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -392,10 +394,10 @@ public class QuickSlotButton extends Button {
 	}
 	
 	public static void target( Char target ) {
-		if (target != null && target.alignment != Char.Alignment.ALLY) {
+		if (target != null && target.alignment != Char.Alignment.ALLY && !target.sprite.isState(CharSprite.State.INVISIBLE)) {
 			lastTarget = target;
-			
 			TargetHealthIndicator.instance.target( target );
+
 			InventoryPane.lastTarget = target;
 		}
 	}

@@ -382,9 +382,12 @@ public class Assets {
 		public static final String THYMOR = "sprites/thymor.png";
 		public static final String GREATSHOPER = "sprites/greatshoper.png";
 		public static final String WARRIORBOSS = "sprites/warriorboss.png";
+		//rogueboss
+		public static final String ROGUEBOSS = "sprites/rogueboss.png";
 
 		public static final String SLIMEMUCUS    = "sprites/slimemucus.png";
 		public static final String DECOY    = "sprites/decoy.png";
 		public static final String DRONES    = "sprites/drones.png";
+		public static final String DIEDTENGU = "sprites/diedtengu.png";
 	}
 }

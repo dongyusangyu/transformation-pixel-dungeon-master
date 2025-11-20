@@ -329,9 +329,11 @@ public class Potion extends Item {
 			}
 			if(Dungeon.isChallenged(Challenges.NO_HEALING) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT) && !hero.buffs(PotionCooldown.class).isEmpty()){
 				pharmacophobiaProc( hero );
+				GLog.w(Messages.get(this,"no_healing"));
 			}
 			if(Dungeon.isChallenged(Challenges.NO_HEALING) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT) && hero.buffs(PotionCooldown.class).isEmpty()){
 				Buff.affect(hero,PotionCooldown.class,20f);
+				GLog.w(Messages.get(this,"no_healing"));
 			}
 		}
 	}

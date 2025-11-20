@@ -38,6 +38,6 @@ public class SlimeMucusSprite extends MobSprite{
 
     @Override
     public int blood() {
-        return 0xFFCC33FF;
+        return 0x00008FFF;
     }
 }
