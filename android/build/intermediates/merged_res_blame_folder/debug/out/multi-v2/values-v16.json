@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.shatteredpixel.shatteredpixeldungeon.android-mergeDebugResources-5:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "D:\\AS\\g\\caches\\8.13\\transforms\\99ddd0e00974d84b2417d082ca7dacd4\\transformed\\support-compat-27.0.1\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                },
+                {
+                    "source": "D:\\AS\\g\\caches\\8.13\\transforms\\353ba5e757e8f77acfa3424529c0d25b\\transformed\\appcompat-v7-27.0.1\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "121",
+                        "endLines": "6",
+                        "endColumns": "12",
+                        "endOffsets": "289"
+                    }
+                }
+            ]
+        }
+    ]
+}

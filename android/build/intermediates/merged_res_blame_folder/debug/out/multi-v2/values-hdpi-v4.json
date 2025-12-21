@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.shatteredpixel.shatteredpixeldungeon.android-mergeDebugResources-5:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "D:\\AS\\g\\caches\\8.13\\transforms\\353ba5e757e8f77acfa3424529c0d25b\\transformed\\appcompat-v7-27.0.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

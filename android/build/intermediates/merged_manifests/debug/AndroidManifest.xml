@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution"
+    package="com.Transform.Transformpixeldungeon.indev"
+    android:installLocation="auto"
+    android:targetSandboxVersion="2"
+    android:versionCode="1001"
+    android:versionName="0.2.7fix5-INDEV" > <!-- We perform a runtime check to ensure controllers are disabled on API 14 & 15 -->
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="34" />
+
+    <dist:module dist:instant="true" />
+
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+         Note that the game doesn't truly support small screen resolutions,
+		it instead forces downscaling to work on these displays.
+    -->
+    <supports-screens
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:smallScreens="true"
+        android:xlargeScreens="true" />
+
+    <application
+        android:allowBackup="true"
+        android:appCategory="game"
+        android:backupAgent="com.shatteredpixel.shatteredpixeldungeon.android.AndroidBackupHandler"
+        android:debuggable="true"
+        android:extractNativeLibs="true"
+        android:fullBackupOnly="true"
+        android:icon="@mipmap/ic_launcher"
+        android:isGame="true"
+        android:label="蜕变地牢"
+        android:resizeableActivity="true"
+        android:testOnly="true"
+        android:theme="@android:style/Theme.Black.NoTitleBar" >
+        <activity
+            android:name="com.shatteredpixel.shatteredpixeldungeon.android.AndroidLauncher"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="true"
+            android:screenOrientation="nosensor" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.shatteredpixel.shatteredpixeldungeon.android.AndroidMissingNativesHandler" >
+        </activity>
+        <activity
+            android:name="cat.ereza.customactivityoncrash.activity.DefaultErrorActivity"
+            android:process=":error_activity" />
+
+        <provider
+            android:name="cat.ereza.customactivityoncrash.provider.CaocInitProvider"
+            android:authorities="com.Transform.Transformpixeldungeon.indev.customactivityoncrashinitprovider"
+            android:exported="false"
+            android:initOrder="101" />
+
+        <meta-data
+            android:name="android.arch.lifecycle.VERSION"
+            android:value="27.0.0-SNAPSHOT" />
+    </application>
+
+</manifest>

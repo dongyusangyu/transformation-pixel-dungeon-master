@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.shatteredpixel.shatteredpixeldungeon.android-mergeDebugResources-5:/values-v12/values-v12.xml",
+            "map": [
+                {
+                    "source": "D:\\AS\\g\\caches\\8.13\\transforms\\353ba5e757e8f77acfa3424529c0d25b\\transformed\\appcompat-v7-27.0.1\\res\\values-v12\\values-v12.xml",
+                    "from": {
+                        "startLines": "2,5,8,9",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,279,479,598",
+                        "endLines": "4,7,8,9",
+                        "endColumns": "12,12,118,94",
+                        "endOffsets": "274,474,593,688"
+                    }
+                }
+            ]
+        }
+    ]
+}

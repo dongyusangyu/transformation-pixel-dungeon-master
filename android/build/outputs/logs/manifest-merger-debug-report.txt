@@ -1,0 +1,175 @@
+-- Merging decision tree log ---
+application
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:26:2-50:15
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:26:2-50:15
+MERGED from [com.badlogicgames.gdx-controllers:gdx-controllers-android:2.2.4] D:\AS\g\caches\8.13\transforms\109d7d6c7fef6cdcb0a472dc862c7aeb\transformed\gdx-controllers-android-2.2.4\AndroidManifest.xml:9:5-20
+MERGED from [com.badlogicgames.gdx-controllers:gdx-controllers-android:2.2.4] D:\AS\g\caches\8.13\transforms\109d7d6c7fef6cdcb0a472dc862c7aeb\transformed\gdx-controllers-android-2.2.4\AndroidManifest.xml:9:5-20
+MERGED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:11:5-21:19
+MERGED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:11:5-21:19
+MERGED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:24:5-28:19
+MERGED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:24:5-28:19
+	android:extractNativeLibs
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+	android:backupAgent
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:36:6-49
+	android:label
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:29:6-32
+	android:appCategory
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:31:6-32
+	android:resizeableActivity
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:33:6-39
+	android:icon
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:27:3-37
+	android:allowBackup
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:34:6-32
+	android:theme
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:30:6-59
+	android:isGame
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:32:3-24
+	android:fullBackupOnly
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:35:6-35
+manifest
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:2:1-52:12
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:2:1-52:12
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:2:1-52:12
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:2:1-52:12
+MERGED from [com.badlogicgames.gdx-controllers:gdx-controllers-android:2.2.4] D:\AS\g\caches\8.13\transforms\109d7d6c7fef6cdcb0a472dc862c7aeb\transformed\gdx-controllers-android-2.2.4\AndroidManifest.xml:2:1-11:12
+MERGED from [com.badlogicgames.gdx:gdx-backend-android:1.12.1] D:\AS\g\caches\8.13\transforms\602c7606f75736552dcac32abbebe751\transformed\gdx-backend-android-1.12.1\AndroidManifest.xml:2:1-13:12
+MERGED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:2:1-23:12
+MERGED from [com.android.support:appcompat-v7:27.0.1] D:\AS\g\caches\8.13\transforms\353ba5e757e8f77acfa3424529c0d25b\transformed\appcompat-v7-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.android.support:support-fragment:27.0.1] D:\AS\g\caches\8.13\transforms\044a694a8ec37178e82299f61c915fae\transformed\support-fragment-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.android.support:support-core-utils:27.0.1] D:\AS\g\caches\8.13\transforms\0be8554e2b3c5bf3dcc400b06b3d2140\transformed\support-core-utils-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.android.support:animated-vector-drawable:27.0.1] D:\AS\g\caches\8.13\transforms\68561de28f894e850b43d622ef534834\transformed\animated-vector-drawable-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.android.support:support-vector-drawable:27.0.1] D:\AS\g\caches\8.13\transforms\dd256b005416167418751c85655a8674\transformed\support-vector-drawable-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.android.support:support-core-ui:27.0.1] D:\AS\g\caches\8.13\transforms\0527b615c5da3cfb84d5df82d3c92331\transformed\support-core-ui-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [com.android.support:support-compat:27.0.1] D:\AS\g\caches\8.13\transforms\99ddd0e00974d84b2417d082ca7dacd4\transformed\support-compat-27.0.1\AndroidManifest.xml:17:1-22:12
+MERGED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:17:1-30:12
+	package
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+	android:versionName
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+	xmlns:tools
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:3:2-48
+	xmlns:dist
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:6:2-58
+	android:versionCode
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:2:11-69
+	android:targetSandboxVersion
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:5:2-34
+	android:installLocation
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:4:5-35
+dist:module
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:8:2-37
+	dist:instant
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:8:15-34
+uses-feature#0x00020000
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:9:2-50
+MERGED from [com.badlogicgames.gdx:gdx-backend-android:1.12.1] D:\AS\g\caches\8.13\transforms\602c7606f75736552dcac32abbebe751\transformed\gdx-backend-android-1.12.1\AndroidManifest.xml:9:5-11:35
+MERGED from [com.badlogicgames.gdx:gdx-backend-android:1.12.1] D:\AS\g\caches\8.13\transforms\602c7606f75736552dcac32abbebe751\transformed\gdx-backend-android-1.12.1\AndroidManifest.xml:9:5-11:35
+	android:glEsVersion
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:9:16-48
+	android:required
+		ADDED from [com.badlogicgames.gdx:gdx-backend-android:1.12.1] D:\AS\g\caches\8.13\transforms\602c7606f75736552dcac32abbebe751\transformed\gdx-backend-android-1.12.1\AndroidManifest.xml:11:9-32
+uses-permission#android.permission.VIBRATE
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:11:2-63
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:11:19-60
+uses-permission#android.permission.INTERNET
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:12:2-64
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:12:19-61
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:13:2-76
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:13:19-73
+uses-sdk
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:16:2-72
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:16:2-72
+INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:16:2-72
+MERGED from [com.badlogicgames.gdx-controllers:gdx-controllers-android:2.2.4] D:\AS\g\caches\8.13\transforms\109d7d6c7fef6cdcb0a472dc862c7aeb\transformed\gdx-controllers-android-2.2.4\AndroidManifest.xml:5:5-7:41
+MERGED from [com.badlogicgames.gdx-controllers:gdx-controllers-android:2.2.4] D:\AS\g\caches\8.13\transforms\109d7d6c7fef6cdcb0a472dc862c7aeb\transformed\gdx-controllers-android-2.2.4\AndroidManifest.xml:5:5-7:41
+MERGED from [com.badlogicgames.gdx:gdx-backend-android:1.12.1] D:\AS\g\caches\8.13\transforms\602c7606f75736552dcac32abbebe751\transformed\gdx-backend-android-1.12.1\AndroidManifest.xml:5:5-7:41
+MERGED from [com.badlogicgames.gdx:gdx-backend-android:1.12.1] D:\AS\g\caches\8.13\transforms\602c7606f75736552dcac32abbebe751\transformed\gdx-backend-android-1.12.1\AndroidManifest.xml:5:5-7:41
+MERGED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:7:5-9:41
+MERGED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:7:5-9:41
+MERGED from [com.android.support:appcompat-v7:27.0.1] D:\AS\g\caches\8.13\transforms\353ba5e757e8f77acfa3424529c0d25b\transformed\appcompat-v7-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:appcompat-v7:27.0.1] D:\AS\g\caches\8.13\transforms\353ba5e757e8f77acfa3424529c0d25b\transformed\appcompat-v7-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-fragment:27.0.1] D:\AS\g\caches\8.13\transforms\044a694a8ec37178e82299f61c915fae\transformed\support-fragment-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-fragment:27.0.1] D:\AS\g\caches\8.13\transforms\044a694a8ec37178e82299f61c915fae\transformed\support-fragment-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-core-utils:27.0.1] D:\AS\g\caches\8.13\transforms\0be8554e2b3c5bf3dcc400b06b3d2140\transformed\support-core-utils-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-core-utils:27.0.1] D:\AS\g\caches\8.13\transforms\0be8554e2b3c5bf3dcc400b06b3d2140\transformed\support-core-utils-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:animated-vector-drawable:27.0.1] D:\AS\g\caches\8.13\transforms\68561de28f894e850b43d622ef534834\transformed\animated-vector-drawable-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:animated-vector-drawable:27.0.1] D:\AS\g\caches\8.13\transforms\68561de28f894e850b43d622ef534834\transformed\animated-vector-drawable-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-vector-drawable:27.0.1] D:\AS\g\caches\8.13\transforms\dd256b005416167418751c85655a8674\transformed\support-vector-drawable-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-vector-drawable:27.0.1] D:\AS\g\caches\8.13\transforms\dd256b005416167418751c85655a8674\transformed\support-vector-drawable-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-core-ui:27.0.1] D:\AS\g\caches\8.13\transforms\0527b615c5da3cfb84d5df82d3c92331\transformed\support-core-ui-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-core-ui:27.0.1] D:\AS\g\caches\8.13\transforms\0527b615c5da3cfb84d5df82d3c92331\transformed\support-core-ui-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-compat:27.0.1] D:\AS\g\caches\8.13\transforms\99ddd0e00974d84b2417d082ca7dacd4\transformed\support-compat-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-compat:27.0.1] D:\AS\g\caches\8.13\transforms\99ddd0e00974d84b2417d082ca7dacd4\transformed\support-compat-27.0.1\AndroidManifest.xml:20:5-44
+MERGED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:20:5-22:41
+	tools:overrideLibrary
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:16:12-69
+	android:targetSdkVersion
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml
+supports-screens
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:20:2-24:33
+	android:largeScreens
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:23:3-30
+	android:smallScreens
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:21:3-30
+	android:normalScreens
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:22:3-31
+	android:xlargeScreens
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:24:3-31
+activity#com.shatteredpixel.shatteredpixeldungeon.android.AndroidLauncher
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:37:5-46:16
+	android:screenOrientation
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:39:9-45
+	android:exported
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:41:9-32
+	android:configChanges
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:40:9-111
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:38:9-40
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:42:9-45:25
+action#android.intent.action.MAIN
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:43:13-65
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:43:21-62
+category#android.intent.category.LAUNCHER
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:44:13-73
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:44:23-70
+activity#com.shatteredpixel.shatteredpixeldungeon.android.AndroidMissingNativesHandler
+ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:47:5-49:16
+	android:name
+		ADDED from D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\AndroidManifest.xml:48:9-53
+activity#cat.ereza.customactivityoncrash.activity.DefaultErrorActivity
+ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:12:9-14:49
+	android:process
+		ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:14:13-46
+	android:name
+		ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:13:13-89
+provider#cat.ereza.customactivityoncrash.provider.CaocInitProvider
+ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:16:9-20:39
+	android:authorities
+		ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:18:13-85
+	android:exported
+		ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:19:13-37
+	android:initOrder
+		ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:20:13-36
+	android:name
+		ADDED from [cat.ereza:customactivityoncrash:2.2.0] D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\AndroidManifest.xml:17:13-85
+meta-data#android.arch.lifecycle.VERSION
+ADDED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:25:9-27:47
+	android:value
+		ADDED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:27:13-44
+	android:name
+		ADDED from [android.arch.lifecycle:runtime:1.0.0] D:\AS\g\caches\8.13\transforms\726374ea5c7682c27b412b79b07eef22\transformed\runtime-1.0.0\AndroidManifest.xml:26:13-58

@@ -1,0 +1,10 @@
+com.shatteredpixel.shatteredpixeldungeon.android-appcompat-v7-27.0.1-0 D:\AS\g\caches\8.13\transforms\353ba5e757e8f77acfa3424529c0d25b\transformed\appcompat-v7-27.0.1\res
+com.shatteredpixel.shatteredpixeldungeon.android-support-compat-27.0.1-1 D:\AS\g\caches\8.13\transforms\99ddd0e00974d84b2417d082ca7dacd4\transformed\support-compat-27.0.1\res
+com.shatteredpixel.shatteredpixeldungeon.android-customactivityoncrash-2.2.0-2 D:\AS\g\caches\8.13\transforms\d3d63ec8005d5931fcf1cbdaecf5298b\transformed\customactivityoncrash-2.2.0\res
+com.shatteredpixel.shatteredpixeldungeon.android-pngs-3 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\build\generated\res\pngs\debug
+com.shatteredpixel.shatteredpixeldungeon.android-resValues-4 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\build\generated\res\resValues\debug
+com.shatteredpixel.shatteredpixeldungeon.android-packageDebugResources-5 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.shatteredpixel.shatteredpixeldungeon.android-packageDebugResources-6 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.shatteredpixel.shatteredpixeldungeon.android-merged_res-7 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\build\intermediates\merged_res\debug
+com.shatteredpixel.shatteredpixeldungeon.android-debug-8 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\debug\res
+com.shatteredpixel.shatteredpixeldungeon.android-main-9 D:\STUDY\Dungeon\transformation-pixel-dungeon-master\android\src\main\res
