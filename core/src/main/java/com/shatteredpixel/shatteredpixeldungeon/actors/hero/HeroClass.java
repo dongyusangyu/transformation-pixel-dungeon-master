@@ -1,0 +1,916 @@
+/*
+ * Pixel Dungeon
+ * Copyright (C) 2012-2015 Oleg Dolya
+ *
+ * Shattered Pixel Dungeon
+ * Copyright (C) 2014-2025 Evan Debenham
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
+package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
+
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.QuickSlot;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GravityChaosTracker;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RuneMark;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Suffering;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Virtue;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.AscendedForm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Trinity;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Discharge_Gas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.HoneyComb;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400.Routine;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Challenge;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.ElementalStrike;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Feint;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.freeman.SalesContract;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.friar.ConcentratedPotion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.friar.HolyPrayer;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.friar.ReasonDose;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.NaturesPower;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpectralBlades;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.ElementalBlast;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WarpBeacon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage.WildMagic;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.OneSword;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.SpiderJar;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.princess.KingBlade;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.princess.MarchForward;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.princess.TabooMagic;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.DeathMark;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.slime.MadSlime;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.slime.RapidWaterfall;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.slime.SpringSpell;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Endure;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.HeroicLeap;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Shockwave;
+import com.shatteredpixel.shatteredpixeldungeon.custom.ch.ChallengeBag;
+import com.shatteredpixel.shatteredpixeldungeon.custom.dict.DictBook;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.BackpackCleaner;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.BlobsEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.CustomWand;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.CustomWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.EnemyAttributeModifier;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ImmortalShieldAffecter;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.LevelTeleporter;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.MobAttributeViewer;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.MobPlacer;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.StrengthSetting;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TerrainPlacer;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TimeReverser;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TrapPlacer;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.LazyTest;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestAlignment;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestArmor;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestArtifact;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMelee;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMissile;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestPotion;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestRing;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestSublimation;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
+import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
+import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.SpecialPackage;
+import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfFrost;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHaste;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfInvisibility;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlame;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMindVision;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfKing;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
+import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnchantment;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SprayGun;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Bracer;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Cudgel;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dagger;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gloves;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.LatherWhip;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Rapier;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.SpearOfConqueror;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WalkStick;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.DamageGear;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.RuneString;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.SlimeBall;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingKnife;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingSpike;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.watabou.utils.DeviceCompat;
+
+public enum HeroClass {
+
+	WARRIOR( HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
+	MAGE( HeroSubClass.BATTLEMAGE, HeroSubClass.WARLOCK ),
+	ROGUE( HeroSubClass.ASSASSIN, HeroSubClass.FREERUNNER ),
+	HUNTRESS( HeroSubClass.SNIPER, HeroSubClass.WARDEN ),
+	DUELIST( HeroSubClass.CHAMPION, HeroSubClass.MONK ),
+	CLERIC( HeroSubClass.PRIEST, HeroSubClass.PALADIN ),
+	FREEMAN(HeroSubClass.FREEMAN),
+	SLIMEGIRL( HeroSubClass.WATERSLIME, HeroSubClass.DARKSLIME),
+	NINJA(HeroSubClass.TATTEKI_NINJA,HeroSubClass.NINJA_MASTER),
+	DM400(HeroSubClass.AT400,HeroSubClass.AU400),
+    PRINCESS(HeroSubClass.RUNEMAGE,HeroSubClass.COMBATMASTER),
+    FRIAR(HeroSubClass.ALCHEMIST,HeroSubClass.PIOUS),
+	RATKING(HeroSubClass.KING);
+	//COMMON( HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR ),
+    //ADVANCED(HeroSubClass.BERSERKER, HeroSubClass.GLADIATOR );
+
+	private HeroSubClass[] subClasses;
+
+	HeroClass( HeroSubClass...subClasses ) {
+		this.subClasses = subClasses;
+	}
+
+	public void initHero( Hero hero ) {
+
+		hero.heroClass = this;
+		Talent.initClassTalents(hero);
+
+
+
+		Item i = new ClothArmor().identify();
+		if (!Challenges.isItemBlocked(i)) hero.belongings.armor = (ClothArmor)i;
+
+		i = new Food();
+		if (!Challenges.isItemBlocked(i)) i.collect();
+		new VelvetPouch().collect();
+		Dungeon.LimitedDrops.VELVET_POUCH.drop();
+		doChallengeSpawn(hero);
+		Waterskin waterskin = new Waterskin();
+        if(Dungeon.isChallenged(Challenges.TEST_MODE)){
+            waterskin.fill();
+        }
+		waterskin.collect();
+		new ScrollOfIdentify().identify();
+		new ScrollOfMetamorphosis().identify();
+		hero.updateHT(true);
+
+		//new ScrollOfEnchantment().quantity(10000).collect();
+		switch (this) {
+			case WARRIOR: default:
+				initWarrior( hero );
+				break;
+
+			case MAGE:
+				initMage( hero );
+				break;
+
+			case ROGUE:
+				initRogue( hero );
+				break;
+
+			case HUNTRESS:
+				initHuntress( hero );
+				break;
+
+			case DUELIST:
+				initDuelist( hero );
+				break;
+			case CLERIC:
+				initCleric( hero );
+				break;
+
+			case FREEMAN:
+				initFreeman(hero);
+				break;
+			case SLIMEGIRL:
+				initSlimeGirl( hero );
+				break;
+			case NINJA:
+				initNinja( hero );
+				break;
+			case DM400:
+				initDM400(hero);
+				break;
+            case PRINCESS:
+                initPrincess(hero);
+                break;
+            case FRIAR:
+                initFriar(hero);
+                break;
+			case RATKING:
+				initRatking(hero);
+				break;
+		}
+
+		if (SPDSettings.quickslotWaterskin()) {
+			for (int s = 0; s < QuickSlot.SIZE; s++) {
+				if (Dungeon.quickslot.getItem(s) == null) {
+					Dungeon.quickslot.setSlot(s, waterskin);
+					break;
+				}
+			}
+		}
+
+	}
+
+	public Badges.Badge masteryBadge() {
+		switch (this) {
+			case WARRIOR:
+				return Badges.Badge.MASTERY_WARRIOR;
+			case MAGE:
+				return Badges.Badge.MASTERY_MAGE;
+			case ROGUE:
+				return Badges.Badge.MASTERY_ROGUE;
+			case HUNTRESS:
+				return Badges.Badge.MASTERY_HUNTRESS;
+			case DUELIST:
+				return Badges.Badge.MASTERY_DUELIST;
+		}
+		return null;
+	}
+
+	private static void initWarrior( Hero hero ) {
+		hero.STR = 11;
+		(hero.belongings.weapon = new WornShortsword()).identify();
+		ThrowingStone stones = new ThrowingStone();
+		stones.identify().collect();
+
+		Dungeon.quickslot.setSlot(0, stones);
+
+		if (hero.belongings.armor != null){
+			hero.belongings.armor.affixSeal(new BrokenSeal());
+			Catalog.setSeen(BrokenSeal.class); //as it's not added to the inventory
+		}
+
+		new PotionOfHealing().identify();
+		new ScrollOfRage().identify();
+	}
+
+	private static void initMage( Hero hero ) {
+		MagesStaff staff;
+
+		staff = new MagesStaff(new WandOfMagicMissile());
+
+		(hero.belongings.weapon = staff).identify();
+		hero.belongings.weapon.activate(hero);
+
+		Dungeon.quickslot.setSlot(0, staff);
+
+		new ScrollOfUpgrade().identify();
+		new PotionOfLiquidFlame().identify();
+	}
+
+	private static void initRogue( Hero hero ) {
+		(hero.belongings.weapon = new Dagger()).identify();
+
+		CloakOfShadows cloak = new CloakOfShadows();
+		(hero.belongings.artifact = cloak).identify();
+		hero.belongings.artifact.activate( hero );
+
+		ThrowingKnife knives = new ThrowingKnife();
+		knives.identify().collect();
+
+		Dungeon.quickslot.setSlot(0, cloak);
+		Dungeon.quickslot.setSlot(1, knives);
+
+		new ScrollOfMagicMapping().identify();
+		new PotionOfInvisibility().identify();
+	}
+
+	private static void initHuntress( Hero hero ) {
+
+		(hero.belongings.weapon = new Gloves()).identify();
+		SpiritBow bow = new SpiritBow();
+		bow.identify().collect();
+
+		Dungeon.quickslot.setSlot(0, bow);
+
+		new PotionOfMindVision().identify();
+		new ScrollOfLullaby().identify();
+	}
+
+	private static void initDuelist( Hero hero ) {
+
+		(hero.belongings.weapon = new Rapier()).identify();
+		hero.belongings.weapon.activate(hero);
+
+		ThrowingSpike spikes = new ThrowingSpike();
+		spikes.quantity(2).identify().collect();
+
+		Dungeon.quickslot.setSlot(0, hero.belongings.weapon);
+		Dungeon.quickslot.setSlot(1, spikes);
+
+		new PotionOfStrength().identify();
+		new ScrollOfMirrorImage().identify();
+	}
+
+	private static void initCleric( Hero hero ) {
+
+		(hero.belongings.weapon = new Cudgel()).identify();
+		hero.belongings.weapon.activate(hero);
+
+		HolyTome tome = new HolyTome();
+		(hero.belongings.artifact = tome).identify();
+		hero.belongings.artifact.activate( hero );
+
+		Dungeon.quickslot.setSlot(0, tome);
+
+		new PotionOfPurity().identify();
+		new ScrollOfRemoveCurse().identify();
+	}
+	private static void initFreeman( Hero hero ) {
+		(hero.belongings.weapon = new WalkStick()).identify();
+        LuckyCoin coin = new LuckyCoin();
+		coin.quantity(1).identify().collect();
+		Dungeon.quickslot.setSlot(0,coin);
+		new SpecialPackage().collect();
+		new PotionOfExperience().identify();
+		new ScrollOfTransmutation().identify();
+	}
+	private static void initSlimeGirl( Hero hero ) {
+		hero.STR = 9;
+		//hero.HTBoost = 5;
+		;
+		SlimeBall ball = new SlimeBall();
+		ball.quantity(2).identify().collect();
+		Dungeon.quickslot.setSlot(0, ball);
+		(hero.belongings.weapon = new SpearOfConqueror()).identify();
+		hero.belongings.weapon.activate(hero);
+		(hero.belongings.armor = new SlimeArmor()).identify();
+
+	}
+	private static void initNinja( Hero hero ) {
+		(hero.belongings.weapon = new Wakizashi()).identify();
+		hero.belongings.weapon.activate(hero);
+		hero.updateHT(true);
+		Shuriken_Box box = new Shuriken_Box();
+		(hero.belongings.artifact = box).identify();
+		hero.belongings.artifact.activate( hero );
+		Dungeon.quickslot.setSlot(0, box);
+		new PotionOfToxicGas().identify();
+		new ScrollOfTeleportation().identify();
+	}
+	private static void initDM400( Hero hero ) {
+
+		hero.updateHT(true);
+		InstructionTool tool = new InstructionTool();
+		(hero.belongings.artifact =tool).identify();
+		hero.belongings.artifact.activate( hero );
+		DamageGear g = new DamageGear();
+		hero.addProperties(Char.Property.INORGANIC);
+		g.quantity(2).identify().collect();
+		Dungeon.quickslot.setSlot(0, tool);
+		Dungeon.quickslot.setSlot(1, g);
+		new PotionOfFrost().identify();
+		new ScrollOfRecharging().identify();
+	}
+    private static void initPrincess( Hero hero ) {
+
+
+        hero.updateHT(true);
+        (hero.belongings.weapon = new Bracer()).identify();
+        RingOfKing ring = new RingOfKing();
+        (hero.belongings.ring = ring).identify();
+        hero.belongings.ring.activate(hero);
+        RuneString r = new RuneString();
+        r.quantity(1).identify().collect();
+        Dungeon.quickslot.setSlot(0, r);
+        new PotionOfLevitation().identify();
+        new ScrollOfRetribution().identify();
+    }
+    private static void initFriar( Hero hero ) {
+        (hero.belongings.weapon = new LatherWhip()).identify();
+        SprayGun sprayGun = new SprayGun();
+        sprayGun.identify().collect();
+        Dungeon.quickslot.setSlot(0, sprayGun);
+        hero.updateHT(true);
+        Buff.affect(hero, Reason.class);
+        ActionIndicator.refresh();
+        new PotionOfHaste().identify();
+        new ScrollOfTerror().identify();
+    }
+	private static void initRatking( Hero hero ) {
+		// warrior
+		if (hero.belongings.armor != null){
+			hero.belongings.armor.affixSeal(new BrokenSeal());
+		}
+		// mage
+		MagesStaff staff = new MagesStaff(new WandOfMagicMissile());
+		(hero.belongings.weapon = staff).identify();
+		hero.belongings.weapon.activate(hero);
+		// rogue
+		CloakOfShadows cloak = new CloakOfShadows();
+		(hero.belongings.artifact = cloak).identify();
+		hero.belongings.artifact.activate( hero );
+		// huntress
+		SpiritBow bow = new SpiritBow();
+		bow.identify().collect();
+		// allocating slots
+		Dungeon.quickslot.setSlot(0, bow);
+		Dungeon.quickslot.setSlot(1, cloak);
+		Dungeon.quickslot.setSlot(2, staff);
+	}
+
+	public String title() {
+		return Messages.get(HeroClass.class, name());
+	}
+
+	public String desc(){
+		return Messages.get(HeroClass.class, name()+"_desc");
+	}
+
+	public String shortDesc(){
+		return Messages.get(HeroClass.class, name()+"_desc_short");
+	}
+
+	public HeroSubClass[] subClasses() {
+		return subClasses;
+	}
+
+	public ArmorAbility[] armorAbilities(){
+		switch (this) {
+			case WARRIOR: default:
+				return new ArmorAbility[]{new HeroicLeap(), new Shockwave(), new Endure()};
+			case MAGE:
+				return new ArmorAbility[]{new ElementalBlast(), new WildMagic(), new WarpBeacon()};
+			case ROGUE:
+				return new ArmorAbility[]{new SmokeBomb(), new DeathMark(), new ShadowClone()};
+			case HUNTRESS:
+				return new ArmorAbility[]{new SpectralBlades(), new NaturesPower(), new SpiritHawk()};
+			case DUELIST:
+				return new ArmorAbility[]{new Challenge(), new ElementalStrike(), new Feint()};
+			case CLERIC:
+				return new ArmorAbility[]{new AscendedForm(), new Trinity(), new PowerOfMany()};
+			case FREEMAN:
+				return new ArmorAbility[]{new SalesContract(),new Ratmogrify()};
+			case SLIMEGIRL:
+				return new ArmorAbility[]{new SpringSpell(), new RapidWaterfall(), new MadSlime()};
+			case NINJA:
+				return new ArmorAbility[]{new Decoy(), new SpiderJar(), new OneSword()};
+			case DM400:
+				return new ArmorAbility[]{new Routine(),new Discharge_Gas(),new HoneyComb()};
+            case PRINCESS:
+                return new ArmorAbility[]{new MarchForward(),new TabooMagic(),new KingBlade()};
+            case FRIAR:
+                return new ArmorAbility[]{new ReasonDose(),new ConcentratedPotion(),new HolyPrayer()};
+			case RATKING:
+				//return new ArmorAbility[]{new Ratmogrify(), new Wrath(), new OmniAbility()};
+				return new ArmorAbility[]{new Ratmogrify()};
+		}
+	}
+	/*
+	public String spritesheet() {
+		switch (this) {
+			case WARRIOR: default:
+				return Assets.Sprites.WARRIOR;
+			case MAGE:
+				return Assets.Sprites.MAGE;
+			case ROGUE:
+				return Assets.Sprites.ROGUE;
+			case HUNTRESS:
+				return Assets.Sprites.HUNTRESS;
+			case DUELIST:
+				return Assets.Sprites.DUELIST;
+			case CLERIC:
+				return Assets.Sprites.CLERIC;
+			case FREEMAN:
+				return Assets.Sprites.FREEMAN;
+			case SLIMEGIRL:
+				return Assets.Sprites.SLIMEGIRL;
+			case NINJA:
+				return Assets.Sprites.NINJA;
+			case DM400:
+				return Assets.Sprites.DM400;
+			case PRINCESS:
+				return Assets.Sprites.PRINCESS;
+		}
+	}
+
+	 */
+	public String spritesheet() {
+		int skin = 0;
+		if(Dungeon.hero!=null){
+			skin=Dungeon.skin;
+		}
+		switch (this) {
+			case WARRIOR: default:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.WARRIOR;
+				}else{
+					return "sprites/warrior"+skin+".png";
+				}
+
+			case MAGE:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.MAGE;
+				}else{
+					return "sprites/mage"+skin+".png";
+				}
+			case ROGUE:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.ROGUE;
+				}else{
+					return "sprites/rogue"+skin+".png";
+				}
+			case HUNTRESS:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.HUNTRESS;
+				}else{
+					return "sprites/huntress"+skin+".png";
+				}
+			case DUELIST:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.DUELIST;
+				}else{
+					return "sprites/duelist"+skin+".png";
+				}
+			case CLERIC:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.CLERIC;
+				}else{
+					return "sprites/cleric"+skin+".png";
+				}
+			case FREEMAN:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.FREEMAN;
+				}else{
+					return "sprites/freeman"+skin+".png";
+				}
+			case SLIMEGIRL:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.SLIMEGIRL;
+				}else{
+					return "sprites/slimegirl"+skin+".png";
+				}
+			case NINJA:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.NINJA;
+				}else{
+					return "sprites/ninja"+skin+".png";
+				}
+			case DM400:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.DM400;
+				}else{
+					return "sprites/dm400"+skin+".png";
+				}
+			case PRINCESS:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.PRINCESS;
+				}else{
+					return "sprites/princess"+skin+".png";
+				}
+            case FRIAR:
+                if(skin==0 || skin>=getSkinNums()){
+                    return Assets.Sprites.FRIAR;
+                }else{
+                    return "sprites/friar"+skin+".png";
+                }
+			case RATKING:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.RATKING_HERO;
+				}else{
+					return "sprites/ratking_hero"+skin+".png";
+				}
+		}
+	}
+
+	public String spritesheet(int skin) {
+		switch (this) {
+			case WARRIOR: default:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.WARRIOR;
+				}else{
+					return "sprites/warrior"+skin+".png";
+				}
+
+			case MAGE:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.MAGE;
+				}else{
+					return "sprites/mage"+skin+".png";
+				}
+			case ROGUE:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.ROGUE;
+				}else{
+					return "sprites/rogue"+skin+".png";
+				}
+			case HUNTRESS:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.HUNTRESS;
+				}else{
+					return "sprites/huntress"+skin+".png";
+				}
+			case DUELIST:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.DUELIST;
+				}else{
+					return "sprites/duelist"+skin+".png";
+				}
+			case CLERIC:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.CLERIC;
+				}else{
+					return "sprites/cleric"+skin+".png";
+				}
+			case FREEMAN:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.FREEMAN;
+				}else{
+					return "sprites/freeman"+skin+".png";
+				}
+			case SLIMEGIRL:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.SLIMEGIRL;
+				}else{
+					return "sprites/slimegirl"+skin+".png";
+				}
+			case NINJA:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.NINJA;
+				}else{
+					return "sprites/ninja"+skin+".png";
+				}
+			case DM400:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.DM400;
+				}else{
+					return "sprites/dm400"+skin+".png";
+				}
+			case PRINCESS:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.PRINCESS;
+				}else{
+					return "sprites/princess"+skin+".png";
+				}
+            case FRIAR:
+                if(skin==0 || skin>=getSkinNums()){
+                    return Assets.Sprites.FRIAR;
+                }else{
+                    return "sprites/friar"+skin+".png";
+                }
+			case RATKING:
+				if(skin==0 || skin>=getSkinNums()){
+					return Assets.Sprites.RATKING_HERO;
+				}else{
+					return "sprites/ratking_hero"+skin+".png";
+				}
+		}
+	}
+
+	public String splashArt(){
+		switch (this) {
+			case WARRIOR: default:
+				return Assets.Splashes.WARRIOR;
+			case MAGE:
+				return Assets.Splashes.MAGE;
+			case ROGUE:
+				return Assets.Splashes.ROGUE;
+			case HUNTRESS:
+				return Assets.Splashes.HUNTRESS;
+			case DUELIST:
+				return Assets.Splashes.DUELIST;
+			case CLERIC:
+				return Assets.Splashes.CLERIC;
+			case FREEMAN:
+				return Assets.Splashes.FREEMAN;
+			case SLIMEGIRL:
+				return Assets.Splashes.SLIMEGIRL;
+			case NINJA:
+				return Assets.Splashes.NINJA;
+			case DM400:
+				return Assets.Splashes.DM400;
+			case PRINCESS:
+				return Assets.Splashes.PRINCESS;
+            case FRIAR:
+                return Assets.Splashes.FRIAR;
+			case RATKING:
+				return Assets.Splashes.RATKING_HERO;
+
+		}
+	}
+	
+	public boolean isUnlocked(){
+		//always unlock on debug builds
+		if (DeviceCompat.isDebug()) return true;
+
+		switch (this){
+			case WARRIOR: default:
+				return true;
+			case MAGE:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_MAGE);
+			case ROGUE:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_ROGUE);
+			case HUNTRESS:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_HUNTRESS);
+			case DUELIST:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_DUELIST);
+			case CLERIC:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_CLERIC);
+			case FREEMAN:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_FREEMAN);
+			case SLIMEGIRL:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_SLIME);
+			case NINJA:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_NINJA);
+			case DM400:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_DM400);
+			case PRINCESS:
+				return Badges.isUnlocked(Badges.Badge.UNLOCK_PRINCESS);
+            case FRIAR:
+                return Badges.isUnlocked(Badges.Badge.UNLOCK_FRIAR);
+		}
+	}
+	private static void doChallengeSpawn(Hero hero) {
+
+
+
+		if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
+			new ChallengeBag().collect();
+			new RubbingsTome().identify().collect();
+			new DictBook().collect();
+			/*
+			Mana mana = new Mana();
+			mana.maxMana = 200;
+			mana.curMana = 0;
+			mana.manaRegen = 0.514f;
+			mana.attachTo(hero);
+			 */
+			//new WandOfScanningBeam().identify().collect();
+
+			new MobPlacer().collect();
+
+
+			CustomWeapon customWeapon = new CustomWeapon();
+			customWeapon.adjustStatus();
+			customWeapon.identify().collect();
+
+			CustomWand customWand = new CustomWand();
+			customWand.identify().collect();
+
+			new TestBag().collect();
+
+			new TrapPlacer().collect();
+
+			new TimeReverser().collect();
+
+			new ImmortalShieldAffecter().collect();
+
+			new BackpackCleaner().collect();
+
+			new LevelTeleporter().collect();
+
+			new LazyTest().collect();
+
+			new TestArmor().collect();
+			new TestArtifact().collect();
+			new TestMelee().collect();
+			new TestMissile().collect();
+			new TestRing().collect();
+			new TestPotion().collect();
+			new TestAlignment().collect();
+
+			//new PotionBag().collect();
+
+			new ScrollHolder().collect();
+			Dungeon.LimitedDrops.SCROLL_HOLDER.drop();
+
+			new PotionBandolier().collect();
+			Dungeon.LimitedDrops.POTION_BANDOLIER.drop();
+
+			if (!Dungeon.LimitedDrops.VELVET_POUCH.dropped()) {
+				new VelvetPouch().collect();
+				Dungeon.LimitedDrops.VELVET_POUCH.drop();
+			}
+
+			new MagicalHolster().collect();
+			Dungeon.LimitedDrops.MAGICAL_HOLSTER.drop();
+
+			//	new WandOfReflectDisintegration().identify().collect();
+			new ScrollOfSublimation().type("TENGU").collect();
+			//new EnemyAttributeModifier().collect();
+
+			new MobAttributeViewer().collect();
+
+			new TerrainPlacer().collect();
+
+			new BlobsEmitter().collect();
+
+			new StrengthSetting().collect();
+			new TestTalent().collect();
+			new TestSublimation().collect();
+			//Buff.affect(hero, GravityChaosTracker.class);
+/*
+			HDKItem.KingAmulet ka = new HDKItem.KingAmulet();
+			ka.setUses(999);
+			ka.collect();
+
+ */
+
+
+		}
+	}
+
+	public int getSkinNums(){
+		switch (this) {
+			case WARRIOR:
+				return 5;
+			case MAGE:
+				return 2;
+			case ROGUE:
+				return 4;
+			case HUNTRESS:
+				return 4;
+			case DUELIST:
+				return 3;
+			case CLERIC:
+				return 3;
+			case FREEMAN:
+				return 3;
+			case SLIMEGIRL:
+				return 5;
+			case NINJA:
+				return 4;
+			case DM400:
+				return 3;
+			case PRINCESS:
+				return 2;
+            case FRIAR:
+                return 1;
+			default:
+				return 1;
+
+		}
+	}
+	
+	public String unlockMsg() {
+		return shortDesc() + "\n\n" + Messages.get(HeroClass.class, name()+"_unlock");
+	}
+
+
+}

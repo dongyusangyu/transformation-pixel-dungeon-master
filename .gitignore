@@ -1,0 +1,55 @@
+# Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+
+# Android/local configuration
+local.properties
+*.keystore
+*.jks
+
+# Compiled/generated binaries
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Build output folders
+out/
+bin/
+obj/
+target/
+dist/
+release/
+debug/
+capture/
+SPD-classes/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*.orig
+
+# IDE user state
+.idea/shelf/
+.idea/workspace.xml
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
