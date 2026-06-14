@@ -172,6 +172,7 @@ public class HeroIcon extends Image {
 	public static final int EQUIPMENT_BLESS = 166;
 
 	public static final int HOTLIGHT = 168;
+	public static final int CREDULOUS = 170;
 
 	public static final int AT400 = 192;
 	public static final int AU400 = 193;

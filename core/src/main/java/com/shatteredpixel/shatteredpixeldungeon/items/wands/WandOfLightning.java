@@ -118,9 +118,9 @@ public class WandOfLightning extends DamageWand {
 			wandProc(ch, chargesPerCast());
 			if (ch == curUser && ch.isAlive()) {
 				if(hero.hasTalent(Talent.WULEI_ZHENGFA)){
-                    ch.heal((int)(damageRoll() * multiplier*0.2));
+                    ch.heal((int)(damageRoll(ch) * multiplier*0.2));
 				}else{
-					ch.damage(Math.round(damageRoll() * multiplier * 0.5f), this);
+					ch.damage(Math.round(damageRoll(ch) * multiplier * 0.5f), this);
 					if (!curUser.isAlive()) {
 						Badges.validateDeathFromFriendlyMagic();
 						Dungeon.fail( this );
@@ -128,7 +128,7 @@ public class WandOfLightning extends DamageWand {
 					}
 				}
 			} else {
-				ch.damage(Math.round(damageRoll() * multiplier), this);
+				ch.damage(Math.round(damageRoll(ch) * multiplier), this);
 			}
 		}
 	}

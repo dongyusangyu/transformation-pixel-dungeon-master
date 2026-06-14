@@ -104,6 +104,7 @@ public enum Rankings {
 		rec.win		= win;
 		rec.heroClass	= hero.heroClass;
 		rec.armorTier	= hero.tier();
+		rec.skin        = Dungeon.skin;
 		rec.herolevel	= hero.lvl;
 		if (Statistics.highestAscent == 0){
 			rec.depth = Statistics.deepestFloor;
@@ -357,6 +358,8 @@ public enum Rankings {
 
 		if (data == null) return;
 
+		Dungeon.skin = rec.skin;
+
 		Bundle handler = data.getBundle(HANDLERS);
 		Scroll.restore(handler);
 		Potion.restore(handler);
@@ -486,6 +489,7 @@ public enum Rankings {
 		private static final String SCORE	= "score";
 		private static final String CLASS	= "class";
 		private static final String TIER	= "tier";
+		private static final String SKIN	= "skin";
 		private static final String LEVEL	= "level";
 		private static final String DEPTH	= "depth";
 		private static final String ASCEND	= "ascending";
@@ -502,6 +506,7 @@ public enum Rankings {
 
 		public HeroClass heroClass;
 		public int armorTier;
+		public int skin;
 		public int herolevel;
 		public int depth;
 		public boolean ascending;
@@ -560,6 +565,7 @@ public enum Rankings {
 
 			heroClass	= bundle.getEnum( CLASS, HeroClass.class );
 			armorTier	= bundle.getInt( TIER );
+			skin        = bundle.getInt( SKIN );
 			herolevel   = bundle.getInt( LEVEL );
 			depth       = bundle.getInt( DEPTH );
 			ascending   = bundle.getBoolean( ASCEND );
@@ -590,6 +596,7 @@ public enum Rankings {
 
 			bundle.put( CLASS, heroClass );
 			bundle.put( TIER, armorTier );
+			bundle.put( SKIN, skin );
 			bundle.put( LEVEL, herolevel );
 			bundle.put( DEPTH, depth );
 			bundle.put( ASCEND, ascending );

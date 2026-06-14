@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.noosa.Image;
@@ -70,12 +71,13 @@ public class ArtifactRecharge extends Buff {
 	}
 	
 	public ArtifactRecharge set( float amount ){
+		amount = BronzeWatch.adjustDuration(target, amount);
 		if (left < amount) left = amount;
 		return this;
 	}
 	
 	public ArtifactRecharge extend(float amount ){
-		left += amount;
+		left += BronzeWatch.adjustDuration(target, amount);
 		return this;
 	}
 

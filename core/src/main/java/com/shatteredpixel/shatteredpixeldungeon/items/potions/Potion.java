@@ -624,7 +624,7 @@ public class Potion extends Item {
 
 	public static class PotionCooldown extends FlavourBuff {
 		public int icon() { return BuffIndicator.TIME; }
-		public void tintIcon(Image icon) { icon.hardlight(0.15f, 0.2f, 0.5f); }
+		public void tintIcon(Image icon) { icon.hardlight(0.608f, 0.196f, 0.6f); }
 		public float iconFadePercent() { return Math.max(0, visualcooldown() / 20); }
 	};
 }

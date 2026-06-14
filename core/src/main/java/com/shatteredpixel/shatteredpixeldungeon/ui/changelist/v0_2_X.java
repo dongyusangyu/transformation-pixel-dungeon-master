@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.PhantomLandPiranhaSprite
 import com.shatteredpixel.shatteredpixeldungeon.sprites.RipperBossSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.RogueBossSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.StatueSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.TenguSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.WarriorBossSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 
 public class v0_2_X {
     public static void addAllChanges( ArrayList<ChangeInfo> changeInfos ){
+        add_v0_2_9fixChanges( changeInfos);
         add_v0_2_9Changes( changeInfos);
         add_v0_2_8Changes( changeInfos);
         add_v0_2_7Changes( changeInfos);
@@ -41,6 +43,29 @@ public class v0_2_X {
         add_v0_2_2Changes(changeInfos);
         add_v0_2_1Changes(changeInfos);
         add_v0_2_0Changes(changeInfos);
+    }
+    public static void add_v0_2_9fixChanges( ArrayList<ChangeInfo> changeInfos ) {
+
+        ChangeInfo changes = new ChangeInfo("v0.2.9fix", true, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+
+
+        changes = new ChangeInfo("fix1", false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+
+        changes.addButton(new ChangeButton(Icons.get(Icons.TALENT),
+                Messages.get(v0_2_X.class, "v0_2_9fix.button_1.title"), Messages.get(v0_2_X.class, "v0_2_9fix.button_1.text")));
+        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.RITUAL_DAGGER),
+                Messages.get(v0_2_X.class, "v0_2_9fix.button_2.title"), Messages.get(v0_2_X.class, "v0_2_9fix.button_2.text")));
+        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.BRONZE_WATCH),
+                Messages.get(v0_2_X.class, "v0_2_9fix.button_3.title"), Messages.get(v0_2_X.class, "v0_2_9fix.button_3.text")));
+        changes.addButton(new ChangeButton(new Image(new TenguSprite()),
+                Messages.get(v0_2_X.class, "v0_2_9fix.button_4.title"), Messages.get(v0_2_X.class, "v0_2_9fix.button_4.text")));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),
+                Messages.get(v0_2_X.class, "v0_2_9fix.button_5.title"), Messages.get(v0_2_X.class, "v0_2_9fix.button_5.text_1"), Messages.get(v0_2_X.class, "v0_2_9fix.button_5.text_2")));
+
     }
     public static void add_v0_2_9Changes( ArrayList<ChangeInfo> changeInfos ) {
 

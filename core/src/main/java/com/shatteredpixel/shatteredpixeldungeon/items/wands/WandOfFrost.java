@@ -25,19 +25,24 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Freezing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.MagicalFireRoom;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
+import com.watabou.utils.PathFinder;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
@@ -78,19 +83,27 @@ public class WandOfFrost extends DamageWand {
 
 		}
 
+		int iceHellPoints = Dungeon.hero == null ? 0 : Dungeon.hero.pointsInTalent(Talent.ICE_HELL);
+		if (iceHellPoints >= 3 && Random.Float() < 0.5f){
+			for (int offset : PathFinder.NEIGHBOURS9){
+				int cell = bolt.collisionPos + offset;
+				if (Dungeon.level.insideMap(cell) && !Dungeon.level.solid[cell]){
+					GameScene.add(Blob.seed(cell, 10, Freezing.class));
+				}
+			}
+		}
+
 		Char ch = Actor.findChar(bolt.collisionPos);
 		if (ch != null){
 
-			int damage = damageRoll();
+			Frost frost = ch.buff(Frost.class);
 
-			if (ch.buff(Frost.class) != null){
-				return; //do nothing, can't affect a frozen target
+			if (frost != null && iceHellPoints < 2){
+				return;
 			}
-			if (ch.buff(Chill.class) != null){
-				//6.67% less damage per turn of chill remaining, to a max of 10 turns (50% dmg)
-				float chillturns = Math.min(10, ch.buff(Chill.class).cooldown());
-				damage = (int)Math.round(damage * Math.pow(0.9333f, chillturns));
-			} else {
+
+			int damage = frost != null ? Talent.onWandDamage(this, ch, 0) : damageRoll(ch);
+			if (ch.buff(Chill.class) == null || iceHellPoints >= 1){
 				ch.sprite.burst( 0xFF99CCFF, buffedLvl() / 2 + 2 );
 			}
 
@@ -98,7 +111,7 @@ public class WandOfFrost extends DamageWand {
 			ch.damage(damage, this);
 			Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, 1.1f * Random.Float(0.87f, 1.15f) );
 
-			if (ch.isAlive()){
+			if (ch.isAlive() && frost == null){
 				if (Dungeon.level.water[ch.pos])
 					Buff.affect(ch, Chill.class, 4+buffedLvl());
 				else

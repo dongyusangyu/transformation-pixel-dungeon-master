@@ -68,6 +68,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Blacksmith;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlowParticle;
@@ -596,8 +597,10 @@ public abstract class Level implements Bundlable {
 		if (transition.type == LevelTransition.Type.REGULAR_EXIT
 				|| transition.type == LevelTransition.Type.BRANCH_EXIT) {
 			InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
+			AgentMinRewardTracker.onTransition(true);
 		} else {
 			InterlevelScene.mode = InterlevelScene.Mode.ASCEND;
+			AgentMinRewardTracker.onTransition(false);
 		}
 		Game.switchScene(InterlevelScene.class);
 		return true;

@@ -401,7 +401,8 @@ public abstract class Actor implements Bundlable {
 		if (sourceIsSpecialEnemy || targetIsSpecialEnemy) {
 			return sourceIsSpecialEnemy && targetIsSpecialEnemy && source.alignment != target.alignment;
 		}
-
+        if(source.alignment== Char.Alignment.ENEMY && target.alignment== Char.Alignment.ENEMY &&
+                source!=target) return true;
 		return source.alignment != target.alignment;
 	}
 	

@@ -46,6 +46,10 @@ public class Tincture extends Food {
                 || Dungeon.hero.hasTalent(Talent.INVIGORATING_MEAL)
                 || Dungeon.hero.hasTalent(Talent.FOCUSED_MEAL)
                 || Dungeon.hero.hasTalent(Talent.ENLIGHTENING_MEAL)
+                || Dungeon.hero.hasTalent(Talent.BLESS_MEAL)
+                || Dungeon.hero.hasTalent(Talent.YUNYING_MEAL)
+                || Dungeon.hero.hasTalent(Talent.ROYAL_MEAL)
+                || Dungeon.hero.hasTalent(Talent.ICE_MEAL)
                 || Dungeon.hero.hasTalent(Talent.OVER_MEAL)
                 || Dungeon.hero.hasTalent(Talent.WHISPERING_MEAL)){
             return 0;

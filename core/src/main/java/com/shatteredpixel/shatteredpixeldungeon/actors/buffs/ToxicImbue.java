@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -59,11 +60,11 @@ public class ToxicImbue extends Buff {
 	}
 
 	public void set( float duration ) {
-		this.left = duration;
+		this.left = BronzeWatch.adjustDuration(target, duration);
 	}
 
 	public void extend( float duration ) {
-		left += duration;
+		left += BronzeWatch.adjustDuration(target, duration);
 	}
 
 	@Override

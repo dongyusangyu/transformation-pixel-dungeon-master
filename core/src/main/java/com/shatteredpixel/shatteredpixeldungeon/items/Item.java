@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
@@ -157,10 +158,12 @@ public class Item implements Bundlable {
 			}
 
 			Sample.INSTANCE.play( Assets.Sounds.ITEM );
+			AgentMinRewardTracker.onPickup(this, pos);
 			hero.spendAndNext( pickupDelay() );
 			return true;
 			
 		} else {
+			AgentMinRewardTracker.onPickupFailed(this, pos);
 			return false;
 		}
 	}
@@ -169,6 +172,7 @@ public class Item implements Bundlable {
 	public void doDrop( Hero hero ) {
 		hero.spendAndNext(TIME_TO_DROP);
 		int pos = hero.pos;
+		AgentMinRewardTracker.onDrop(this, pos);
 		Dungeon.level.drop(detachAll(hero.belongings.backpack), pos).sprite.drop(pos);
 	}
 

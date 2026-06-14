@@ -134,6 +134,7 @@ public class WandOfDisintegration extends DamageWand {
 			if(hero.pointsInTalent(Talent.ABYSSAL_GAZE)==2){
 				dmg*=1.2;
 			}
+            dmg = Talent.onWandDamage(this,ch,dmg);
 			ch.damage( dmg, this );
 			ch.sprite.centerEmitter().burst( PurpleParticle.BURST, Random.IntRange( 1, 2 ) );
 			ch.sprite.flash();

@@ -211,6 +211,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 				for (Talent talent : tier.keySet()) {
 					tier.put(talent, hero.pointsInTalent(talent));
 				}
+				tier.keySet().removeIf(Talent::excludedFromMetamorphosis);
 			}
 			if (Dungeon.isChallenged(Challenges.MAX_WHEAT)){
 				for (LinkedHashMap<Talent, Integer> tier : talents) {
@@ -310,7 +311,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 				for(int i = 0;i < maxTpye;i++){
 					ArrayList<Talent> typeTalents = Talent.typeTalent.get(tier-1).get(i);
 					for (Talent talent : typeTalents){
-						if (!curTalentsAtTier.contains(talent)){
+						if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)){
 							availableTalents.add(talent);
 						}
 					}
@@ -319,7 +320,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 			for(int i = 0;i < beilv-1;i++){
 				ArrayList<Talent> typeTalents = Talent.typeTalent.get(tier-1).get(type);
 				for (Talent talent : typeTalents){
-					if (!curTalentsAtTier.contains(talent)){
+					if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)){
 						availableTalents.add(talent);
 					}
 				}

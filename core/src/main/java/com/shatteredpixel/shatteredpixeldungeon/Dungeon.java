@@ -50,6 +50,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -1086,6 +1087,7 @@ public class Dungeon {
 		if (level == null) {
 			return;
 		}
+		boolean[] agentMinVisitedBefore = AgentMinRewardTracker.snapshotVisited(level);
 		
 		level.updateFieldOfView(hero, level.heroFOV);
 
@@ -1206,6 +1208,7 @@ public class Dungeon {
 		}
 
 		GameScene.afterObserve();
+		AgentMinRewardTracker.onObserve(level, agentMinVisitedBefore);
 	}
 
 	//we store this to avoid having to re-allocate the array with each pathfind

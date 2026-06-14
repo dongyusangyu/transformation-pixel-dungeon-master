@@ -113,6 +113,7 @@ public class TestTalent  extends TestGenerator {
                 for (Talent talent : tier.keySet()) {
                     tier.put(talent, hero.pointsInTalent(talent));
                 }
+                tier.keySet().removeIf(Talent::excludedFromMetamorphosis);
             }
 
 
@@ -186,7 +187,7 @@ public class TestTalent  extends TestGenerator {
 
             List<Talent> selectedTalents = new ArrayList<>();
             for(Talent talent :availableTalents){
-                if (!curTalentsAtTier.contains(talent)){
+                if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)){
                     selectedTalents.add(talent);
                 }
             }

@@ -242,9 +242,7 @@ public class SprayGun extends Weapon {
 
 	@Override
 	public int targetingPos(Hero user, int dst) {
-		Ballistica aim = new Ballistica(user.pos, dst, Ballistica.WONT_STOP);
-		int dist = Math.min(aim.dist, range(user));
-		return aim.path.get(dist);
+		return sprayTargeting(user, dst).collisionPos;
 	}
 
 	@Override
@@ -331,6 +329,14 @@ public class SprayGun extends Weapon {
 		return hero.subClass.is(HeroSubClass.ALCHEMIST) ? 75f : 65f;
 	}
 
+	private Ballistica sprayTargeting(Hero hero, int target) {
+		Ballistica route = new Ballistica(hero.pos, target, Ballistica.PROJECTILE);
+		if (route.dist > range(hero)) {
+			return new Ballistica(hero.pos, route.path.get(range(hero)), Ballistica.PROJECTILE);
+		}
+		return route;
+	}
+
 	private void loadEnergy(Hero hero) {
 		int need = maxCharges() - charges;
 		if (need <= 0) {
@@ -389,8 +395,8 @@ public class SprayGun extends Weapon {
 	}
 
 	private void spray(Hero hero, int target) {
-		Ballistica aim = new Ballistica(hero.pos, target, Ballistica.WONT_STOP);
-		int dist = Math.min(aim.dist, range(hero));
+		Ballistica aim = sprayTargeting(hero, target);
+		int dist = aim.dist;
 		ArrayList<Loaded> effects = activeLoadedEffects(hero);
         ins=0;
         if (target == hero.pos) {
@@ -433,7 +439,7 @@ public class SprayGun extends Weapon {
 
 
 		} else {
-            Ballistica route = new Ballistica(hero.pos, target, Ballistica.MAGIC_BOLT);
+            Ballistica route = sprayTargeting(hero, target);
             MagicalFireRoom.EternalFire eternalFire = (MagicalFireRoom.EternalFire)Dungeon.level.blobs.get(MagicalFireRoom.EternalFire.class);
             if (eternalFire != null && eternalFire.volume > 0 && loaded!=Loaded.LIQUID_FLAME) {
                 eternalFire.clear( route.collisionPos );
@@ -475,7 +481,7 @@ public class SprayGun extends Weapon {
 		} else {
 			hero.spendAndNext(1f);
 		}
-        if(effects.contains(Loaded.INVISIBILITY) && hero.subClass.is(HeroSubClass.ALCHEMIST)) Buff.affect(hero, Invisibility.class,ins);
+        if(effects.contains(Loaded.INVISIBILITY) && hero.subClass.is(HeroSubClass.ALCHEMIST) && ins>0) Buff.affect(hero, Invisibility.class,ins);
         else Invisibility.dispel();
 		concentratedPotion = false;
         Sample.INSTANCE.play( Assets.Sounds.SQUIRT, 1, 1, Random.Float( 0.9f, 1.1f ) );
@@ -504,8 +510,11 @@ public class SprayGun extends Weapon {
 						GameScene.add(Blob.seed(cell, 8, Freezing.class));
 						break;
 					case LIQUID_FLAME:
-						GameScene.add(Blob.seed(cell, 2, Fire.class));
-						Fire.burn(cell);
+                        if(Dungeon.level.distance(hero.pos,cell)>1){
+                            GameScene.add(Blob.seed(cell, 2, Fire.class));
+                            Fire.burn(cell);
+                        }
+
 						break;
 					case PARALYTIC_GAS:
 						GameScene.add(Blob.seed(cell, alchemist ? 8 : 4, Electricity.class));
@@ -540,6 +549,7 @@ public class SprayGun extends Weapon {
 		for (Loaded effect : effects) {
 			applyLoadedEffect(hero, ch, effect, ally, alchemist, lvl);
 		}
+        Buff.detach(ch, Ooze.class);
 	}
 
 
@@ -601,7 +611,7 @@ public class SprayGun extends Weapon {
 				break;
 			case INVISIBILITY:
                 if (!ally) Buff.prolong(ch, Blindness.class, 4 + lvl);
-				if (alchemist) ins+=2 + lvl / 2f;
+				if (alchemist && ally) ins+=2 + lvl / 2f;
 				break;
 			case LEVITATION:
 				if (!ally) Buff.prolong(ch, Vertigo.class, 2 + lvl);
@@ -639,7 +649,7 @@ public class SprayGun extends Weapon {
 	}
 
 	private boolean dealsAlchemistDamage(boolean ally, Loaded effect) {
-		if (effect == Loaded.FROST || effect == Loaded.LIQUID_FLAME) return false;
+		if (effect == Loaded.FROST || effect == Loaded.LIQUID_FLAME || effect == Loaded.MIND_VISION) return false;
 		if (!ally) return true;
 		return effect == Loaded.NONE
 				|| effect == Loaded.STRENGTH

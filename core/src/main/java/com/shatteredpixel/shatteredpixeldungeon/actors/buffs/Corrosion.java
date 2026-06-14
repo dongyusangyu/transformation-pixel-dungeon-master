@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorrosion;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -69,13 +70,14 @@ public class Corrosion extends Buff implements Hero.Doom {
 	}
 
 	public void set(float duration, int damage, Class source) {
+		duration = BronzeWatch.adjustDuration(target, duration);
 		this.left = Math.max(duration, left);
 		if (this.damage < damage) this.damage = damage;
 		this.source = source;
 	}
 
 	public void extend( float duration ) {
-		left += duration;
+		left += BronzeWatch.adjustDuration(target, duration);
 	}
 	
 	@Override

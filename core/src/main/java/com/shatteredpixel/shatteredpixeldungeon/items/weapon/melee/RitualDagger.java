@@ -7,6 +7,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Suffering;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -25,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
@@ -159,6 +161,10 @@ public class RitualDagger extends MeleeWeapon {
         } else if (hero.STR() > STRReq()){
             info += " " + Messages.get(Weapon.class, "excess_str", hero.STR() - STRReq());
         }
+
+
+        info += "\n\n" + Messages.get(this, "fast");
+		info += Messages.get(this, "no_equip");
         switch (augment) {
             case SPEED:
                 info += " " + Messages.get(Weapon.class, "faster");
@@ -168,9 +174,6 @@ public class RitualDagger extends MeleeWeapon {
                 break;
             case NONE:
         }
-
-        info += "\n\n" + Messages.get(this, "fast");
-		info += Messages.get(this, "no_equip");
 
         if (isEquipped(Dungeon.hero) && !hasCurseEnchant() && Dungeon.hero.buff(HolyWeapon.HolyWepBuff.class) != null
                 && (Dungeon.hero.subClass != HeroSubClass.PALADIN || enchantment == null)){
@@ -244,45 +247,59 @@ public class RitualDagger extends MeleeWeapon {
 	}
 
 	private void attackTarget(Hero hero, Char target, boolean special) {
-		hero.belongings.abilityWeapon = this;
 		ritualStab = special;
 		hero.sprite.attack(target.pos, () -> {
-			hero.attack(target);
-			float delay = hero.attackDelay();
-			hero.belongings.abilityWeapon = null;
-			ritualStab = false;
-			if (special) {
-				Reason.gainReason(hero, 50);
-				GLog.w(Messages.get(RitualDagger.this, "stab_enemy"));
-				resetRitual(hero);
-				hero.next();
-			} else {
-				hero.spendAndNext(delay);
+			hero.belongings.abilityWeapon = this;
+			try {
+				float delay = hero.attackDelay();
+
+				boolean hadBloodGift = target.buff(BloodGift.class) != null;
+				int preHP = target.HP + target.shielding();
+				if (special) {
+					boolean attacked = hero.attack(target, 1, 0, Char.INFINITE_ACCURACY);
+					if(attacked){
+						int damage = Math.max(0, preHP - (target.HP + target.shielding()));
+						if (hero.subClass.is(HeroSubClass.PIOUS)) {
+							BloodGift.applyTo(target);
+							if (!hadBloodGift) {
+                                if(target.isAlive()){
+                                    BloodGift.restoreReason(hero, target, damage);
+                                }else{
+                                    BloodGift.restoreReason(hero, target, preHP);
+                                }
+
+							}
+						}
+						Reason.gainReason(hero, 50);
+						GLog.w(Messages.get(RitualDagger.this, "stab_enemy"));
+					}
+					resetRitual(hero);
+					hero.next();
+				} else {
+					boolean attacked = hero.attack(target);
+					if (attacked && hero.subClass.is(HeroSubClass.PIOUS)) {
+						int damage = Math.max(0, preHP - (target.HP + target.shielding()));
+						BloodGift.applyTo(target);
+						if (!hadBloodGift) {
+                            if(target.isAlive()){
+                                BloodGift.restoreReason(hero, target, damage);
+                            }else{
+                                BloodGift.restoreReason(hero, target, preHP);
+                            }
+						}
+					}
+					hero.spendAndNext(delay);
+				}
+			} finally {
+				ritualStab = false;
+				hero.belongings.abilityWeapon = null;
 			}
 
 		});
 		hero.busy();
+        Invisibility.dispel();
 	}
-    private void attackTarget2(Hero hero, Char target, boolean special) {
-        hero.belongings.abilityWeapon = this;
-        ritualStab = special;
-        hero.sprite.attack(target.pos, () -> {
-            hero.attack(target,0,0,Char.INFINITE_ACCURACY);
-            float delay = hero.attackDelay();
-            hero.belongings.abilityWeapon = null;
-            ritualStab = false;
-            if (special) {
-                Reason.gainReason(hero, 50);
-                GLog.w(Messages.get(RitualDagger.this, "stab_enemy"));
-                resetRitual(hero);
-                hero.next();
-            } else {
-                hero.spendAndNext(delay);
-            }
 
-        });
-        hero.busy();
-    }
 
 	private final CellSelector.Listener attacker = new CellSelector.Listener() {
 		@Override
@@ -290,7 +307,7 @@ public class RitualDagger extends MeleeWeapon {
 			if (target == null || !(curUser instanceof Hero)) return;
 			Hero hero = (Hero)curUser;
 			Char ch = Actor.findChar(target);
-			if (ch == null || ch == hero || ch.alignment != Char.Alignment.ENEMY) {
+			if (ch == null || ch == hero || ch.alignment != Char.Alignment.ENEMY || hero.isCharmedBy( ch )) {
 				GLog.w(Messages.get(RitualDagger.this, "no_target"));
 				return;
 			}
@@ -298,7 +315,7 @@ public class RitualDagger extends MeleeWeapon {
 				GLog.w(Messages.get(RitualDagger.this, "too_far"));
 				return;
 			}
-			attackTarget2(hero, ch, false);
+			attackTarget(hero, ch, false);
 		}
 
 		@Override
@@ -343,7 +360,7 @@ public class RitualDagger extends MeleeWeapon {
 				return;
 			}
 			Char ch = Actor.findChar(target);
-			if (ch == null || ch == hero || ch.alignment != Char.Alignment.ENEMY || !canReach(hero, target)) {
+			if (ch == null || ch == hero || ch.alignment != Char.Alignment.ENEMY || !canReach(hero, target) ) {
 				GLog.w(Messages.get(RitualDagger.this, "bad_stab_target"));
 				return;
 			}
@@ -420,6 +437,49 @@ public class RitualDagger extends MeleeWeapon {
 		public String desc() {
 			RitualDagger dagger = hero == null ? null : hero.belongings.getItem(RitualDagger.class);
 			return Messages.get(this, "desc", dagger == null ? KILLS_TO_RITUAL : dagger.killsToRitual());
+		}
+	}
+
+	public static class BloodGift extends Buff {
+		{
+			type = buffType.NEGATIVE;
+		}
+
+		public static void applyTo(Char target) {
+			if (target == null || target.buff(BloodGift.class) != null) {
+				return;
+			}
+			Buff.affect(target, BloodGift.class);
+			if (target.sprite != null) {
+				target.sprite.showStatus(CharSprite.ORANGE, Messages.get(BloodGift.class, "name"));
+			}
+		}
+
+		public static void onPiousAttackDamage(Char attacker, Char target, int damage) {
+			if (attacker instanceof Hero
+					&& ((Hero) attacker).subClass.is(HeroSubClass.PIOUS)
+					&& target != null
+					&& target.buff(BloodGift.class) != null) {
+				restoreReason((Hero) attacker, target, Math.max(1, damage));
+			}
+		}
+
+		public static void restoreReason(Hero hero, Char target, int damage) {
+			if (hero == null || target == null || damage <= 0 || target.buff(BloodGift.class) == null) {
+				return;
+			}
+			Reason.gainReason(hero, Math.max(1, damage / 5));
+		}
+
+		@Override
+		public int icon() {
+			return BuffIndicator.RITUAL;
+		}
+
+		@Override
+		public boolean act() {
+			diactivate();
+			return true;
 		}
 	}
 }

@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -59,11 +60,11 @@ public class FireImbue extends Buff {
 	}
 
 	public void set( float duration ) {
-		this.left = duration;
+		this.left = BronzeWatch.adjustDuration(target, duration);
 	}
 
 	public void extend( float duration ) {
-		left += duration;
+		left += BronzeWatch.adjustDuration(target, duration);
 	}
 
 	@Override

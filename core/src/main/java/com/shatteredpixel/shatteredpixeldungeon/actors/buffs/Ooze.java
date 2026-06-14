@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -83,12 +84,12 @@ public class Ooze extends Buff {
 	}
 	
 	public void set(float left){
-		this.left = left;
+		this.left = BronzeWatch.adjustDuration(target, left);
 		acted = false;
 	}
 
 	public void extend( float duration ) {
-		left += duration;
+		left += BronzeWatch.adjustDuration(target, duration);
 	}
 	@Override
 	public boolean act() {

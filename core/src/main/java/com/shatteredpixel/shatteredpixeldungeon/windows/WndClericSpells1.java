@@ -147,8 +147,7 @@ public class WndClericSpells1 extends Window {
 			super(new HeroIcon(spell));
 
 			this.spell = spell;
-			this.tome = new HolyTome();
-			this.tome.getCharge();
+			this.tome = tome.castingTome();
 			this.tome1=tome;
 			this.info = info;
 
@@ -190,12 +189,7 @@ public class WndClericSpells1 extends Window {
 				if(!tome1.canCast(Dungeon.hero, spell)){
 					GLog.w(Messages.get(HolyTome.class, "no_spell"));
 				} else {
-					tome1.spendCharge(spell.chargeUse(Dungeon.hero));
-					//float charge = tome.getArtifactCharge();
 					spell.onCast(tome, Dungeon.hero);
-					//float curcharge = tome.getArtifactCharge();
-
-					//tome1.spendCharge(10-curcharge);
 				}
 
 			}
@@ -219,7 +213,7 @@ public class WndClericSpells1 extends Window {
 							break;
 						case 0:
 							hide();
-							if(!tome.canCast(Dungeon.hero, spell)){
+							if(!tome1.canCast(Dungeon.hero, spell)){
 								GLog.w(Messages.get(HolyTome.class, "no_spell"));
 							} else {
 								spell.onCast(tome, Dungeon.hero);

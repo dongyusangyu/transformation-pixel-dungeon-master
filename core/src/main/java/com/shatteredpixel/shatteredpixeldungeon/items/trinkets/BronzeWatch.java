@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.trinkets;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
@@ -23,6 +25,18 @@ public class BronzeWatch extends Trinket {
 
     public static float watchMultiplier(){
         return watchGainMultiplier(trinketLevel(BronzeWatch.class));
+    }
+
+    public static float adjustDuration( Char target, float duration ){
+        if (target instanceof Hero && duration > 1 && ((Hero)target).belongings.getItem(BronzeWatch.class) != null){
+            return Math.max(1, duration - watchMultiplier());
+        } else {
+            return duration;
+        }
+    }
+
+    public static int adjustDuration( Char target, int duration ){
+        return Math.round(adjustDuration(target, (float)duration));
     }
 
     public static int watchGainMultiplier( int level ){

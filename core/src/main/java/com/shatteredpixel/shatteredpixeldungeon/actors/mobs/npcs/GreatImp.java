@@ -170,6 +170,7 @@ public class GreatImp extends NPC {
                     Dungeon.level.occupyCell( hero );
                     Dungeon.observe();
                     GameScene.updateFog();
+                    Dungeon.hero.interrupt();
                     GameScene.add( lastBoss );
                     BossHealthBar.assignBoss(lastBoss);
                 }else{

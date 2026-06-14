@@ -188,6 +188,10 @@ public class HolyTome extends Artifact {
 		updateQuickslot();
 	}
 
+	public boolean triggersArtifactTalents(){
+		return true;
+	}
+
 	public void directCharge(float amount){
 		if (charge < chargeCap) {
 			partialCharge += amount;

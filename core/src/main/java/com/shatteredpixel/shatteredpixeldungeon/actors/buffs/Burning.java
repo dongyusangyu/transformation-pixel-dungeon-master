@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -210,6 +211,7 @@ public class Burning extends Buff implements Hero.Doom {
 	}
 	
 	public void reignite( Char ch, float duration ) {
+		duration = BronzeWatch.adjustDuration(ch, duration);
 		if (ch.isImmune(Burning.class)){
 			/*
 			if (ch.glyphLevel(Brimstone.class) >= 0){
@@ -246,7 +248,7 @@ public class Burning extends Buff implements Hero.Doom {
 	}
 
 	public void extend( float duration ) {
-		left += duration;
+		left += BronzeWatch.adjustDuration(target, duration);
 	}
 	
 	@Override

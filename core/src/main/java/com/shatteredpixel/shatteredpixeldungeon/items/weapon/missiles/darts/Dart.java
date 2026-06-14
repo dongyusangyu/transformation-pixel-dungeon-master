@@ -206,9 +206,6 @@ public class Dart extends MissileWeapon {
 		}
 
 		int dmg = super.proc(attacker, defender, damage);
-		if (attacker instanceof Hero){
-			dmg += Talent.bullseyeDamageBonus((Hero) attacker, defender);
-		}
 		if (!processingChargedShot) {
 			processChargedShot(defender, damage);
 		}

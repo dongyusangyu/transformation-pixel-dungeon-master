@@ -118,6 +118,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Monk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Snake;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogDzewa;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.RatKing;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CheckedCell;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -483,6 +484,9 @@ public class Hero extends Char {
 		return false;
 	}
 	public  boolean canUpgradeTalent(Talent talent){
+		if (Talent.isBossTalentPlaceholder(talent)){
+			return false;
+		}
 		for (LinkedHashMap<Talent, Integer> tier : talents){
 			for (Talent f : tier.keySet()){
 				if (f == talent) return tier.get(f)<f.maxPoints();
@@ -2387,6 +2391,7 @@ public class Hero extends Char {
 		int effectiveDamage = preHP - postHP;
 
 		if (effectiveDamage <= 0) return;
+		AgentMinRewardTracker.onHeroDamage(effectiveDamage);
 
 		if (buff(Challenge.DuelParticipant.class) != null){
 			buff(Challenge.DuelParticipant.class).addDamage(effectiveDamage);
@@ -3042,6 +3047,7 @@ public class Hero extends Char {
 			return;
 		}
 		
+		AgentMinRewardTracker.onHeroDeath();
 		Actor.fixTime();
 		super.die( cause );
 		reallyDie( cause );
@@ -3142,8 +3148,10 @@ public class Hero extends Char {
 	@Override
 	public void move(int step, boolean travelling) {
 		boolean wasHighGrass = Dungeon.level.map[step] == Terrain.HIGH_GRASS;
+		int oldPos = pos;
 
 		super.move( step, travelling);
+		AgentMinRewardTracker.onHeroMove(oldPos, pos, travelling);
 		
 		if (!flying && travelling) {
 			if (Dungeon.level.water[pos]) {

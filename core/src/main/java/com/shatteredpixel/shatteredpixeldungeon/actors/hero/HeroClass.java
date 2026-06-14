@@ -791,9 +791,9 @@ public enum HeroClass {
 
 
 		if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
-			new ChallengeBag().collect();
+			//new ChallengeBag().collect();
 			new RubbingsTome().identify().collect();
-			new DictBook().collect();
+			//new DictBook().collect();
 			/*
 			Mana mana = new Mana();
 			mana.maxMana = 200;

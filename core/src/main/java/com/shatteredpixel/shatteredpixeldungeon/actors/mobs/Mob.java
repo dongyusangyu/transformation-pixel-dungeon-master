@@ -48,6 +48,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Dread;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ErodingSoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GreaterHaste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
@@ -83,6 +84,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Resurrection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Stasis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -694,8 +696,11 @@ public abstract class Mob extends Char {
 
 			//generate a new path
 			if (newPath) {
+                if(target>Dungeon.level.map.length) target = this.pos;
+
 				//If we aren't hunting, always take a full path
-				PathFinder.Path full = Dungeon.findPath(this, target, Dungeon.level.passable, fieldOfView, true);
+                PathFinder.Path full=null;
+                full = Dungeon.findPath(this, target, Dungeon.level.passable, fieldOfView, true);
 				if (state != HUNTING){
 					path = full;
 				} else {
@@ -745,8 +750,8 @@ public abstract class Mob extends Char {
 	@Override
 	public void updateSpriteState() {
 		super.updateSpriteState();
-		if (hero.buff(TimekeepersHourglass.timeFreeze.class) != null
-				|| hero.buff(Swiftthistle.TimeBubble.class) != null && sprite!=null)
+		if ((hero.buff(TimekeepersHourglass.timeFreeze.class) != null
+				|| hero.buff(Swiftthistle.TimeBubble.class) != null) && sprite!=null)
 			sprite.add( CharSprite.State.PARALYSED );
 	}
 	
@@ -830,13 +835,6 @@ public abstract class Mob extends Char {
 			} else {
 				Surprise.hit(this);
 			}
-		}
-
-		//if attacked by something else than current target, and that thing is closer, switch targets
-		if (this.enemy == null
-				|| (enemy != this.enemy && (Dungeon.level.distance(pos, enemy.pos) < Dungeon.level.distance(pos, this.enemy.pos)))) {
-			aggro(enemy);
-			target = enemy.pos;
 		}
 
 		//if attacked by something else than current target, and that thing is closer, switch targets
@@ -1054,6 +1052,7 @@ public abstract class Mob extends Char {
 				Statistics.hazardAssistedKills++;
 				Badges.validateHazardAssists();
 			}
+			AgentMinRewardTracker.onEnemyKilled(this, cause);
 			Talent.onEmenyDie(this,cause);
 			rollToDropLoot();
 		}
@@ -1074,9 +1073,13 @@ public abstract class Mob extends Char {
 		Talent.onMobDie(this,cause);
 		boolean soulMarked = buff(SoulMark.class) != null;
 		boolean saleself = buff(SalesContract.SaleSelf.class) != null;
+		boolean erodingSoul = ErodingSoul.shouldRaise(this);
 
 
 		super.die( cause );
+		if (erodingSoul){
+			ErodingSoul.raiseWraith(this);
+		}
 		if (!(this instanceof Wraith)
 				&& soulMarked
 				&& Random.Float() < (0.4f* hero.pointsInTalent(Talent.NECROMANCERS_MINIONS)/3f)){
@@ -1503,6 +1506,7 @@ public abstract class Mob extends Char {
 					spend( TICK );
 					return true;
 				}
+                //GLog.i(enemy.name());
 
 				int oldPos = pos;
 				if (target != -1 && getCloser( target )) {
