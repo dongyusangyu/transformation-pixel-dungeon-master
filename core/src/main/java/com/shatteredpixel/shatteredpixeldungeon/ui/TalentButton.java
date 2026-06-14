@@ -99,8 +99,12 @@ public class TalentButton extends Button {
 		this.talent = talent;
 		this.pointsInTalent = points;
 		this.mode = mode;
+        if(talent.maxPoints()==0){
+            bg.frame(0, 0, WIDTH, HEIGHT);
+        }else{
+            bg.frame(20*(talent.maxPoints()-1), 0, WIDTH, HEIGHT);
+        }
 
-		bg.frame(20*(talent.maxPoints()-1), 0, WIDTH, HEIGHT);
 
 		icon = new TalentIcon( talent );
 		add(icon);
@@ -296,6 +300,8 @@ public class TalentButton extends Button {
 					int tier=1;
 					String type = ScrollOfSublimation.WndSublimation.INSTANCE.type;
 					int index = ScrollOfSublimation.WndSublimation.INSTANCE.index;
+					Talent targetSlot = Talent.bossTalentSlot(type);
+					Talent currentSlotTalent = Talent.bossTalentForSlot(targetSlot, Dungeon.hero.sublimationTalents);
 					switch(type){
 						case "GOO" : case "TENGU" : case "WARRIOR":default:
 							tier=1;
@@ -312,13 +318,24 @@ public class TalentButton extends Button {
 					for (LinkedHashMap<Talent, Integer> tiers : Dungeon.hero.talents){
 						if(cnt==tier){
 							LinkedHashMap<Talent, Integer> newTier = new LinkedHashMap<>();
+							boolean replacedSlot = false;
+							boolean hasCorrespondingTalent = currentSlotTalent != targetSlot;
 							for (Talent t : tiers.keySet()){
-								newTier.put(t,  tiers.get(t));
+								if (t == targetSlot || t == currentSlotTalent || Talent.bossTalentSlot(t) == targetSlot){
+									newTier.put(talent, 0);
+									replacedSlot = true;
+									hasCorrespondingTalent = true;
+								} else {
+									newTier.put(t,  tiers.get(t));
+								}
 							}
-							newTier.put(talent, 0);
+							if (!replacedSlot && !hasCorrespondingTalent){
+								newTier.put(talent, 0);
+							}
 							TalentCatalog.countUse(talent);
 							Dungeon.hero.talents.set(tier-1, newTier);
-							Dungeon.hero.sublimationTalents.put(talent, type);
+							Dungeon.hero.sublimationTalents.remove(currentSlotTalent);
+							Dungeon.hero.sublimationTalents.put(targetSlot, talent.name());
 							ArrayList<String> S= new ArrayList<String>();
 							S.add("DM300");
 							S.add("YOG");

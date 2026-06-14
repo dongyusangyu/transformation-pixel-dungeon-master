@@ -148,7 +148,7 @@ public class WandOfFireblast extends DamageWand {
 		for ( Char ch : affectedChars ){
 			//wandProc(ch, charge,chargesPerCast());
 			wandProc(ch, chargesPerCast());
-			int dmg=damageRoll();
+			int dmg=damageRoll(ch);
 			if(hero!=null && hero.pointsInTalent(Talent.DEVIL_FLAME)>2){
 				dmg=(int)(dmg*1.2f);
 			}

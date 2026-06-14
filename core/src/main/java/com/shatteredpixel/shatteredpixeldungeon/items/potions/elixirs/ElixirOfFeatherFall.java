@@ -42,7 +42,7 @@ public class ElixirOfFeatherFall extends Elixir {
 
 	@Override
 	public void apply(Hero hero) {
-		Buff.append(hero, FeatherBuff.class, FeatherBuff.DURATION);
+		Buff.affect(hero, FeatherBuff.class, FeatherBuff.DURATION);
 
 		hero.sprite.emitter().burst(Speck.factory(Speck.JET), 20);
 		GLog.p(Messages.get(this, "light"));

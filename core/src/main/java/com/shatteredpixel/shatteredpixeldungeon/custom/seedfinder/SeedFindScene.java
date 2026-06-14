@@ -52,6 +52,8 @@ public class SeedFindScene extends PixelScene {
 
         s = null;
         closing = false;
+        r = null;
+        txt = null;
 
         //Archs archs = new Archs();
         //archs.setSize(w, h);
@@ -101,8 +103,8 @@ public class SeedFindScene extends PixelScene {
                     thread = new Thread(() -> {
                         SeedFinder finder = new SeedFinder();
                         s = finder.findSeed(itemList, finalFloor, state -> Gdx.app.postRunnable(() -> {
-                            if (!closing && thread != null && r != null) {
-                                r.text(state.summary());
+                            if (!closing && thread != null) {
+                                updateProgressText(state.summary());
                             }
                         }));
                         Gdx.app.postRunnable(() -> {
@@ -111,7 +113,7 @@ public class SeedFindScene extends PixelScene {
                                 return;
                             }
 
-                            if (r != null) r.destroy();
+                            clearProgressText();
 
                             txt = new CreditsBlock(true, Window.TITLE_COLOR, s);
                             txt.setRect((Camera.main.width - colWidth)/2f, 12, colWidth, 0);
@@ -157,9 +159,7 @@ public class SeedFindScene extends PixelScene {
                 if (thread != null && thread.isAlive()) {
                     closing = false;
                     SeedFinder.findingStatus = SeedFinder.FINDING.STOP;
-                    if (r != null) {
-                        r.text(Messages.get(SeedFindScene.class, "stopping"));
-                    }
+                    updateProgressText(Messages.get(SeedFindScene.class, "stopping"));
                 }
             }
         };
@@ -174,8 +174,8 @@ public class SeedFindScene extends PixelScene {
                 if (thread == null || !thread.isAlive()) {
                     ShatteredPixelDungeon.switchNoFade(TitleScene.class);
                     System.gc();
-                } else if (r != null) {
-                    r.text(Messages.get(SeedFindScene.class, "leaving"));
+                } else {
+                    updateProgressText(Messages.get(SeedFindScene.class, "leaving"));
                 }
             }
         };
@@ -186,6 +186,19 @@ public class SeedFindScene extends PixelScene {
     }
 
     // 新增：提取种子编码并复制到剪贴板
+    private static void updateProgressText(String text) {
+        if (r != null && r.exists && r.members != null) {
+            r.text(text);
+        }
+    }
+
+    private static void clearProgressText() {
+        if (r != null) {
+            r.destroy();
+            r = null;
+        }
+    }
+
     private void copySeedToClipboard(String seedResult, Component content, float fullWidth, CreditsBlock txt) {
         if (seedResult == null || seedResult.isEmpty() || seedResult.equals("NONE")) {
             return;

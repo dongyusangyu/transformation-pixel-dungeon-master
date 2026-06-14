@@ -61,6 +61,10 @@ public abstract class DamageWand extends Wand{
 		return damageRoll(buffedLvl());
 	}
 
+	public int damageRoll(Char target){
+		return Talent.onWandDamage(this, target, damageRoll());
+	}
+
 	public int damageRoll(int lvl){
 		int dmg = Hero.heroDamageIntRange(min(lvl), max(lvl));
 		WandEmpower emp = hero.buff(WandEmpower.class);
@@ -72,7 +76,7 @@ public abstract class DamageWand extends Wand{
 			}
 			Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG, 0.75f, 1.2f);
 		}
-		dmg = Talent.onWandDamage(this, dmg);
+		dmg = Talent.onWandDamage(this,null, dmg);
         MagicFeather feather = Dungeon.hero.belongings.getItem(MagicFeather.class);
         if (feather != null) {
             dmg=(int)(dmg*(1f+0.075f*(1+feather.buffedLvl())));

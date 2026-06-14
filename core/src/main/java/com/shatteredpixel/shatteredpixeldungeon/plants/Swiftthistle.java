@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -102,11 +103,11 @@ public class Swiftthistle extends Plant {
 		}
 		
 		public void reset(){
-			left = 7f;
+			left = BronzeWatch.adjustDuration(target, 7f);
 		}
-		public void reset1(float cnt){left=cnt;}
+		public void reset1(float cnt){left=BronzeWatch.adjustDuration(target, cnt);}
 		public void reset(int turns){
-			left = turns + 1; //add 1 as we're spending it on our action
+			left = BronzeWatch.adjustDuration(target, turns + 1); //add 1 as we're spending it on our action
 		}
 		
 		@Override

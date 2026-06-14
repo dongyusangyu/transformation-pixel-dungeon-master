@@ -106,6 +106,9 @@ public class HornOfPlenty extends Artifact {
 				if (Dungeon.isChallenged(Challenges.NO_FOOD)){
 					satietyPerCharge /= 3;
 				}
+				if (hero.hasTalent(Talent.BOUNTIFUL_ENHANCEMENT) && hero.pointsInTalent(Talent.BOUNTIFUL_ENHANCEMENT) >= 2){
+					satietyPerCharge += hero.pointsInTalent(Talent.BOUNTIFUL_ENHANCEMENT) >= 3 ? 30 : 20;
+				}
 
 				Hunger hunger = Buff.affect(Dungeon.hero, Hunger.class);
 				int chargesToUse = Math.max( 1, hunger.hunger() / satietyPerCharge);
@@ -131,6 +134,13 @@ public class HornOfPlenty extends Artifact {
 		if (Dungeon.isChallenged(Challenges.NO_FOOD)){
 			satietyPerCharge /= 3;
 		}
+        if (hero.hasTalent(Talent.BOUNTIFUL_ENHANCEMENT) && hero.pointsInTalent(Talent.BOUNTIFUL_ENHANCEMENT) >= 2){
+            satietyPerCharge += hero.pointsInTalent(Talent.BOUNTIFUL_ENHANCEMENT) >= 3 ? 30 : 20;
+        }
+        if(hero.hasTalent(Talent.VEGETARIANISM)){
+            satietyPerCharge*=0.7f;
+        }
+
 
 		Buff.affect(hero, Hunger.class).satisfy(satietyPerCharge * chargesToUse);
 
@@ -145,7 +155,7 @@ public class HornOfPlenty extends Artifact {
 		Sample.INSTANCE.play(Assets.Sounds.EAT);
 		GLog.i( Messages.get(this, "eat") );
 
-		if(hero.hasTalent(Talent.OVER_MEAL)){
+        if(hero.hasTalent(Talent.OVER_MEAL)){
 			hero.spend(Food.TIME_TO_EAT-2-hero.pointsInTalent(Talent.OVER_MEAL)*0.5f);
 		}else if (hero.hasTalent(Talent.IRON_STOMACH)
 				|| hero.hasTalent(Talent.ENERGIZING_MEAL)
@@ -162,8 +172,7 @@ public class HornOfPlenty extends Artifact {
 		}else {
 			hero.spend(Food.TIME_TO_EAT);
 		}
-
-		Talent.onFoodEaten(hero, satietyPerCharge * chargesToUse, this);
+        Talent.onFoodEaten(hero, satietyPerCharge * chargesToUse, this);
 
 		Badges.validateFoodEaten();
 

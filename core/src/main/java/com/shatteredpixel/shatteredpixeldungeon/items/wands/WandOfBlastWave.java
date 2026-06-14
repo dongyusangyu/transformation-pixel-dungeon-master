@@ -74,11 +74,9 @@ public class WandOfBlastWave extends DamageWand {
 		Sample.INSTANCE.play( Assets.Sounds.BLAST );
 		BlastWave.blast(bolt.collisionPos);
 
-		//presses all tiles in the AOE first, with the exception of tengu dart traps
+		//presses all tiles in the AOE first
 		for (int i : PathFinder.NEIGHBOURS9){
-			if (!(Dungeon.level.traps.get(bolt.collisionPos+i) instanceof TenguDartTrap)) {
-				Dungeon.level.pressCell(bolt.collisionPos + i);
-			}
+            if (!(Dungeon.level.traps.get(bolt.collisionPos+i) instanceof TenguDartTrap)) Dungeon.level.pressCell(bolt.collisionPos + i);
 		}
 
 		//throws other chars around the center.
@@ -87,7 +85,7 @@ public class WandOfBlastWave extends DamageWand {
 
 			if (ch != null){
 				wandProc(ch, chargesPerCast());
-				if (ch.alignment != Char.Alignment.ALLY) ch.damage(damageRoll(), this);
+				if (ch.alignment != Char.Alignment.ALLY) ch.damage(damageRoll(ch), this);
 
 				//do not push chars that are dieing over a pit, or that move due to the damage
 				if ((ch.isAlive() || ch.flying || !Dungeon.level.pit[ch.pos])
@@ -104,7 +102,7 @@ public class WandOfBlastWave extends DamageWand {
 		Char ch = Actor.findChar(bolt.collisionPos);
 		if (ch != null){
 			wandProc(ch, chargesPerCast());
-			ch.damage(damageRoll(), this);
+			ch.damage(damageRoll(ch), this);
 
 			//do not push chars that are dieing over a pit, or that move due to the damage
 			if ((ch.isAlive() || ch.flying || !Dungeon.level.pit[ch.pos])

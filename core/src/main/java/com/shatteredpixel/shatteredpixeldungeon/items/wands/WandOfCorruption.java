@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Doom;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Dread;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Drowsy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ErodingSoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
@@ -56,6 +57,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bee;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
@@ -181,6 +184,15 @@ public class WandOfCorruption extends Wand {
 					debuffEnemy( enemy, MAJOR_DEBUFFS);
 				} else {
 					debuffEnemy( enemy, MINOR_DEBUFFS);
+				}
+			}
+
+			if (curUser instanceof Hero
+					&& ((Hero) curUser).hasTalent(Talent.ERODING_SOUL)
+					&& !enemy.properties().contains(Char.Property.UNDEAD)){
+				Buff.affect(enemy, ErodingSoul.class);
+				if (((Hero) curUser).pointsInTalent(Talent.ERODING_SOUL) > 1 && Random.Float() < 0.5f){
+					debuffEnemy(enemy, MINOR_DEBUFFS);
 				}
 			}
 

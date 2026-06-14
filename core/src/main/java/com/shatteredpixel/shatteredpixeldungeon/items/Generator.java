@@ -469,10 +469,11 @@ public class Generator {
 					Quarterstaff.class,
 					Dirk.class,
 					Sickle.class,
-					Pickaxe.class,
-					Blowpipe.class
+
+					Blowpipe.class,
+                    Pickaxe.class,
 			};
-			WEP_T2.defaultProbs = new float[]{ 2, 2, 2, 2, 2, 2, 0 ,2};
+			WEP_T2.defaultProbs = new float[]{ 2, 2, 2, 2, 2, 2, 2 ,0};
 			WEP_T2.probs = WEP_T2.defaultProbs.clone();
 			
 			WEP_T3.classes = new Class<?>[]{

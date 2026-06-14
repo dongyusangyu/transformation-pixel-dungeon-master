@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.PoisonParticle;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -58,11 +59,12 @@ public class Poison extends Buff implements Hero.Doom {
 	}
 	
 	public void set( float duration ) {
+		duration = BronzeWatch.adjustDuration(target, duration);
 		this.left = Math.max(duration, left);
 	}
 
 	public void extend( float duration ) {
-		this.left += duration;
+		this.left += BronzeWatch.adjustDuration(target, duration);
 	}
 	
 	@Override

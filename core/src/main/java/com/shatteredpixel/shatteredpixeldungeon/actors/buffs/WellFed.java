@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -73,10 +74,11 @@ public class WellFed extends Buff {
 			//150 turns if on diet is enabled
 			left /= 3;
 		}
+		left = BronzeWatch.adjustDuration(target, left);
 	}
 
 	public void extend( float duration ) {
-		left += duration;
+		left += Math.round(BronzeWatch.adjustDuration(target, duration));
 	}
 	
 	@Override

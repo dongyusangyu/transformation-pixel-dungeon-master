@@ -154,9 +154,9 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
                     Buff.affect(Dungeon.hero, Talent.DarkHookCooldown.class, 65f);
                     ActionIndicator.clearAction(hero.buff(DarkHook.class));
                     if (Dungeon.hero.pointsInTalent(Talent.DARK_LIQUID) >= 1){
-                        Buff.affect(ch, Roots.class, 5f);
+                        Buff.affect(ch, Roots.class, 4f);
                     }else {
-                        Buff.affect(ch, Roots.class, 3f);
+                        Buff.affect(ch, Roots.class, 2f);
                     }
 
                     if (Dungeon.hero.pointsInTalent(Talent.DARK_LIQUID) >= 2){

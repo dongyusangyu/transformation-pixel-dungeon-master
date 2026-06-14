@@ -42,6 +42,26 @@ public class RubbingsTome extends Item {
     }
     public int charge = 8;
     public static final String AC_CAST = "CAST";
+    private HolyTome castingTome;
+
+    public HolyTome castingTome(){
+        if (castingTome == null){
+            castingTome = new HolyTome(){
+                @Override
+                public void spendCharge(float chargesSpent) {
+                    RubbingsTome.this.spendCharge(chargesSpent);
+                }
+
+                @Override
+                public boolean triggersArtifactTalents() {
+                    return false;
+                }
+            };
+        }
+        castingTome.getCharge();
+        return castingTome;
+    }
+
     public boolean isIdentified() {
         return true;
     }

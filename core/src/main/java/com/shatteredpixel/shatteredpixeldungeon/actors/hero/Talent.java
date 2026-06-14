@@ -70,6 +70,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EnhancedRings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ErodingSoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FightStance;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FireImbue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
@@ -219,6 +220,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorruption;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLightning;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfLivingEarth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
@@ -240,10 +243,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Quarterstaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Rapier;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RoundShield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
@@ -540,6 +545,8 @@ public enum Talent {
 	USURY(516),ARMED_UPRISING(517),DUNGEON_HERO(518),EXP_SOLID(519), WEALTH_STATUE(520,3),
 	SWEET_SLEEP(521),LIGHT_SHOCK(522),BOOZY(523),STEAM_BEAN(524),ALCHEMY_ACCIDENT(525),SHELL_CRY(526),
 	MAL_CURSE(527),OVERLOAD_CHARGE(528,2),GAS_SPURT(529,2),
+	BOSS_TALENT_SLOT_1(530,0), BOSS_TALENT_SLOT_2(530,0), BOSS_TALENT_SLOT_3(530,0), BOSS_TALENT_SLOT_4(530,0), BOSS_TALENT_SLOT_5(530,0),
+	ERODING_SOUL(531,2), CREDULOUS(532,2), PENETRATING_CAST(533,2), BOUNTIFUL_ENHANCEMENT(534,3), ICE_HELL(535,3),
 	//Friar T1
 	TRANQUIL_TINCTURE(576), RAVENS_EYE(577), CRYSTAL_GUNPOWDER(578), BULWARK_GREATSHIELD(579),
 	//Friar T2
@@ -1462,6 +1469,85 @@ public enum Talent {
 		return maxPoints;
 	}
 
+	public static boolean isBossTalentPlaceholder(Talent talent){
+		return talent == BOSS_TALENT_SLOT_1
+				|| talent == BOSS_TALENT_SLOT_2
+				|| talent == BOSS_TALENT_SLOT_3
+				|| talent == BOSS_TALENT_SLOT_4
+				|| talent == BOSS_TALENT_SLOT_5;
+	}
+
+	public static boolean isBossTalent(Talent talent){
+		switch (talent){
+			case AQUATIC_RECOVER: case PUMP_ATTACK: case OOZE_ATTACK:
+			case STRONGEST_SHIELD: case COMBO_PACKAGE: case BREAK_ENEMY_RANKS:
+			case SURPRISE_THROW: case SMOKE_MASK: case RUSH:
+			case SHADOW_KILLER: case KILL_SPREE: case SEAOFPEOPLE: case PHANTOM_STEP:
+			case FASTING: case THUNDER_STRIKE: case DIRECTIONAL_COLLAPSE:
+			case KING_PROTECT: case SUMMON_FOLLOWER: case WOLFISH_GAZE: case ENERGY_CONVERSION:
+			case YOG_LARVA: case YOG_FIST: case YOG_RAY:
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	public static boolean excludedFromMetamorphosis(Talent talent){
+		return isBossTalentPlaceholder(talent) || isBossTalent(talent);
+	}
+
+	public static Talent bossTalentSlot(String type){
+		switch (type){
+			case "GOO": case "WARRIOR":
+				return BOSS_TALENT_SLOT_1;
+			case "TENGU": case "ROGUE":
+				return BOSS_TALENT_SLOT_2;
+			case "DM300":
+				return BOSS_TALENT_SLOT_3;
+			case "DWARFKING":
+				return BOSS_TALENT_SLOT_4;
+			case "YOG":
+				return BOSS_TALENT_SLOT_5;
+			default:
+				return BOSS_TALENT_SLOT_1;
+		}
+	}
+
+	public static Talent bossTalentSlot(Talent talent){
+		switch (talent){
+			case AQUATIC_RECOVER: case PUMP_ATTACK: case OOZE_ATTACK:
+			case STRONGEST_SHIELD: case COMBO_PACKAGE: case BREAK_ENEMY_RANKS:
+				return BOSS_TALENT_SLOT_1;
+			case SURPRISE_THROW: case SMOKE_MASK: case RUSH:
+			case SHADOW_KILLER: case KILL_SPREE: case SEAOFPEOPLE: case PHANTOM_STEP:
+				return BOSS_TALENT_SLOT_2;
+			case FASTING: case THUNDER_STRIKE: case DIRECTIONAL_COLLAPSE:
+				return BOSS_TALENT_SLOT_3;
+			case KING_PROTECT: case SUMMON_FOLLOWER: case WOLFISH_GAZE: case ENERGY_CONVERSION:
+				return BOSS_TALENT_SLOT_4;
+			case YOG_LARVA: case YOG_FIST: case YOG_RAY:
+				return BOSS_TALENT_SLOT_5;
+			default:
+				return null;
+		}
+	}
+
+	public static Talent bossTalentForSlot(Talent slot, LinkedHashMap<Talent, String> sublimation){
+		if (sublimation.containsKey(slot)){
+			try {
+				return Talent.valueOf(sublimation.get(slot));
+			} catch (Exception ignored) {
+				return slot;
+			}
+		}
+		for (Talent talent : sublimation.keySet()){
+			if (isBossTalent(talent) && bossTalentSlot(sublimation.get(talent)) == slot){
+				return talent;
+			}
+		}
+		return slot;
+	}
+
 	public String title(){
 		if (this == HEROIC_ENERGY && Ratmogrify.useRatroicEnergy){
 			return Messages.get(this, name() + ".rat_title");
@@ -1593,6 +1679,10 @@ public enum Talent {
 		if(talent==WULEI_ZHENGFA && hero.pointsInTalent(WULEI_ZHENGFA)==1){
 			Dungeon.talent_item+=1;
 			Dungeon.level.drop(new WandOfLightning().identify(),hero.pos).sprite.drop(hero.pos);
+		}
+		if(talent==ERODING_SOUL && hero.pointsInTalent(ERODING_SOUL)==1){
+			Dungeon.talent_item+=1;
+			Dungeon.level.drop(new WandOfCorruption().identify(),hero.pos).sprite.drop(hero.pos);
 		}
 		if(talent==COLLECT_PLANTS){
 			Dungeon.talent_item+=1;
@@ -1793,7 +1883,73 @@ public enum Talent {
 	public static class CachedRationsDropped extends CounterBuff{{revivePersists = true;}};
 	public static class NatureBerriesDropped extends CounterBuff{{revivePersists = true;}};
 
+	private static boolean resolvingDelayedSatisfaction;
+
+	public static class DelayedSatisfaction extends FlavourBuff {
+
+		private static final float DURATION = 5f;
+
+		private float foodVal;
+		private boolean hornOfPlenty;
+
+		{
+			type = buffType.POSITIVE;
+		}
+
+
+
+		@Override
+		public int icon() {
+			return BuffIndicator.DELAYEDSATISFACTION;
+		}
+
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, visualcooldown() / DURATION);
+		}
+
+		@Override
+		public String iconTextDisplay() {
+			return Integer.toString((int)Math.ceil(visualcooldown()));
+		}
+
+		@Override
+		public String desc() {
+			return Messages.get(this, "desc", dispTurns(visualcooldown()));
+		}
+
+		@Override
+		public void detach() {
+
+            onFoodEaten((Hero)target, foodVal, null);
+            super.detach();
+
+		}
+
+		private static final String FOOD_VAL = "food_val";
+		private static final String HORN_OF_PLENTY = "horn_of_plenty";
+
+		@Override
+		public void storeInBundle( Bundle bundle ) {
+			super.storeInBundle(bundle);
+			bundle.put( FOOD_VAL, foodVal );
+			bundle.put( HORN_OF_PLENTY, hornOfPlenty );
+		}
+
+		@Override
+		public void restoreFromBundle( Bundle bundle ) {
+			super.restoreFromBundle(bundle);
+			foodVal = bundle.getFloat( FOOD_VAL );
+			hornOfPlenty = bundle.getBoolean( HORN_OF_PLENTY );
+		}
+	}
+
 	public static void onFoodEaten( Hero hero, float foodVal, Item foodSource ){
+		if (hero.buff(DelayedSatisfaction.class)==null
+				&& foodSource instanceof HornOfPlenty
+				&& hero.hasTalent(BOUNTIFUL_ENHANCEMENT)) {
+			Buff.affect(hero, DelayedSatisfaction.class,5);
+		}
 		int maxeat = 100;
 		int oldeat = Dungeon.eat_item;
 		if (hero.HP / (float) hero.HT <= 0.33f && hero.pointsInTalent(HEARTY_MEAL)>0) {
@@ -1885,10 +2041,14 @@ public enum Talent {
 		}
 		if(hero.hasTalent(NURTRITIOUS_MEAL)){
             hero.heal(hero.pointsInTalent(NURTRITIOUS_MEAL)*2);
-			//Buff.affect( hero, Barrier.class).setShield(hero.pointsInTalent(NURTRITIOUS_MEAL)*2);
+			Buff.affect( hero, Barrier.class).setShield(hero.pointsInTalent(NURTRITIOUS_MEAL)*2);
 		}
 		if(hero.hasTalent(INVINCIBLE_MEAL) && Dungeon.eat_item<maxeat){
-			Buff.affect(hero, Invulnerability.class,hero.pointsInTalent(INVINCIBLE_MEAL));
+            if(hero.buff(Invulnerability.class)!=null){
+                Buff.affect(hero, Invulnerability.class,hero.pointsInTalent(INVINCIBLE_MEAL));
+            }else{
+                Buff.affect(hero, Invulnerability.class,hero.pointsInTalent(INVINCIBLE_MEAL)-1);
+            }
 			Dungeon.eat_item++;
 		}
         if(hero.hasTalent(YUNYING_MEAL) && Dungeon.eat_item<maxeat){
@@ -1996,7 +2156,14 @@ public enum Talent {
                 Buff.affect( hero, RoyalMeal2.class,5*hero.pointsInTalent(ROYAL_MEAL));
             }
         }
-        procWhisperingMeal(hero);
+		if (hero.hasTalent(WHISPERING_MEAL)){
+			float duration = hero.pointsInTalent(WHISPERING_MEAL) == 1 ? 2f : 4f;
+			for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
+				if (mob.alignment == Char.Alignment.ENEMY && Dungeon.level.heroFOV[mob.pos]){
+					Buff.affect(mob, Terror.class, duration).object = hero.id();
+				}
+			}
+		}
 
 	}
 
@@ -2423,17 +2590,6 @@ public enum Talent {
 		hero.spendAndNext(1f);
 	}
 
-	private static boolean isPhysicalAttack( Hero hero ){
-		return hero != null && hero.belongings.attackingWeapon() != null;
-	}
-
-	private static int crystalGunpowderBonus( Hero hero ){
-		if (hero == null || !hero.hasTalent(CRYSTAL_GUNPOWDER)){
-			return 0;
-		}
-		return Math.min(2 * hero.pointsInTalent(CRYSTAL_GUNPOWDER), Dungeon.energy * hero.pointsInTalent(CRYSTAL_GUNPOWDER));
-	}
-
 	public static boolean hasBlockingWeapon( Hero hero ){
 		if (hero == null){
 			return false;
@@ -2449,41 +2605,12 @@ public enum Talent {
 				|| weapon instanceof Katana
 				|| weapon instanceof Greatshield;
 	}
-
-	public static float eatingTime( Hero hero, Item foodSource, float time ){
-		if (hero != null && hero.hasTalent(WHISPERING_MEAL)){
-			return foodSource instanceof com.shatteredpixel.shatteredpixeldungeon.items.food.Tincture ? 0f : Math.min(time, 1f);
-		}
-		return time;
-	}
-
-	private static void procWhisperingMeal( Hero hero ){
-		if (hero == null || !hero.hasTalent(WHISPERING_MEAL)){
-			return;
-		}
-		float duration = hero.pointsInTalent(WHISPERING_MEAL) == 1 ? 3f : 5f;
-		for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
-			if (mob.alignment == Char.Alignment.ENEMY && Dungeon.level.heroFOV[mob.pos]){
-				Buff.affect(mob, Terror.class, duration).object = hero.id();
-			}
-		}
-	}
-
 	public static void onPotionUsed( Hero hero, int cell, float factor, Potion potion ){
 		onPotionUsed(hero, cell, factor);
 		if (hero != null && hero.hasTalent(LIQUID_BARRIER)){
 			float duration = hero.pointsInTalent(LIQUID_BARRIER) == 1 ? 5f : 10f;
 			Buff.affect(hero, BlobImmunity.class, duration * factor);
 		}
-	}
-
-	private static boolean isPotentLiquidBarrierPotion( Potion potion ){
-		return potion instanceof PotionOfStrength
-				|| potion instanceof PotionOfExperience
-				|| potion instanceof PotionOfMastery
-				|| potion instanceof PotionOfDivineInspiration
-				|| potion instanceof ElixirOfMight
-				|| potion instanceof UnstableBrew;
 	}
 
 	public static float sprayGunLoadTime( Hero hero ){
@@ -2545,17 +2672,7 @@ public enum Talent {
 		return 1f;
 	}
 
-	public static int bullseyeDamageBonus( Hero hero, Char target ){
-		if (hero != null && target != null && hero.hasTalent(BULLSEYE) && target.alignment != hero.alignment){
-			return hero.pointsInTalent(BULLSEYE) == 1 ? 3 : 5;
-		}
-		return 0;
-	}
-
 	public static int onAttackProcMult( Hero hero, Char enemy, int dmg ){
-		if(hero.hasTalent(HEDONISM) && hero.buff(Hunger.class).level<300){
-			dmg+=2*hero.pointsInTalent(HEDONISM);
-		}
 		if(hero.pointsInTalent(PUMP_ATTACK)>0 &&  Random.Int( 5 )==1 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			dmg = Math.round(dmg * (1.0f + 1.0f*hero.pointsInTalent(PUMP_ATTACK)));
 			GLog.i("此一击积蓄了很强的力量，造成多倍伤害");
@@ -2633,7 +2750,6 @@ public enum Talent {
 			dmg*=1+0.2*hero.pointsInTalent(KONO_FUKUSA);
 		}
 		if(hero.buff(OneSword.OKU_OneSword.class)!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
-			Buff.affect(enemy,OneSword.Kill.class);
 			float onesword = 1.3f;
 			if((hero.belongings.attackingWeapon() instanceof Katana) || (hero.belongings.attackingWeapon() instanceof Wakizashi)){
 				onesword+=0.2f;
@@ -2676,12 +2792,24 @@ public enum Talent {
                 dmg*=1.0f+0.15f*hero.pointsInTalent(MAGIC_ARROW);
             }
         }
+		if (hero.hasTalent(DEADLY_FOLLOWUP) && enemy.alignment == Char.Alignment.ENEMY
+				&& !(hero.belongings.attackingWeapon() instanceof MissileWeapon)
+				&& hero.buff(DeadlyFollowupTracker.class) != null
+				&& hero.buff(DeadlyFollowupTracker.class).object == enemy.id()){
+			dmg = Math.round(dmg * (1.0f + .1f*hero.pointsInTalent(DEADLY_FOLLOWUP)));
+		}
 		return dmg;
 	}
 	public static int onAttackProcBonus( Hero hero, Char enemy){
 		int dmg =0;
-		if (isPhysicalAttack(hero)){
-			dmg += crystalGunpowderBonus(hero);
+		if(hero.hasTalent(HEDONISM) && hero.buff(Hunger.class).level<300){
+			dmg += 2*hero.pointsInTalent(HEDONISM);
+		}
+		if (hero.belongings.attackingWeapon() != null && hero.hasTalent(CRYSTAL_GUNPOWDER)){
+			dmg += Math.min(2 * hero.pointsInTalent(CRYSTAL_GUNPOWDER), Dungeon.energy * hero.pointsInTalent(CRYSTAL_GUNPOWDER));
+		}
+		if (hero.belongings.attackingWeapon() instanceof Dart && hero.hasTalent(BULLSEYE) && enemy.alignment != hero.alignment){
+			dmg += hero.pointsInTalent(BULLSEYE) == 1 ? 3 : 5;
 		}
 		if( hero.pointsInTalent(FEAR_INCARNATION)>=1 && !enemy.buffs(Terror.class).isEmpty()){
 			dmg+=1+2*hero.pointsInTalent(FEAR_INCARNATION);}
@@ -2768,15 +2896,13 @@ public enum Talent {
 		if(attacker==hero){
 			dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
 		}
-		if (hero.hasTalent(DEADLY_FOLLOWUP) && enemy.alignment == Char.Alignment.ENEMY) {
-			if (hero.belongings.attackingWeapon() instanceof MissileWeapon) {
-				if (!(hero.belongings.attackingWeapon() instanceof SpiritBow.SpiritArrow)) {
-					Buff.prolong(hero, DeadlyFollowupTracker.class, 5f).object = enemy.id();
-				}
-			} else if (hero.buff(DeadlyFollowupTracker.class) != null
-					&& hero.buff(DeadlyFollowupTracker.class).object == enemy.id()){
-				dmg = Math.round(dmg * (1.0f + .1f*hero.pointsInTalent(DEADLY_FOLLOWUP)));
-			}
+		if(hero.buff(OneSword.OKU_OneSword.class)!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+			Buff.affect(enemy,OneSword.Kill.class);
+		}
+		if (hero.hasTalent(DEADLY_FOLLOWUP) && enemy.alignment == Char.Alignment.ENEMY
+				&& hero.belongings.attackingWeapon() instanceof MissileWeapon
+				&& !(hero.belongings.attackingWeapon() instanceof SpiritBow.SpiritArrow)) {
+			Buff.prolong(hero, DeadlyFollowupTracker.class, 5f).object = enemy.id();
 		}
 		if(hero.hasTalent(OOZE_ATTACK)&& Random.Int( 4 )<=hero.pointsInTalent(OOZE_ATTACK) && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect( enemy, Ooze.class ).set(15);
@@ -2793,7 +2919,7 @@ public enum Talent {
 			Buff.affect(enemy, Vertigo.class,3);
 		}
 		if(hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT)>0 && !enemy.buffs(PinCushion.class).isEmpty()){
-			Buff.affect(enemy, Hex.class,hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT));
+			Buff.affect(enemy, Hex.class,hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT)+1);
 		}
 		if (hero.hasTalent(COVER_SCAR) && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect( enemy, Bleeding.class).set(hero.pointsInTalent(COVER_SCAR));
@@ -2802,7 +2928,8 @@ public enum Talent {
 			enemy.damage(hero.pointsInTalent(ICE_BREAKING), new WandOfMagicMissile());
 		}
 		if(hero.hasTalent(POSION_DAGGER) && (hero.belongings.attackingWeapon() instanceof Dagger ||
-				hero.belongings.attackingWeapon() instanceof Dirk  || hero.belongings.attackingWeapon() instanceof  AssassinsBlade)){
+				hero.belongings.attackingWeapon() instanceof Dirk
+                || hero.belongings.attackingWeapon() instanceof  AssassinsBlade || hero.belongings.attackingWeapon() instanceof  RitualDagger)){
 			Buff.affect(enemy,Poison.class).set(hero.pointsInTalent(POSION_DAGGER)*2);
 		}
 		if(!attacker.buffs(YogFistPower.class).isEmpty()){
@@ -3375,23 +3502,30 @@ public enum Talent {
 		if (hasSuffering(hero) && r.reason >= 20 && r.reason - lose < 20){
 			Reason.gainReason(hero, 20 + 10 * hero.pointsInTalent(REWIND_TIME));
 			Buff.detach(hero, Panic.class);
-			Buff.affect(hero, RewindTimeUsed.class);
+			Buff.affect(hero, RewindTimeUsed.class,50f);
 		}
 		return lose;
 	}
 
-	public static class RewindTimeUsed extends Buff {
+	public static class RewindTimeUsed extends FlavourBuff {
 		{
 			type = buffType.POSITIVE;
 		}
 
+
 		@Override
-		public boolean act() {
-			if (!hasSuffering(target)){
-				detach();
-			}
-			spend(TICK);
-			return true;
+		public int icon() {
+			return BuffIndicator.TIME;
+		}
+
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.64f, 0.53f, 0.42f);
+		}
+
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, visualcooldown() / 50);
 		}
 	}
 
@@ -3501,7 +3635,32 @@ public enum Talent {
             }
         }
     }
-    public static   int onWandDamage(Wand wand, int dmg){
+	public static int onWandDamage(Wand wand, Char target, int dmg){
+		if (hero == null){
+			return dmg;
+		}
+		boolean frostTarget = target != null && target.buff(Frost.class) != null;
+		Chill chill = target == null ? null : target.buff(Chill.class);
+		if (hero.hasTalent(PENETRATING_CAST) && target != null && target.alignment == Char.Alignment.ENEMY){
+			int removed = 0;
+			for (Buff buff : new ArrayList<>(target.buffs())){
+				if (buff.type == Buff.buffType.NEGATIVE){
+					buff.detach();
+					removed++;
+				}
+			}
+			if (removed > 0){
+				dmg = Math.round(dmg * (1f + removed * 0.1f * hero.pointsInTalent(PENETRATING_CAST)));
+			}
+		}
+		if (wand instanceof WandOfFrost){
+			if (frostTarget && hero.pointsInTalent(ICE_HELL) >= 2){
+				dmg += Math.max(0, wand.buffedLvl()) * 4;
+			} else if (chill != null && hero.pointsInTalent(ICE_HELL) < 1){
+				float chillturns = Math.min(10, chill.cooldown());
+				dmg = (int)Math.round(dmg * Math.pow(0.9333f, chillturns));
+			}
+		}
         if(hero.hasTalent(Talent.MAGIC_GIRL) && !hero.buffs(HeroDisguise.class).isEmpty()){
             dmg=(int)(dmg*(1+0.2*hero.pointsInTalent(Talent.MAGIC_GIRL)));
         }
@@ -3518,8 +3677,8 @@ public enum Talent {
         if(hero.pointsInTalent(Talent.MARKSMAN)>1 && wand instanceof WandOfMagicMissile){
             dmg+=3;
         }
-        return dmg;
-    }
+		return dmg;
+	}
 
 	public static void onArmorAbility( Hero hero, float chargeUse ){
 		if(hero.pointsInTalent(Talent.SUMMON_FOLLOWER)>=1){
@@ -3631,11 +3790,11 @@ public enum Talent {
 			Buff.affect(hero,ArtifactRecharge.class).extend(1+1*hero.pointsInTalent(KILL_SPREE));
 		}
         if(hero.heroClass==HeroClass.FRIAR){
-			com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger ritualDagger = hero.belongings.getItem(com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger.class);
+			RitualDagger ritualDagger = hero.belongings.getItem(RitualDagger.class);
 			if (ritualDagger != null){
 				ritualDagger.onKill(hero);
 			}
-			int virtueKillExtend = hero.subClass.is(HeroSubClass.PIOUS) && hero.hasTalent(BRIGHT_WARRIOR) ? 3 + hero.pointsInTalent(BRIGHT_WARRIOR) : 3;
+			int virtueKillExtend = hero.subClass.is(HeroSubClass.PIOUS) && hero.hasTalent(BRIGHT_WARRIOR) ? 3 + hero.pointsInTalent(BRIGHT_WARRIOR)*3 : 3;
             if(emeny instanceof YogDzewa){
                 Reason.gainReason(hero,100);
                 if(hero.buff(Panic.class)!=null){
@@ -4144,8 +4303,10 @@ public enum Talent {
 		Collections.addAll(typeTalent.get(0).get(RESOURCE),CACHED_RATIONS,NATURES_BOUNTY,THRID_HAND,MORE_TALENT,NOVICE_BENEFITS,ILLUSION_FEED,
 				ZHUOJUN_BUTCHER,GOLD_MEAL,EXPERIENCE_MEAL,MILITARY_WATERSKIN,GOLDOFBOOK,GHOST_GIFT,PREDICTIVE_LOVER,LIQUID_PERCEPTION,
 				MORE_FAVORS,INVISIBILITY_SHADOWS,OVER_CODE,DUNGEON_HERO,TRANQUIL_TINCTURE);
+		Collections.addAll(typeTalent.get(0).get(MAGIC), ERODING_SOUL);
 		Collections.addAll(typeTalent.get(0).get(SPELL),SATIATED_SPELLS, HOLY_INTUITION, SEARING_LIGHT, SHIELD_OF_LIGHT,
 				ASCENSION_CURSE,SHEPHERD_INTENTION,SILVER_LANGUAGE,TRAITOROUS_SPELL,FOCUS_LIGHT,HEALATTACK);
+		Collections.addAll(typeTalent.get(0).get(SPELL), CREDULOUS);
 		Collections.addAll(typeTalent.get(0).get(ASSIST),VETERANS_INTUITION,IRON_WILL,SCHOLARS_INTUITION,THIEFS_INTUITION,
 				SURVIVALISTS_INTUITION,ADVENTURERS_INTUITION,BOMB_MANIAC,THICKENED_ARMOR,STRENGTH_TRAIN,SAVAGE_PHYSIQUE,
 				AUTO_PICK,LIQUID_ARMOR,HUNTING_INTUITION,CRAZY_DANCER,YOU_SCARED_ME,DROP_RESISTANT,POTENTIAL_ENERGY,
@@ -4158,6 +4319,7 @@ public enum Talent {
 				LETHAL_HASTE,NINJA_SOCIAL,ROCKET_FIST,SWEET_SLEEP,MAGIC_ARROW,BULLSEYE);
 		Collections.addAll(typeTalent.get(1).get(MAGIC),ENERGIZING_MEAL,INSCRIBED_POWER,ARCANE_VISION,SHIELD_BATTERY,BURNING_CURSE,
 				WULEI_ZHENGFA,MAGIC_GIRL,ABYSSAL_GAZE,QUANTUM_HACKING,EAT_MIND,LIGHT_SHOCK,GAS_SPURT);
+		Collections.addAll(typeTalent.get(1).get(MAGIC), PENETRATING_CAST);
 		Collections.addAll(typeTalent.get(1).get(EFFECT),IRON_STOMACH,LIQUID_WILLPOWER,MYSTICAL_MEAL,INSCRIBED_STEALTH,INVIGORATING_MEAL,
 				LIQUID_NATURE,FOCUSED_MEAL,LIQUID_AGILITY,SURVIVAL_VOLITION,BLESS_MEAL,GET_UP,INVINCIBLE,
 				VEGETARIANISM,WORD_STUN,DELICIOUS_FLYING,BACKFIRED,WITCH_POTION,TOUGH_MEAL,SLIME_GREENHOUSE,YUNYING_MEAL,XIA,FEINT,
@@ -4178,7 +4340,7 @@ public enum Talent {
 				MARTIAL_TRAIN,RAGE_ATTACK,ACCUMULATE_STEADILY,WELLFED_MEAL,SKY_EARTH,DEEP_FREEZE,LOVE_BACKSTAB,ABACUS,PRECISE_SHOT,CICADA_DANCE,
 				ASHES_BOW,HAND_DESTRUCTION,THROWING_RECYCLING,QIANFA_THROWING,BIG_FIST);
 		Collections.addAll(typeTalent.get(2).get(MAGIC),DESPERATE_POWER,MAGIC_RECYCLING,ANGEL_STANCE,MORONITY,EXTREME_CASTING,SWIFT_CHURCH,
-				EMPOWERING_LIFE,DISABLIITY_POSION,DEVIL_FLAME);
+				EMPOWERING_LIFE,DISABLIITY_POSION,DEVIL_FLAME,ICE_HELL);
 		Collections.addAll(typeTalent.get(2).get(EFFECT),ENHANCED_RINGS,SEER_SHOT,INVINCIBLE_MEAL,DETOX_DAMAGE,EARTH_MEAL,REVERSE_POLARITY,
 				WATER_ISFOOD,NO_VIEWRAPE,READ_PROFITABLE,WANLING_POTION,ENDLESS_MEAL,HEALTHY_FOOD,FLAME_INCARNATION,ICE_MEAL);
 		Collections.addAll(typeTalent.get(2).get(RESOURCE),TRAP_MASTER,GOLD_FORMATION,DOUBLE_TRINKETS,RETURNING_HONOR,WEAPON_MAKE,SECRET_STASH,
@@ -4186,6 +4348,7 @@ public enum Talent {
 				MIDAS_TOUCH);
 		Collections.addAll(typeTalent.get(2).get(SPELL),ALLY_WARP,TIME_SAND,STRENGTH_CLOAK,STRENGTH_ARMBAND,CLEANSE, LIGHT_READING,PURIFYING_EVIL,
 				DIVINE_STORM,RESURRECTION,ZHUANYU_SPELL,HOLY_GRENADE,BLADE_STAR,SACRED_BLADE);
+		Collections.addAll(typeTalent.get(2).get(SPELL), BOUNTIFUL_ENHANCEMENT);
 		Collections.addAll(typeTalent.get(2).get(ASSIST),HOLD_FAST,STRONGMAN,LIGHT_CLOAK,BEHEST,AFRAID_DEATH,HERO_NAME,HOMETOWN_CLOUD,WIDE_KNOWLEDGE,
 				CONCEPT_GRID,ACTIVE_MUSCLES,SEA_WIND,BEYOND_LIMIT,EXTREME_REACTION,HOLY_FAITH,ORIGINAL_MONSTER,LIGHT_BOX,QUICK_TOOL,RING_BOND,
 				HUMAN_GLORY);
@@ -4293,13 +4456,8 @@ public enum Talent {
 
 
 		}
-		tierTalents.clear();
-		Collections.addAll(tierTalents, AQUATIC_RECOVER,PUMP_ATTACK,OOZE_ATTACK,STRONGEST_SHIELD,COMBO_PACKAGE,BREAK_ENEMY_RANKS,
-				SURPRISE_THROW,SMOKE_MASK,RUSH,SHADOW_KILLER,KILL_SPREE,SEAOFPEOPLE,PHANTOM_STEP);
-		for (Talent t : sublimation.keySet()){
-			if(tierTalents.contains(t)){
-				talents.get(0).put(t, 0);}
-		}
+		talents.get(0).put(bossTalentForSlot(BOSS_TALENT_SLOT_1, sublimation), 0);
+		talents.get(0).put(bossTalentForSlot(BOSS_TALENT_SLOT_2, sublimation), 0);
 		tierTalents.clear();
 
 		//tier 2
@@ -4350,13 +4508,8 @@ public enum Talent {
 			}
 			talents.get(1).put(talent, 0);
 		}
-		tierTalents.clear();
-		Collections.addAll(tierTalents,FASTING,THUNDER_STRIKE,DIRECTIONAL_COLLAPSE,
-				KING_PROTECT,SUMMON_FOLLOWER,WOLFISH_GAZE,ENERGY_CONVERSION);
-		for (Talent t : sublimation.keySet()){
-			if(tierTalents.contains(t)){
-				talents.get(1).put(t, 0);}
-		}
+		talents.get(1).put(bossTalentForSlot(BOSS_TALENT_SLOT_3, sublimation), 0);
+		talents.get(1).put(bossTalentForSlot(BOSS_TALENT_SLOT_4, sublimation), 0);
 		tierTalents.clear();
 
 		//tier 3
@@ -4423,12 +4576,7 @@ public enum Talent {
 			}
 			talents.get(2).put(talent, 0);
 		}
-		tierTalents.clear();
-		Collections.addAll(tierTalents, YOG_LARVA,YOG_FIST,YOG_RAY);
-		for (Talent t : sublimation.keySet()){
-			if(tierTalents.contains(t)){
-				talents.get(2).put(t, 0);}
-		}
+		talents.get(2).put(bossTalentForSlot(BOSS_TALENT_SLOT_5, sublimation), 0);
 		tierTalents.clear();
 		/*
 		if(hero.negativeTalents!=null){

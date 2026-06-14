@@ -81,6 +81,7 @@ public enum DictionaryJournal {
         ALCHEMY.d.put("food_berry",         ItemSpriteSheet.BERRY);
         ALCHEMY.d.put("phantom_meat",       ItemSpriteSheet.PHANTOM_MEAT);
         ALCHEMY.d.put("supply_ration",       ItemSpriteSheet.SUPPLY_RATION);
+        ALCHEMY.d.put("tincture",           ItemSpriteSheet.TINCTURE);
 
         //potions, enhanced ones implemented
         ALCHEMY.d.put("potion_exp",         ItemSpriteSheet.POTION_INDIGO);
@@ -264,6 +265,7 @@ public enum DictionaryJournal {
         WEAPONS.d.put("melee_spearofconqueror",ItemSpriteSheet.SPEARCONQUEROR);
         WEAPONS.d.put("melee_wakizashi",    ItemSpriteSheet.WAKIZASHI);
         WEAPONS.d.put("melee_bracer",       ItemSpriteSheet.BRACER);
+        WEAPONS.d.put("melee_latherwhip",   ItemSpriteSheet.LWHIP);
         WEAPONS.d.put("melee_shortsword",   ItemSpriteSheet.SHORTSWORD);
         WEAPONS.d.put("melee_handaxe",      ItemSpriteSheet.HAND_AXE);
         WEAPONS.d.put("melee_spear",        ItemSpriteSheet.SPEAR);
@@ -326,6 +328,8 @@ public enum DictionaryJournal {
         WEAPONS.d.put("missile_cube",       ItemSpriteSheet.FORCE_CUBE);
         WEAPONS.d.put("missile_spiritbow",  ItemSpriteSheet.SPIRIT_BOW);
         WEAPONS.d.put("missile_tatteki",  ItemSpriteSheet.TATTEKI);
+        WEAPONS.d.put("special_spraygun",   ItemSpriteSheet.SPRAYGUN_BASE);
+        WEAPONS.d.put("special_ritualdagger", ItemSpriteSheet.RITUAL_DAGGER);
         //trinkets
         TRINKETS.d.put("trinket_trinket_catalyst",ItemSpriteSheet.TRINKET_CATA);
         TRINKETS.d.put("trinket_dimensional_sundial",ItemSpriteSheet.SUNDIAL);
@@ -390,6 +394,7 @@ public enum DictionaryJournal {
 
         UNCLASSIFIED.d.put("misc_amulet_curse",  DictSpriteSheet.BUFF_AMULET_CURSE);
         UNCLASSIFIED.d.put("misc_sac_fire", DictSpriteSheet.BUFF_SAC_FIRE);
+        UNCLASSIFIED.d.put("misc_reason",   DictSpriteSheet.BUFF_REASON);
         //miscs
         UNCLASSIFIED.d.put("misc_ankh",  ItemSpriteSheet.ANKH);
         UNCLASSIFIED.d.put("misc_seal",  ItemSpriteSheet.SEAL);

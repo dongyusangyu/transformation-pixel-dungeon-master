@@ -87,7 +87,9 @@ public abstract class ClericSpell {
 			hero.buff(Talent.SatiatedSpellsTracker.class).detach();
 		}
 		tome.spendCharge(chargeUse(hero));
-		Talent.onArtifactUsed(hero);
+		if (tome.triggersArtifactTalents()){
+			Talent.onArtifactUsed(hero);
+		}
 		if (hero.subClass.is(HeroSubClass.PALADIN)){
 			if (this != HolyWeapon.INSTANCE && hero.buff(HolyWeapon.HolyWepBuff.class) != null){
 				Buff.affect(hero, HolyWeapon.HolyWepBuff.class, 10*chargeUse(hero));
@@ -134,6 +136,9 @@ public abstract class ClericSpell {
 			}
 			if(cleric.hasTalent(Talent.FOCUS_LIGHT)) {
 				spells.add(Focus_Light.INSTANCE);
+			}
+			if (cleric.hasTalent(Talent.CREDULOUS)) {
+				spells.add(Credulous.INSTANCE);
 			}
 
 		} else if (tier == 2) {
@@ -324,6 +329,7 @@ public abstract class ClericSpell {
 		spells.add(Sacred_Blade.INSTANCE);
 		spells.add(Equipment_Bless.INSTANCE);
 		spells.add(HotLight.INSTANCE);
+		spells.add(Credulous.INSTANCE);
 		return spells;
 	}
 }

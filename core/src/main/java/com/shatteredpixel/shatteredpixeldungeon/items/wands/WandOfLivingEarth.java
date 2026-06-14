@@ -79,7 +79,7 @@ public class WandOfLivingEarth extends DamageWand {
 	@Override
 	public void onZap(Ballistica bolt) {
 		Char ch = Actor.findChar(bolt.collisionPos);
-		int damage = damageRoll();
+		int damage = damageRoll(ch);
 		int armorToAdd = damage;
 
 		EarthGuardian guardian = null;

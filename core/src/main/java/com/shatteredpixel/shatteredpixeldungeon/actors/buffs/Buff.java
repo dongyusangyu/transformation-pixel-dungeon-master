@@ -189,10 +189,7 @@ public class Buff extends Actor {
 	}
 	
 	public static<T extends FlavourBuff> T affect( Char target, Class<T> buffClass, float duration ) {
-		if(target instanceof Hero && duration>1 && ((Hero)target).belongings.getItem(BronzeWatch.class)!=null){
-			duration = Math.max(1, duration-BronzeWatch.watchMultiplier());
-
-		}
+		duration = BronzeWatch.adjustDuration(target, duration);
 		T buff = affect( target, buffClass );
 		buff.spend( duration * target.resist(buffClass) );
 		return buff;
@@ -200,9 +197,7 @@ public class Buff extends Actor {
 
 	//postpones an already active buff, or creates & attaches a new buff and delays that.
 	public static<T extends FlavourBuff> T prolong( Char target, Class<T> buffClass, float duration ) {
-		if(target instanceof Hero && duration>1 && ((Hero)target).belongings.getItem(BronzeWatch.class)!=null){
-			duration = Math.max(1, duration-BronzeWatch.watchMultiplier());
-		}
+		duration = BronzeWatch.adjustDuration(target, duration);
 		T buff = affect( target, buffClass );
 		buff.postpone( duration * target.resist(buffClass) );
 		return buff;
@@ -223,9 +218,7 @@ public class Buff extends Actor {
         if(target.buff(Virtue.Fearless.class)!=null && buffClass== Panic.class) return null;
         T buff = affect( target, buffClass );
         duration = Math.min(duration,Duration-buff.cooldown());
-        if(target instanceof Hero && duration>1 && ((Hero)target).belongings.getItem(BronzeWatch.class)!=null){
-            duration = Math.max(1, duration-BronzeWatch.watchMultiplier());
-        }
+        duration = BronzeWatch.adjustDuration(target, duration);
 
         buff.spend( duration * target.resist(buffClass) );
         return buff;

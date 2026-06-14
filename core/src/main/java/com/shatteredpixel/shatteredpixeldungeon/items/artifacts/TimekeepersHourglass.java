@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -306,14 +307,15 @@ public class TimekeepersHourglass extends Artifact {
 				if(hero.hasTalent(Talent.TIME_SAND)){
                     truns=10;
 				}
-                spend(truns*usedCharge);
+				int stasisTurns = BronzeWatch.adjustDuration(target, truns*usedCharge);
+                spend(stasisTurns);
 
 				//buffs always act last, so the stasis buff should end a turn early.
 				//spend(5*usedCharge);
 
 				//shouldn't punish the player for going into stasis frequently
 				if (hunger != null && !hunger.isStarving()) {
-					hunger.satisfy(truns * usedCharge);
+					hunger.satisfy(stasisTurns);
 				}
 
 				charge -= usedCharge;
@@ -366,18 +368,33 @@ public class TimekeepersHourglass extends Artifact {
 		}
 
 		float turnsToCost = 2f;
+		boolean restored = false;
 
 		ArrayList<Integer> presses = new ArrayList<>();
+
+		@Override
+		public boolean attachTo(Char target) {
+			if (super.attachTo(target)){
+				if (!restored) {
+					turnsToCost = BronzeWatch.adjustDuration(target, turnsPerCharge());
+				}
+				restored = false;
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		private float turnsPerCharge(){
+			return hero.pointsInTalent(Talent.TIME_SAND) >= 2 ? 3f : 2f;
+		}
 
 		public void processTime(float time){
 			turnsToCost -= time;
 
 			//use 1/1,000 to account for rounding errors
 			while (turnsToCost < -0.001f){
-				if(hero.pointsInTalent(Talent.TIME_SAND)>=2){
-					turnsToCost+=1f;
-				}
-				turnsToCost += 2f;
+				turnsToCost += BronzeWatch.adjustDuration(target, turnsPerCharge());
 				charge --;
 			}
 
@@ -498,6 +515,7 @@ public class TimekeepersHourglass extends Artifact {
 				presses.add(value);
 
 			turnsToCost = bundle.getFloat( TURNSTOCOST );
+			restored = true;
 		}
 	}
 

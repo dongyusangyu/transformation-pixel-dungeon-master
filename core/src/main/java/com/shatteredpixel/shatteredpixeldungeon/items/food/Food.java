@@ -90,7 +90,7 @@ public class Food extends Item {
 			SpellSprite.show( hero, SpellSprite.FOOD );
 			eatSFX();
 			
-			hero.spend( Talent.eatingTime(hero, this, eatingTime()) );
+			hero.spend( eatingTime() );
 
 			Talent.onFoodEaten(hero, energy, this);
 			
@@ -119,8 +119,9 @@ public class Food extends Item {
 			|| hero.hasTalent(Talent.BLESS_MEAL)
 			|| hero.hasTalent(Talent.ENLIGHTENING_MEAL)
 			|| hero.hasTalent(Talent.YUNYING_MEAL)
-			||hero.hasTalent(Talent.ICE_MEAL)
-                ||hero.hasTalent(Talent.ROYAL_MEAL)){
+			|| hero.hasTalent(Talent.WHISPERING_MEAL)
+			|| hero.hasTalent(Talent.ICE_MEAL)
+			|| hero.hasTalent(Talent.ROYAL_MEAL)){
 			return TIME_TO_EAT - 2;
 		}else {
 			return TIME_TO_EAT;

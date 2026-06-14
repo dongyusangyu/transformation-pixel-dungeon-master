@@ -191,6 +191,9 @@ public class Tengu extends Mob {
 			});
 			return;
 		}
+        if(src instanceof Mob){
+            enemy=(Char)src;
+        }
 
 		//phase 1 of the fight is over
 		if (state == PrisonBossLevel.State.FIGHT_START && HP <= HT/2){

@@ -101,6 +101,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.AuraOfProtect
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.BeamingRay;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Blade_Star;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyWard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.LifeLinkSpell;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.ShieldOfLight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Brute;
@@ -120,6 +121,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogDzewa;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.PrismaticImage;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ImmortalShieldAffecter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
@@ -162,6 +165,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Kinetic;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Sickle;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -601,6 +605,11 @@ public abstract class Char extends Actor {
 			}
 
 			enemy.damage( effectiveDamage, this );
+			if (this == Dungeon.hero) {
+				AgentMinRewardTracker.onHeroAttackEnemy(enemy, effectiveDamage);
+			}
+
+
 
 			if (buff(FireImbue.class) != null)  buff(FireImbue.class).proc(enemy);
 			if (buff(FrostImbue.class) != null) buff(FrostImbue.class).proc(enemy);
@@ -1078,6 +1087,11 @@ public abstract class Char extends Actor {
 		} else {
 			damage *= resist( srcClass );
 		}
+        if(isAlive()){
+            RitualDagger.BloodGift.onPiousAttackDamage(hero, this, (int)damage);
+        }else{
+            RitualDagger.BloodGift.onPiousAttackDamage(hero, this, (int)damage);
+        }
 
 
 		dmg = Math.round(damage);
@@ -1230,11 +1244,15 @@ public abstract class Char extends Actor {
 			if (src instanceof Corrosion)                               icon = FloatingText.CORROSION;
 			if (src instanceof Poison)                                  icon = FloatingText.POISON;
 			if (src instanceof Ooze)                                    icon = FloatingText.OOZE;
+			if (src instanceof SlimeMucus)                              icon = FloatingText.PHYS_DMG_NO_BLOCK;
 			if (src instanceof Viscosity.DeferedDamage)                 icon = FloatingText.DEFERRED;
 			if (src instanceof Corruption)                              icon = FloatingText.CORRUPTION;
 			if (src instanceof AscensionChallenge)                      icon = FloatingText.AMULET;
 			if (src==Talent.ENDLESS_MALICE)                      icon = FloatingText.ENDLESS_MALICE;
 			if (src==Talent.LIFE_SPORT)                      icon = FloatingText.LIFE_SPORT;
+			if (src == Dungeon.hero && Dungeon.hero.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken){
+				icon = FloatingText.PHYS_DMG_NO_BLOCK;
+			}
 
 			if ((icon == FloatingText.PHYS_DMG || icon == FloatingText.PHYS_DMG_NO_BLOCK) && hitMissIcon != -1){
 				if (icon == FloatingText.PHYS_DMG_NO_BLOCK) hitMissIcon += 18; //extra row

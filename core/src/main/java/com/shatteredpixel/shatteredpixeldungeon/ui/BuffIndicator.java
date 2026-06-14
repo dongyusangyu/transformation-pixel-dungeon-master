@@ -187,6 +187,7 @@ public class BuffIndicator extends Component {
     public  static  final  int ENERGY_SHIELD=125;
     public  static  final  int RITUAL=126;
     public  static  final  int HOLYPRAER=128;
+    public  static  final  int DELAYEDSATISFACTION=129;
 
 
 
