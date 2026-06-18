@@ -268,7 +268,12 @@ public class TalentButton extends Button {
 						}
 					}
 
-					ScrollOfMetamorphosis.onMetamorph(replacing, talent);
+                    ScrollOfMetamorphosis.TalentSource source = ScrollOfMetamorphosis.TalentSource.METAMORPHOSIS;
+                    if (ScrollOfMetamorphosis.WndMetamorphReplace.INSTANCE == null
+                            && TestTalent.WndMetamorphReplace.INSTANCE != null){
+                        source = ScrollOfMetamorphosis.TalentSource.TRANSFORM_SPELL;
+                    }
+					ScrollOfMetamorphosis.onMetamorph(replacing, talent, source);
 
 					Statistics.metamorphosis++;
 					Badges.validateFreemanUnlock();

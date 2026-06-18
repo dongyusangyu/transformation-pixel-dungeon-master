@@ -122,7 +122,8 @@ public class RubbingsTome extends Item {
     public void spendCharge( float chargesSpent ){
         charge -= chargesSpent;
         if(charge<1){
-            curItem.detach(curUser.belongings.backpack);
+            charge = 0;
+            RubbingsTome.this.detach(hero.belongings.backpack);
         }
         updateQuickslot();
     }

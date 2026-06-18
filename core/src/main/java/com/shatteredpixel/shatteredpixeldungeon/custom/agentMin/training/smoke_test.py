@@ -11,9 +11,13 @@ def make_dummy_batch(batch_size: int = 8, height: int = 32, width: int = 32, dev
     action_mask = torch.ones(batch_size, cfg.action_rows, device=device)
     action_mask[:, 40:] = 0
     return {
-        "level_tensor": torch.rand(batch_size, cfg.level_channels, height, width, device=device),
+        "level_tensor": torch.rand(batch_size, cfg.level_channels - 1, height, width, device=device),
+        "explored_global_matrix": torch.rand(batch_size, 127, 127, device=device),
+        "agent_visited_matrix": torch.rand(batch_size, height, width, device=device),
         "hero_vector": torch.rand(batch_size, cfg.full_hero_dim, device=device),
         "inventory_matrix": torch.rand(batch_size, cfg.inventory_rows, cfg.inventory_features, device=device),
+        "inventory_summary_vector": torch.rand(batch_size, cfg.inventory_summary_dim, device=device),
+        "option_vector": torch.rand(batch_size, cfg.option_dim, device=device),
         "mob_matrix": torch.rand(batch_size, cfg.mob_rows, cfg.mob_features, device=device),
         "history_matrix": torch.rand(batch_size, cfg.history_rows, cfg.history_features, device=device),
         "action_matrix": torch.rand(batch_size, cfg.action_rows, cfg.action_features, device=device),

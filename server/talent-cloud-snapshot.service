@@ -1,0 +1,8 @@
+[Unit]
+Description=Create a Transformation Pixel Dungeon cloud database snapshot
+After=talent-cloud.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/tpd-cloud
+ExecStart=/usr/bin/python3 /opt/tpd-cloud/admin_console.py --db /opt/tpd-cloud/cloud_data/talent_cloud.sqlite3 --snapshot-dir /opt/tpd-cloud/cloud_snapshots --keep-snapshots 7 --snapshot-once

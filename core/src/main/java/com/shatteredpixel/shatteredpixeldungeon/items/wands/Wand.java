@@ -78,6 +78,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MagicFeather;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetRecorder;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -761,6 +762,7 @@ public abstract class Wand extends Item {
 					QuickSlotButton.target(Actor.findChar(cell));
 				
 				if (curWand.tryToZap(curUser, target)) {
+					AgentMinDatasetRecorder.onItemCast(curWand, curUser, target);
 
                     if(Dungeon.level.distance(curUser.pos, cell) < Dungeon.level.distance(curUser.pos, target)){
                         Talent.onToZap(curUser, cell);

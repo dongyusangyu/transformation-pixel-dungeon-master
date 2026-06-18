@@ -61,9 +61,11 @@ public class Holy_Grenade extends TargetedClericSpell {
         if (target == null){
             return;
         }
-        if (Dungeon.level.heroFOV[target]) {
-            new Flare(10, 64).show(Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(target), 2f);
+        if (!Dungeon.level.heroFOV[target]) {
+            GLog.w(Messages.get(this, "invalid_target"));
+            return;
         }
+        new Flare(10, 64).show(Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(target), 2f);
         int area = 1 + Dungeon.hero.pointsInTalent(Talent.HOLY_GRENADE)/3;
         ArrayList<Char> affected = new ArrayList<>();
         PathFinder.buildDistanceMap( target, BArray.not( Dungeon.level.solid, null ), area );

@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.SaveManager;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinTrainingBootstrap;
 import com.shatteredpixel.shatteredpixeldungeon.custom.seedfinder.SeedFindScene;
 import com.shatteredpixel.shatteredpixeldungeon.effects.BannerSprites;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Fireball;
@@ -325,6 +326,7 @@ public class TitleScene extends PixelScene {
 		}
 
 		fadeIn();
+		AgentMinTrainingBootstrap.autoStartWarriorRun();
 	}
 
 	private float uiAlpha;

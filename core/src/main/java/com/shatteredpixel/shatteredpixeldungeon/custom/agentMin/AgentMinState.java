@@ -28,6 +28,8 @@ public class AgentMinState {
 	public static final int FLAG_PLANT = 1 << 26;
 	public static final int FLAG_MOB = 1 << 27;
 	public static final int FLAG_STAIRS = 1 << 28;
+	public static final int FLAG_DOOR = 1 << 29;
+	public static final int FLAG_LOCKED_CHEST = 1 << 30;
 
 	public int schemaVersion = SCHEMA_VERSION;
 	public long observationId;
@@ -79,6 +81,10 @@ public class AgentMinState {
 		public int armorMin;
 		public int armorMax;
 		public float expectedArmor;
+		public boolean hasIronKey;
+		public boolean hasGoldenKey;
+		public boolean hasCrystalKey;
+		public boolean hasWornKey;
 		public LinkedHashMap<String, Integer> talents = new LinkedHashMap<>();
 		public LinkedHashMap<String, Integer> negativeTalents = new LinkedHashMap<>();
 		public ArrayList<BuffState> buffs = new ArrayList<>();
@@ -109,6 +115,8 @@ public class AgentMinState {
 		public int hp;
 		public float hpRatio;
 		public int distanceToHero;
+		public float attackDelay;
+		public float speed;
 		public boolean visible;
 		public boolean alive;
 		public ArrayList<BuffState> buffs = new ArrayList<>();
@@ -117,6 +125,11 @@ public class AgentMinState {
 	public static class MobCombatState extends MobState {
 		public int estimatedDamage;
 		public int estimatedArmor;
+		public float expectedDamageTaken;
+		public float expectedTurnsToKill;
+		public float killChance;
+		public float meleeDanger;
+		public float rangedValue;
 		public float threatScore;
 		public float targetPriority;
 	}

@@ -393,8 +393,8 @@ public class HeroSelectScene extends PixelScene {
 
 	private void setSelectedHero(HeroClass cl){
 		GamesInProgress.selectedClass = cl;
-		GamesInProgress.skin =0;
-        SPDSettings.Skin(0);
+		GamesInProgress.skin = WndSkins.savedSkin(cl);
+        SPDSettings.Skin(GamesInProgress.skin);
 		background.texture( cl.splashArt() );
 		background.visible = true;
 		background.hardlight(1.5f,1.5f,1.5f);
@@ -443,7 +443,7 @@ public class HeroSelectScene extends PixelScene {
 			align(optionsPane);
 		}
         if(optionsPane.visible && optionsPane.SkinButton!=null){
-            optionsPane.SkinButton.icon(Icons.get(SPDSettings.Skin() > 0 ? Icons.SKIN_COLOR : Icons.SKIN_GREY));
+            optionsPane.SkinButton.icon(Icons.get(GamesInProgress.skin > 0 ? Icons.SKIN_COLOR : Icons.SKIN_GREY));
         }
 
 		updateOptionsColor();
@@ -761,8 +761,9 @@ public class HeroSelectScene extends PixelScene {
 					protected void onClick() {
 						ShatteredPixelDungeon.scene().addToFront(new WndSkins(GamesInProgress.selectedClass) {
 							public void onBackPressed() {
+                                SPDSettings.Skin(GamesInProgress.selectedClass, GamesInProgress.skin);
                                 SPDSettings.Skin(GamesInProgress.skin);
-                                icon(Icons.get(SPDSettings.Skin() > 0 ? Icons.SKIN_COLOR : Icons.SKIN_GREY));
+                                icon(Icons.get(GamesInProgress.skin > 0 ? Icons.SKIN_COLOR : Icons.SKIN_GREY));
                                 super.onBackPressed();
 							}
 						} );

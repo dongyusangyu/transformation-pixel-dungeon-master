@@ -683,16 +683,22 @@ public class AlchemyScene extends PixelScene {
 			Recipe recipe = recipes.get(i);
 
 			int cost = Talent.alchemyEnergyCost(hero, recipe.cost(ingredients));
+            /*
 			if (toolkit != null){
 				cost = Math.max(0, cost - toolkit.availableEnergy());
 			}
+
+             */
 
 			outputs[i].visible = true;
 			outputs[i].setRect(outputs[0].left(), top, BTN_SIZE, BTN_SIZE);
 			outputs[i].item(recipe.sampleOutput(ingredients));
 			top += BTN_SIZE+gap;
 
+
 			int availableEnergy = Dungeon.energy;
+            if(toolkit!=null)availableEnergy += toolkit.availableEnergy();
+
 
 			combines[i].visible = true;
 			combines[i].setRect(combines[0].left(), outputs[i].top()+5, 30, 20);

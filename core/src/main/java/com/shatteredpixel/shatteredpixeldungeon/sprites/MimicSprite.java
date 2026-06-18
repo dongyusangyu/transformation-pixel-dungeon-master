@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.watabou.noosa.TextureFilm;
@@ -31,6 +32,9 @@ public class MimicSprite extends MobSprite {
 	protected Animation advancedHiding;
 
 	protected Animation hiding;
+	protected Animation noAnimationHiding;
+
+	private boolean hidingMimic;
 
 	{
 		//adjust shadow slightly to account for 1 empty bottom pixel (used for border while hiding)
@@ -58,6 +62,9 @@ public class MimicSprite extends MobSprite {
 		hiding = new Animation( 1, true );
 		hiding.frames( frames, 1+c, 1+c, 1+c, 1+c, 1+c, 2+c);
 
+		noAnimationHiding = new Animation( 1, true );
+		noAnimationHiding.frames( frames, 1+c );
+
 		idle = new Animation( 5, true );
 		idle.frames( frames, 3+c, 3+c, 3+c, 4+c, 4+c );
 
@@ -82,17 +89,37 @@ public class MimicSprite extends MobSprite {
 	}
 
 	public void hideMimic(Char ch){
+		hidingMimic = true;
 		if (ch instanceof Mimic && ((Mimic) ch).stealthy()){
-			play(advancedHiding);
+			if (SPDSettings.charAnimations()) {
+				play(advancedHiding);
+			} else {
+				super.play(noAnimationHiding);
+			}
 		} else {
-			play(hiding);
+			if (SPDSettings.charAnimations()) {
+				play(hiding);
+			} else {
+				super.play(noAnimationHiding);
+			}
 		}
 		hideSleep();
 	}
 
 	@Override
+	public void idle() {
+		hidingMimic = false;
+		super.idle();
+	}
+
+	@Override
+	protected Animation noAnimationAnim() {
+		return hidingMimic && noAnimationHiding != null ? noAnimationHiding : super.noAnimationAnim();
+	}
+
+	@Override
 	public void showSleep() {
-		if (curAnim == hiding || curAnim == advancedHiding){
+		if (curAnim == hiding || curAnim == advancedHiding || curAnim == noAnimationHiding){
 			return;
 		}
 		super.showSleep();
@@ -127,7 +154,7 @@ public class MimicSprite extends MobSprite {
 		@Override
 		public void resetColor() {
 			super.resetColor();
-			if (advancedHiding != null && curAnim == advancedHiding){
+			if (advancedHiding != null && (curAnim == advancedHiding || curAnim == noAnimationHiding)){
 				alpha(0.2f);
 			}
 		}

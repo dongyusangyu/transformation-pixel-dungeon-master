@@ -52,6 +52,10 @@ public class Divine_Storm extends TargetedClericSpell {
         if (target == null){
             return;
         }
+        if (!Dungeon.level.heroFOV[target]){
+            GLog.w(Messages.get(this, "invalid_target"));
+            return;
+        }
 
         Sample.INSTANCE.play(Assets.Sounds.LIGHTNING);
         if(hero.pointsInTalent(Talent.DIVINE_STORM)==1){

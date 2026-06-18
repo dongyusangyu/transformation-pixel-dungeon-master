@@ -927,7 +927,8 @@ public class GameScene extends PixelScene {
 			}
 		}
 
-		if (Dungeon.hero == null || scene == null) {
+		Hero hero = Dungeon.hero;
+		if (hero == null || scene == null) {
 			return;
 		}
 
@@ -941,7 +942,7 @@ public class GameScene extends PixelScene {
 			waterOfs = water.offsetY(); //re-assign to account for auto adjust
 		}
 
-		if (!Actor.processing() && Dungeon.hero.isAlive()) {
+		if (!Actor.processing() && hero.isAlive()) {
 			if (actorThread == null || !actorThread.isAlive()) {
 
 				actorThread = new Thread() {
@@ -967,7 +968,7 @@ public class GameScene extends PixelScene {
 			}
 		}
 
-		if (Dungeon.hero.ready && Dungeon.hero.paralysed == 0) {
+		if (hero.ready && hero.paralysed == 0) {
 			log.newLine();
 		}
 
@@ -1005,7 +1006,7 @@ public class GameScene extends PixelScene {
 
 		}
 
-		cellSelector.enable(Dungeon.hero.ready);
+		cellSelector.enable(Dungeon.hero != null && Dungeon.hero.ready);
 
 		if (!toDestroy.isEmpty()) {
 			for (Gizmo g : toDestroy) {

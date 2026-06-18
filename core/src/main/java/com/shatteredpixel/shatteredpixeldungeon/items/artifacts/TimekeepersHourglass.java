@@ -304,7 +304,7 @@ public class TimekeepersHourglass extends Artifact {
 				int usedCharge = Math.min(charge, 2);
                 Hunger hunger = Buff.affect(target, Hunger.class);
                 int truns = 5;
-				if(hero.hasTalent(Talent.TIME_SAND)){
+				if(hero!=null && hero.hasTalent(Talent.TIME_SAND)){
                     truns=10;
 				}
 				int stasisTurns = BronzeWatch.adjustDuration(target, truns*usedCharge);

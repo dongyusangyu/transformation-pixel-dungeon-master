@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Transformation Pixel Dungeon cloud database snapshots daily
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+Persistent=true
+Unit=talent-cloud-snapshot.service
+
+[Install]
+WantedBy=timers.target

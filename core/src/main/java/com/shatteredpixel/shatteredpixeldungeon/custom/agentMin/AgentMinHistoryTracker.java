@@ -17,6 +17,7 @@ public class AgentMinHistoryTracker {
 		PICK_UP,
 		USE_STAIRS,
 		DRINK_HEALING,
+		EAT_FOOD,
 		THROW_WEAPON,
 		ZAP_WAND,
 		DROP,
@@ -56,6 +57,15 @@ public class AgentMinHistoryTracker {
 		record.targetCell = targetCell;
 		record.success = true;
 		record.directionIndex = directionIndex(fromCell, targetCell);
+		push(record);
+	}
+
+	public static void recordWait(int pos, float reward) {
+		HistoryRecord record = baseRecord(EventType.WAIT, reward, null);
+		record.fromCell = pos;
+		record.targetCell = pos;
+		record.success = reward >= 0f;
+		record.failed = reward < 0f;
 		push(record);
 	}
 
@@ -189,12 +199,14 @@ public class AgentMinHistoryTracker {
 			return EventType.OTHER;
 		}
 		switch (kind) {
+			case ZERO_RANDOM_MOVE: return EventType.MOVE;
 			case MOVE: return EventType.MOVE;
 			case WAIT: return EventType.WAIT;
 			case ATTACK: return EventType.ATTACK;
 			case PICK_UP: return EventType.PICK_UP;
 			case USE_STAIRS: return EventType.USE_STAIRS;
 			case DRINK_HEALING: return EventType.DRINK_HEALING;
+			case EAT_FOOD: return EventType.EAT_FOOD;
 			case THROW_WEAPON: return EventType.THROW_WEAPON;
 			case ZAP_WAND: return EventType.ZAP_WAND;
 			default: return EventType.OTHER;

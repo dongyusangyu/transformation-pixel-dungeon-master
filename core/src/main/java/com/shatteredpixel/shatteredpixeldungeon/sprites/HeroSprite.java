@@ -25,6 +25,7 @@ import static com.shatteredpixel.shatteredpixeldungeon.Assets.Sprites.MAGICGIRL;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.HeroDisguise;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -171,6 +172,19 @@ public class HeroSprite extends CharSprite {
 	}
 
 	public synchronized void read() {
+		if (!SPDSettings.charAnimations()) {
+			idle();
+			callAfterCurrentFrame(new Callback() {
+				@Override
+				public void call() {
+					if (ch != null) {
+						ch.onOperateComplete();
+					}
+				}
+			});
+			return;
+		}
+
 		animCallback = new Callback() {
 			@Override
 			public void call() {

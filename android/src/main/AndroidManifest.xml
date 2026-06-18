@@ -30,6 +30,7 @@
     	android:theme="@android:style/Theme.Black.NoTitleBar"
     	android:appCategory="game"
 		android:isGame="true"
+		android:usesCleartextTraffic="true"
     	android:resizeableActivity="true"
     	android:allowBackup="true"
     	android:fullBackupOnly="true"

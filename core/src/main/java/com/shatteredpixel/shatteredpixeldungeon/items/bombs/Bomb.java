@@ -148,6 +148,7 @@ public class Bomb extends Item {
 	public void explode(int cell){
 		//We're blowing up, so no need for a fuse anymore.
 		this.fuse = null;
+		Hero hero = Dungeon.hero;
 
 		Sample.INSTANCE.play( Assets.Sounds.BLAST );
 
@@ -201,7 +202,7 @@ public class Bomb extends Item {
 				}
 
 				int dmg = Random.NormalIntRange(4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth());
-				if(hero.hasTalent(Talent.BOMB_MANIAC)){
+				if(hero != null && hero.hasTalent(Talent.BOMB_MANIAC)){
 					dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25;
 				}
 				dmg -= ch.drRoll();
@@ -210,12 +211,12 @@ public class Bomb extends Item {
 				if (dmg > 0) {
 					ch.damage(dmg, this);
 				}
-				if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
+				if(hero != null && hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
 					Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
 				}
 
 				
-				if (ch == hero && !ch.isAlive()) {
+				if (hero != null && ch == hero && !ch.isAlive()) {
 					if (this instanceof ConjuredBomb){
 						Badges.validateDeathFromFriendlyMagic();
 					}

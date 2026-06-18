@@ -87,10 +87,11 @@ public class TestArmor extends TestGenerator {
     private Armor modifyArmor(Armor armor) {
         if (levelToGen >= 0) armor.level(levelToGen);
         armor.cursed = cursed;
-        if (generateEnchant(enchant_rarity, enchant_id) == null) {
+        Class<? extends Armor.Glyph> glyph = generateEnchant(enchant_rarity, enchant_id);
+        if (glyph == null) {
             armor.inscribe(null);
         } else {
-            armor.inscribe(Reflection.newInstance(generateEnchant(enchant_rarity, enchant_id)));
+            armor.inscribe(Reflection.newInstance(glyph));
         }
         return armor;
     }
@@ -113,6 +114,7 @@ public class TestArmor extends TestGenerator {
         levelToGen = bundle.getInt("level_to_gen");
         enchant_rarity = bundle.getInt("enchant_rarity");
         enchant_id = bundle.getInt("enchant_id");
+        clampEnchantSelection();
     }
 
     private String currentGlyphName(Class<? extends Armor.Glyph> glyph) {
@@ -126,65 +128,44 @@ public class TestArmor extends TestGenerator {
         return Messages.get(glyph, "name", armorName);
     }
 
-    private Class<? extends Armor.Glyph> generateEnchant(int enc_type, int enc_id) {
-        if (enc_type == 1) switch (enc_id) {
-            case 0:
-                return Obfuscation.class;
+    @SuppressWarnings("unchecked")
+    private Class<? extends Armor.Glyph>[] glyphList(int category) {
+        switch (category) {
             case 1:
-                return Swiftness.class;
+                return (Class<? extends Armor.Glyph>[]) Armor.Glyph.common.clone();
             case 2:
-                return Viscosity.class;
+                return (Class<? extends Armor.Glyph>[]) Armor.Glyph.uncommon.clone();
             case 3:
-                return Potential.class;
-            default:
-                return null;
-        }
-        else if (enc_type == 2) switch (enc_id) {
-            case 0:
-                return Stone.class;
-            case 1:
-                return Brimstone.class;
-            case 2:
-                return Entanglement.class;
-            case 3:
-                return Repulsion.class;
+                return (Class<? extends Armor.Glyph>[]) Armor.Glyph.rare.clone();
             case 4:
-                return Camouflage.class;
-            case 5:
-                return Flow.class;
+                return (Class<? extends Armor.Glyph>[]) Armor.Glyph.curses.clone();
             default:
-                return null;
+                return new Class[0];
         }
-        else if (enc_type == 3) switch (enc_id) {
-            case 0:
-                return AntiMagic.class;
-            case 1:
-                return Thorns.class;
-            case 2:
-                return Affection.class;
-            default:
-                return null;
-        }
-        else if (enc_type == 4) switch (enc_id) {
-            case 0:
-                return AntiEntropy.class;
-            case 1:
-                return Bulk.class;
-            case 2:
-                return Corrosion.class;
-            case 3:
-                return Displacement.class;
-            case 4:
-                return Metabolism.class;
-            case 5:
-                return Multiplicity.class;
-            case 6:
-                return Overgrowth.class;
-            case 7:
-                return Stench.class;
-        }
+    }
 
-        return null;
+    private int maxEnchantSlots(int category) {
+        return glyphList(category).length;
+    }
+
+    private void clampEnchantSelection() {
+        if (enchant_rarity < 0 || enchant_rarity > 4) {
+            enchant_rarity = 0;
+        }
+        int maxSlots = maxEnchantSlots(enchant_rarity);
+        if (maxSlots <= 0) {
+            enchant_id = 0;
+        } else {
+            enchant_id = Math.max(0, Math.min(enchant_id, maxSlots - 1));
+        }
+    }
+
+    private Class<? extends Armor.Glyph> generateEnchant(int enc_type, int enc_id) {
+        Class<? extends Armor.Glyph>[] glyphs = glyphList(enc_type);
+        if (enc_id < 0 || enc_id >= glyphs.length) {
+            return null;
+        }
+        return glyphs[enc_id];
     }
 
     private class SettingsWindow extends Window {
@@ -229,16 +210,18 @@ public class TestArmor extends TestGenerator {
                 @Override
                 protected void onChange() {
                     enchant_rarity = getSelectedValue();
+                    clampEnchantSelection();
                     updateText();
                 }
             };
             o_enchantRarity.setSelectedValue(enchant_rarity);
             add(o_enchantRarity);
 
-            o_enchantId = new OptionSlider(Messages.get(this, "enchant_id"), "0", "7", 0, 7) {
+            o_enchantId = new OptionSlider(Messages.get(this, "enchant_id"), "0", "8", 0, 8) {
                 @Override
                 protected void onChange() {
                     enchant_id = getSelectedValue();
+                    clampEnchantSelection();
                     updateText();
                 }
             };

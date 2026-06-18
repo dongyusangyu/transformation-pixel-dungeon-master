@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DM300;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -106,6 +107,20 @@ public class DM300Sprite extends MobSprite {
 
 	public void slam( int cell ){
 		turnTo( ch.pos , cell );
+		if (!SPDSettings.charAnimations()) {
+			idle();
+			Sample.INSTANCE.play( Assets.Sounds.ROCKS );
+			PixelScene.shake( 3, 0.7f );
+			callAfterCurrentFrame(new Callback() {
+				@Override
+				public void call() {
+					if (ch instanceof DM300) {
+						((DM300) ch).onSlamComplete();
+					}
+				}
+			});
+			return;
+		}
 		play( slam );
 		Sample.INSTANCE.play( Assets.Sounds.ROCKS );
 		PixelScene.shake( 3, 0.7f );

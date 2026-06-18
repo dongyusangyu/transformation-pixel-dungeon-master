@@ -96,9 +96,10 @@ public class Burning extends Buff implements Hero.Doom {
 	@Override
 	public void detach() {
 		super.detach();
-		if(target instanceof Hero && hero.hasTalent(Talent.NIRVANA)){
+		if(target instanceof Hero && ((Hero) target).hasTalent(Talent.NIRVANA)){
+			Hero hero = (Hero) target;
 			if (hero.HP < hero.HT ) {
-                hero.heal(Math.round(hero.lvl/2));
+				hero.heal(Math.round(hero.lvl/2));
 			}
 		}
 

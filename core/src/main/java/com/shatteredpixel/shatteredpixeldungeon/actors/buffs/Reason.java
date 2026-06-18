@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -28,10 +29,13 @@ import com.watabou.noosa.Visual;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
+import java.io.IOException;
+
 public class Reason extends Buff implements ActionIndicator.Action {
     {
         type = buffType.POSITIVE;
         revivePersists = true;
+        actPriority = HERO_PRIO  +1;
     }
     public int reason=100;
     public boolean kaoyan=false;
@@ -268,7 +272,8 @@ public class Reason extends Buff implements ActionIndicator.Action {
     public boolean act() {
         //GLog.i(kaoyan+"");
         if(reason<=0 && target.buff(TimekeepersHourglass.timeStasis.class) == null && (target.buff(Suffering.Fear.class)!=null || target.buff(Suffering.Despair.class)!=null  || target.buff(Suffering.Paranoia.class)!=null || target.buff(Suffering.Ecstasy.class)!=null )){
-            target.die(this);
+            target.HP=1;
+            target.damage(999999, this);
             if (!target.isAlive()) {
                 Dungeon.fail( this );
                 GLog.n( Messages.get(this, "die") );

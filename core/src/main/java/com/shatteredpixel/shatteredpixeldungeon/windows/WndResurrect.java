@@ -21,8 +21,13 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Suffering;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
@@ -139,6 +144,22 @@ public class WndResurrect extends Window {
 
 		InterlevelScene.mode = InterlevelScene.Mode.RESURRECT;
 		Game.switchScene( InterlevelScene.class );
+        if(Dungeon.hero.heroClass== HeroClass.FRIAR){
+            Reason.gainReason(hero,100);
+            Reason reason = hero.buff(Reason.class);
+            if (reason != null) {
+                reason.kaoyan = false;
+            }
+            if(hero.buff(Suffering.Fear.class)!=null){
+                hero.buff(Suffering.Fear.class).detach();
+            }else if(hero.buff(Suffering.Despair.class)!=null){
+                hero.buff(Suffering.Despair.class).detach();
+            }else if(hero.buff(Suffering.Paranoia.class)!=null){
+                hero.buff(Suffering.Paranoia.class).detach();
+            }else if(hero.buff(Suffering.Ecstasy.class)!=null){
+                hero.buff(Suffering.Ecstasy.class).detach();
+            }
+        }
 	}
 
 	protected WndBag.ItemSelector itemSelector = new WndBag.ItemSelector() {

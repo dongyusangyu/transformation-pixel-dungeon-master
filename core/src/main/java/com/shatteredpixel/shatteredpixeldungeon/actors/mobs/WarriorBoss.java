@@ -30,7 +30,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.HeroicLeap;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Resurrection;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
@@ -175,36 +174,36 @@ public class WarriorBoss extends Mob {
 
     @Override
     public boolean act() {
-        if(buffs(Paralysis.class).isEmpty()){
-            Heap h = level.heaps.get(pos);
-            if(h != null  && h.type!= Heap.Type.CHEST && h.type!= Heap.Type.SKELETON){
-                for (Item item : h.items) {
-                    if(item instanceof Food){
-                        h.items.remove(item);
-                        sprite.operate( pos );
-                        SpellSprite.show( this, SpellSprite.FOOD );
-                        Sample.INSTANCE.play( Assets.Sounds.EAT );
-                        int hh = 0;
-                        hh = Math.min(HT-HP,healInc);
-                        if (level.heroFOV[pos] ){
-                            heal(hh);
-                        }else{
-                            heal(hh,false);
-                        }
-                        yell(Messages.get(this,"eat"));
-                        if (h.isEmpty()) {
-                            h.destroy();
-                        } else if (h.sprite != null) {
-                            h.sprite.view(h).place( h.pos );
-                        }
-                        if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
-                            Buff.affect(this, Invulnerability.class,1);
-                            spend(TICK);
-                        }else{
-                            spend(3*TICK);
-                        }
-                        return true;
+        if(paralysed>0) return super.act();
+
+        Heap h = level.heaps.get(pos);
+        if(h != null  && h.type!= Heap.Type.CHEST && h.type!= Heap.Type.SKELETON){
+            for (Item item : h.items) {
+                if(item instanceof Food){
+                    h.items.remove(item);
+                    sprite.operate( pos );
+                    SpellSprite.show( this, SpellSprite.FOOD );
+                    Sample.INSTANCE.play( Assets.Sounds.EAT );
+                    int hh = 0;
+                    hh = Math.min(HT-HP,healInc);
+                    if (level.heroFOV[pos] ){
+                        heal(hh);
+                    }else{
+                        heal(hh,false);
                     }
+                    yell(Messages.get(this,"eat"));
+                    if (h.isEmpty()) {
+                        h.destroy();
+                    } else if (h.sprite != null) {
+                        h.sprite.view(h).place( h.pos );
+                    }
+                    if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
+                        Buff.affect(this, Invulnerability.class,1);
+                        spend(TICK);
+                    }else{
+                        spend(3*TICK);
+                    }
+                    return true;
                 }
             }
         }
@@ -228,7 +227,7 @@ public class WarriorBoss extends Mob {
         if(leapCooldown > 8 && enemy !=null && lastEnemyPos ==-1 && (HP<20 || level.distance(pos,enemy.pos)>1) && state!= SLEEPING){
             lastEnemyPos = enemy.pos;
             yell(Messages.get(this,"wantjump"));
-            sprite.parent.add(new TargetedCell(enemy.pos, 0xFF0000));
+            markLeapTarget(enemy.pos);
             spend(TICK);
             return true;
         }
@@ -239,7 +238,7 @@ public class WarriorBoss extends Mob {
             if(fieldOfView!=null && fieldOfView.length>0){
                 for(int cell=0;cell<fieldOfView.length;cell++){
                     if(fieldOfView[cell]){
-                        Heap h = level.heaps.get(cell);
+                        h = level.heaps.get(cell);
                         if(h != null && h.type!= Heap.Type.CHEST && h.type!= Heap.Type.SKELETON){
                             for (Item item : h.items) {
                                 if(item instanceof Food){
@@ -259,17 +258,12 @@ public class WarriorBoss extends Mob {
 
             if(food){
                 yell(Messages.get(this,"wantfood"));
+                markLeapTarget(leapPos);
             }else{
-                int wantleap = -1;
-                for (int i : PathFinder.NEIGHBOURS8){
-                    int p = i+lastEnemyPos;
-                    if (Actor.findChar( p ) == null && level.passable[p]) {
-                        wantleap=p;
-                        break;
-                    }
-                }
-                if(wantleap != -1){
-                    leapPos = wantleap;
+                markLeapTarget(enemy.pos);
+                int leapNearTarget = chooseLeapLandingNearTarget(enemy.pos);
+                if(leapNearTarget != -1){
+                    leapPos = leapNearTarget;
                 }else{
                     leapPos = lastEnemyPos;
                 }
@@ -286,6 +280,75 @@ public class WarriorBoss extends Mob {
         }
         return super.act();
     }
+
+    private int chooseLeapLandingNearTarget(int target) {
+        int width = level.width();
+        int bossX = pos % width;
+        int bossY = pos / width;
+        int targetX = target % width;
+        int targetY = target / width;
+
+        int dx = Integer.compare(bossX, targetX);
+        int dy = Integer.compare(bossY, targetY);
+        int preferred = target + dx + dy * width;
+        if (validLeapLanding(preferred)) {
+            return preferred;
+        }
+
+        int best = -1;
+        float bestDist = Float.MAX_VALUE;
+        float bestPreferredDist = Float.MAX_VALUE;
+        float targetDist = level.trueDistance(pos, target);
+
+        for (int offset : PathFinder.NEIGHBOURS8) {
+            int cell = target + offset;
+            if (!validLeapLanding(cell)) {
+                continue;
+            }
+
+            float dist = level.trueDistance(pos, cell);
+            float preferredDist = level.trueDistance(preferred, cell);
+            boolean better = best == -1
+                    || dist < bestDist
+                    || (dist == bestDist && preferredDist < bestPreferredDist);
+
+            if (dist <= targetDist && better) {
+                best = cell;
+                bestDist = dist;
+                bestPreferredDist = preferredDist;
+            }
+        }
+
+        if (best != -1) {
+            return best;
+        }
+
+        for (int offset : PathFinder.NEIGHBOURS8) {
+            int cell = target + offset;
+            if (validLeapLanding(cell)) {
+                float preferredDist = level.trueDistance(preferred, cell);
+                if (best == -1 || preferredDist < bestPreferredDist) {
+                    best = cell;
+                    bestPreferredDist = preferredDist;
+                }
+            }
+        }
+
+        return best;
+    }
+
+    private boolean validLeapLanding(int cell) {
+        return level.insideMap(cell)
+                && Actor.findChar(cell) == null
+                && level.passable[cell];
+    }
+
+    private void markLeapTarget(int cell) {
+        if (sprite != null && sprite.parent != null && cell >= 0) {
+            sprite.parent.add(new TargetedCell(cell, 0xFF0000));
+        }
+    }
+
     @Override
     public void die( Object cause ) {
 
@@ -362,7 +425,10 @@ public class WarriorBoss extends Mob {
 
                     WarriorBoss.this.move(dest, false );
                     WarriorBoss.this.sprite.interruptMotion();
+                    WarriorBoss.this.sprite.place(WarriorBoss.this.pos);
                     Dungeon.observe();
+                    GameScene.updateFog();
+
                     for (int i : PathFinder.NEIGHBOURS8) {
                         Char mob = Actor.findChar(WarriorBoss.this.pos + i);
                         if (mob != null && mob != WarriorBoss.this && mob.alignment != Alignment.ENEMY) {
@@ -380,7 +446,7 @@ public class WarriorBoss extends Mob {
                             if (mob.pos == WarriorBoss.this.pos + i){
                                 Ballistica trajectory = new Ballistica(mob.pos, mob.pos + i, Ballistica.MAGIC_BOLT);
                                 int strength = 5;
-                                WandOfBlastWave.throwChar(mob, trajectory, strength, true, true, WarriorBoss.this);
+                                leapThrowChar(mob, trajectory, strength, true, true);
                                 if (mob == Dungeon.hero){
                                     Dungeon.hero.interrupt();
                                 }
@@ -388,17 +454,114 @@ public class WarriorBoss extends Mob {
 
                         }
                     }
-                    WarriorBoss.this.sprite.idle();
-                    next();
-                    Buff.affect(WarriorBoss.this, Paralysis.class,3);
-                    WandOfBlastWave.BlastWave.blast(dest);
-                    PixelScene.shake(2, 0.5f);
-
-                    Invisibility.dispel();
+                    WarriorBoss.this.onLeapImpactComplete(dest);
 
                 }
             });
+
         }
+    }
+
+    private void leapThrowChar(Char ch, Ballistica trajectory, int power, boolean closeDoors, boolean collideDmg) {
+        //if(ch==hero) hero.busy();
+
+        if (ch.properties().contains(Char.Property.BOSS)) {
+            power = (power + 1) / 2;
+        }
+
+        int dist = Math.min(trajectory.dist, power);
+        boolean collided = dist == trajectory.dist;
+
+        if (dist <= 0
+                || ch.rooted
+                || ch.properties().contains(Char.Property.IMMOVABLE)) {
+            return;
+        }
+
+        if (Char.hasProp(ch, Char.Property.LARGE)) {
+            for (int i = 1; i <= dist; i++) {
+                if (!Dungeon.level.openSpace[trajectory.path.get(i)]) {
+                    dist = i - 1;
+                    collided = true;
+                    break;
+                }
+            }
+        }
+
+        if (Actor.findChar(trajectory.path.get(dist)) != null) {
+            dist--;
+            collided = true;
+        }
+
+        if (dist < 0) {
+            return;
+        }
+
+        int newPos = trajectory.path.get(dist);
+        if (newPos == ch.pos) {
+            return;
+        }
+
+        int oldPos = ch.pos;
+        int finalDist = dist;
+        boolean finalCollided = collided && collideDmg;
+
+        ch.move(newPos, false);
+        if (ch.sprite != null) {
+            ch.sprite.interruptMotion();
+            ch.sprite.place(ch.pos);
+        }
+
+        if (finalCollided && ch.isActive()) {
+            ch.damage(Random.NormalIntRange(finalDist, 2 * finalDist), new WandOfBlastWave.Knockback());
+			if (ch.isActive()) {
+				Paralysis.prolong(ch, Paralysis.class, 1 + finalDist / 2f);
+				showParalysisState(ch);
+			} else if (ch == Dungeon.hero) {
+				GLog.n(Messages.get(WandOfBlastWave.class, "knockback_ondeath"));
+				Dungeon.fail(this);
+			}
+        }
+
+        if (closeDoors) {
+            Dungeon.level.occupyCell(ch);
+        }
+
+		if (ch == Dungeon.hero) {
+            hero.next();
+			Dungeon.hero.interrupt();
+			Dungeon.observe();
+			GameScene.updateFog();
+
+
+		} else if (Dungeon.level.heroFOV[oldPos] != Dungeon.level.heroFOV[newPos]) {
+			Dungeon.observe();
+        }
+
+    }
+
+    private void showParalysisState(Char ch) {
+        if (ch.sprite != null) {
+            ch.sprite.add(CharSprite.State.PARALYSED);
+            if (Dungeon.level.heroFOV[ch.pos]) {
+                //ch.sprite.showStatus(CharSprite.WARNING, Messages.titleCase(Messages.get(Paralysis.class, "name")));
+            }
+        }
+    }
+
+    private void onLeapImpactComplete(int dest) {
+
+        sprite.idle();
+        Buff.affect(this, Paralysis.class,3);
+        //Dungeon.level.occupyCell(this);
+
+        showParalysisState(this);
+        WandOfBlastWave.BlastWave.blast(dest);
+        PixelScene.shake(2, 0.5f);
+        Invisibility.dispel();
+        Dungeon.observe();
+        GameScene.updateFog();
+        next();
     }
 
 

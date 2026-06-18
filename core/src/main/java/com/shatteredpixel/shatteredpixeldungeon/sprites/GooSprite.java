@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
@@ -32,6 +33,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.particles.Emitter.Factory;
 import com.watabou.noosa.particles.PixelParticle;
+import com.watabou.utils.Callback;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
@@ -125,7 +127,20 @@ public class GooSprite extends MobSprite {
 		pumpUpEmitters.clear();
 	}
 
-	public void pumpAttack() { play(pumpAttack); }
+	public void pumpAttack() {
+		if (!SPDSettings.charAnimations()) {
+			triggerEmitters();
+			idle();
+			callAfterCurrentFrame(new Callback() {
+				@Override
+				public void call() {
+					ch.onAttackComplete();
+				}
+			});
+		} else {
+			play(pumpAttack);
+		}
+	}
 
 	@Override
 	public void play(Animation anim) {

@@ -3,12 +3,14 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.agentMin;
 public class AgentMinAction {
 
 	public enum Kind {
+		ZERO_RANDOM_MOVE,
 		MOVE,
 		WAIT,
 		ATTACK,
 		PICK_UP,
 		USE_STAIRS,
 		DRINK_HEALING,
+		EAT_FOOD,
 		THROW_WEAPON,
 		ZAP_WAND
 	}

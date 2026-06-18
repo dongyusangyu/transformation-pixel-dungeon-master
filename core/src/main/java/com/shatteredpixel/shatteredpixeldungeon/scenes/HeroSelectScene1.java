@@ -45,6 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndHeroInfo;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndSkins;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTextInput;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndVictoryCongrats;
@@ -394,6 +395,8 @@ public class HeroSelectScene1 extends PixelScene {
 
 	private void setSelectedHero(HeroClass cl){
 		GamesInProgress.selectedClass = cl;
+		GamesInProgress.skin = WndSkins.savedSkin(cl);
+		SPDSettings.Skin(GamesInProgress.skin);
 
 		try {
 			//loading these big jpgs fails sometimes, so we have a catch for it

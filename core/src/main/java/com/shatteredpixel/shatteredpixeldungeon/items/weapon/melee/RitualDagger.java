@@ -288,7 +288,13 @@ public class RitualDagger extends MeleeWeapon {
                             }
 						}
 					}
-					hero.spendAndNext(delay);
+                    if (hero.buff(Talent.LethalMomentumTracker.class) != null){
+                        hero.buff(Talent.LethalMomentumTracker.class).detach();
+                        hero.next();
+                    }else{
+                        hero.spendAndNext(delay);
+                    }
+
 				}
 			} finally {
 				ritualStab = false;

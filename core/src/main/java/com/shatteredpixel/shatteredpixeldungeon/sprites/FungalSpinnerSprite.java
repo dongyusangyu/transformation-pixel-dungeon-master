@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Spinner;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -71,6 +72,19 @@ public class FungalSpinnerSprite extends MobSprite {
 	}
 
 	public void zap( int cell ) {
+
+		if (!SPDSettings.charAnimations()) {
+			turnTo(ch.pos, cell);
+			idle();
+			Sample.INSTANCE.play( Assets.Sounds.MISS );
+			callAfterCurrentFrame(new Callback() {
+				@Override
+				public void call() {
+					((Spinner)ch).shootWeb();
+				}
+			});
+			return;
+		}
 
 		super.zap( cell );
 

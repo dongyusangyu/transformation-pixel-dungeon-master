@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalWisp;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
@@ -64,6 +65,26 @@ public abstract class CrystalWispSprite extends MobSprite {
 	}
 
 	public void zap( int cell ) {
+
+		if (!SPDSettings.charAnimations()) {
+			turnTo(ch.pos, cell);
+			idle();
+			callAfterCurrentFrame(new com.watabou.utils.Callback() {
+				@Override
+				public void call() {
+					if (light != null) {
+						light.alpha(0.3f);
+					}
+					((CrystalWisp)ch).onZapComplete();
+					if (parent != null) {
+						Beam ray = new Beam.LightRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell));
+						ray.hardlight(blood() & 0x00FFFFFF);
+						parent.add( ray );
+					}
+				}
+			});
+			return;
+		}
 
 		super.zap( cell );
 

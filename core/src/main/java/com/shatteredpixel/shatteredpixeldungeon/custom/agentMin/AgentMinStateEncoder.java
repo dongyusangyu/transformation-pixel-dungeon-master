@@ -1,8 +1,35 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.agentMin;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Alchemy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blizzard;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ConfusionGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Foliage;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Freezing;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.GooWarn;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Inferno;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ParalyticGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Pheromone;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Regrowth;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SacrificialFire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SmokeScreen;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.StenchGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.StormCloud;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.VaultFlameTraps;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WaterOfAwareness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WaterOfHealth;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Web;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
 
 public class AgentMinStateEncoder {
 
@@ -11,21 +38,22 @@ public class AgentMinStateEncoder {
 	private static final int LC_KNOWN = 0;
 	private static final int LC_VISIBLE = 1;
 	private static final int LC_TERRAIN = 2;
-	private static final int LC_PASSABLE = 3;
-	private static final int LC_AVOID = 4;
-	private static final int LC_SOLID = 5;
-	private static final int LC_LIQUID = 6;
-	private static final int LC_PIT = 7;
-	private static final int LC_ITEM = 8;
-	private static final int LC_TRAP = 9;
-	private static final int LC_PLANT = 10;
-	private static final int LC_MOB = 11;
-	private static final int LC_STAIRS = 12;
-	private static final int LC_VISITED = 13;
-	private static final int LC_MAPPED = 14;
-	private static final int LC_HERO = 15;
-	private static final int LC_EXIT = 16;
-	private static final int LC_EXPLORED_NOT_VISIBLE = 17;
+	private static final int LC_AVOID = 3;
+	private static final int LC_SOLID = 4;
+	private static final int LC_WATER_FLAMABLE = 5;
+	private static final int LC_ITEM = 6;
+	private static final int LC_TRAP = 7;
+	private static final int LC_PLANT = 8;
+	private static final int LC_MOB = 9;
+	private static final int LC_STAIRS = 10;
+	private static final int LC_VISITED = 11;
+	private static final int LC_MAPPED = 12;
+	private static final int LC_HERO = 13;
+	private static final int LC_EXIT = 14;
+	private static final int LC_EXPLORED_NOT_VISIBLE = 15;
+	private static final int LC_VISIBLE_HEAP = 16;
+	private static final int LC_DOOR = 17;
+	private static final int LC_BLOB = 18;
 
 	public static AgentMinEncodedState captureEncoded() {
 		return encode(AgentMinStateBuilder.capture());
@@ -38,8 +66,8 @@ public class AgentMinStateEncoder {
 			return encoded;
 		}
 
-		encoded.width = Math.max(0, state.level.width);
-		encoded.height = Math.max(0, state.level.height);
+		encoded.width = AgentMinEncodedState.LOCAL_MAP_SIZE;
+		encoded.height = AgentMinEncodedState.LOCAL_MAP_SIZE;
 		encoded.talentOffset = AgentMinEncodedState.HERO_BASE_FEATURES;
 		encoded.negativeTalentOffset = encoded.talentOffset + TALENTS.length;
 		encoded.heroVectorSize = AgentMinEncodedState.HERO_BASE_FEATURES + TALENTS.length * 2;
@@ -47,53 +75,112 @@ public class AgentMinStateEncoder {
 		encoded.episodeReward = AgentMinRewardTracker.episodeReward();
 
 		encoded.levelTensor = encodeLevel(state);
+		encoded.exploredGlobalMatrix = encodeExploredGlobal(state);
 		encoded.heroVector = encodeHero(state, encoded.heroVectorSize);
 		encoded.inventoryMatrix = encodeInventory(state);
+		encoded.inventorySummaryVector = encodeInventorySummary(state);
+		encoded.optionVector = encodeOptions(state, encoded.inventorySummaryVector);
 		encoded.actionMatrix = encodeActions(state);
 		encoded.mobMatrix = encodeMobs(state);
 		encoded.historyMatrix = AgentMinHistoryTracker.encode(state);
+		encoded.agentVisitedMatrix = AgentMinVisitTracker.encodeMatrix(state);
 		encoded.actionSpace = AgentMinActionSpaceBuilder.build(state);
 		return encoded;
 	}
 
 	private static float[][][] encodeLevel(AgentMinState state) {
-		int width = Math.max(0, state.level.width);
-		int height = Math.max(0, state.level.height);
-		float[][][] tensor = new float[AgentMinEncodedState.LEVEL_CHANNELS][height][width];
-		if (width == 0 || height == 0 || state.level.exploredMap == null || state.level.visibleMap == null) {
+		int localSize = AgentMinEncodedState.LOCAL_MAP_SIZE;
+		int radius = localSize / 2;
+		float[][][] tensor = new float[AgentMinEncodedState.LEVEL_CHANNELS][localSize][localSize];
+		int mapWidth = Math.max(0, state.level.width);
+		int mapHeight = Math.max(0, state.level.height);
+		if (mapWidth == 0 || mapHeight == 0 || state.level.exploredMap == null || state.level.visibleMap == null) {
 			return tensor;
 		}
 
-		for (int cell = 0; cell < Math.min(state.level.length, width * height); cell++) {
-			int x = cell % width;
-			int y = cell / width;
-			int exploredCode = state.level.exploredMap[cell];
-			int visibleCode = state.level.visibleMap[cell];
-			int code = visibleCode != AgentMinState.CELL_UNKNOWN ? visibleCode : exploredCode;
-			boolean known = code != AgentMinState.CELL_UNKNOWN;
-			boolean visible = hasFlag(visibleCode, AgentMinState.FLAG_VISIBLE);
+		int heroX = state.level.heroPos % mapWidth;
+		int heroY = state.level.heroPos / mapWidth;
+		for (int localY = 0; localY < localSize; localY++) {
+			for (int localX = 0; localX < localSize; localX++) {
+				int mapX = heroX + localX - radius;
+				int mapY = heroY + localY - radius;
+				if (mapX < 0 || mapY < 0 || mapX >= mapWidth || mapY >= mapHeight) {
+					continue;
+				}
+				int cell = mapY * mapWidth + mapX;
+				if (cell < 0 || cell >= state.level.length) {
+					continue;
+				}
+				int exploredCode = state.level.exploredMap[cell];
+				int visibleCode = state.level.visibleMap[cell];
+				int code = visibleCode != AgentMinState.CELL_UNKNOWN ? visibleCode : exploredCode;
+				boolean known = code != AgentMinState.CELL_UNKNOWN;
+				boolean visible = hasFlag(visibleCode, AgentMinState.FLAG_VISIBLE);
 
-			tensor[LC_KNOWN][y][x] = known ? 1f : 0f;
-			tensor[LC_VISIBLE][y][x] = visible ? 1f : 0f;
-			tensor[LC_TERRAIN][y][x] = known ? terrain(code) / 255f : 0f;
-			tensor[LC_PASSABLE][y][x] = hasFlag(code, AgentMinState.FLAG_PASSABLE) ? 1f : 0f;
-			tensor[LC_AVOID][y][x] = hasFlag(code, AgentMinState.FLAG_AVOID) ? 1f : 0f;
-			tensor[LC_SOLID][y][x] = hasFlag(code, AgentMinState.FLAG_SOLID) ? 1f : 0f;
-			tensor[LC_LIQUID][y][x] = hasFlag(code, AgentMinState.FLAG_LIQUID) ? 1f : 0f;
-			tensor[LC_PIT][y][x] = hasFlag(code, AgentMinState.FLAG_PIT) ? 1f : 0f;
-			tensor[LC_ITEM][y][x] = hasFlag(code, AgentMinState.FLAG_ITEM) ? 1f : 0f;
-			tensor[LC_TRAP][y][x] = hasFlag(code, AgentMinState.FLAG_TRAP) ? 1f : 0f;
-			tensor[LC_PLANT][y][x] = hasFlag(code, AgentMinState.FLAG_PLANT) ? 1f : 0f;
-			tensor[LC_MOB][y][x] = hasFlag(code, AgentMinState.FLAG_MOB) ? 1f : 0f;
-			tensor[LC_STAIRS][y][x] = hasFlag(code, AgentMinState.FLAG_STAIRS) ? 1f : 0f;
-			tensor[LC_VISITED][y][x] = hasFlag(code, AgentMinState.FLAG_VISITED) ? 1f : 0f;
-			tensor[LC_MAPPED][y][x] = hasFlag(code, AgentMinState.FLAG_MAPPED) ? 1f : 0f;
-			tensor[LC_EXPLORED_NOT_VISIBLE][y][x] = known && !visible ? 1f : 0f;
+				tensor[LC_KNOWN][localY][localX] = known ? 1f : 0f;
+				tensor[LC_VISIBLE][localY][localX] = visible ? 1f : 0f;
+				tensor[LC_TERRAIN][localY][localX] = terrainValue(code, known);
+				tensor[LC_AVOID][localY][localX] = hasFlag(code, AgentMinState.FLAG_AVOID) ? 1f : 0f;
+				tensor[LC_SOLID][localY][localX] = hasFlag(code, AgentMinState.FLAG_SOLID) ? 1f : 0f;
+				tensor[LC_WATER_FLAMABLE][localY][localX] = waterFlamableValue(code, known);
+				tensor[LC_ITEM][localY][localX] = itemValue(code);
+				tensor[LC_TRAP][localY][localX] = hasFlag(code, AgentMinState.FLAG_TRAP) ? 1f : 0f;
+				tensor[LC_PLANT][localY][localX] = hasFlag(code, AgentMinState.FLAG_PLANT) ? 1f : 0f;
+				tensor[LC_STAIRS][localY][localX] = hasFlag(code, AgentMinState.FLAG_STAIRS) ? 1f : 0f;
+				tensor[LC_VISITED][localY][localX] = hasFlag(code, AgentMinState.FLAG_VISITED) ? 1f : 0f;
+				tensor[LC_MAPPED][localY][localX] = hasFlag(code, AgentMinState.FLAG_MAPPED) ? 1f : 0f;
+				tensor[LC_EXPLORED_NOT_VISIBLE][localY][localX] = known && !visible ? 1f : 0f;
+				tensor[LC_DOOR][localY][localX] = doorValue(code);
+				tensor[LC_BLOB][localY][localX] = visible ? blobValue(cell) : 0f;
+			}
 		}
 
-		writePoint(tensor, LC_HERO, state.level.heroPos, width, height, 1f);
-		writePoint(tensor, LC_EXIT, state.level.exit, width, height, 1f);
+		tensor[LC_HERO][radius][radius] = 1f;
+		writeLocalPoint(tensor, LC_EXIT, state.level.exit, mapWidth, heroX, heroY, radius, 1f);
+		for (AgentMinState.CellEntityState item : state.level.visibleItems) {
+			if (item.visible) {
+				writeLocalPoint(tensor, LC_VISIBLE_HEAP, item.pos, mapWidth, heroX, heroY, radius, 0.6f + Math.min(0.4f, item.count * 0.08f));
+			}
+		}
+		for (AgentMinState.MobState mob : state.level.visibleMobs) {
+			if (mob.visible && mob.alive) {
+				writeLocalPoint(tensor, LC_MOB, mob.pos, mapWidth, heroX, heroY, radius, mobMapThreatValue(mob));
+			}
+		}
 		return tensor;
+	}
+
+	private static float mobMapThreatValue(AgentMinState.MobState mob) {
+		float attackSpeed = 1f / Math.max(0.001f, mob.attackDelay);
+		float moveSpeed = Math.max(0f, mob.speed);
+		return Math.max(0, mob.hp) * attackSpeed * moveSpeed;
+	}
+
+	private static float[][] encodeExploredGlobal(AgentMinState state) {
+		int size = AgentMinEncodedState.GLOBAL_MAP_SIZE;
+		int radius = size / 2;
+		float[][] matrix = new float[size][size];
+		int mapWidth = Math.max(0, state.level.width);
+		int mapHeight = Math.max(0, state.level.height);
+		if (mapWidth == 0 || mapHeight == 0 || state.level.exploredMap == null) {
+			return matrix;
+		}
+		int heroX = state.level.heroPos % mapWidth;
+		int heroY = state.level.heroPos / mapWidth;
+		for (int localY = 0; localY < size; localY++) {
+			for (int localX = 0; localX < size; localX++) {
+				int mapX = heroX + localX - radius;
+				int mapY = heroY + localY - radius;
+				if (mapX < 0 || mapY < 0 || mapX >= mapWidth || mapY >= mapHeight) {
+					continue;
+				}
+				int cell = mapY * mapWidth + mapX;
+				if (cell >= 0 && cell < state.level.length && state.level.exploredMap[cell] != AgentMinState.CELL_UNKNOWN) {
+					matrix[localY][localX] = 1f;
+				}
+			}
+		}
+		return matrix;
 	}
 
 	private static float[] encodeHero(AgentMinState state, int size) {
@@ -127,6 +214,10 @@ public class AgentMinStateEncoder {
 		vector[25] = norm(state.level.width, 64f);
 		vector[26] = norm(state.level.height, 64f);
 		vector[27] = norm(state.level.heroPos, Math.max(1, state.level.length));
+		vector[28] = hero.hasIronKey ? 1f : 0f;
+		vector[29] = hero.hasGoldenKey ? 1f : 0f;
+		vector[30] = hero.hasCrystalKey ? 1f : 0f;
+		vector[31] = hero.hasWornKey ? 1f : 0f;
 
 		for (int i = 0; i < TALENTS.length; i++) {
 			String key = TALENTS[i].name();
@@ -140,16 +231,169 @@ public class AgentMinStateEncoder {
 
 	private static float[][] encodeInventory(AgentMinState state) {
 		float[][] matrix = new float[AgentMinEncodedState.INVENTORY_ROWS][AgentMinEncodedState.INVENTORY_FEATURES];
+		ArrayList<AgentMinState.ItemState> equipped = new ArrayList<>(state.inventory.equipped);
+		ArrayList<AgentMinState.ItemState> backpack = new ArrayList<>(state.inventory.backpack);
+		sortItemsForEncoding(equipped);
+		sortItemsForEncoding(backpack);
 		int row = 0;
-		for (AgentMinState.ItemState item : state.inventory.equipped) {
+		for (AgentMinState.ItemState item : equipped) {
 			if (row >= matrix.length) return matrix;
 			encodeItemRow(matrix[row++], item);
 		}
-		for (AgentMinState.ItemState item : state.inventory.backpack) {
+		for (AgentMinState.ItemState item : backpack) {
 			if (row >= matrix.length) return matrix;
 			encodeItemRow(matrix[row++], item);
 		}
 		return matrix;
+	}
+
+	private static float[] encodeInventorySummary(AgentMinState state) {
+		float[] out = new float[AgentMinEncodedState.INVENTORY_SUMMARY_FEATURES];
+		ArrayList<AgentMinState.ItemState> all = new ArrayList<>();
+		all.addAll(state.inventory.equipped);
+		all.addAll(state.inventory.backpack);
+
+		int totalItems = all.size();
+		int equippedCount = state.inventory.equipped.size();
+		int backpackCount = state.inventory.backpack.size();
+		int healingCount = 0;
+		int foodCount = 0;
+		int wandCount = 0;
+		int throwableCount = 0;
+		int scrollCount = 0;
+		int potionCount = 0;
+		int keyCount = 0;
+		int unidentifiedConsumables = 0;
+		int cursedEquipped = 0;
+		int targetedCount = 0;
+		int quickReadyCount = 0;
+		int dropCapableCount = 0;
+		int weaponCount = 0;
+		int armorCount = 0;
+		float healingBudget = 0f;
+		float foodBudget = 0f;
+		float combatResourceBudget = 0f;
+
+		for (AgentMinState.ItemState item : all) {
+			if (item == null) {
+				continue;
+			}
+			if (isHealingPotion(item)) {
+				healingCount += Math.max(1, item.quantity);
+				healingBudget += Math.max(1f, item.quantity);
+			}
+			if (isFood(item) || isEatLike(item)) {
+				foodCount += Math.max(1, item.quantity);
+				foodBudget += Math.max(1f, item.quantity);
+			}
+			if (isWandLike(item)) {
+				wandCount++;
+				combatResourceBudget += 1.5f;
+			}
+			if (isThrowableWeapon(item)) {
+				throwableCount += Math.max(1, item.quantity);
+				combatResourceBudget += Math.max(1f, item.quantity) * 0.25f;
+			}
+			if (item.className != null && item.className.contains(".scrolls.")) {
+				scrollCount += Math.max(1, item.quantity);
+			}
+			if (item.className != null && item.className.contains(".potions.")) {
+				potionCount += Math.max(1, item.quantity);
+			}
+			if (item.className != null && item.className.contains(".keys.")) {
+				keyCount += Math.max(1, item.quantity);
+			}
+			if (!item.levelKnown && (hasAction(item, "DRINK") || hasAction(item, "READ") || hasAction(item, "EAT"))) {
+				unidentifiedConsumables += Math.max(1, item.quantity);
+			}
+			if (item.equipped && item.cursedKnown && item.cursed) {
+				cursedEquipped++;
+			}
+			if (item.usesTargeting) {
+				targetedCount++;
+			}
+			if (item.slot != null && item.slot.startsWith("quickslot_")) {
+				quickReadyCount++;
+			}
+			if (hasAction(item, "DROP")) {
+				dropCapableCount++;
+			}
+			if (item.className != null && item.className.contains(".weapon.")) {
+				weaponCount++;
+			}
+			if (item.className != null && item.className.contains(".armor.")) {
+				armorCount++;
+			}
+		}
+
+		out[0] = norm(totalItems, 80f);
+		out[1] = norm(equippedCount, 8f);
+		out[2] = norm(backpackCount, 64f);
+		out[3] = clamp(backpackCount / 24f);
+		out[4] = norm(healingCount, 20f);
+		out[5] = norm(foodCount, 20f);
+		out[6] = norm(wandCount, 12f);
+		out[7] = norm(throwableCount, 40f);
+		out[8] = norm(scrollCount, 30f);
+		out[9] = norm(potionCount, 30f);
+		out[10] = norm(keyCount, 12f);
+		out[11] = norm(unidentifiedConsumables, 20f);
+		out[12] = norm(cursedEquipped, 6f);
+		out[13] = norm(targetedCount, 16f);
+		out[14] = norm(quickReadyCount, 6f);
+		out[15] = norm(dropCapableCount, 80f);
+		out[16] = norm(weaponCount, 20f);
+		out[17] = norm(armorCount, 12f);
+		out[18] = clamp(healingBudget / 20f);
+		out[19] = clamp(foodBudget / 20f);
+		out[20] = clamp(combatResourceBudget / 20f);
+		out[21] = state.hero.hasIronKey ? 1f : 0f;
+		out[22] = state.hero.hasGoldenKey ? 1f : 0f;
+		out[23] = (state.hero.hasCrystalKey || state.hero.hasWornKey) ? 1f : 0f;
+		return out;
+	}
+
+	private static float[] encodeOptions(AgentMinState state, float[] summary) {
+		float[] out = new float[AgentMinEncodedState.OPTION_FEATURES];
+		boolean hasEnemy = !state.combat.visibleEnemies.isEmpty();
+		boolean lowHp = state.hero.hpRatio <= 0.45f;
+		boolean hungry = state.hero.starving || state.hero.hungerLevel <= 150f;
+		int frontier = AgentMinExplorationTracker.frontierDistance(state, state.level.heroPos);
+		boolean onItem = false;
+		boolean unlockableDoorNearby = false;
+		boolean unlockableChestNearby = false;
+
+		for (AgentMinState.CellEntityState item : state.level.visibleItems) {
+			if (item.pos == state.level.heroPos) {
+				onItem = true;
+				break;
+			}
+		}
+
+		for (int cell : neighbors4(state.level.heroPos, state.level.width, state.level.height)) {
+			if (cell < 0) continue;
+			int code = codeAt(state, cell);
+			if (code == AgentMinState.CELL_UNKNOWN) continue;
+			int terr = terrain(code);
+			if ((terr == Terrain.LOCKED_DOOR && state.hero.hasIronKey)
+					|| (terr == Terrain.CRYSTAL_DOOR && state.hero.hasCrystalKey)
+					|| (terr == Terrain.HERO_LKD_DR && state.hero.hasWornKey)) {
+				unlockableDoorNearby = true;
+			}
+			if (hasFlag(code, AgentMinState.FLAG_LOCKED_CHEST) && (state.hero.hasGoldenKey || state.hero.hasCrystalKey)) {
+				unlockableChestNearby = true;
+			}
+		}
+
+		out[0] = !hasEnemy && frontier >= 0 ? clamp(0.55f + Math.max(0f, 0.35f - frontier * 0.03f)) : 0.1f;
+		out[1] = hasEnemy && state.combat.fightScore >= 0 ? clamp(0.4f + state.hero.hpRatio * 0.5f) : 0.05f;
+		out[2] = hasEnemy && (state.combat.fightScore < 0 || lowHp) ? clamp(0.5f + (1f - state.hero.hpRatio) * 0.4f) : 0.05f;
+		out[3] = ((lowHp && summary[4] > 0f) || (summary[20] > 0.15f && hasEnemy)) ? 0.9f : 0.1f;
+		out[4] = hungry && summary[5] > 0f ? 0.95f : 0.05f;
+		out[5] = onItem ? 0.9f : (state.level.visibleItems.isEmpty() ? 0.05f : 0.2f);
+		out[6] = unlockableDoorNearby || unlockableChestNearby ? 0.92f : 0.05f;
+		out[7] = summary[3] > 0.85f ? 0.8f : summary[3] > 0.65f ? 0.35f : 0.05f;
+		return out;
 	}
 
 	private static void encodeItemRow(float[] row, AgentMinState.ItemState item) {
@@ -184,6 +428,7 @@ public class AgentMinStateEncoder {
 	private static float[][] encodeActions(AgentMinState state) {
 		float[][] matrix = new float[AgentMinEncodedState.ACTION_ROWS][AgentMinEncodedState.ACTION_FEATURES];
 		ArrayList<AgentMinState.ActionState> actions = state.inventory.availableActions;
+		float[] optionVector = encodeOptions(state, encodeInventorySummary(state));
 		for (int i = 0; i < actions.size() && i < matrix.length; i++) {
 			AgentMinState.ActionState action = actions.get(i);
 			float[] row = matrix[i];
@@ -204,6 +449,12 @@ public class AgentMinStateEncoder {
 			row[14] = action.action != null && action.action.equals("EAT") ? 1f : 0f;
 			row[15] = action.action != null && action.action.equals("ZAP") ? 1f : 0f;
 			row[16] = action.action != null && action.action.equals("CAST") ? 1f : 0f;
+			row[17] = action.itemName == null ? 0f : clamp(action.itemName.length() / 24f);
+			row[18] = action.quickSlot >= 0 && action.quickSlot < 6 ? 1f : 0f;
+			row[19] = action.itemClassName != null && action.itemClassName.contains(".keys.") ? 1f : 0f;
+			row[20] = action.itemClassName != null && action.itemClassName.contains(".bags.") ? 1f : 0f;
+			row[21] = action.usesTargeting ? 1f : 0f;
+			fillActionOptionAffinities(row, action, optionVector);
 		}
 		return matrix;
 	}
@@ -229,6 +480,19 @@ public class AgentMinStateEncoder {
 			row[12] = alignment(mob.alignment);
 			row[13] = norm(mob.buffs == null ? 0 : mob.buffs.size(), 20f);
 			row[14] = classHash(mob.className);
+			row[15] = norm(mob.expectedDamageTaken, 120f);
+			row[16] = norm(mob.expectedTurnsToKill, 20f);
+			row[17] = clamp(mob.killChance);
+			row[18] = clamp(mob.meleeDanger);
+			row[19] = clamp(mob.rangedValue);
+			row[20] = mob.distanceToHero <= 1 ? 1f : 0f;
+			row[21] = mob.distanceToHero <= 3 ? 1f : 0f;
+			row[22] = normSigned(state.combat.fightScore, 500f);
+			row[23] = state.hero.hpRatio < 0.5f ? 1f : 0f;
+			row[24] = norm(state.hero.expectedDamage, 140f);
+			row[25] = norm(state.hero.expectedArmor, 100f);
+			row[26] = norm(state.depth, 30f);
+			row[27] = mob.hp <= state.hero.damageMax ? 1f : 0f;
 		}
 		return matrix;
 	}
@@ -241,11 +505,119 @@ public class AgentMinStateEncoder {
 		return code & 0xFFFF;
 	}
 
-	private static void writePoint(float[][][] tensor, int channel, int cell, int width, int height, float value) {
-		if (cell < 0 || width <= 0 || height <= 0 || cell >= width * height) {
+	private static float terrainValue(int code, boolean known) {
+		if (!known) {
+			return 0f;
+		}
+		if (terrain(code) == Terrain.CHASM) {
+			return 0f;
+		}
+		return hasFlag(code, AgentMinState.FLAG_PASSABLE) ? 1f : -1f;
+	}
+
+	private static float waterFlamableValue(int code, boolean known) {
+		if (!known) {
+			return 0f;
+		}
+		if (hasFlag(code, AgentMinState.FLAG_LIQUID)) {
+			return -1f;
+		}
+		int terrain = terrain(code);
+		if (terrain >= 0 && terrain < Terrain.flags.length && (Terrain.flags[terrain] & Terrain.FLAMABLE) != 0) {
+			return 1f;
+		}
+		return 0f;
+	}
+
+	private static float itemValue(int code) {
+		if (hasFlag(code, AgentMinState.FLAG_LOCKED_CHEST)) {
+			return -1f;
+		}
+		return hasFlag(code, AgentMinState.FLAG_ITEM) ? 1f : 0f;
+	}
+
+	private static float doorValue(int code) {
+		if (!hasFlag(code, AgentMinState.FLAG_DOOR)) {
+			return 0f;
+		}
+		return AgentMinStateBuilder.doorChannelValue(terrain(code));
+	}
+
+	private static float blobValue(int cell) {
+		if (cell < 0 || stateLevelMissing()) {
+			return 0f;
+		}
+		float total = 0f;
+		for (Map.Entry<Class<? extends Blob>, Blob> entry : com.shatteredpixel.shatteredpixeldungeon.Dungeon.level.blobs.entrySet()) {
+			Blob blob = entry.getValue();
+			if (blob == null || blob.cur == null || cell >= blob.cur.length || blob.cur[cell] <= 0) {
+				continue;
+			}
+			total += classifyBlob(entry.getKey());
+		}
+		return Math.max(-1f, Math.min(1f, total));
+	}
+
+	private static boolean stateLevelMissing() {
+		return com.shatteredpixel.shatteredpixeldungeon.Dungeon.level == null
+				|| com.shatteredpixel.shatteredpixeldungeon.Dungeon.level.blobs == null;
+	}
+
+	private static float classifyBlob(Class<? extends Blob> blobClass) {
+		if (blobClass == null) {
+			return 0f;
+		}
+		if (blobClass == Fire.class
+				|| blobClass == Inferno.class
+				|| blobClass == SacrificialFire.class
+				|| blobClass == ToxicGas.class
+				|| blobClass == CorrosiveGas.class
+				|| blobClass == ConfusionGas.class
+				|| blobClass == ParalyticGas.class
+				|| blobClass == Electricity.class
+				|| blobClass == StormCloud.class
+				|| blobClass == Freezing.class
+				|| blobClass == Blizzard.class
+				|| blobClass == VaultFlameTraps.class
+				|| blobClass == Web.class
+				|| blobClass == StenchGas.class) {
+			return -1f;
+		}
+		if (blobClass == WaterOfHealth.class) {
+			return 1f;
+		}
+		if (blobClass == WaterOfAwareness.class) {
+			return 0.35f;
+		}
+		if (blobClass == SmokeScreen.class || blobClass == Foliage.class) {
+			return 0.15f;
+		}
+		if (blobClass == Regrowth.class) {
+			return 0.2f;
+		}
+		if (blobClass == Pheromone.class) {
+			return 0.05f;
+		}
+		if (blobClass == GooWarn.class) {
+			return -0.35f;
+		}
+		if (blobClass == Alchemy.class) {
+			return 0.05f;
+		}
+		return 0f;
+	}
+
+	private static void writeLocalPoint(float[][][] tensor, int channel, int cell, int mapWidth, int heroX, int heroY, int radius, float value) {
+		if (cell < 0 || mapWidth <= 0) {
 			return;
 		}
-		tensor[channel][cell / width][cell % width] = value;
+		int mapX = cell % mapWidth;
+		int mapY = cell / mapWidth;
+		int localX = mapX - heroX + radius;
+		int localY = mapY - heroY + radius;
+		if (localY >= 0 && localY < tensor[channel].length && localX >= 0 && localX < tensor[channel][localY].length) {
+			tensor[channel][localY][localX] = value;
+		}
 	}
 
 	private static boolean hasAction(AgentMinState.ItemState item, String action) {
@@ -258,6 +630,124 @@ public class AgentMinStateEncoder {
 			}
 		}
 		return false;
+	}
+
+	private static void fillActionOptionAffinities(float[] row, AgentMinState.ActionState action, float[] optionVector) {
+		row[24] = optionVector[0] * optionAffinity(action, "EXPLORE");
+		row[25] = optionVector[1] * optionAffinity(action, "ENGAGE");
+		row[26] = optionVector[2] * optionAffinity(action, "RETREAT");
+		row[27] = optionVector[3] * optionAffinity(action, "USE_RESOURCE");
+		row[28] = optionVector[4] * optionAffinity(action, "CONSUME");
+		row[29] = optionVector[5] * optionAffinity(action, "PICKUP");
+		row[30] = optionVector[6] * optionAffinity(action, "UNLOCK");
+		row[31] = optionVector[7] * optionAffinity(action, "DROP");
+	}
+
+	private static float optionAffinity(AgentMinState.ActionState action, String option) {
+		if (action == null || option == null) {
+			return 0f;
+		}
+		String verb = action.action == null ? "" : action.action;
+		String cls = action.itemClassName == null ? "" : action.itemClassName.toLowerCase();
+		if (option.equals("EXPLORE")) {
+			return verb.equals("THROW") || verb.equals("ZAP") ? 0.1f : 0.2f;
+		}
+		if (option.equals("ENGAGE")) {
+			return (verb.equals("THROW") || verb.equals("ZAP") || cls.contains(".weapon.")) ? 1f : 0.1f;
+		}
+		if (option.equals("RETREAT")) {
+			return (verb.equals("DRINK") || verb.equals("CAST") || verb.equals("READ")) ? 0.7f : 0.05f;
+		}
+		if (option.equals("USE_RESOURCE")) {
+			return (verb.equals("DRINK") || verb.equals("READ") || verb.equals("ZAP") || verb.equals("CAST")) ? 1f : 0.05f;
+		}
+		if (option.equals("CONSUME")) {
+			return (verb.equals("EAT") || verb.equals("DRINK")) ? 1f : 0.05f;
+		}
+		if (option.equals("PICKUP")) {
+			return 0.05f;
+		}
+		if (option.equals("UNLOCK")) {
+			return cls.contains(".keys.") ? 0.7f : 0.05f;
+		}
+		if (option.equals("DROP")) {
+			return verb.equals("DROP") ? 1f : 0.05f;
+		}
+		return 0f;
+	}
+
+	private static void sortItemsForEncoding(ArrayList<AgentMinState.ItemState> items) {
+		Collections.sort(items, Comparator.comparingDouble(AgentMinStateEncoder::itemEncodingPriority).reversed());
+	}
+
+	private static double itemEncodingPriority(AgentMinState.ItemState item) {
+		if (item == null) {
+			return -1;
+		}
+		double score = item.equipped ? 200 : 0;
+		if (item.className != null && item.className.contains(".keys.")) score += 180;
+		if (isHealingPotion(item)) score += 160;
+		if (isFood(item) || isEatLike(item)) score += 120;
+		if (isWandLike(item)) score += 110;
+		if (isThrowableWeapon(item)) score += 90 + Math.min(20, item.quantity);
+		if (item.className != null && item.className.contains(".weapon.")) score += 80;
+		if (item.className != null && item.className.contains(".armor.")) score += 70;
+		if (item.className != null && item.className.contains(".artifacts.")) score += 60;
+		if (item.className != null && item.className.contains(".bags.")) score += 30;
+		if (item.usesTargeting) score += 20;
+		if (!item.levelKnown) score += 5;
+		score += Math.min(15, Math.max(0, item.quantity));
+		score += Math.max(0, item.buffedLevel) * 2;
+		return score;
+	}
+
+	private static int codeAt(AgentMinState state, int cell) {
+		if (state.level.visibleMap != null && cell >= 0 && cell < state.level.visibleMap.length
+				&& state.level.visibleMap[cell] != AgentMinState.CELL_UNKNOWN) {
+			return state.level.visibleMap[cell];
+		}
+		if (state.level.exploredMap != null && cell >= 0 && cell < state.level.exploredMap.length) {
+			return state.level.exploredMap[cell];
+		}
+		return AgentMinState.CELL_UNKNOWN;
+	}
+
+	private static int[] neighbors4(int cell, int width, int height) {
+		int[] out = new int[4];
+		int x = cell % width;
+		int y = cell / width;
+		out[0] = x > 0 ? cell - 1 : -1;
+		out[1] = x + 1 < width ? cell + 1 : -1;
+		out[2] = y > 0 ? cell - width : -1;
+		out[3] = y + 1 < height ? cell + width : -1;
+		return out;
+	}
+
+	private static boolean isHealingPotion(AgentMinState.ItemState item) {
+		return item != null && item.className != null && item.className.endsWith(".PotionOfHealing");
+	}
+
+	private static boolean isThrowableWeapon(AgentMinState.ItemState item) {
+		return item != null && item.className != null && item.className.contains(".items.weapon.missiles.");
+	}
+
+	private static boolean isFood(AgentMinState.ItemState item) {
+		return item != null && item.className != null && item.className.contains(".items.food.");
+	}
+
+	private static boolean isEatLike(AgentMinState.ItemState item) {
+		if (item == null || item.className == null) {
+			return false;
+		}
+		String c = item.className.toLowerCase();
+		return c.contains("berry") || c.contains("ration") || c.contains("pasty") || c.contains("stew");
+	}
+
+	private static boolean isWandLike(AgentMinState.ItemState item) {
+		if (item == null || item.className == null) {
+			return false;
+		}
+		return item.className.contains(".items.wands.") || item.className.endsWith(".MagesStaff");
 	}
 
 	private static float category(String className) {

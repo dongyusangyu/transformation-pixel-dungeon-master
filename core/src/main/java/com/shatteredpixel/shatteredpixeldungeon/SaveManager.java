@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.badlogic.gdx.Gdx;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.FileUtils;
@@ -10,12 +11,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 统一存档管理器
  *
  * 文件结构：
- * - global.json      全局数据（图鉴、成就、排行榜等）
+ * - badges.dat       全局成就数据
+ * - rankings.dat     排行榜数据
+ * - journal.dat      图鉴、日志、天赋统计等全局数据
  * - save-001.json    存档槽1
  * - save-002.json    存档槽2
  * - ...
@@ -45,10 +50,15 @@ public class SaveManager {
 
     // 配置
     public static final int MAX_SLOTS = 12;
-    private static final String GLOBAL_FILE = "global.json";
     private static final String SAVE_FILE_PATTERN = "save-%03d.json";
 
     private static final String LEVELS_KEY = "levels";
+    private static final String BADGES_KEY = "badges";
+    private static final String RANKINGS_KEY = "rankings";
+    private static final String JOURNAL_KEY = "journal";
+    private static final String LEGACY_GLOBAL_FILE = "global.json";
+    private static final String CLOUD_DEVICE_ID_KEY = "cloud_device_id";
+    private static final Pattern LEGACY_LEVEL_FILE = Pattern.compile("depth(\\d+)(?:-branch(\\d+))?\\.dat");
 
     private static final HashMap<Integer, SaveInfo> saveInfoCache = new HashMap<>();
 
@@ -73,6 +83,7 @@ public class SaveManager {
          */
         public void extractFromBundle(Bundle bundle) {
             // 从Bundle中提取基本信息
+            this.heroClass = bundle.contains("heroClass") ? bundle.getString("heroClass") : "Unknown";
             this.heroClass = bundle.contains("heroClass") ? bundle.getString("heroClass") : "Unknown";
             this.heroLevel = bundle.contains("heroLevel") ? bundle.getInt("heroLevel") : 1;
             this.depth = bundle.contains("depth") ? bundle.getInt("depth") : 1;
@@ -112,18 +123,15 @@ public class SaveManager {
         String filename = String.format(SAVE_FILE_PATTERN, slot);
 
         try {
-            // 如果新数据中没有levels信息，则尝试保留旧的levels
-            if (!bundle.contains(LEVELS_KEY)) {
-                Bundle existing = loadGameOrNull(slot);
-                if (existing != null && existing.contains(LEVELS_KEY)) {
-                    bundle.put(LEVELS_KEY, existing.getBundle(LEVELS_KEY));
-                }
-            }
+            mergeExistingLevels(slot, bundle);
 
             // 添加元数据
             bundle.put("slot", slot);
+            bundle.put("slot", slot);
             bundle.put("lastPlayed", System.currentTimeMillis());
-            bundle.put("version", Game.versionCode);
+            if (!bundle.contains("version")) {
+                bundle.put("version", Game.versionCode);
+            }
 
             // 写入文件
             FileUtils.bundleToFile(filename, bundle);
@@ -141,17 +149,52 @@ public class SaveManager {
     /**
      * 更新单个地图数据
      */
-    public static void saveLevel(int slot, int depth, int branch, Bundle levelBundle) throws IOException {
-        validateSlot(slot);
-
-        Bundle bundle = loadGameOrNew(slot);
-
-        Bundle levels = bundle.getBundle(LEVELS_KEY);
+    public static void putLevel(Bundle gameBundle, int depth, int branch, Bundle levelBundle) {
+        Bundle levels = gameBundle.getBundle(LEVELS_KEY);
         if (levels == null || levels.isNull()) {
             levels = new Bundle();
         }
         levels.put(levelKey(depth, branch), levelBundle);
-        bundle.put(LEVELS_KEY, levels);
+        gameBundle.put(LEVELS_KEY, levels);
+    }
+
+    private static void mergeExistingLevels(int slot, Bundle gameBundle) {
+        if (!saveExists(slot)) {
+            return;
+        }
+
+        Bundle existing = loadGameOrNull(slot);
+        if (existing == null || !existing.contains(LEVELS_KEY)) {
+            return;
+        }
+
+        Bundle existingLevels = existing.getBundle(LEVELS_KEY);
+        if (existingLevels == null || existingLevels.isNull()) {
+            return;
+        }
+
+        Bundle mergedLevels = new Bundle();
+        for (String key : existingLevels.getKeys()) {
+            mergedLevels.put(key, existingLevels.getBundle(key));
+        }
+
+        if (gameBundle.contains(LEVELS_KEY)) {
+            Bundle newLevels = gameBundle.getBundle(LEVELS_KEY);
+            if (newLevels != null && !newLevels.isNull()) {
+                for (String key : newLevels.getKeys()) {
+                    mergedLevels.put(key, newLevels.getBundle(key));
+                }
+            }
+        }
+
+        gameBundle.put(LEVELS_KEY, mergedLevels);
+    }
+
+    public static void saveLevel(int slot, int depth, int branch, Bundle levelBundle) throws IOException {
+        validateSlot(slot);
+
+        Bundle bundle = loadGameOrNew(slot);
+        putLevel(bundle, depth, branch, levelBundle);
 
         saveGame(slot, bundle);
     }
@@ -258,6 +301,80 @@ public class SaveManager {
         }
     }
 
+    public static void migrateLegacySavesIfNeeded() {
+        if (SPDSettings.legacySavesMigrated()) {
+            return;
+        }
+
+        boolean blocked = false;
+
+        try {
+            migrateLegacyGlobalData();
+
+            for (int slot = 1; slot <= MAX_SLOTS; slot++) {
+                if (!FileUtils.fileExists(GamesInProgress.gameFile(slot))) {
+                    continue;
+                }
+
+                int targetSlot = saveExists(slot) ? getFirstEmptySlot() : slot;
+                if (targetSlot == -1) {
+                    blocked = true;
+                    continue;
+                }
+
+                if (migrateLegacyGame(slot, targetSlot)) {
+                    FileUtils.deleteDir(GamesInProgress.gameFolder(slot));
+                }
+            }
+        } finally {
+            clearCache();
+            if (!blocked) {
+                SPDSettings.legacySavesMigrated(true);
+            }
+        }
+    }
+
+    private static boolean migrateLegacyGame(int legacySlot, int targetSlot) {
+        try {
+            Bundle game = FileUtils.bundleFromFile(GamesInProgress.gameFile(legacySlot));
+            for (String file : FileUtils.filesInDir(GamesInProgress.gameFolder(legacySlot))) {
+                Matcher matcher = LEGACY_LEVEL_FILE.matcher(file);
+                if (!matcher.matches()) {
+                    continue;
+                }
+
+                int depth = Integer.parseInt(matcher.group(1));
+                int branch = matcher.group(2) == null ? 0 : Integer.parseInt(matcher.group(2));
+                Bundle level = FileUtils.bundleFromFile(GamesInProgress.gameFolder(legacySlot) + "/" + file);
+                putLevel(game, depth, branch, level);
+            }
+
+            saveGame(targetSlot, game);
+            return true;
+        } catch (Exception e) {
+            Game.reportException(new RuntimeException("Legacy save migration failed for slot " + legacySlot, e));
+            return false;
+        }
+    }
+
+    private static void migrateLegacyGlobalData() {
+        if (!FileUtils.fileExists(LEGACY_GLOBAL_FILE)) {
+            return;
+        }
+
+        try {
+            Bundle global = FileUtils.bundleFromFile(LEGACY_GLOBAL_FILE);
+            String deviceID = global.getString(CLOUD_DEVICE_ID_KEY);
+            if (deviceID != null && !deviceID.isEmpty() && SPDSettings.cloudDeviceID() == null) {
+                SPDSettings.cloudDeviceID(deviceID);
+            }
+            saveGlobal(global);
+            FileUtils.deleteFile(LEGACY_GLOBAL_FILE);
+        } catch (Exception e) {
+            Game.reportException(new RuntimeException("Legacy global data migration failed", e));
+        }
+    }
+
     // ========================================
     // 全局数据管理
     // ========================================
@@ -269,13 +386,15 @@ public class SaveManager {
      * @throws IOException 保存失败
      */
     public static void saveGlobal(Bundle bundle) throws IOException {
-        try {
-            bundle.put("lastSaved", System.currentTimeMillis());
-            bundle.put("version", Game.versionCode);
-
-            FileUtils.bundleToFile(GLOBAL_FILE, bundle);
-        } catch (IOException e) {
-            throw e;
+        if (bundle.contains(BADGES_KEY)) {
+            FileUtils.bundleToFile(Badges.BADGES_FILE, bundle.getBundle(BADGES_KEY));
+        }
+        if (bundle.contains(RANKINGS_KEY)) {
+            FileUtils.bundleToFile(Rankings.RANKINGS_FILE, bundle.getBundle(RANKINGS_KEY));
+            Rankings.INSTANCE.records = null;
+        }
+        if (bundle.contains(JOURNAL_KEY)) {
+            FileUtils.bundleToFile(Journal.JOURNAL_FILE, bundle.getBundle(JOURNAL_KEY));
         }
     }
 
@@ -285,20 +404,22 @@ public class SaveManager {
      * @return 全局数据Bundle，如果不存在返回空Bundle
      */
     public static Bundle loadGlobal() {
-        try {
-            Bundle bundle = FileUtils.bundleFromFile(GLOBAL_FILE);
-            return bundle;
-        } catch (IOException e) {
-            // 文件不存在时创建新的Bundle是正常情况，不记录日志
-            return new Bundle();
-        }
+        Bundle global = new Bundle();
+        global.put("lastSaved", System.currentTimeMillis());
+        global.put("version", Game.versionCode);
+        putFileBundle(global, BADGES_KEY, Badges.BADGES_FILE);
+        putFileBundle(global, RANKINGS_KEY, Rankings.RANKINGS_FILE);
+        putFileBundle(global, JOURNAL_KEY, Journal.JOURNAL_FILE);
+        return global;
     }
 
     /**
      * 检查全局数据是否存在
      */
     public static boolean globalExists() {
-        return FileUtils.fileExists(GLOBAL_FILE);
+        return FileUtils.fileExists(Badges.BADGES_FILE)
+                || FileUtils.fileExists(Rankings.RANKINGS_FILE)
+                || FileUtils.fileExists(Journal.JOURNAL_FILE);
     }
 
     /**
@@ -529,7 +650,9 @@ public class SaveManager {
         long total = 0;
 
         // 全局文件
-        total += FileUtils.fileLength(GLOBAL_FILE);
+        total += FileUtils.fileLength(Badges.BADGES_FILE);
+        total += FileUtils.fileLength(Rankings.RANKINGS_FILE);
+        total += FileUtils.fileLength(Journal.JOURNAL_FILE);
 
         // 所有存档
         for (int slot = 1; slot <= MAX_SLOTS; slot++) {
@@ -604,5 +727,12 @@ public class SaveManager {
         }
         return bundle;
     }
-}
 
+    private static void putFileBundle(Bundle parent, String key, String file) {
+        try {
+            parent.put(key, FileUtils.bundleFromFile(file));
+        } catch (IOException e) {
+            parent.put(key, new Bundle());
+        }
+    }
+}

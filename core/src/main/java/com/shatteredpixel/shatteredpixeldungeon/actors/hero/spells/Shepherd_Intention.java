@@ -57,6 +57,11 @@ public class Shepherd_Intention extends TargetedClericSpell {
 
         int cell =target;
 
+        if (!Dungeon.level.insideMap(cell) || Dungeon.level.solid[cell] || !Dungeon.level.heroFOV[cell]){
+            GLog.w(Messages.get(this, "invalid_target"));
+            return;
+        }
+
         PathFinder.buildDistanceMap( cell, BArray.not( Dungeon.level.solid, null ), hero.pointsInTalent(Talent.SHEPHERD_INTENTION) );
         ArrayList<Integer> spawnPoints = new ArrayList<>();
         for (int i = 0; i < PathFinder.distance.length; i++) {

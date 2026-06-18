@@ -81,9 +81,6 @@ public class ScrollOfSublimation extends Item{
     public int value() {
         return 30 * quantity;
     }
-    public int energyVal() {
-        return 6 * quantity;
-    }
     public String type="Goo";
     protected static boolean identifiedByUse = false;
     public String type() {

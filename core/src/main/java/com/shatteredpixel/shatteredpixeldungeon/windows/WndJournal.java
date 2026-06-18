@@ -60,6 +60,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
@@ -107,6 +108,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 
 import javax.swing.Icon;
 
@@ -125,6 +127,11 @@ public class WndJournal extends WndTabbed {
 	private NotesTab notesTab;
 	private CatalogTab catalogTab;
 	private BadgesTab badgesTab;
+
+	private boolean guideLoaded;
+	private boolean notesLoaded;
+	private boolean catalogLoaded;
+	private boolean badgesLoaded;
 	
 	public static int last_index = 0;
 	private static WndJournal INSTANCE = null;
@@ -142,7 +149,6 @@ public class WndJournal extends WndTabbed {
 		guideTab = new GuideTab();
 		add(guideTab);
 		guideTab.setRect(0, 0, width, height);
-		guideTab.updateList();
 		
 		alchemyTab = new AlchemyTab();
 		add(alchemyTab);
@@ -151,24 +157,24 @@ public class WndJournal extends WndTabbed {
 		notesTab = new NotesTab();
 		add(notesTab);
 		notesTab.setRect(0, 0, width, height);
-		notesTab.updateList();
 		
 		catalogTab = new CatalogTab();
 		add(catalogTab);
 		catalogTab.setRect(0, 0, width, height);
-		catalogTab.updateList(true);
 
 		badgesTab = new BadgesTab();
 		add(badgesTab);
 		badgesTab.setRect(0, 0, width, height);
-		badgesTab.updateList();
 		
 		Tab[] tabs = {
 				new IconTab( Icons.JOURNAL.get() ) {
 					protected void select( boolean value ) {
 						super.select( value );
 						notesTab.active = notesTab.visible = value;
-						if (value) last_index = 0;
+						if (value) {
+							ensureNotesLoaded();
+							last_index = 0;
+						}
 					}
 
 					@Override
@@ -180,7 +186,10 @@ public class WndJournal extends WndTabbed {
 					protected void select( boolean value ) {
 						super.select( value );
 						guideTab.active = guideTab.visible = value;
-						if (value) last_index = 1;
+						if (value) {
+							ensureGuideLoaded();
+							last_index = 1;
+						}
 					}
 
 					@Override
@@ -204,7 +213,10 @@ public class WndJournal extends WndTabbed {
 					protected void select( boolean value ) {
 						super.select( value );
 						catalogTab.active = catalogTab.visible = value;
-						if (value) last_index = 3;
+						if (value) {
+							ensureCatalogLoaded();
+							last_index = 3;
+						}
 					}
 
 					@Override
@@ -216,7 +228,10 @@ public class WndJournal extends WndTabbed {
 					protected void select( boolean value ) {
 						super.select( value );
 						badgesTab.active = badgesTab.visible = value;
-						if (value) last_index = 4;
+						if (value) {
+							ensureBadgesLoaded();
+							last_index = 4;
+						}
 					}
 
 					@Override
@@ -234,6 +249,34 @@ public class WndJournal extends WndTabbed {
 		
 		select(last_index);
 		INSTANCE = this;
+	}
+
+	private void ensureGuideLoaded(){
+		if (!guideLoaded){
+			guideTab.updateList();
+			guideLoaded = true;
+		}
+	}
+
+	private void ensureNotesLoaded(){
+		if (!notesLoaded){
+			notesTab.updateList();
+			notesLoaded = true;
+		}
+	}
+
+	private void ensureCatalogLoaded(){
+		if (!catalogLoaded){
+			catalogTab.updateList(true);
+			catalogLoaded = true;
+		}
+	}
+
+	private void ensureBadgesLoaded(){
+		if (!badgesLoaded){
+			badgesTab.updateList();
+			badgesLoaded = true;
+		}
 	}
 
 	@Override
@@ -848,14 +891,14 @@ public class WndJournal extends WndTabbed {
 				} else {
 					title = Messages.titleCase( item.name() );
 					//some items don't include direct stats, generally when they're not applicable
-					if (item instanceof ClassArmor || item instanceof SpiritBow || item instanceof Tatteki){
+					if (item instanceof ClassArmor || item instanceof SpiritBow || item instanceof Tatteki || item instanceof RitualDagger){
 						desc += item.desc();
 					} else {
 						desc += item.info();
 					}
-					if (item instanceof MeleeWeapon && hero == null){
+					if (item instanceof MeleeWeapon && hero == null && !(item instanceof RitualDagger)){
 						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
-					}else if(item instanceof MeleeWeapon && hero.heroClass!=HeroClass.DUELIST && !hero.hasTalent(Talent.MARTIAL_TRAIN)){
+					}else if(hero != null && item instanceof MeleeWeapon && hero.heroClass!=HeroClass.DUELIST && !hero.hasTalent(Talent.MARTIAL_TRAIN) && !(item instanceof RitualDagger)){
 						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
 					}
 
@@ -1158,13 +1201,13 @@ public class WndJournal extends WndTabbed {
 				@Override
 				public boolean onClick(float x, float y) {
 					if (inside(x, y)) {
-						TalentIcon icon = new TalentIcon( talent );
+						String metaStats = talentMetaStats(talent);
 						if (ShatteredPixelDungeon.scene() instanceof GameScene){
 							GameScene.show(new WndJournalItem(new TalentIcon( talent.icon() ), title,
-									desc+Messages.get(TalentCatalog.class,"meta_this",TalentCatalog.useCount(talent))));
+									desc + metaStats));
 						} else {
 							ShatteredPixelDungeon.scene().addToFront(new WndJournalItem(new TalentIcon( talent.icon() ), title,
-									desc+Messages.get(TalentCatalog.class,"meta_this",TalentCatalog.useCount(talent))));
+									desc + metaStats));
 						}
 						return true;
 					} else {
@@ -1172,36 +1215,31 @@ public class WndJournal extends WndTabbed {
 					}
 				}
 			};
-			if(Talent.typeTalent.get(0).get(Talent.ATTACK).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.ATTACK).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.ATTACK).contains(talent)){
-				gridItem.hardLightBG(3f, 0f, 0f);
-			}else if(Talent.typeTalent.get(0).get(Talent.MAGIC).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.MAGIC).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.MAGIC).contains(talent)){
-				gridItem.hardLightBG(0f, 0f, 3f);
-			}else if(Talent.typeTalent.get(0).get(Talent.EFFECT).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.EFFECT).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.EFFECT).contains(talent)){
-				gridItem.hardLightBG(3f, 1.35f, 0f);
-			}else if(Talent.typeTalent.get(0).get(Talent.RESOURCE).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.RESOURCE).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.RESOURCE).contains(talent)){
-				gridItem.hardLightBG(0f, 3f, 0f);
-			}else if(Talent.typeTalent.get(0).get(Talent.SPELL).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.SPELL).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.SPELL).contains(talent)){
-				gridItem.hardLightBG(3f, 3f, 0f);
-			}else if(Talent.typeTalent.get(0).get(Talent.ASSIST).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.ASSIST).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.ASSIST).contains(talent)){
-				gridItem.hardLightBG(0f, 3f, 3f);
-			}else if(Talent.typeTalent.get(0).get(Talent.OTHER).contains(talent)
-					|| Talent.typeTalent.get(1).get(Talent.OTHER).contains(talent)
-					|| Talent.typeTalent.get(2).get(Talent.OTHER).contains(talent)){
-				gridItem.hardLightBG(1.5f, 1.5f, 1.5f);
-			}else{
-				gridItem.hardLightBG(1f, 1f, 2f);
+			switch (talent.type()) {
+				case ATTACK:
+					gridItem.hardLightBG(3f, 0f, 0f);
+					break;
+				case MAGIC:
+					gridItem.hardLightBG(0f, 0f, 3f);
+					break;
+				case EFFECT:
+					gridItem.hardLightBG(3f, 1.35f, 0f);
+					break;
+				case RESOURCE:
+					gridItem.hardLightBG(0f, 3f, 0f);
+					break;
+				case SPELL:
+					gridItem.hardLightBG(3f, 3f, 0f);
+					break;
+				case ASSIST:
+					gridItem.hardLightBG(0f, 3f, 3f);
+					break;
+				case OTHER:
+					gridItem.hardLightBG(1.5f, 1.5f, 1.5f);
+					break;
+				default:
+					gridItem.hardLightBG(1f, 1f, 2f);
+					break;
 			}
 
 			//gridItem.hardLightBG(1f, 1f, 2f);
@@ -1209,6 +1247,33 @@ public class WndJournal extends WndTabbed {
 				grid.addItem(gridItem);
 			}
 		}
+	}
+
+	private static String talentMetaStats(Talent talent) {
+		int localCount = TalentCatalog.useCount(talent);
+		int serverCount = TalentCatalog.serverUseCount(talent);
+		switch (talent.type()) {
+			case NEGATIVE:
+				return Messages.get(TalentCatalog.class, "meta_negative", localCount, serverCount);
+			case SUBCLASS:
+				return Messages.get(TalentCatalog.class, "meta_subclass",
+						localCount, formatPercent(TalentCatalog.useRate(talent)),
+						serverCount, formatPercent(TalentCatalog.serverUseRate(talent)));
+			case ARMOR:
+				return "";
+            case BOSS:
+                return Messages.get(TalentCatalog.class, "meta_boss",
+                        localCount, formatPercent(TalentCatalog.useRate(talent)), TalentCatalog.transformSpellCount(talent),
+                        serverCount, formatPercent(TalentCatalog.serverUseRate(talent)), TalentCatalog.serverTransformSpellCount(talent));
+			default:
+				return Messages.get(TalentCatalog.class, "meta_common",
+						localCount, formatPercent(TalentCatalog.useRate(talent)), TalentCatalog.transformSpellCount(talent),
+						serverCount, formatPercent(TalentCatalog.serverUseRate(talent)), TalentCatalog.serverTransformSpellCount(talent));
+		}
+	}
+
+	private static String formatPercent(float value) {
+		return String.format(Locale.ENGLISH, "%.2f", value * 100f);
 	}
 
 

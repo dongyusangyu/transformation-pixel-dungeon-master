@@ -117,6 +117,11 @@ public class WandOfBlastWave extends DamageWand {
 
 	public static void throwChar(final Char ch, final Ballistica trajectory, int power,
 	                             boolean closeDoors, boolean collideDmg, Object cause){
+		throwChar(ch, trajectory, power, closeDoors, collideDmg, cause, null);
+	}
+
+	public static void throwChar(final Char ch, final Ballistica trajectory, int power,
+	                             boolean closeDoors, boolean collideDmg, Object cause, final Callback callback){
 		if (ch.properties().contains(Char.Property.BOSS)) {
 			power = (power+1)/2;
 		}
@@ -127,7 +132,10 @@ public class WandOfBlastWave extends DamageWand {
 
 		if (dist <= 0
 				|| ch.rooted
-				|| ch.properties().contains(Char.Property.IMMOVABLE)) return;
+				|| ch.properties().contains(Char.Property.IMMOVABLE)) {
+			if (callback != null) callback.call();
+			return;
+		}
 
 		//large characters cannot be moved into non-open space
 		if (Char.hasProp(ch, Char.Property.LARGE)) {
@@ -145,11 +153,17 @@ public class WandOfBlastWave extends DamageWand {
 			collided = true;
 		}
 
-		if (dist < 0) return;
+		if (dist < 0) {
+			if (callback != null) callback.call();
+			return;
+		}
 
 		final int newPos = trajectory.path.get(dist);
 
-		if (newPos == ch.pos) return;
+		if (newPos == ch.pos) {
+			if (callback != null) callback.call();
+			return;
+		}
 
 		final int finalDist = dist;
 		final boolean finalCollided = collided && collideDmg;
@@ -160,6 +174,7 @@ public class WandOfBlastWave extends DamageWand {
 				if (initialpos != ch.pos || Actor.findChar(newPos) != null) {
 					//something caused movement or added chars before pushing resolved, cancel to be safe.
 					ch.sprite.place(ch.pos);
+					if (callback != null) callback.call();
 					return;
 				}
 				int oldPos = ch.pos;
@@ -180,12 +195,14 @@ public class WandOfBlastWave extends DamageWand {
 					Door.leave(oldPos);
 				}
 				Dungeon.level.occupyCell(ch);
+				ch.sprite.place(ch.pos);
 				if (ch == Dungeon.hero){
 					Dungeon.observe();
 					GameScene.updateFog();
 				} else if (Dungeon.level.heroFOV[initialpos] != Dungeon.level.heroFOV[newPos]){
 					Dungeon.observe();
 				}
+				if (callback != null) callback.call();
 			}
 		}));
 	}

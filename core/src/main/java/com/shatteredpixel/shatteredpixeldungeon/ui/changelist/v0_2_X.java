@@ -2,7 +2,9 @@ package com.shatteredpixel.shatteredpixeldungeon.ui.changelist;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
 import com.shatteredpixel.shatteredpixeldungeon.items.SpecialPackage;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.curses.Bulk;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.GoldIngot;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Heavy;
@@ -50,10 +52,21 @@ public class v0_2_X {
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
 
+        changes = new ChangeInfo("fix2", false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+
+        changes.addButton(new ChangeButton(new ItemSprite(ItemSpriteSheet.ARMOR_CLOTH, new ItemSprite.Glowing(0x000000)),
+                Messages.get(v0_2_X.class, "v0_2_9fix2.button_1.title"), Messages.get(v0_2_X.class, "v0_2_9fix2.button_1.text")));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS),
+                Messages.get(v0_2_X.class, "v0_2_9fix2.button_2.title"), Messages.get(v0_2_X.class, "v0_2_9fix2.button_2.text")));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),
+                Messages.get(v0_2_X.class, "v0_2_9fix2.button_3.title"), Messages.get(v0_2_X.class, "v0_2_9fix2.button_3.text_1"), Messages.get(v0_2_X.class, "v0_2_9fix2.button_3.text_2")));
 
         changes = new ChangeInfo("fix1", false, null);
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+
 
         changes.addButton(new ChangeButton(Icons.get(Icons.TALENT),
                 Messages.get(v0_2_X.class, "v0_2_9fix.button_1.title"), Messages.get(v0_2_X.class, "v0_2_9fix.button_1.text")));
