@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
@@ -241,6 +242,17 @@ public class DwarfKingHard extends Boss{
         return true;
     }
 
+    private void removeSubjectForPhaseChange(Mob mob) {
+        if (SPDSettings.charAnimations()) {
+            mob.die(null);
+        } else {
+            mob.destroy();
+            if (mob.sprite != null) {
+                mob.sprite.killAndErase();
+            }
+        }
+    }
+
     private HashSet<Mob> getSubjects(){
         HashSet<Mob> subjects = new HashSet<>();
         for (Mob m : Dungeon.level.mobs){
@@ -442,12 +454,12 @@ public class DwarfKingHard extends Boss{
                 }
                 for (Mob m : Dungeon.level.mobs.toArray(new Mob[0])) {
                     if (m instanceof Ghoul || m instanceof Monk || m instanceof Warlock) {
-                        m.die(null);
+                        removeSubjectForPhaseChange(m);
                     }
                 }
                 for (Mob m : Dungeon.level.mobs.toArray(new Mob[0])) {
                     if (m instanceof Ghoul || m instanceof Monk || m instanceof Warlock) {
-                        m.die(null);
+                        removeSubjectForPhaseChange(m);
                     }
                 }
                 Buff.detach(this, SacrificeSubjectListener.class);

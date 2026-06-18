@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
@@ -463,7 +464,10 @@ abstract public class MissileWeapon extends Weapon {
 					return;
 				}
 			}
-			Dungeon.level.drop( this, cell ).sprite.drop();
+			Heap dropped = Dungeon.level.drop( this, cell );
+			if (dropped.sprite != null) {
+				dropped.sprite.drop();
+			}
 		}
 	}
 

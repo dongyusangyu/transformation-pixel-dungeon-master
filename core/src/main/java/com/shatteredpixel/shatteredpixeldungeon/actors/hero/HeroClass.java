@@ -901,7 +901,7 @@ public enum HeroClass {
 			case PRINCESS:
 				return 2;
             case FRIAR:
-                return 1;
+                return 2;
 			default:
 				return 1;
 

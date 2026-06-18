@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RogueBoss;
@@ -148,9 +149,31 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	@Override
 	public void play(Animation anim) {
+		if (!SPDSettings.charAnimations()) {
+			Animation noAnimationAnim = noAnimationAnim();
+			if (noAnimationAnim != null) {
+				super.play(noAnimationAnim);
+			}
+			return;
+		}
 		//Shouldn't interrupt the dieing animation
 		if (curAnim == null || curAnim != die) {
 			super.play(anim);
+		}
+	}
+
+	protected Animation noAnimationAnim() {
+		return idle;
+	}
+
+	protected void callAfterCurrentFrame( final Callback callback ) {
+		if (callback != null) {
+			Game.runOnRenderThread(new Callback() {
+				@Override
+				public void call() {
+					callback.call();
+				}
+			});
 		}
 	}
 	
@@ -230,6 +253,31 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public void move( int from, int to ) {
 		turnTo( from , to );
 
+		if (!SPDSettings.charAnimations()) {
+			place(to);
+			idle();
+
+			if (visible && Dungeon.level.water[from] && !ch.flying) {
+				GameScene.ripple( from );
+			}
+
+			synchronized (this) {
+				isMoving = false;
+				final Char movingChar = ch;
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						if (movingChar != null) {
+							movingChar.onMotionComplete();
+						}
+					}
+				});
+				GameScene.sortMobSprites();
+				notifyAll();
+			}
+			return;
+		}
+
 		play( run );
 		
 		motion = new PosTweener( this, worldToCamera( to ), moveInterval );
@@ -269,6 +317,32 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	}
 	
 	public synchronized void attack( int cell, Callback callback ) {
+		if (!SPDSettings.charAnimations()) {
+			turnTo( ch.pos, cell );
+			idle();
+			if (callback != null) {
+				callAfterCurrentFrame(callback);
+			} else if (attack != null) {
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						onComplete(attack);
+					}
+				});
+			} else {
+				final Char attackingChar = ch;
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						if (attackingChar != null) {
+							attackingChar.onAttackComplete();
+						}
+					}
+				});
+			}
+			return;
+		}
+
 		animCallback = callback;
 		turnTo( ch.pos, cell );
 		play( attack );
@@ -279,6 +353,32 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	}
 	
 	public synchronized void operate( int cell, Callback callback ) {
+		if (!SPDSettings.charAnimations()) {
+			turnTo( ch.pos, cell );
+			idle();
+			if (callback != null) {
+				callAfterCurrentFrame(callback);
+			} else if (operate != null) {
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						onComplete(operate);
+					}
+				});
+			} else {
+				final Char operatingChar = ch;
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						if (operatingChar != null) {
+							operatingChar.onOperateComplete();
+						}
+					}
+				});
+			}
+			return;
+		}
+
 		animCallback = callback;
 		turnTo( ch.pos, cell );
 		play( operate );
@@ -289,6 +389,22 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	}
 	
 	public synchronized void zap( int cell, Callback callback ) {
+		if (!SPDSettings.charAnimations()) {
+			turnTo( ch.pos, cell );
+			idle();
+			if (callback != null) {
+				callAfterCurrentFrame(callback);
+			} else if (zap != null) {
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						onComplete(zap);
+					}
+				});
+			}
+			return;
+		}
+
 		animCallback = callback;
 		turnTo( ch.pos, cell );
 		play( zap );
@@ -310,6 +426,17 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	}
 
 	public void jump( int from, int to, float height, float duration,  Callback callback ) {
+		if (!SPDSettings.charAnimations()) {
+			turnTo( from, to );
+			place( to );
+			idle();
+			if (callback != null) {
+				callAfterCurrentFrame(callback);
+			}
+			GameScene.sortMobSprites();
+			return;
+		}
+
 		jumpCallback = callback;
 
 		jumpTweener = new JumpTweener( this, worldToCamera( to ), height, duration );
@@ -322,7 +449,19 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public void die() {
 		sleeping = false;
 		processStateRemoval( State.PARALYSED );
-		play( die );
+		if (SPDSettings.charAnimations()) {
+			play( die );
+		} else {
+			idle();
+			if (die != null) {
+				callAfterCurrentFrame(new Callback() {
+					@Override
+					public void call() {
+						onComplete(die);
+					}
+				});
+			}
+		}
 
 		hideEmo();
 		
@@ -676,12 +815,23 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	@Override
 	public void update() {
-		if (paused && ch != null && curAnim != null && !curAnim.looped && !finished){
+		boolean freezeAnimations = !SPDSettings.charAnimations();
+		if (paused && !freezeAnimations && ch != null && curAnim != null && !curAnim.looped && !finished){
 			listener.onComplete(curAnim);
 			finished = true;
 		}
-		
+
+		Animation noAnimationAnim = noAnimationAnim();
+		if (freezeAnimations && noAnimationAnim != null && curAnim != noAnimationAnim) {
+			super.play(noAnimationAnim);
+		}
+
+		boolean wasPaused = paused;
+		if (freezeAnimations) {
+			paused = true;
+		}
 		super.update();
+		paused = wasPaused;
 		
 		if (flashTime > 0 && (flashTime -= Game.elapsed) <= 0) {
 			resetColor();
@@ -930,12 +1080,15 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	@Override
 	public void onComplete( Tweener tweener ) {
 		if (tweener == jumpTweener) {
+			jumpTweener = null;
+			Callback executingJumpCallback = jumpCallback;
+			jumpCallback = null;
 
 			if (visible && Dungeon.level.water[ch.pos] && !ch.flying) {
 				GameScene.ripple( ch.pos );
 			}
-			if (jumpCallback != null) {
-				jumpCallback.call();
+			if (executingJumpCallback != null) {
+				executingJumpCallback.call();
 			}
 			GameScene.sortMobSprites();
 

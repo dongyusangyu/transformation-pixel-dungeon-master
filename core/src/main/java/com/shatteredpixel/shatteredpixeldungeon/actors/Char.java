@@ -987,7 +987,7 @@ public abstract class Char extends Actor {
 		}
 
 
-		if(isInvulnerable(src.getClass())){
+		if(isInvulnerable(src.getClass()) && !(src instanceof Reason)){
 			sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "invulnerable"));
 			return;
 		}
@@ -1111,7 +1111,7 @@ public abstract class Char extends Actor {
 			if (dmg < 0) dmg = 0;
 		}
         //史莱姆
-        if(this==hero){
+        if(this==hero && !(src instanceof Reason)){
             if(hero.hasTalent(Talent.ENERGY_ABSORPTION)){
                 float ddmg=dmg;
                 if(hero.heroClass == HeroClass.SLIMEGIRL){
@@ -1248,6 +1248,7 @@ public abstract class Char extends Actor {
 			if (src instanceof Viscosity.DeferedDamage)                 icon = FloatingText.DEFERRED;
 			if (src instanceof Corruption)                              icon = FloatingText.CORRUPTION;
 			if (src instanceof AscensionChallenge)                      icon = FloatingText.AMULET;
+            if (src instanceof Reason)                      icon = FloatingText.MISS_SUFFER;
 			if (src==Talent.ENDLESS_MALICE)                      icon = FloatingText.ENDLESS_MALICE;
 			if (src==Talent.LIFE_SPORT)                      icon = FloatingText.LIFE_SPORT;
 			if (src == Dungeon.hero && Dungeon.hero.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken){

@@ -315,6 +315,10 @@ public class DM300 extends Mob {
 				chargeAnnounced = true;
 			}
 
+			enemy = Dungeon.hero;
+			target = Dungeon.hero.pos;
+			state = HUNTING;
+
 			if (fieldOfView == null || fieldOfView.length != Dungeon.level.length()){
 				fieldOfView = new boolean[Dungeon.level.length()];
 			}
@@ -325,8 +329,6 @@ public class DM300 extends Mob {
 
 			if (heroVisible){
 				beckon(Dungeon.hero.pos);
-				state = HUNTING;
-				enemy = Dungeon.hero;
 			}
 
 		}

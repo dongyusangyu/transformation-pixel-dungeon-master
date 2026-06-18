@@ -118,7 +118,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Monk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Snake;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogDzewa;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.RatKing;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetRecorder;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRealtimeController;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinTrainingBootstrap;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CheckedCell;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -1519,6 +1523,7 @@ public class Hero extends Char {
 			resting = false;
 			
 			ready = false;
+			AgentMinDatasetRecorder.onHeroActing(curAction);
 			
 			if (curAction instanceof HeroAction.Move) {
 				actResult = actMove( (HeroAction.Move)curAction );
@@ -1569,14 +1574,19 @@ public class Hero extends Char {
 	private void ready() {
 		if (sprite.looping()) sprite.idle();
 		curAction = null;
+		if (buff(Talent.HandSlipVulnerability.class) != null){
+			buff(Talent.HandSlipVulnerability.class).detach();
+		}
 		damageInterrupt = true;
 		waitOrPickup = false;
 		ready = true;
 		canSelfTrample = true;
 
 		AttackIndicator.updateState();
-		
+
 		GameScene.ready();
+		AgentMinRealtimeController.onHeroReady();
+		AgentMinDatasetRecorder.onHeroReady();
 	}
 	
 	public void interrupt() {
@@ -1804,6 +1814,7 @@ public class Hero extends Char {
 				if ((heap.type == Type.LOCKED_CHEST && Notes.keyCount(new GoldenKey(Dungeon.depth)) < 1)
 					|| (heap.type == Type.CRYSTAL_CHEST && Notes.keyCount(new CrystalKey(Dungeon.depth)) < 1)){
 
+						AgentMinRewardTracker.onLockedChestInteraction(false, dst);
 						GLog.w( Messages.get(this, "locked_chest") );
 						ready();
 						return false;
@@ -1883,6 +1894,7 @@ public class Hero extends Char {
 				Sample.INSTANCE.play( Assets.Sounds.UNLOCK );
 				
 			} else {
+				AgentMinRewardTracker.onLockedDoorInteraction(false, doorCell);
 				GLog.w( Messages.get(this, "locked_door") );
 				ready();
 			}
@@ -2107,6 +2119,7 @@ public class Hero extends Char {
 	}
 	
 	public void rest( boolean fullRest ) {
+		AgentMinDatasetRecorder.onWait(fullRest);
 		spendAndNextConstant( TIME_TO_REST );
 		if(pointsNegative(Talent.LIFE_SPORT)>0){
 			damage(pointsNegative(Talent.LIFE_SPORT),Talent.LIFE_SPORT);
@@ -2325,7 +2338,7 @@ public class Hero extends Char {
 			return;
 		}
 
-		if(!buffs(GreatShoper.GoldCurse.class).isEmpty() && !(src instanceof Viscosity.DeferedDamage)){
+		if(!buffs(GreatShoper.GoldCurse.class).isEmpty() && !(src instanceof Viscosity.DeferedDamage) && !(src instanceof Reason)){
 			src = new Viscosity.DeferedDamage();
 		}
 
@@ -2592,7 +2605,7 @@ public class Hero extends Char {
 
 			if (Dungeon.level.pit[step] && !Dungeon.level.solid[step]
 					&& (!flying || buff(Levitation.class) != null && buff(Levitation.class).detachesWithinDelay(delay))){
-				if (!Chasm.jumpConfirmed){
+				if (!Chasm.jumpConfirmed && !AgentMinBridgeConfig.ENABLED){
 					Chasm.heroJump(this);
 					interrupt();
 				} else {
@@ -2617,6 +2630,10 @@ public class Hero extends Char {
 			if(pointsNegative(Talent.BURNOUT_CHAMPION)>Random.Int(50)){
 				Buff.affect(this, Burning.class).reignite(this,3);
 			}
+			if(pointsNegative(Talent.HAND_SLIP)>0){
+				Buff.affect(this, Talent.HandSlipVulnerability.class);
+			}
+			AgentMinDatasetRecorder.onHeroStep(step);
 			sprite.move(pos, step);
 			move(step);
             MarchForward.Forward f=buff(MarchForward.Forward.class);
@@ -2733,6 +2750,8 @@ public class Hero extends Char {
 			
 		}
 
+		AgentMinDatasetRecorder.onHeroActionSelected(curAction);
+
 		return true;
 	}
 	
@@ -2835,7 +2854,7 @@ public class Hero extends Char {
 			if (buff(ElixirOfMight.HTBoost.class) != null){
 				buff(ElixirOfMight.HTBoost.class).onLevelUp();
 			}
-			if(hasTalent(Talent.BEYOND_LIMIT)){
+			if(hasTalent(Talent.BEYOND_LIMIT) && level>0){
 				Buff.affect(this, Haste.class,20*pointsInTalent(Talent.BEYOND_LIMIT));
 				Buff.affect(this, Adrenaline.class,20*pointsInTalent(Talent.BEYOND_LIMIT));
 			}
@@ -3009,17 +3028,6 @@ public class Hero extends Char {
 				//this is needed because the actual creation of the window is delayed here
 				WndResurrect.instance = new Object();
 				Ankh finalAnkh = ankh;
-				Game.runOnRenderThread(new Callback() {
-					@Override
-					public void call() {
-						GameScene.show( new WndResurrect(finalAnkh) );
-					}
-				});
-				try {
-					Dungeon.saveAll();
-				} catch (IOException e) {
-					ShatteredPixelDungeon.reportException(e);
-				}
 
 				if (cause instanceof Hero.Doom) {
 					((Hero.Doom)cause).onDeath();
@@ -3029,25 +3037,27 @@ public class Hero extends Char {
 				if (sacMark != null){
 					sacMark.detach();
 				}
-                if(heroClass== HeroClass.FRIAR){
-                    Reason.gainReason(this,100);
-                    hero.buff(Reason.class).kaoyan=false;
-                    if(hero.buff(Suffering.Fear.class)!=null){
-                        hero.buff(Suffering.Fear.class).detach();
-                    }else if(hero.buff(Suffering.Despair.class)!=null){
-                        hero.buff(Suffering.Despair.class).detach();
-                    }else if(hero.buff(Suffering.Paranoia.class)!=null){
-                        hero.buff(Suffering.Paranoia.class).detach();
-                    }else if(hero.buff(Suffering.Ecstasy.class)!=null){
-                        hero.buff(Suffering.Ecstasy.class).detach();
-                    }
-                }
+
+				Game.runOnRenderThread(new Callback() {
+					@Override
+					public void call() {
+						GameScene.show( new WndResurrect(finalAnkh) );
+						try {
+							Dungeon.saveAll();
+						} catch (IOException e) {
+							ShatteredPixelDungeon.reportException(e);
+						}
+					}
+				});
 
 			}
 			return;
 		}
 		
 		AgentMinRewardTracker.onHeroDeath();
+		if (AgentMinBridgeConfig.ENABLED && AgentMinTrainingBootstrap.startNewWarriorRun("hero death")) {
+			return;
+		}
 		Actor.fixTime();
 		super.die( cause );
 		reallyDie( cause );
@@ -3239,6 +3249,7 @@ public class Hero extends Char {
 			SkeletonKey.KeyReplacementTracker keyUseTrack = buff(SkeletonKey.KeyReplacementTracker.class);
 
 			if (skele != null && skele.isCursed() && Random.Int(6) != 0){
+				AgentMinRewardTracker.onLockedDoorInteraction(false, doorCell);
 				GLog.n(Messages.get(this, "key_distracted"));
 				spendAndNext(2*Key.TIME_TO_UNLOCK);
 				Buff.affect(this, Hunger.class).affectHunger(-4);
@@ -3274,6 +3285,7 @@ public class Hero extends Char {
 				}
 				
 				if (hasKey) {
+					AgentMinRewardTracker.onLockedDoorInteraction(true, doorCell);
 					GameScene.updateKeyDisplay();
 					GameScene.updateMap(doorCell);
 					spend(Key.TIME_TO_UNLOCK);
@@ -3290,6 +3302,7 @@ public class Hero extends Char {
 			if (skele != null && skele.isCursed()
 					&& (heap.type == Type.LOCKED_CHEST || heap.type == Type.CRYSTAL_CHEST)
 					&& Random.Int(6) != 0){
+				AgentMinRewardTracker.onLockedChestInteraction(false, heap.pos);
 				GLog.n(Messages.get(this, "key_distracted"));
 				spend(2*Key.TIME_TO_UNLOCK);
 				Buff.affect(this, Hunger.class).affectHunger(-4);
@@ -3310,6 +3323,9 @@ public class Hero extends Char {
 				}
 
 				if (hasKey) {
+					if (heap.type == Type.LOCKED_CHEST || heap.type == Type.CRYSTAL_CHEST) {
+						AgentMinRewardTracker.onLockedChestInteraction(true, heap.pos);
+					}
 					GameScene.updateKeyDisplay();
 					heap.open(this);
 					spend(Key.TIME_TO_UNLOCK);

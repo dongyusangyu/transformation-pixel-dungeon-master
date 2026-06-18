@@ -904,7 +904,7 @@ public class Badges {
 		firstBossClassBadges.put(HeroClass.NINJA, Badge.BOSS_SLAIN_1_NINJA);
 		firstBossClassBadges.put(HeroClass.DM400, Badge.BOSS_SLAIN_1_DM400);
 		firstBossClassBadges.put(HeroClass.PRINCESS, Badge.BOSS_SLAIN_1_PRINCESS);
-        firstBossClassBadges.put(HeroClass.PRINCESS, Badge.BOSS_SLAIN_1_FRIAR);
+        firstBossClassBadges.put(HeroClass.FRIAR, Badge.BOSS_SLAIN_1_FRIAR);
 	}
 
 	private static LinkedHashMap<HeroClass, Badge> victoryClassBadges = new LinkedHashMap<>();
@@ -956,6 +956,7 @@ public class Badges {
             displayBadge(Badge.HEROBOSS_SLAIN_1);
             unlock(Badge.HEROBOSS_SLAIN_1);
             Badge badge = firstBossClassBadges.get(hero.heroClass);
+            //GLog.i(badge.name());
             if (badge == null) return;
             local.add(badge);
             unlock(badge);

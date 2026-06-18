@@ -50,6 +50,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
@@ -60,6 +61,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesi
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
@@ -96,7 +98,6 @@ import com.watabou.utils.BArray;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
-import com.watabou.utils.FileUtils;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 import com.watabou.utils.SparseArray;
@@ -636,6 +637,7 @@ public class Dungeon {
 		hero.curAction = hero.lastAction = null;
 
 		observe();
+
 		try {
 			saveAll();
 		} catch (IOException e) {
@@ -770,6 +772,10 @@ public class Dungeon {
 			bundle.put( BRANCH, branch );
 			bundle.put( SKIN, skin );
 			bundle.put( GOLD, gold );
+			bundle.put( "heroClass", hero.heroClass.name() );
+			bundle.put( "heroLevel", hero.lvl );
+			bundle.put( "gold", gold );
+			bundle.put( "depth", depth );
 			bundle.put( ENERGY, energy );
 			bundle.put(TALENT_ITEM,talent_item);
 			bundle.put(EAT_ITEM,eat_item);
@@ -823,9 +829,13 @@ public class Dungeon {
 			Badges.saveLocal( badges );
 			bundle.put( BADGES, badges );
 
+			if (level != null) {
+				Bundle levelBundle = new Bundle();
+				levelBundle.put( LEVEL, level );
+				SaveManager.putLevel(bundle, depth, branch, levelBundle);
+			}
+
 			SaveManager.saveGame(save, bundle);
-			
-			FileUtils.bundleToFile( GamesInProgress.gameFile(save), bundle);
 			
 		} catch (IOException e) {
 			GamesInProgress.setUnknown( save );
@@ -845,7 +855,6 @@ public class Dungeon {
 			Actor.fixTime();
 			updateLevelExplored();
 			saveGame( GamesInProgress.curSlot );
-			saveLevel( GamesInProgress.curSlot );
 
 			GamesInProgress.set( GamesInProgress.curSlot );
 
@@ -1039,6 +1048,9 @@ public class Dungeon {
 	
 	public static void fail( Object cause ) {
 		if (WndResurrect.instance == null) {
+			if (hero == null) {
+				return;
+			}
 			updateLevelExplored();
 			Statistics.gameWon = false;
 			if(Dungeon.isChallenged(Challenges.TEST_MODE)){

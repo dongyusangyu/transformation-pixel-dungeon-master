@@ -14,18 +14,22 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.agentMin;
  */
 public class AgentMinEncodedState {
 
-	public static final int SCHEMA_VERSION = 1;
+	public static final int SCHEMA_VERSION = 8;
 
-	public static final int LEVEL_CHANNELS = 18;
-	public static final int HERO_BASE_FEATURES = 28;
+	public static final int LOCAL_MAP_SIZE = 31;
+	public static final int GLOBAL_MAP_SIZE = 127;
+	public static final int LEVEL_CHANNELS = 19;
+	public static final int HERO_BASE_FEATURES = 32;
 	public static final int INVENTORY_ROWS = 80;
 	public static final int INVENTORY_FEATURES = 32;
 	public static final int ACTION_ROWS = 160;
-	public static final int ACTION_FEATURES = 24;
+	public static final int ACTION_FEATURES = 40;
 	public static final int MOB_ROWS = 32;
-	public static final int MOB_FEATURES = 20;
+	public static final int MOB_FEATURES = 28;
 	public static final int HISTORY_ROWS = AgentMinHistoryTracker.HISTORY_ROWS;
 	public static final int HISTORY_FEATURES = AgentMinHistoryTracker.HISTORY_FEATURES;
+	public static final int INVENTORY_SUMMARY_FEATURES = 24;
+	public static final int OPTION_FEATURES = 8;
 
 	public int schemaVersion = SCHEMA_VERSION;
 	public int width;
@@ -37,11 +41,15 @@ public class AgentMinEncodedState {
 	public float episodeReward;
 
 	public float[][][] levelTensor;
+	public float[][] exploredGlobalMatrix;
 	public float[] heroVector;
 	public float[][] inventoryMatrix;
+	public float[] inventorySummaryVector;
+	public float[] optionVector;
 	public float[][] actionMatrix;
 	public float[][] mobMatrix;
 	public float[][] historyMatrix;
+	public float[][] agentVisitedMatrix;
 	public AgentMinActionSpace actionSpace;
 
 	public AgentMinState source;

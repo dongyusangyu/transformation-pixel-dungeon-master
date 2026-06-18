@@ -39,8 +39,13 @@ import com.watabou.utils.Point;
 
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class DesktopLauncher {
@@ -70,12 +75,20 @@ public class DesktopLauncher {
 		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
 			@Override
 			public void uncaughtException(Thread thread, Throwable throwable) {
+				if (isBenignWindowCloseThrowable(throwable)) {
+					System.exit(0);
+					return;
+				}
 				Game.reportException(throwable);
 				StringWriter sw = new StringWriter();
 				PrintWriter pw = new PrintWriter(sw);
 				throwable.printStackTrace(pw);
 				pw.flush();
 				String exceptionMsg = sw.toString();
+				writeAgentMinCrashLog(exceptionMsg);
+				if (agentMinEnabled()) {
+					System.exit(1);
+				}
 
 				//shorten/simplify exception message to make it easier to fit into a message box
 				exceptionMsg = exceptionMsg.replaceAll("\\(.*:([0-9]*)\\)", "($1)");
@@ -187,5 +200,62 @@ public class DesktopLauncher {
 				"icons/icon_64.png", "icons/icon_128.png", "icons/icon_256.png");
 
 		new Lwjgl3Application(new ShatteredPixelDungeon(new DesktopPlatformSupport()), config);
+	}
+
+	private static boolean isBenignWindowCloseThrowable(Throwable throwable) {
+		for (Throwable current = throwable; current != null; current = current.getCause()) {
+			String className = current.getClass().getName();
+			String message = current.getMessage();
+			if ("java.lang.NoClassDefFoundError".equals(className)
+					&& message != null
+					&& message.contains("com/badlogic/gdx/backends/lwjgl3/Lwjgl3Window$4$1")) {
+				for (StackTraceElement element : current.getStackTrace()) {
+					if ("com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window$4".equals(element.getClassName())
+							&& "invoke".equals(element.getMethodName())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	private static void writeAgentMinCrashLog(String exceptionMsg) {
+		if (!agentMinEnabled()) {
+			return;
+		}
+		String logPath = System.getenv("AGENTMIN_CRASH_LOG");
+		String markerPath = System.getenv("AGENTMIN_CRASH_MARKER");
+		String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+		if (logPath != null && logPath.length() > 0) {
+			appendText(logPath, "\n===== AgentMin game crash " + time + " =====\n"
+					+ "version: " + Game.version + "\n"
+					+ exceptionMsg + "\n");
+		}
+		if (markerPath != null && markerPath.length() > 0) {
+			appendText(markerPath, time + "\n");
+		}
+	}
+
+	private static void appendText(String path, String text) {
+		try {
+			File file = new File(path);
+			File parent = file.getParentFile();
+			if (parent != null) {
+				parent.mkdirs();
+			}
+			FileWriter writer = new FileWriter(file, true);
+			try {
+				writer.write(text);
+			} finally {
+				writer.close();
+			}
+		} catch (IOException ignored) {
+			// Crash logging must never mask the original crash dialog.
+		}
+	}
+
+	private static boolean agentMinEnabled() {
+		return "true".equalsIgnoreCase(System.getenv("AGENTMIN_ENABLED"));
 	}
 }

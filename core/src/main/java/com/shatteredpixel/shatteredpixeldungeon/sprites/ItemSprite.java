@@ -330,6 +330,13 @@ public class ItemSprite extends MovieClip {
 		}
 
 		if (dropInterval > 0){
+			if (heap == null || heap.isEmpty()) {
+				dropInterval = 0;
+				speed.set(0);
+				acc.set(0);
+				return;
+			}
+
 			shadowOffset -= speed.y * Game.elapsed * 0.8f;
 
 			if ((dropInterval -= Game.elapsed) <= 0){

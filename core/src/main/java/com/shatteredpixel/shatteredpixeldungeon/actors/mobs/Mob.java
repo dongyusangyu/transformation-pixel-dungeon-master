@@ -750,7 +750,7 @@ public abstract class Mob extends Char {
 	@Override
 	public void updateSpriteState() {
 		super.updateSpriteState();
-		if ((hero.buff(TimekeepersHourglass.timeFreeze.class) != null
+		if (hero!=null && (hero.buff(TimekeepersHourglass.timeFreeze.class) != null
 				|| hero.buff(Swiftthistle.TimeBubble.class) != null) && sprite!=null)
 			sprite.add( CharSprite.State.PARALYSED );
 	}
@@ -939,7 +939,7 @@ public abstract class Mob extends Char {
 			}
 		}
 		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
-			dmg*=1+hero.pointsInTalent(Talent.WELLFED_MEAL)*0.1f;
+			dmg*=1+hero.pointsInTalent(Talent.WELLFED_MEAL)*0.15f;
 		}
 		if(hero.hasTalent(Talent.QUICK_TOOL) && hero.heroClass!=HeroClass.DM400 && alignment==Alignment.ALLY){
 			dmg*=1-hero.pointsInTalent(Talent.QUICK_TOOL)*0.1f;
@@ -1327,7 +1327,7 @@ public abstract class Mob extends Char {
 				Char closestHostile = null;
 
 				for (Char ch : Actor.chars()){
-					if (fieldOfView[ch.pos] && ch.invisible == 0 && Actor.isHostile(Mob.this, ch)){
+					if (fieldOfView[ch.pos] && ch.invisible == 0 && ch.alignment != alignment && ch.alignment != Alignment.NEUTRAL){
 						float bestChance = detectionChance(ch);
 						//silent steps rogue talent, which also applies to rogue's shadow clone
 						if ((ch instanceof Hero || ch instanceof ShadowClone.ShadowAlly)

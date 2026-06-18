@@ -99,7 +99,7 @@ public class Hunger extends Buff implements Hero.Doom {
 					if(hero.hasTalent(Talent.CHOCOLATE_COINS) && Dungeon.gold>100-25*hero.pointsInTalent(Talent.CHOCOLATE_COINS)){
 						Dungeon.gold-=49-12*hero.pointsInTalent(Talent.CHOCOLATE_COINS);
 					}else{
-                        if(hero.heroClass== HeroClass.FRIAR){
+                        if(heroClassIs(HeroClass.FRIAR)){
                             Reason.loseReason(target,2);
                         }
 						target.damage( (int)partialDamage, this);
@@ -151,7 +151,7 @@ public class Hunger extends Buff implements Hero.Doom {
 				}
 				if (newLevel >= STARVING) {
 
-					if(hero.heroClass== HeroClass.DM400){
+					if(heroClassIs(HeroClass.DM400)){
 						GLog.n( Messages.get(this, "ondmstarving") );
 					}else{
 						GLog.n( Messages.get(this, "onstarving") );
@@ -160,7 +160,7 @@ public class Hunger extends Buff implements Hero.Doom {
 						Dungeon.gold-=49-12*hero.pointsInTalent(Talent.CHOCOLATE_COINS);
 					}else{
 						hero.damage( 1, this );
-                        if(hero.heroClass== HeroClass.FRIAR){
+                        if(heroClassIs(HeroClass.FRIAR)){
                             Reason.loseReason(target,2);
                         }
 						if(hero.pointsNegative(Talent.MALNUTRITION)==2){
@@ -189,7 +189,7 @@ public class Hunger extends Buff implements Hero.Doom {
 
 				} else if (newLevel >= HUNGRY && level < HUNGRY) {
 
-					if(hero.heroClass== HeroClass.DM400){
+					if(heroClassIs(HeroClass.DM400)){
 						GLog.w( Messages.get(this, "ondmhungry") );
 					}else{
 						GLog.w( Messages.get(this, "onhungry") );
@@ -247,7 +247,7 @@ public class Hunger extends Buff implements Hero.Doom {
 			level = STARVING;
 			partialDamage += excess * (target.HT/1000f);
 			if (partialDamage > 1f){
-                if(hero.heroClass== HeroClass.FRIAR){
+                if(heroClassIs(HeroClass.FRIAR)){
                     Reason.loseReason(target,2);
                 }
 				target.damage( (int)partialDamage, this );
@@ -257,21 +257,21 @@ public class Hunger extends Buff implements Hero.Doom {
 		}
 
 		if (oldLevel < HUNGRY && level >= HUNGRY){
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				GLog.w( Messages.get(this, "ondmhungry") );
 			}else{
 				GLog.w( Messages.get(this, "onhungry") );
 			}
 
 		} else if (oldLevel < STARVING && level >= STARVING){
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				GLog.n( Messages.get(this, "ondmstarving") );
 			}else{
 				GLog.n( Messages.get(this, "onstarving") );
 			}
 
 			target.damage( 1, this );
-            if(hero.heroClass== HeroClass.FRIAR){
+            if(heroClassIs(HeroClass.FRIAR)){
                 Reason.loseReason(target,2);
             }
 		}
@@ -287,19 +287,23 @@ public class Hunger extends Buff implements Hero.Doom {
 		return (int)Math.ceil(level);
 	}
 
+	private boolean heroClassIs(HeroClass heroClass) {
+		return hero != null && hero.heroClass == heroClass;
+	}
+
 	@Override
 	public int icon() {
 		if (level < HUNGRY) {
 			return BuffIndicator.NONE;
 		} else if (level < STARVING) {
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				return BuffIndicator.DMHUNGER;
 			}else{
 				return BuffIndicator.HUNGER;
 			}
 
 		} else {
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				return BuffIndicator.DMSTARVATION;
 			}else{
 				return BuffIndicator.STARVATION;
@@ -311,14 +315,14 @@ public class Hunger extends Buff implements Hero.Doom {
 	@Override
 	public String name() {
 		if (level < STARVING) {
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				return Messages.get(this, "dmhungry");
 			}else{
 				return Messages.get(this, "hungry");
 			}
 
 		} else {
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				return Messages.get(this, "dmstarving");
 			}else{
 				return Messages.get(this, "starving");
@@ -330,21 +334,21 @@ public class Hunger extends Buff implements Hero.Doom {
 	public String desc() {
 		String result;
 		if (level < STARVING) {
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				result = Messages.get(this, "desc_intro_dmhungry");
 			}else{
 				result = Messages.get(this, "desc_intro_hungry");
 			}
 
 		} else {
-			if(hero.heroClass== HeroClass.DM400){
+			if(heroClassIs(HeroClass.DM400)){
 				result = Messages.get(this, "desc_intro_dmstarving");
 			}else{
 				result = Messages.get(this, "desc_intro_starving");
 			}
 
 		}
-		if(hero.heroClass== HeroClass.DM400){
+		if(heroClassIs(HeroClass.DM400)){
 			result += Messages.get(this, "dmdesc");
 		}else{
 			result += Messages.get(this, "desc");

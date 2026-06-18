@@ -6,7 +6,7 @@ public class AgentMinActionSpace {
 
 	public static final int SCHEMA_VERSION = 1;
 	public static final int MAX_ACTIONS = 96;
-	public static final int ACTION_FEATURES = 24;
+	public static final int ACTION_FEATURES = 40;
 
 	public int schemaVersion = SCHEMA_VERSION;
 	public ArrayList<AgentMinAction> actions = new ArrayList<>();

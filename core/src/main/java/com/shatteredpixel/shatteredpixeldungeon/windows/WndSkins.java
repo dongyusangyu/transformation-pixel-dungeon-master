@@ -53,6 +53,7 @@ public class WndSkins extends Window {
     private static final int GAP = 5;
 
     private boolean editable;
+    private HeroClass heroClass;
 
     public static int value=0;
     public RenderedTextBlock SkinText;
@@ -80,6 +81,8 @@ public class WndSkins extends Window {
         if(heroClass==null){
             heroClass=HeroClass.WARRIOR;
         }
+        this.heroClass = heroClass;
+        GamesInProgress.skin = validSkin(heroClass, GamesInProgress.skin);
         float pos = title.bottom()+GAP;
         if(GamesInProgress.skin==0){
             SkinText = PixelScene.renderTextBlock(Messages.get(this, "cur0"), 6);
@@ -143,7 +146,7 @@ public class WndSkins extends Window {
 
     @Override
     public void onBackPressed() {
-        SPDSettings.Skin(GamesInProgress.skin);
+        SPDSettings.Skin(heroClass, GamesInProgress.skin);
         super.onBackPressed();
     }
     @Override
@@ -165,26 +168,19 @@ public class WndSkins extends Window {
 
         SkinBtn(HeroClass heroClass,int sk) {
             super(Chrome.Type.GREY_BUTTON_TR, "");
+            this.heroClass = heroClass;
             this.sk = sk;
             icon(new Image(heroClass.spritesheet(sk), 0, 90, 12, 15));
         }
         @Override
         protected void onClick() {
 
-            if(GamesInProgress.selectedClass==HeroClass.SLIMEGIRL && sk==4 && !Badges.isUnlocked(Badges.Badge.HEROBOSS_COUNTER_1)){
-                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock1")));
-                return;
-            }else if(GamesInProgress.selectedClass==HeroClass.NINJA && sk==2 && !Badges.isUnlocked(Badges.Badge.HEROBOSS_COUNTER_2)){
-                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock2")));
-                return;
-            }else if(GamesInProgress.selectedClass==HeroClass.DM400 && sk==2 && !Badges.isUnlocked(Badges.Badge.HEROBOSS_COUNTER_3)){
-                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock3")));
-                return;
-            }else if(GamesInProgress.selectedClass==HeroClass.FREEMAN && sk==2 && !Badges.isUnlocked(Badges.Badge.BETTER_TALENT)){
-                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock4")));
+            if(!isSkinUnlocked(heroClass, sk)){
+                showUnlockMessage(heroClass, sk);
                 return;
             }else{
                 GamesInProgress.skin = sk;
+                SPDSettings.Skin(heroClass, GamesInProgress.skin);
                 SPDSettings.Skin(GamesInProgress.skin);
             }
             super.onClick();
@@ -199,6 +195,45 @@ public class WndSkins extends Window {
             } else {
                 icon.brightness(1f);
             }
+        }
+    }
+
+    public static int validSkin(HeroClass heroClass, int skin) {
+        if (heroClass == null || skin < 0 || skin >= heroClass.getSkinNums() || !isSkinUnlocked(heroClass, skin)) {
+            return 0;
+        }
+        return skin;
+    }
+
+    public static int savedSkin(HeroClass heroClass) {
+        return validSkin(heroClass, SPDSettings.Skin(heroClass));
+    }
+
+    public static boolean isSkinUnlocked(HeroClass heroClass, int skin) {
+        if (heroClass == null || skin < 0 || skin >= heroClass.getSkinNums()) {
+            return false;
+        }
+        if(heroClass==HeroClass.SLIMEGIRL && skin==4 && !Badges.isUnlocked(Badges.Badge.HEROBOSS_COUNTER_1)){
+            return false;
+        }else if(heroClass==HeroClass.NINJA && skin==2 && !Badges.isUnlocked(Badges.Badge.HEROBOSS_COUNTER_2)){
+            return false;
+        }else if(heroClass==HeroClass.DM400 && skin==2 && !Badges.isUnlocked(Badges.Badge.HEROBOSS_COUNTER_3)){
+            return false;
+        }else if(heroClass==HeroClass.FREEMAN && skin==2 && !Badges.isUnlocked(Badges.Badge.BETTER_TALENT)){
+            return false;
+        }
+        return true;
+    }
+
+    private static void showUnlockMessage(HeroClass heroClass, int skin) {
+        if(heroClass==HeroClass.SLIMEGIRL && skin==4){
+                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock1")));
+        }else if(heroClass==HeroClass.NINJA && skin==2){
+                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock2")));
+        }else if(heroClass==HeroClass.DM400 && skin==2){
+                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock3")));
+        }else if(heroClass==HeroClass.FREEMAN && skin==2){
+                ShatteredPixelDungeon.scene().addToFront( new WndMessage(Messages.get(WndSkins.class, "unlock4")));
         }
     }
 }

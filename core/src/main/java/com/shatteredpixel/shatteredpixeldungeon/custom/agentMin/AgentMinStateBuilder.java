@@ -14,6 +14,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.CrystalKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.GoldenKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.IronKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.WornKey;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
@@ -126,6 +131,10 @@ public class AgentMinStateBuilder {
 		state.hero.armorMin = armor.min;
 		state.hero.armorMax = armor.max;
 		state.hero.expectedArmor = average(armor.min, armor.max);
+		state.hero.hasIronKey = Notes.keyCount(new IronKey(Dungeon.depth)) > 0;
+		state.hero.hasGoldenKey = Notes.keyCount(new GoldenKey(Dungeon.depth)) > 0;
+		state.hero.hasCrystalKey = Notes.keyCount(new CrystalKey(Dungeon.depth)) > 0;
+		state.hero.hasWornKey = Notes.keyCount(new WornKey(Dungeon.depth)) > 0;
 
 		for (Talent talent : Talent.values()) {
 			int points = hero.pointsInTalent(talent);
@@ -210,13 +219,30 @@ public class AgentMinStateBuilder {
 		if (level.solid[cell]) code |= AgentMinState.FLAG_SOLID;
 		if (level.water[cell]) code |= AgentMinState.FLAG_LIQUID;
 		if (level.pit[cell]) code |= AgentMinState.FLAG_PIT;
-		if ((level.heaps.get(cell) != null && level.heaps.get(cell).seen)) code |= AgentMinState.FLAG_ITEM;
+		Heap heap = level.heaps.get(cell);
+		if (heap != null && heap.seen) {
+			code |= AgentMinState.FLAG_ITEM;
+			if (heap.type == Heap.Type.LOCKED_CHEST || heap.type == Heap.Type.CRYSTAL_CHEST) {
+				code |= AgentMinState.FLAG_LOCKED_CHEST;
+			}
+		}
 		Trap trap = level.traps.get(cell);
 		if (trap != null && trap.visible) code |= AgentMinState.FLAG_TRAP;
 		if (level.plants.get(cell) != null && visible(level, cell)) code |= AgentMinState.FLAG_PLANT;
 		if (level.findMob(cell) != null && visible(level, cell)) code |= AgentMinState.FLAG_MOB;
 		if (level.map[cell] == Terrain.ENTRANCE || level.map[cell] == Terrain.EXIT || level.map[cell] == Terrain.UNLOCKED_EXIT) code |= AgentMinState.FLAG_STAIRS;
+		if (doorChannelValue(level.map[cell]) != 0) code |= AgentMinState.FLAG_DOOR;
 		return code;
+	}
+
+	static int doorChannelValue(int terrain) {
+		if (terrain == Terrain.DOOR || terrain == Terrain.OPEN_DOOR) {
+			return 1;
+		}
+		if (terrain == Terrain.LOCKED_DOOR || terrain == Terrain.HERO_LKD_DR || terrain == Terrain.CRYSTAL_DOOR) {
+			return -1;
+		}
+		return 0;
 	}
 
 	private static boolean known(Level level, int cell) {
@@ -238,11 +264,21 @@ public class AgentMinStateBuilder {
 		fillMobState(state, mob, hero, level);
 		state.estimatedDamage = estimatedMobDamage(mob);
 		state.estimatedArmor = 0;
+		DamageRange heroDamage = heroDamageRange(hero);
+		DamageRange heroArmor = heroArmorRange(hero);
+		state.expectedDamageTaken = Math.max(0f, state.estimatedDamage - heroArmor.min);
+		state.expectedTurnsToKill = Math.max(1f, mob.HP / Math.max(1f, heroDamage.max));
+		state.killChance = Math.max(0f, Math.min(1f, heroDamage.max / (float)Math.max(1, mob.HP)));
+		state.meleeDanger = state.distanceToHero <= 1 ? 1f : state.distanceToHero <= 2 ? 0.55f : 0.15f;
 		float hpWeight = Math.max(1, mob.HP) / 5f;
 		float depthWeight = 1f + Dungeon.depth * 0.06f;
 		float distanceWeight = state.distanceToHero <= 1 ? 1.3f : state.distanceToHero <= 3 ? 1.1f : 0.8f;
 		state.threatScore = (state.estimatedDamage * 1.8f + state.ht * 0.18f + hpWeight) * depthWeight * distanceWeight;
-		state.targetPriority = (mob.HP / Math.max(1f, (float) state.estimatedDamage + 1f)) + distanceWeight;
+		state.rangedValue = state.distanceToHero > 1 ? Math.max(0f, Math.min(1f, state.threatScore / 80f + (1f - state.hpRatio) * 0.25f)) : 0.05f;
+		state.targetPriority = (1f - state.hpRatio) * 1.4f
+				+ state.killChance * 1.1f
+				+ Math.min(1.2f, state.threatScore / 80f)
+				+ distanceWeight * 0.25f;
 		return state;
 	}
 
@@ -255,6 +291,8 @@ public class AgentMinStateBuilder {
 		state.hp = mob.HP;
 		state.hpRatio = ratio(mob.HP, mob.HT);
 		state.distanceToHero = level.distance(hero.pos, mob.pos);
+		state.attackDelay = mob.attackDelay();
+		state.speed = mob.speed();
 		state.visible = visible(level, mob.pos);
 		state.alive = mob.isAlive();
 		for (Buff buff : mob.buffs()) {

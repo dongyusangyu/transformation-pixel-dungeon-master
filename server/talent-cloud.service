@@ -1,0 +1,13 @@
+[Unit]
+Description=Transformation Pixel Dungeon talent cloud backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tpd-cloud
+ExecStart=/usr/bin/python3 /opt/tpd-cloud/cloud_backend.py --host 0.0.0.0 --port 44140 --db /opt/tpd-cloud/cloud_data/talent_cloud.sqlite3
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

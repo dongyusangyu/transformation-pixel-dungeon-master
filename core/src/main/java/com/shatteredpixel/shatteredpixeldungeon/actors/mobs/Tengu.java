@@ -191,9 +191,6 @@ public class Tengu extends Mob {
 			});
 			return;
 		}
-        if(src instanceof Mob){
-            enemy=(Char)src;
-        }
 
 		//phase 1 of the fight is over
 		if (state == PrisonBossLevel.State.FIGHT_START && HP <= HT/2){
@@ -264,6 +261,7 @@ public class Tengu extends Mob {
 	}
 	
 	private void jump() {
+
 		
 		//in case tengu hasn't had a chance to act yet
 		if (fieldOfView == null || fieldOfView.length != Dungeon.level.length()){
@@ -366,9 +364,11 @@ public class Tengu extends Mob {
 						((DriedRose.GhostHero) ch).sayBoss();
 					}
 				}
+
 			} else {
 				yell(Messages.get(this, "notice_have", Dungeon.hero.name()));
 			}
+            enemy =hero;
 		}
 	}
 	
@@ -425,6 +425,7 @@ public class Tengu extends Mob {
 				return doAttack( enemy );
 				
 			} else {
+                //return true;
 
 				return handleUnreachableTarget(enemyInFOV, justAlerted);
 			}
@@ -518,8 +519,10 @@ public class Tengu extends Mob {
 	public boolean useAbility(){
 		boolean abilityUsed = false;
 		int abilityToUse = -1;
+
 		
 		while (!abilityUsed){
+
 			
 			if (abilitiesUsed == 0){
 				abilityToUse = BOMB_ABILITY;

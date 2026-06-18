@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetRecorder;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
@@ -700,6 +701,7 @@ public class Item implements Bundlable {
 	}
 	
 	public void cast( final Hero user, final int dst ) {
+		AgentMinDatasetRecorder.onItemCast(this, user, dst);
 		
 		final int cell = throwPos( user, dst );
 		user.sprite.zap( cell );

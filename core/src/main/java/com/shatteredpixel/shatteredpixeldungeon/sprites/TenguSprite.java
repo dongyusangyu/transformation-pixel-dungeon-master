@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.noosa.TextureFilm;
@@ -52,7 +53,7 @@ public class TenguSprite extends MobSprite {
 		die.frames( frames, 8, 9, 10, 10, 10, 10, 10, 10 );
 		
 		play( idle );
-		isMoving = true;
+		isMoving = false;
 	}
 
 	@Override
@@ -68,6 +69,10 @@ public class TenguSprite extends MobSprite {
 
 	@Override
 	public void move( int from, int to ) {
+		if (!SPDSettings.charAnimations()) {
+			super.move( from, to );
+			return;
+		}
 		
 		place( to );
 		

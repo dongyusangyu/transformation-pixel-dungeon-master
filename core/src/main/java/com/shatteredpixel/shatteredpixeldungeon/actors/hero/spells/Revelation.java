@@ -77,17 +77,20 @@ public class Revelation  extends ClericSpell {
         }
         @Override
         public boolean attachTo( Char target ) {
+
+            boolean a=super.attachTo(target);
             if(target==hero){
                 Talent.onTalentUpgraded(hero,null);
             }
-            return super.attachTo(target);
+            return a;
         }
         @Override
         public void detach(){
+
+            super.detach();
             if(target==hero){
                 Talent.onTalentUpgraded(hero,null);
             }
-            super.detach();
         }
 
 

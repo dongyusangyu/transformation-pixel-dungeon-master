@@ -60,15 +60,19 @@ public class TransformSpell extends Spell {
             public void onBackPressed() {}
         } );
     }
+    /*
     @Override
     public int value() {
         return (int)(50 * quantity);
     }
 
+     */
     @Override
     public int energyVal() {
-        return (int)(7 * quantity);
+        return 0;
     }
+
+
 
     public static class Recipe extends com.shatteredpixel.shatteredpixeldungeon.items.Recipe.SimpleRecipe {
 

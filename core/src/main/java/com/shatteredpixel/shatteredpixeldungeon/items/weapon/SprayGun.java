@@ -95,6 +95,7 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
+import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
@@ -322,19 +323,24 @@ public class SprayGun extends Weapon {
     float ins=0;
 
 	private int range(Hero hero) {
-		return hero.subClass.is(HeroSubClass.ALCHEMIST) ? 5 : 4;
+		return 5;
 	}
 
 	private float degrees(Hero hero) {
-		return hero.subClass.is(HeroSubClass.ALCHEMIST) ? 75f : 65f;
+		return 75f;
 	}
+    private Ballistica bolt;
+    private ConeAOE cone;
 
 	private Ballistica sprayTargeting(Hero hero, int target) {
-		Ballistica route = new Ballistica(hero.pos, target, Ballistica.PROJECTILE);
-		if (route.dist > range(hero)) {
-			return new Ballistica(hero.pos, route.path.get(range(hero)), Ballistica.PROJECTILE);
+		bolt = new Ballistica(hero.pos, target, Ballistica.MAGIC_BOLT);
+
+		if (hero.subClass.is(HeroSubClass.ALCHEMIST)) {
+			return bolt=new Ballistica(hero.pos, target, Ballistica.WONT_STOP);
 		}
-		return route;
+
+
+		return bolt;
 	}
 
 	private void loadEnergy(Hero hero) {
@@ -404,10 +410,11 @@ public class SprayGun extends Weapon {
             return;
         }
 		if (hero.subClass.is(HeroSubClass.ALCHEMIST)) {
-			ConeAOE cone = new ConeAOE(aim, dist, degrees(hero), Ballistica.STOP_SOLID | Ballistica.STOP_TARGET);
-            ConeAOE cone1 = new ConeAOE(aim, dist, degrees(hero), Ballistica.WONT_STOP);
-            MagicalFireRoom.EternalFire eternalFire = (MagicalFireRoom.EternalFire)Dungeon.level.blobs.get(MagicalFireRoom.EternalFire.class);
+            dist = 5;
+			cone = new ConeAOE(aim, dist, degrees(hero), Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID);
 
+            MagicalFireRoom.EternalFire eternalFire = (MagicalFireRoom.EternalFire)Dungeon.level.blobs.get(MagicalFireRoom.EternalFire.class);
+            ConeAOE cone1 = new ConeAOE(aim, dist, degrees(hero), Ballistica.WONT_STOP);
             if (eternalFire != null && eternalFire.volume > 0 && loaded!=Loaded.LIQUID_FLAME) {
                 for(int cell:cone1.cells){
                     if(Dungeon.level.distance(hero.pos,cell)<dist){
@@ -461,7 +468,9 @@ public class SprayGun extends Weapon {
 					Char ch = Actor.findChar(cell);
 					if (ch != null && ch != hero) {
 						affectChar(hero, ch, effects);
-					}
+					}else {
+                        Dungeon.level.pressCell(bolt.collisionPos);
+                    }
 					finishSpray(hero, effects);
 				}
 			});
@@ -504,15 +513,41 @@ public class SprayGun extends Weapon {
 		}
 
 		for (int cell : cells) {
+            if(Dungeon.level.map[cell]==Terrain.DOOR)  Dungeon.level.pressCell(cell);
 			for (Loaded effect : effects) {
 				switch (effect) {
 					case FROST:
 						GameScene.add(Blob.seed(cell, 8, Freezing.class));
 						break;
 					case LIQUID_FLAME:
-                        if(Dungeon.level.distance(hero.pos,cell)>1){
+                        ArrayList<Integer> adjacentCells = new ArrayList<>();
+                        if(Dungeon.level.adjacent(bolt.sourcePos, cell)
+                                && !(Dungeon.level.flamable[cell] || Dungeon.level.solid[cell])){
+                            adjacentCells.add(cell);
+                            if (Dungeon.level.heaps.get(cell) != null){
+                                Dungeon.level.heaps.get(cell).burn();
+                            }
+                        }else{
                             GameScene.add(Blob.seed(cell, 2, Fire.class));
+                            Dungeon.level.pressCell(cell);
                             Fire.burn(cell);
+                        }
+                        //if wand was shot right at a wall
+                        if (cone==null || cone.cells.isEmpty()){
+                            adjacentCells.add(bolt.sourcePos);
+                        }
+
+                        //ignite cells that share a side with an adjacent cell, are flammable, and are closer to the collision pos
+                        //This prevents short-range casts not igniting barricades or bookshelves
+                        for (int c : adjacentCells){
+                            for (int i : PathFinder.NEIGHBOURS8){
+                                if (Dungeon.level.trueDistance(cell+i, bolt.collisionPos) < Dungeon.level.trueDistance(cell, bolt.collisionPos)
+                                        && Dungeon.level.flamable[cell+i]
+                                        && Fire.volumeAt(cell+i, Fire.class) == 0){
+                                    Dungeon.level.pressCell(cell);
+                                    GameScene.add( Blob.seed( c+i, 2, Fire.class ) );
+                                }
+                            }
                         }
 
 						break;

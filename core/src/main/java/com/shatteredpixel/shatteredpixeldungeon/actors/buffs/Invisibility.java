@@ -130,7 +130,7 @@ public class Invisibility extends FlavourBuff {
 	public static void dispel(Char ch){
 		boolean hasinvis = false;
 		for ( Buff invis : ch.buffs( Invisibility.class )){
-			if(ch==hero && hero.hasTalent(Talent.CICADA_DANCE) && hero.buff(Talent.EnemyDies.class)!=null){
+			if(hero != null && ch==hero && hero.hasTalent(Talent.CICADA_DANCE) && hero.buff(Talent.EnemyDies.class)!=null){
 
 			}else{
 
@@ -142,10 +142,10 @@ public class Invisibility extends FlavourBuff {
 		if(prep != null){
 			prep.detach();
 		}
-		if(ch==hero && hero.hasTalent(Talent.CICADA_DANCE) && hero.buff(Talent.EnemyDies.class)!= null && hero.subClass.is(HeroSubClass.ASSASSIN)){
+		if(hero != null && ch==hero && hero.hasTalent(Talent.CICADA_DANCE) && hero.buff(Talent.EnemyDies.class)!= null && hero.subClass.is(HeroSubClass.ASSASSIN)){
 			Buff.affect(ch, Preparation.class);
 		}
-		if(hero.buff(Talent.EnemyDies.class)!=null){
+		if(hero != null && hero.buff(Talent.EnemyDies.class)!=null){
 			hero.buff(Talent.EnemyDies.class).detach();
 		}
 

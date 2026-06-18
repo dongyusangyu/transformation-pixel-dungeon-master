@@ -33,7 +33,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
-import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Transmuting;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Pasty;
@@ -70,11 +69,9 @@ import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
-
-import javax.swing.Icon;
 
 public class ScrollOfMetamorphosis extends Scroll {
 	
@@ -85,9 +82,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 		anonymous = true;
 		unique = true;
 	}
-	public int energyVal() {
-		return 1;
-	}
+
 	protected static boolean identifiedByUse = true;
 	public boolean isIdentified() {
 		return true;
@@ -104,48 +99,38 @@ public class ScrollOfMetamorphosis extends Scroll {
 		}
 		GameScene.show(new WndMetamorphChoose());
 	}
-	public  static final String[] NAME_IDS = {
-			"attack",
-			"magic",
-			"effect",
-			"resource",
-			"spell",
-			"assist",
-			"other"
-	};
-	public  static int getType(String name){
-		switch (name){
-			case"attack": default:
-				return Talent.ATTACK;
-			case"magic":
-				return Talent.MAGIC;
-			case"effect":
-				return Talent.EFFECT;
-			case"resource":
-				return Talent.RESOURCE;
-			case"spell":
-				return Talent.SPELL;
-			case"assist":
-				return Talent.ASSIST;
-			case"other":
-				return Talent.OTHER;
 
-
-		}
-
+	public static Talent.TalentType[] commonTypes() {
+		return Talent.COMMON_TYPES;
 	}
 
+    public enum TalentSource {
+        METAMORPHOSIS,
+        TRANSFORM_SPELL,
+        OTHER
+    }
+
 	public static void onMetamorph( Talent oldTalent, Talent newTalent ){
+        onMetamorph(oldTalent, newTalent, TalentSource.METAMORPHOSIS);
+    }
+
+	public static void onMetamorph( Talent oldTalent, Talent newTalent, TalentSource source ){
 		if (curItem instanceof ScrollOfMetamorphosis) {
 			((ScrollOfMetamorphosis) curItem).readAnimation();
 			Sample.INSTANCE.play(Assets.Sounds.READ);
 		}
 		curUser.sprite.emitter().start(Speck.factory(Speck.CHANGE), 0.2f, 10);
 		Transmuting.show(curUser, oldTalent, newTalent);
-		TalentCatalog.countUse(newTalent);
+        if (source == TalentSource.METAMORPHOSIS){
+		    TalentCatalog.countUse(newTalent);
+        } else if (source == TalentSource.TRANSFORM_SPELL){
+            TalentCatalog.countTransformSpellUse(newTalent);
+        }
         Badges.validateTalent(newTalent);
-        Catalog.countUse(ScrollOfMetamorphosis.class);
-        Talent.onScrollUsed(hero,hero.pos,1f, ScrollOfMetamorphosis.class);
+        if (source == TalentSource.METAMORPHOSIS){
+            Catalog.countUse(ScrollOfMetamorphosis.class);
+            Talent.onScrollUsed(hero,hero.pos,1f, ScrollOfMetamorphosis.class);
+        }
 		if (hero.hasTalent(newTalent)) {
 			Talent.onTalentUpgraded(hero, newTalent);
 		}else{
@@ -211,7 +196,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 				for (Talent talent : tier.keySet()) {
 					tier.put(talent, hero.pointsInTalent(talent));
 				}
-				tier.keySet().removeIf(Talent::excludedFromMetamorphosis);
+				tier.keySet().removeIf(Talent::excludedAsMetamorphSource);
 			}
 			if (Dungeon.isChallenged(Challenges.MAX_WHEAT)){
 				for (LinkedHashMap<Talent, Integer> tier : talents) {
@@ -278,7 +263,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 			}
 		}
 
-		public WndMetamorphReplace(Talent replacing, int tier,int type){
+		public WndMetamorphReplace(Talent replacing, int tier, Talent.TalentType preferredType){
 			super();
 
 
@@ -292,10 +277,8 @@ public class ScrollOfMetamorphosis extends Scroll {
 			this.replacing = replacing;
 			this.tier = tier;
 
-
 			LinkedHashMap<Talent, Integer> options = new LinkedHashMap<>();
-			Set<Talent> curTalentsAtTier = hero.talents.get(tier-1).keySet();
-			List<Talent> availableTalents = new ArrayList<>();
+			HashSet<Talent> curTalentsAtTier = new HashSet<>(hero.talents.get(tier-1).keySet());
 			int beilv = 6;
 			if(Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT) && Dungeon.isChallenged(Challenges.MAX_WHEAT)){
 				beilv = 3;
@@ -305,26 +288,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 				beilv *= 2;
                 hero.buff(Pasty.TranCake.class).detach();
 			}
-			int maxTpye = 7;
-			if(type != 4){
-			//if(false){
-				for(int i = 0;i < maxTpye;i++){
-					ArrayList<Talent> typeTalents = Talent.typeTalent.get(tier-1).get(i);
-					for (Talent talent : typeTalents){
-						if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)){
-							availableTalents.add(talent);
-						}
-					}
-				}
-			}
-			for(int i = 0;i < beilv-1;i++){
-				ArrayList<Talent> typeTalents = Talent.typeTalent.get(tier-1).get(type);
-				for (Talent talent : typeTalents){
-					if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)){
-						availableTalents.add(talent);
-					}
-				}
-			}
+			List<Talent> availableTalents = Talent.metamorphCandidatePool(tier, preferredType, curTalentsAtTier, beilv);
 			int cnt=4;
 
 			if(hero.pointsInTalent(Talent.MORE_TALENT)>Random.Int(2)){
@@ -345,6 +309,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 			}
 			for (Talent talent : selectedTalents) {
 				options.put(talent, hero.pointsInTalent(replacing));
+                TalentCatalog.countAppearance(talent);
 			}
 
 			replaceOptions = options;
@@ -430,19 +395,17 @@ public class ScrollOfMetamorphosis extends Scroll {
 
 			boxes = new ArrayList<>();
 
-			for (int i=0; i < 7 ; i++) {
+			for (Talent.TalentType type : ScrollOfMetamorphosis.commonTypes()) {
 
-				final String name = ScrollOfMetamorphosis.NAME_IDS[i];
-
-				RedButton cb = new RedButton( Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, name)) ){
+				RedButton cb = new RedButton( Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, type.messageKey())) ){
 					@Override
 					protected void onClick() {
 						hide();
-						GameScene.show(new ScrollOfMetamorphosis.WndMetamorphReplace(talent, tier,ScrollOfMetamorphosis.getType(name)));
+						GameScene.show(new ScrollOfMetamorphosis.WndMetamorphReplace(talent, tier, type));
 					}
 				};
 
-				if (i > 0) {
+				if (!boxes.isEmpty()) {
 					pos += GAP;
 				}
 				cb.setRect( 0, pos, WIDTH-16, BTN_HEIGHT );
@@ -454,7 +417,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 					@Override
 					protected void onClick() {
 						super.onClick();
-						GameScene.show(new ScrollOfMetamorphosis.WndShowTalent(tier-1,ScrollOfMetamorphosis.getType(name),talent));
+						GameScene.show(new ScrollOfMetamorphosis.WndShowTalent(tier, type, talent));
 					}
 				};
 				info.setRect(cb.right(), pos, 16, BTN_HEIGHT);
@@ -472,7 +435,16 @@ public class ScrollOfMetamorphosis extends Scroll {
 		}
 	}
 
-	public static class WndShowTalent extends Window{
+    @Override
+    public int energyVal() {
+        return 0;
+    }
+    @Override
+    public int value() {
+        return 0;
+    }
+
+    public static class WndShowTalent extends Window{
 		private static final int WIDTH		= 100;
 		private static final int TTL_HEIGHT = 16;
 		private static final int BUTTON_HEIGHT = 26;
@@ -485,12 +457,12 @@ public class ScrollOfMetamorphosis extends Scroll {
 		ScrollPane pane;
 
 
-		public WndShowTalent(int tier, int type,Talent talent0){
+		public WndShowTalent(int tier, Talent.TalentType type, Talent talent0){
 			super();
 
 			float pos = 0;
 
-			IconTitle tfTitle = new IconTitle(new TalentIcon( talent0 ), Messages.get(ScrollOfMetamorphosis.class, ScrollOfMetamorphosis.NAME_IDS[type]));
+			IconTitle tfTitle = new IconTitle(new TalentIcon( talent0 ), Messages.get(ScrollOfMetamorphosis.class, type.messageKey()));
 			tfTitle.setRect(0, pos, WIDTH, 0);
 			add(tfTitle);
 
@@ -504,7 +476,12 @@ public class ScrollOfMetamorphosis extends Scroll {
 
 			pos = tfMesage.bottom() + 2*MARGIN;
 			resize( WIDTH, (int)pos+80);
-			ArrayList<Talent> talents = Talent.typeTalent.get(tier).get(type);
+			List<Talent> talents = new ArrayList<>();
+			for (Talent talent : Talent.talentsByTierAndType(tier, type)) {
+				if (!Talent.forbiddenInCatalogOrMetamorphosis(talent)) {
+					talents.add(talent);
+				}
+			}
 			float x = 0;
 			/*
 			for (Talent talent : talents){

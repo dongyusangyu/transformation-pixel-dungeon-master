@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Necromancer;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
@@ -122,7 +123,12 @@ public class SpectralNecromancerSprite extends MobSprite {
 
 	@Override
 	public void zap(int cell) {
-		super.zap(cell);
+		if (!SPDSettings.charAnimations()) {
+			turnTo(ch.pos, cell);
+			idle();
+		} else {
+			super.zap(cell);
+		}
 		if (ch instanceof Necromancer && ((Necromancer) ch).summoning){
 			if (summoningParticles != null){
 				summoningParticles.on = false;
@@ -131,6 +137,16 @@ public class SpectralNecromancerSprite extends MobSprite {
 			summoningParticles.pour(ShadowParticle.MISSILE, 0.1f);
 			summoningParticles.visible = Dungeon.level.heroFOV[((Necromancer) ch).summoningPos];
 			if (visible || summoningParticles.visible ) Sample.INSTANCE.play( Assets.Sounds.CHARGEUP, 1f, 0.8f );
+		} else if (!SPDSettings.charAnimations()) {
+			callAfterCurrentFrame(new com.watabou.utils.Callback() {
+				@Override
+				public void call() {
+					if (ch instanceof Necromancer) {
+						((Necromancer)ch).onZapComplete();
+					}
+					idle();
+				}
+			});
 		}
 	}
 

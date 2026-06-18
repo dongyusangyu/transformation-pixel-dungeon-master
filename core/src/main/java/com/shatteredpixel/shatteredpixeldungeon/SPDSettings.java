@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.noosa.Game;
@@ -57,6 +58,7 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_GRID 	    = "visual_grid";
 	public static final String KEY_CAMERA_FOLLOW= "camera_follow";
 	public static final String KEY_SCREEN_SHAKE = "screen_shake";
+	public static final String KEY_CHAR_ANIMATIONS = "char_animations";
 	public static final String KEY_GAMES_SORT    = "games_sort";
 
 	public static final String KEY_GAMES_HUNGER   = "games_ui";
@@ -138,6 +140,14 @@ public class SPDSettings extends GameSettings {
 
 	public static int screenShake() {
 		return getInt( KEY_SCREEN_SHAKE, 2, 0, 4 );
+	}
+
+	public static void charAnimations( boolean value ){
+		put( KEY_CHAR_ANIMATIONS, value );
+	}
+
+	public static boolean charAnimations(){
+		return getBoolean( KEY_CHAR_ANIMATIONS, true );
 	}
 	
 	//Interface
@@ -240,9 +250,12 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_LAST_CLASS	= "last_class";
 	public static final String KEY_CHALLENGES	= "challenges";
 	public static final String KEY_SKIN	= "skin";
+	public static final String KEY_SKIN_BY_CLASS	= "skin_by_class";
 	public static final String KEY_CUSTOM_SEED	= "custom_seed";
 	public static final String KEY_LAST_DAILY	= "last_daily";
 	public static final String KEY_INTRO		= "intro";
+	public static final String KEY_CLOUD_DEVICE_ID = "cloud_device_id";
+	public static final String KEY_LEGACY_SAVES_MIGRATED = "legacy_saves_migrated";
 
 	public static final String KEY_SUPPORT_NAGGED= "support_nagged";
 	public static final String KEY_VICTORY_NAGGED= "victory_nagged";
@@ -276,6 +289,70 @@ public class SPDSettings extends GameSettings {
     public static int Skin( ) {
         return getInt( KEY_SKIN, 0, 0, 114 );
     }
+	public static void Skin( HeroClass heroClass, int value ) {
+		if (heroClass == null) {
+			Skin(value);
+			return;
+		}
+		put( KEY_SKIN_BY_CLASS, putSkinValue(skinByClass(), heroClass, value) );
+	}
+	public static int Skin( HeroClass heroClass ) {
+		if (heroClass == null) {
+			return Skin();
+		}
+		return skinValue(skinByClass(), heroClass);
+	}
+
+	private static String skinByClass() {
+		return getString( KEY_SKIN_BY_CLASS, "" );
+	}
+
+	private static int skinValue( String values, HeroClass heroClass ) {
+		String key = heroClass.name();
+		for (String entry : values.split(",")) {
+			int split = entry.indexOf(':');
+			if (split <= 0) {
+				continue;
+			}
+			if (entry.substring(0, split).equals(key)) {
+				try {
+					return Integer.parseInt(entry.substring(split + 1));
+				} catch (NumberFormatException ignored) {
+					return 0;
+				}
+			}
+		}
+		return 0;
+	}
+
+	private static String putSkinValue( String values, HeroClass heroClass, int value ) {
+		String key = heroClass.name();
+		StringBuilder result = new StringBuilder();
+		boolean written = false;
+		for (String entry : values.split(",")) {
+			int split = entry.indexOf(':');
+			if (split <= 0) {
+				continue;
+			}
+			String entryKey = entry.substring(0, split);
+			if (result.length() > 0) {
+				result.append(',');
+			}
+			if (entryKey.equals(key)) {
+				result.append(key).append(':').append(value);
+				written = true;
+			} else {
+				result.append(entry);
+			}
+		}
+		if (!written) {
+			if (result.length() > 0) {
+				result.append(',');
+			}
+			result.append(key).append(':').append(value);
+		}
+		return result.toString();
+	}
 	
 	public static int challenges() {
 		return getInt( KEY_CHALLENGES, 0, 0, Challenges.MAX_VALUE );
@@ -287,6 +364,22 @@ public class SPDSettings extends GameSettings {
 
 	public static String customSeed() {
 		return getString( KEY_CUSTOM_SEED, "", 20);
+	}
+
+	public static void cloudDeviceID( String value ){
+		put( KEY_CLOUD_DEVICE_ID, value );
+	}
+
+	public static String cloudDeviceID() {
+		return getString( KEY_CLOUD_DEVICE_ID, null );
+	}
+
+	public static void legacySavesMigrated( boolean value ){
+		put( KEY_LEGACY_SAVES_MIGRATED, value );
+	}
+
+	public static boolean legacySavesMigrated() {
+		return getBoolean( KEY_LEGACY_SAVES_MIGRATED, false );
 	}
 
 	public static void seedFinderThreshold( int value ) {

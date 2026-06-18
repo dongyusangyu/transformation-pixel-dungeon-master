@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.noosa.Image;
@@ -40,7 +41,7 @@ public class AdrenalineSurge extends Buff {
 	public void reset(int boost, float interval){
 		this.boost = boost;
 		this.interval = interval;
-		spend(interval - cooldown());
+		spend(BronzeWatch.adjustDuration(target, interval) - cooldown());
 	}
 
 	public void delay( float value ){
@@ -55,7 +56,7 @@ public class AdrenalineSurge extends Buff {
 	public boolean act() {
 		boost --;
 		if (boost > 0){
-			spend( interval );
+			spend(BronzeWatch.adjustDuration(target, interval));
 		} else {
 			detach();
 		}

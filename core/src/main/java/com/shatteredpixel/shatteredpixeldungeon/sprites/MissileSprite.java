@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyLance;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Sacred_Blade;
@@ -43,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingSp
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
+import com.watabou.noosa.Game;
 import com.watabou.noosa.Visual;
 import com.watabou.noosa.tweeners.PosTweener;
 import com.watabou.noosa.tweeners.Tweener;
@@ -64,6 +66,10 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 	}
 
 	public void reset( Visual from, int to, Item item, Callback listener ) {
+		if (!SPDSettings.charAnimations() && from instanceof CharSprite) {
+			completeInstantly(listener);
+			return;
+		}
 		reset(from.center(),
 				Dungeon.level.solid[to] ? DungeonTilemap.raisedTileCenterToWorld(to) : DungeonTilemap.raisedTileCenterToWorld(to),
 				item, listener );
@@ -76,6 +82,10 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 	}
 
 	public void reset( Visual from, Visual to, Item item, Callback listener ) {
+		if (!SPDSettings.charAnimations() && from instanceof CharSprite) {
+			completeInstantly(listener);
+			return;
+		}
 		reset(from.center(), to.center(), item, listener );
 	}
 
@@ -89,6 +99,18 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 				to,
 				item,
 				listener );
+	}
+
+	private void completeInstantly(final Callback listener) {
+		kill();
+		if (listener != null) {
+			Game.runOnRenderThread(new Callback() {
+				@Override
+				public void call() {
+					listener.call();
+				}
+			});
+		}
 	}
 	
 	private static final int DEFAULT_ANGULAR_SPEED = 720;

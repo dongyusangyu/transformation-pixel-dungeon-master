@@ -29,9 +29,9 @@ import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 public class TestTalent  extends TestGenerator {
     {
@@ -49,35 +49,6 @@ public class TestTalent  extends TestGenerator {
             GameScene.show(new WndMetamorphChoose());
         }
     }
-    public  static final String[] NAME_IDS = {
-            "attack",
-            "magic",
-            "effect",
-            "resource",
-            "spell",
-            "assist",
-            "other"
-    };
-    public  static int getType(String name){
-        switch (name){
-            case"attack": default:
-                return Talent.ATTACK;
-            case"magic":
-                return Talent.MAGIC;
-            case"effect":
-                return Talent.EFFECT;
-            case"resource":
-                return Talent.RESOURCE;
-            case"spell":
-                return Talent.SPELL;
-            case"assist":
-                return Talent.ASSIST;
-            case"other":
-                return Talent.OTHER;
-        }
-
-    }
-
     public static class WndMetamorphChoose extends Window {
 
         public static WndMetamorphChoose INSTANCE;
@@ -113,7 +84,7 @@ public class TestTalent  extends TestGenerator {
                 for (Talent talent : tier.keySet()) {
                     tier.put(talent, hero.pointsInTalent(talent));
                 }
-                tier.keySet().removeIf(Talent::excludedFromMetamorphosis);
+                tier.keySet().removeIf(Talent::excludedAsMetamorphSource);
             }
 
 
@@ -174,25 +145,15 @@ public class TestTalent  extends TestGenerator {
             }
         }
 
-        public WndMetamorphReplace(Talent replacing, int tier,int type){
+        public WndMetamorphReplace(Talent replacing, int tier, Talent.TalentType preferredType){
             super();
             INSTANCE = this;
             this.replacing = replacing;
             this.tier = tier;
 
             LinkedHashMap<Talent, Integer> options = new LinkedHashMap<>();
-            Set<Talent> curTalentsAtTier = hero.talents.get(tier-1).keySet();
-            List<Talent> availableTalents = Talent.typeTalent.get(tier-1).get(type);
-
-
-            List<Talent> selectedTalents = new ArrayList<>();
-            for(Talent talent :availableTalents){
-                if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)){
-                    selectedTalents.add(talent);
-                }
-            }
-
-            for (Talent talent : selectedTalents) {
+            HashSet<Talent> curTalentsAtTier = new HashSet<>(hero.talents.get(tier-1).keySet());
+            for (Talent talent : typedMetamorphOptions(tier, preferredType, curTalentsAtTier)) {
                 options.put(talent, hero.pointsInTalent(replacing));
             }
 
@@ -286,6 +247,16 @@ public class TestTalent  extends TestGenerator {
         }
     }
 
+    private static List<Talent> typedMetamorphOptions(int tier, Talent.TalentType preferredType, HashSet<Talent> curTalentsAtTier) {
+        ArrayList<Talent> options = new ArrayList<>();
+        for (Talent talent : Talent.talentsByTierAndType(tier, preferredType)) {
+            if (!curTalentsAtTier.contains(talent) && !Talent.excludedFromMetamorphosis(talent)) {
+                options.add(talent);
+            }
+        }
+        return options;
+    }
+
 
     public static class WndType extends Window {
 
@@ -320,19 +291,17 @@ public class TestTalent  extends TestGenerator {
 
             boxes = new ArrayList<>();
 
-            for (int i=0; i < 7 ; i++) {
+            for (Talent.TalentType type : ScrollOfMetamorphosis.commonTypes()) {
 
-                final String name = ScrollOfMetamorphosis.NAME_IDS[i];
-
-                RedButton cb = new RedButton( Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, name)) ){
+                RedButton cb = new RedButton( Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, type.messageKey())) ){
                     @Override
                     protected void onClick() {
                         hide();
-                        GameScene.show(new WndMetamorphReplace(talent, tier,ScrollOfMetamorphosis.getType(name)));
+                        GameScene.show(new WndMetamorphReplace(talent, tier, type));
                     }
                 };
 
-                if (i > 0) {
+                if (!boxes.isEmpty()) {
                     pos += GAP;
                 }
                 cb.setRect( 0, pos, WIDTH, BTN_HEIGHT );
@@ -344,7 +313,7 @@ public class TestTalent  extends TestGenerator {
                     @Override
                     protected void onClick() {
                         super.onClick();
-                        GameScene.show(new WndShowTalent(tier-1,ScrollOfMetamorphosis.getType(name),talent));
+                        GameScene.show(new WndShowTalent(tier, type, talent));
                     }
                 };
                 info.setRect(cb.right(), pos, 16, BTN_HEIGHT);
@@ -376,12 +345,12 @@ public class TestTalent  extends TestGenerator {
         private ArrayList<RedButton> boxes;
 
 
-        public WndShowTalent(int tier, int type,Talent talent0){
+        public WndShowTalent(int tier, Talent.TalentType type, Talent talent0){
             super();
 
             float pos = 0;
 
-            IconTitle tfTitle = new IconTitle(new TalentIcon( talent0 ), Messages.get(ScrollOfMetamorphosis.class, ScrollOfMetamorphosis.NAME_IDS[type]));
+            IconTitle tfTitle = new IconTitle(new TalentIcon( talent0 ), Messages.get(ScrollOfMetamorphosis.class, type.messageKey()));
             tfTitle.setRect(0, pos, WIDTH, 0);
             add(tfTitle);
 
@@ -395,7 +364,12 @@ public class TestTalent  extends TestGenerator {
 
             pos = tfMesage.bottom() + 2*MARGIN;
             resize( WIDTH, (int)pos+80);
-            ArrayList<Talent> talents = Talent.typeTalent.get(tier).get(type);
+            List<Talent> talents = new ArrayList<>();
+            for (Talent talent : Talent.talentsByTierAndType(tier, type)) {
+                if (!Talent.forbiddenInCatalogOrMetamorphosis(talent)) {
+                    talents.add(talent);
+                }
+            }
             float x = 0;
             ScrollingGridPane pane = new ScrollingGridPane();
             add(pane);

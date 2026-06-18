@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -365,6 +366,17 @@ public class DwarfKing extends Mob {
 		return true;
 	}
 
+	private void removeSubjectForPhaseChange(Mob mob) {
+		if (SPDSettings.charAnimations()) {
+			mob.die(null);
+		} else {
+			mob.destroy();
+			if (mob.sprite != null) {
+				mob.sprite.killAndErase();
+			}
+		}
+	}
+
 	private HashSet<Mob> getSubjects(){
 		HashSet<Mob> subjects = new HashSet<>();
 		for (Mob m : Dungeon.level.mobs){
@@ -548,7 +560,7 @@ public class DwarfKing extends Mob {
 				}
 				Bestiary.skipCountingEncounters = true;
 				for (Mob m : getSubjects()) {
-					m.die(null);
+					removeSubjectForPhaseChange(m);
 				}
 				Bestiary.skipCountingEncounters = false;
 				for (Buff b: buffs()){

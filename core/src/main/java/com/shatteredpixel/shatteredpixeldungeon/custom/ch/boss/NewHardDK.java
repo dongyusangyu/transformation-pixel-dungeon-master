@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
@@ -479,7 +480,7 @@ public class NewHardDK extends Boss{
             Buff.affect(this, BlobImmunity.class, 30f);
             for(Mob m: Dungeon.level.mobs.toArray(new Mob[0])){
                 if(m instanceof HDKSummon.HDKStatue){
-                    m.die(null);
+                    removeSummonForPhaseChange(m, null);
                 }
             }
             Buff.affect(this, HDKBuff.MustPhysicalAtk.class);
@@ -487,7 +488,7 @@ public class NewHardDK extends Boss{
             GLog.w(M.L(this, "hint_phase_2"));
             for(Mob m:Dungeon.level.mobs.toArray(new Mob[0])){
                 if(m instanceof HDKSummon.HDKStatue){
-                    m.die(NewHardDK.class);
+                    removeSummonForPhaseChange(m, NewHardDK.class);
                 }
             }
         }else if(phase == 2){
@@ -501,7 +502,7 @@ public class NewHardDK extends Boss{
             Buff.affect(this, IgnoreArmor.class, 9999f);
             for(Mob m:Dungeon.level.mobs.toArray(new Mob[0])){
                 if(isSummonedMob(m)){
-                    m.die(null);
+                    removeSummonForPhaseChange(m, null);
                 }
             }
             VirtualActor.delay(5.1f);
@@ -517,14 +518,14 @@ public class NewHardDK extends Boss{
         }else if(phase == 3){
             for(Mob m:Dungeon.level.mobs.toArray(new Mob[0])){
                 if(isSummonedMob(m)){
-                    m.die(null);
+                    removeSummonForPhaseChange(m, null);
                 }
             }
             Buff.detach(this, HDKBuff.HDKSummoning.class);
             phase = 4;
             for(Mob m:Dungeon.level.mobs.toArray(new Mob[0])){
                 if(m instanceof HDKSummon.HDKStatue){
-                    m.die(NewHardDK.class);
+                    removeSummonForPhaseChange(m, NewHardDK.class);
                 }
             }
             backToStay(2);
@@ -547,6 +548,17 @@ public class NewHardDK extends Boss{
             summonSingle(3, 5);
             summonSingle(3, 6);
             yell(M.L(this, "phase_3_done", Dungeon.hero.name()));
+        }
+    }
+
+    private void removeSummonForPhaseChange(Mob mob, Object cause){
+        if (SPDSettings.charAnimations()) {
+            mob.die(cause);
+        } else {
+            mob.destroy();
+            if (mob.sprite != null) {
+                mob.sprite.killAndErase();
+            }
         }
     }
 

@@ -41,6 +41,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.SaveManager;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.services.cloud.CloudSyncService;
 import com.shatteredpixel.shatteredpixeldungeon.services.news.News;
 import com.shatteredpixel.shatteredpixeldungeon.services.updates.Updates;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -241,6 +242,7 @@ public class WndSettings extends WndTabbed {
 		OptionSlider optVisGrid;
 		OptionSlider optFollowIntensity;
 		OptionSlider optScreenShake;
+		CheckBox chkCharAnimations;
 
 
 		@Override
@@ -360,6 +362,15 @@ public class WndSettings extends WndTabbed {
 			optScreenShake.setSelectedValue(SPDSettings.screenShake());
 			add(optScreenShake);
 
+			chkCharAnimations = new CheckBox(Messages.get(this, "char_animations")) {
+				@Override
+				protected void onClick() {
+					super.onClick();
+					SPDSettings.charAnimations(checked());
+				}
+			};
+			chkCharAnimations.checked(SPDSettings.charAnimations());
+			add(chkCharAnimations);
 
 		}
 
@@ -408,6 +419,7 @@ public class WndSettings extends WndTabbed {
 
 				optFollowIntensity.setRect(0, optVisGrid.bottom() + GAP, width/2-GAP/2, SLIDER_HEIGHT);
 				optScreenShake.setRect(optFollowIntensity.right() + GAP, optFollowIntensity.top(), width/2-GAP/2, SLIDER_HEIGHT);
+				chkCharAnimations.setRect(0, optScreenShake.bottom() + GAP, width, BTN_HEIGHT);
 
 			} else {
 				optBrightness.setRect(0, bottom + GAP, width, SLIDER_HEIGHT);
@@ -415,10 +427,11 @@ public class WndSettings extends WndTabbed {
 
 				optFollowIntensity.setRect(0, optVisGrid.bottom() + GAP, width, SLIDER_HEIGHT);
 				optScreenShake.setRect(0, optFollowIntensity.bottom() + GAP, width, SLIDER_HEIGHT);
+				chkCharAnimations.setRect(0, optScreenShake.bottom() + GAP, width, BTN_HEIGHT);
 
 			}
 
-			height = optScreenShake.bottom();
+			height = chkCharAnimations.bottom();
 		}
 
 	}
@@ -872,10 +885,10 @@ public class WndSettings extends WndTabbed {
 
 		RenderedTextBlock title;
 		ColorBlock sep1;
-		CheckBox chkNews;
+		RedButton btnUploadData;
+		RedButton btnSyncData;
 		CheckBox chkUpdates;
 		CheckBox chkBetas;
-		CheckBox chkWifi;
 		RedButton btnExportData;
 		RedButton btnImportData;
 		ColorBlock sep2;
@@ -898,16 +911,31 @@ public class WndSettings extends WndTabbed {
 			sep1 = new ColorBlock(1, 1, 0xFF000000);
 			add(sep1);
 
-			chkNews = new CheckBox(Messages.get(this, "news")){
+			btnUploadData = new RedButton(Messages.get(this, "upload_data")){
 				@Override
 				protected void onClick() {
 					super.onClick();
-					SPDSettings.news(checked());
-					News.clearArticles();
+					enable(false);
+					text(Messages.get(DataTab.class, "cloud_working"));
+					CloudSyncService.uploadLocalData(new CloudSyncService.Callback() {
+						@Override
+						public void onSuccess() {
+							enable(true);
+							text(Messages.get(DataTab.class, "upload_data"));
+							parent.add(new WndMessage(Messages.get(DataTab.class, "upload_success")));
+						}
+
+						@Override
+						public void onFailure() {
+							enable(true);
+							text(Messages.get(DataTab.class, "upload_data"));
+							parent.add(new WndMessage(Messages.get(DataTab.class, "upload_failed")));
+						}
+					});
 				}
 			};
-			chkNews.checked(SPDSettings.news());
-			add(chkNews);
+			btnUploadData.icon(Icons.get(Icons.COPY));
+			add(btnUploadData);
 
 			if (Updates.supportsUpdates() && Updates.supportsUpdatePrompts()) {
 				chkUpdates = new CheckBox(Messages.get(this, "updates")) {
@@ -935,17 +963,31 @@ public class WndSettings extends WndTabbed {
 				}
 			}
 
-			if (!DeviceCompat.isDesktop()){
-				chkWifi = new CheckBox(Messages.get(this, "wifi")){
-					@Override
-					protected void onClick() {
-						super.onClick();
-						SPDSettings.WiFi(checked());
-					}
-				};
-				chkWifi.checked(SPDSettings.WiFi());
-				add(chkWifi);
-			}
+			btnSyncData = new RedButton(Messages.get(this, "sync_data")){
+				@Override
+				protected void onClick() {
+					super.onClick();
+					enable(false);
+					text(Messages.get(DataTab.class, "cloud_working"));
+					CloudSyncService.syncServerData(new CloudSyncService.Callback() {
+						@Override
+						public void onSuccess() {
+							enable(true);
+							text(Messages.get(DataTab.class, "sync_data"));
+							parent.add(new WndMessage(Messages.get(DataTab.class, "sync_success")));
+						}
+
+						@Override
+						public void onFailure() {
+							enable(true);
+							text(Messages.get(DataTab.class, "sync_data"));
+							parent.add(new WndMessage(Messages.get(DataTab.class, "sync_failed")));
+						}
+					});
+				}
+			};
+			btnSyncData.icon(Icons.get(Icons.PASTE));
+			//add(btnSyncData);
 
 			sep2 = new ColorBlock(1, 1, 0xFF000000);
 			add(sep2);
@@ -1045,14 +1087,14 @@ public class WndSettings extends WndTabbed {
 
 			float pos;
 			if (width > 200 && chkUpdates != null){
-				chkNews.setRect(0, sep1.y + 1 + GAP, width/2-1, BTN_HEIGHT);
-				chkUpdates.setRect(chkNews.right() + GAP, chkNews.top(), width/2-1, BTN_HEIGHT);
+				btnUploadData.setRect(0, sep1.y + 1 + GAP, width/2-1, BTN_HEIGHT);
+				chkUpdates.setRect(btnUploadData.right() + GAP, btnUploadData.top(), width/2-1, BTN_HEIGHT);
 				pos = chkUpdates.bottom();
 			} else {
-				chkNews.setRect(0, sep1.y + 1 + GAP, width, BTN_HEIGHT);
-				pos = chkNews.bottom();
+				btnUploadData.setRect(0, sep1.y + 1 + GAP, width, BTN_HEIGHT);
+				pos = btnUploadData.bottom();
 				if (chkUpdates != null) {
-					chkUpdates.setRect(0, chkNews.bottom() + GAP, width, BTN_HEIGHT);
+					chkUpdates.setRect(0, btnUploadData.bottom() + GAP, width, BTN_HEIGHT);
 					pos = chkUpdates.bottom();
 				}
 			}
@@ -1062,10 +1104,8 @@ public class WndSettings extends WndTabbed {
 				pos = chkBetas.bottom();
 			}
 
-			if (chkWifi != null){
-				chkWifi.setRect(0, pos + GAP, width, BTN_HEIGHT);
-				pos = chkWifi.bottom();
-			}
+			//btnSyncData.setRect(0, pos + GAP, width, BTN_HEIGHT);
+			//pos = btnSyncData.bottom();
 
 			sep2.size(width, 1);
 			sep2.y = pos + GAP;

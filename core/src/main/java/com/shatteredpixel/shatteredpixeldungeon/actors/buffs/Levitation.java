@@ -51,6 +51,7 @@ public class Levitation extends FlavourBuff {
 			if(hero !=null && target instanceof Hero && hero.pointsNegative(Talent.UPDRAFT)>1 && target.buffs(Burning.class).isEmpty()){
 				Buff.affect(hero, Burning.class).reignite(hero,DURATION);
 			}
+
 			return true;
 		} else {
 			return false;
@@ -61,6 +62,9 @@ public class Levitation extends FlavourBuff {
 	public void detach() {
 		target.flying = false;
 		super.detach();
+        if(hero !=null && target instanceof Hero && hero.pointsNegative(Talent.HANDON_GROUND)>1 && target.buffs(Burning.class).isEmpty()){
+            Buff.affect(hero, Bleeding.class).set(0.1f*target.HP*hero.pointsNegative(Talent.HANDON_GROUND));
+        }
 		//only press tiles if we're current in the game screen
 		if (ShatteredPixelDungeon.scene() instanceof GameScene) {
 			Dungeon.level.occupyCell(target );
