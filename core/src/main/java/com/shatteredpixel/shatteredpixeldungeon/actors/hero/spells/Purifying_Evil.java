@@ -62,7 +62,7 @@ public class Purifying_Evil extends TargetedClericSpell{
         for (Buff b : ch.buffs()){
             if (b.type == Buff.buffType.POSITIVE
                     && !(b instanceof AllyBuff)
-                    && !(b instanceof LostInventory)){
+                    && !(b instanceof LostInventory) && !(b instanceof ChampionEnemy)){
                 b.detach();
             }
             if(hero.pointsInTalent(Talent.PURIFYING_EVIL)>1 && b instanceof ChampionEnemy){
