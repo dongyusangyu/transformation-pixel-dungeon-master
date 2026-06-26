@@ -39,7 +39,7 @@ public class ReasonDose  extends ArmorAbility {
         }
 
         if (hero.hasTalent(Talent.CALM_DOSE)) {
-            PotionOfCleansing.cleanse(hero, calmDoseDuration(hero)-1);
+            PotionOfCleansing.cleanse(hero, calmDoseDuration(hero)-1, false);
         }
 
         armor.charge -= chargeUse;

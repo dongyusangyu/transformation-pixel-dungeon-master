@@ -610,7 +610,7 @@ public abstract class Elemental extends Mob {
 	}
 	
 	public static Class<? extends Elemental> random(){
-		float altChance = 1/50f * RatSkull.exoticChanceMultiplier();
+		float altChance = Dungeon.hero != null && Dungeon.hero.randomMode ? 0.2f * RatSkull.exoticChanceMultiplier() : 1/50f * RatSkull.exoticChanceMultiplier();
 		if (Random.Float() < altChance){
 			return ChaosElemental.class;
 		}

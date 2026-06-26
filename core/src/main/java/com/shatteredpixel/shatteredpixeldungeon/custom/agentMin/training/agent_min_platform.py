@@ -52,6 +52,12 @@ class AgentMinObservation:
     history_matrix: Tensor
     action_matrix: Tensor
     action_mask: Tensor
+    monitor_item_mask: Tensor
+    monitor_cell_mask: Tensor
+    monitor_option_mask: Tensor
+    skill_mask: Tensor
+    action_skill_mask: Tensor
+    forced_skill: Tensor | None = None
     pending_reward: float = 0.0
     episode_reward: float = 0.0
 
@@ -72,6 +78,12 @@ class AgentMinObservation:
             "history_matrix": batched(self.history_matrix),
             "action_matrix": batched(self.action_matrix),
             "action_mask": batched(self.action_mask),
+            "monitor_item_mask": batched(self.monitor_item_mask),
+            "monitor_cell_mask": batched(self.monitor_cell_mask),
+            "monitor_option_mask": batched(self.monitor_option_mask),
+            "skill_mask": batched(self.skill_mask),
+            "action_skill_mask": batched(self.action_skill_mask),
+            "forced_skill": batched(self.forced_skill if self.forced_skill is not None else torch.full((), -1, dtype=torch.long)),
         }
 
 
@@ -98,7 +110,17 @@ class ObservationValidator:
             "history_matrix": obs.history_matrix.ndim == 2,
             "action_matrix": obs.action_matrix.ndim == 2,
             "action_mask": obs.action_mask.ndim == 1,
+            "monitor_item_mask": obs.monitor_item_mask.ndim == 1,
+            "monitor_cell_mask": obs.monitor_cell_mask.ndim == 1,
+            "monitor_option_mask": obs.monitor_option_mask.ndim == 1,
+            "skill_mask": obs.skill_mask.ndim == 1,
+            "action_skill_mask": obs.action_skill_mask.ndim == 2,
             "action_rows_match": obs.action_matrix.shape[0] == obs.action_mask.shape[0],
+            "monitor_rows_match": obs.monitor_item_mask.shape[0] == obs.inventory_matrix.shape[0],
+            "monitor_cell_rows_match": obs.monitor_cell_mask.shape[0] == 31 * 31,
+            "skill_rows_match": obs.action_skill_mask.shape[0] == obs.skill_mask.shape[0],
+            "skill_action_cols_match": obs.action_skill_mask.shape[1] == obs.action_mask.shape[0],
+            "forced_skill_scalar": obs.forced_skill is None or obs.forced_skill.ndim == 0,
         }
         failed = [name for name, ok in checks.items() if not ok]
         if failed:
@@ -111,6 +133,8 @@ class ObservationValidator:
             raise ValueError("Invalid AgentMin observation: explored_global_matrix must be 127x127")
         if obs.action_mask.sum().item() <= 0:
             raise ValueError("Invalid AgentMin observation: action_mask has no valid action")
+        if obs.skill_mask.sum().item() <= 0:
+            raise ValueError("Invalid AgentMin observation: skill_mask has no valid skill")
 
 
 def build_rollout(transitions: list[dict[str, Tensor | float | bool]], returns: Tensor, advantages: Tensor) -> RolloutBatch:
@@ -126,7 +150,20 @@ def build_rollout(transitions: list[dict[str, Tensor | float | bool]], returns: 
         history_matrix=torch.cat([t["history_matrix"].detach().cpu() for t in transitions], dim=0),
         action_matrix=torch.cat([t["action_matrix"].detach().cpu() for t in transitions], dim=0),
         action_mask=torch.cat([t["action_mask"].detach().cpu() for t in transitions], dim=0),
+        monitor_item_mask=torch.cat([t["monitor_item_mask"].detach().cpu() for t in transitions], dim=0),
+        monitor_cell_mask=torch.cat([t["monitor_cell_mask"].detach().cpu() for t in transitions], dim=0),
+        monitor_option_mask=torch.cat([t["monitor_option_mask"].detach().cpu() for t in transitions], dim=0),
+        skill_mask=torch.cat([t["skill_mask"].detach().cpu() for t in transitions], dim=0),
+        action_skill_mask=torch.cat([t["action_skill_mask"].detach().cpu() for t in transitions], dim=0),
+        forced_skill=torch.cat([t["forced_skill"].detach().view(1).cpu() for t in transitions], dim=0),
         actions=torch.cat([t["action"].detach().view(1).cpu() for t in transitions], dim=0),
+        skills=torch.cat([t["skill"].detach().view(1).cpu() for t in transitions], dim=0),
+        heads=torch.cat([t["head"].detach().view(1).cpu() for t in transitions], dim=0),
+        talent_target_embeddings=torch.cat([t["talent_target_embedding"].detach().cpu() for t in transitions], dim=0),
+        talent_target_types=torch.cat([t["talent_target_type"].detach().view(1).cpu() for t in transitions], dim=0),
+        monitor_item_rows=torch.cat([t["monitor_item_row"].detach().view(1).cpu() for t in transitions], dim=0),
+        monitor_cell_indices=torch.cat([t["monitor_cell_index"].detach().view(1).cpu() for t in transitions], dim=0),
+        monitor_option_indices=torch.cat([t["monitor_option_index"].detach().view(1).cpu() for t in transitions], dim=0),
         old_log_probs=torch.cat([t["log_prob"].detach().view(1).cpu() for t in transitions], dim=0),
         returns=returns.detach().cpu(),
         advantages=advantages.detach().cpu(),
@@ -146,7 +183,20 @@ def move_rollout_to_device(rollout: RolloutBatch, device: torch.device) -> Rollo
         history_matrix=rollout.history_matrix.to(device),
         action_matrix=rollout.action_matrix.to(device),
         action_mask=rollout.action_mask.to(device),
+        monitor_item_mask=rollout.monitor_item_mask.to(device),
+        monitor_cell_mask=rollout.monitor_cell_mask.to(device),
+        monitor_option_mask=rollout.monitor_option_mask.to(device),
+        skill_mask=rollout.skill_mask.to(device),
+        action_skill_mask=rollout.action_skill_mask.to(device),
+        forced_skill=rollout.forced_skill.to(device),
         actions=rollout.actions.to(device),
+        skills=rollout.skills.to(device),
+        heads=rollout.heads.to(device),
+        talent_target_embeddings=rollout.talent_target_embeddings.to(device),
+        talent_target_types=rollout.talent_target_types.to(device),
+        monitor_item_rows=rollout.monitor_item_rows.to(device),
+        monitor_cell_indices=rollout.monitor_cell_indices.to(device),
+        monitor_option_indices=rollout.monitor_option_indices.to(device),
         old_log_probs=rollout.old_log_probs.to(device),
         returns=rollout.returns.to(device),
         advantages=rollout.advantages.to(device),
@@ -176,6 +226,7 @@ class AgentMinRuntime:
             history_features=obs.history_matrix.shape[1],
             action_rows=obs.action_matrix.shape[0],
             action_features=obs.action_matrix.shape[1],
+            skill_count=obs.skill_mask.shape[0],
         )
         self.model = AgentMinActorCritic(cfg).to(self.device)
         self.trainer = PPOTrainer(self.model, PPOConfig(epochs=1, minibatch_size=8))
@@ -207,7 +258,7 @@ class AgentMinRuntime:
         last_value = torch.zeros(())
         returns, advantages = compute_gae(rewards, values, dones, last_value)
 
-        rollout = move_rollout_to_device(build_rollout(transitions, returns, advantages), self.device)
+        rollout = build_rollout(transitions, returns, advantages)
         return self.trainer.update(rollout)
 
 
@@ -252,21 +303,33 @@ class MockDungeonAdapter:
         return obs, reward, done, info
 
     def _make_observation(self, pending_reward: float) -> AgentMinObservation:
-        level = torch.rand(19, self.height, self.width)
+        cfg = AgentMinModelConfig()
+        level = torch.rand(cfg.level_channels - 1, self.height, self.width)
         explored_global = torch.zeros(127, 127)
         explored_global[63, 63] = 1.0
         agent_visited = torch.zeros(self.height, self.width)
         agent_visited[:min(self.step_id + 1, self.height), 0] = 1.0
-        hero = torch.rand(32)
+        hero = torch.rand(cfg.full_hero_dim)
         hero[7] = self.hp_ratio
-        inventory = torch.rand(80, 32) * 0.2
-        inventory_summary = torch.rand(24)
-        option_vector = torch.rand(8)
-        mobs = torch.rand(32, 28) * 0.2
-        actions = torch.rand(96, 40) * 0.3
-        mask = torch.zeros(96)
+        inventory = torch.rand(cfg.inventory_rows, cfg.inventory_features) * 0.2
+        inventory_summary = torch.rand(cfg.inventory_summary_dim)
+        option_vector = torch.rand(cfg.option_dim)
+        mobs = torch.rand(cfg.mob_rows, cfg.mob_features) * 0.2
+        actions = torch.rand(cfg.action_rows, cfg.action_features) * 0.3
+        mask = torch.zeros(cfg.action_rows)
+        monitor_item_mask = torch.zeros(cfg.inventory_rows)
+        monitor_item_mask[:8] = 1.0
+        monitor_cell_mask = torch.ones(31 * 31)
+        monitor_option_mask = torch.zeros(32)
+        monitor_option_mask[:4] = 1.0
         valid_count = 8 + min(self.step_id, 12)
         mask[:valid_count] = 1.0
+        skill_mask = torch.zeros(cfg.skill_count)
+        action_skill_mask = torch.zeros(cfg.skill_count, cfg.action_rows)
+        for action in range(valid_count):
+            skill = action % cfg.skill_count
+            skill_mask[skill] = 1.0
+            action_skill_mask[skill, action] = 1.0
         return AgentMinObservation(
             level_tensor=level,
             explored_global_matrix=explored_global,
@@ -279,6 +342,12 @@ class MockDungeonAdapter:
             history_matrix=self.history.clone(),
             action_matrix=actions,
             action_mask=mask,
+            monitor_item_mask=monitor_item_mask,
+            monitor_cell_mask=monitor_cell_mask,
+            monitor_option_mask=monitor_option_mask,
+            skill_mask=skill_mask,
+            action_skill_mask=action_skill_mask,
+            forced_skill=torch.full((), -1, dtype=torch.long),
             pending_reward=pending_reward,
             episode_reward=self.episode_reward,
         )
@@ -312,6 +381,13 @@ def run_one_round(args: argparse.Namespace) -> int:
                 {
                     **batch,
                     "action": action_out["action"].detach().cpu(),
+                    "skill": action_out["skill"].detach().cpu(),
+                    "head": action_out["head"].detach().cpu(),
+                    "talent_target_embedding": action_out["talent_target_embedding"].detach().cpu(),
+                    "talent_target_type": action_out["talent_target_type"].detach().cpu(),
+                    "monitor_item_row": action_out["monitor_item_row"].detach().cpu(),
+                    "monitor_cell_index": action_out["monitor_cell_index"].detach().cpu(),
+                    "monitor_option_index": action_out["monitor_option_index"].detach().cpu(),
                     "log_prob": action_out["log_prob"].detach().cpu(),
                     "value": action_out["value"].detach().cpu(),
                     "reward": float(reward),

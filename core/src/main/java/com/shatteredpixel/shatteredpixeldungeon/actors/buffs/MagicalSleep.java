@@ -70,7 +70,7 @@ public class MagicalSleep extends Buff {
 		}
 		if (target.alignment == Char.Alignment.ALLY) {
             target.heal(1,false);
-            if(hero!=null && target==hero && hero.heroClass== HeroClass.FRIAR && Math.floorMod(hero.HP,2)==0){
+            if(hero!=null && target==hero && hero.buff(Reason.class)!=null && Math.floorMod(hero.HP,2)==0){
                 Reason.gainReason(hero,1);
             }
 			if (target instanceof  Hero) ((Hero) target).resting = true;

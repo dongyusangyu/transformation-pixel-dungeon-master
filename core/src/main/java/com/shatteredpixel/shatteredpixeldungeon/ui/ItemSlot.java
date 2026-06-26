@@ -243,7 +243,9 @@ public class ItemSlot extends Button {
 			status.resetColor();
 		}
 
-		if (item.icon != -1 && (item.isIdentified() || (item instanceof Ring && ((Ring) item).isKnown()))){
+		if (item.icon != -1 && (item.isIdentified()
+				|| (item instanceof Ring && ((Ring) item).isKnown())
+				|| (item instanceof Wand && ((Wand) item).isKnown()))){
 			extra.text( null );
 
 			itemIcon = new Image(Assets.Sprites.ITEM_ICONS);

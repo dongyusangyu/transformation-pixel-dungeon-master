@@ -60,6 +60,7 @@ public class WndClericSpells1 extends Window {
 	protected static final int WIDTH    = 120;
 
 	public static int BTN_SIZE = 20;
+	private final ArrayList<SpellButton> agentMinSpellButtons = new ArrayList<>();
 
 	public WndClericSpells1(RubbingsTome tome, Hero cleric, boolean info){
 
@@ -115,6 +116,7 @@ public class WndClericSpells1 extends Window {
 				IconButton spellBtn = new SpellButton(spell, tome, info);
 				add(spellBtn);
 				spellBtns.add(spellBtn);
+				agentMinSpellButtons.add((SpellButton) spellBtn);
 			}
 
 			int left = 2 + (WIDTH - spellBtns.size() * (BTN_SIZE + 4)) / 2;
@@ -132,6 +134,18 @@ public class WndClericSpells1 extends Window {
 			offset(0, (int) (GameScene.uiCamera.height/2 - 30 - height/2));
 		}
 
+	}
+
+	public int agentMinOptionCount() {
+		return agentMinSpellButtons.size();
+	}
+
+	public boolean agentMinSelectOption(int index) {
+		if (index < 0 || index >= agentMinSpellButtons.size()) {
+			return false;
+		}
+		agentMinSpellButtons.get(index).onClick();
+		return true;
 	}
 
 	public class SpellButton extends IconButton {

@@ -10,6 +10,17 @@ def make_dummy_batch(batch_size: int = 8, height: int = 32, width: int = 32, dev
     cfg = AgentMinModelConfig()
     action_mask = torch.ones(batch_size, cfg.action_rows, device=device)
     action_mask[:, 40:] = 0
+    monitor_item_mask = torch.zeros(batch_size, cfg.inventory_rows, device=device)
+    monitor_item_mask[:, :8] = 1
+    monitor_cell_mask = torch.ones(batch_size, cfg.monitor_cell_count, device=device)
+    monitor_option_mask = torch.zeros(batch_size, cfg.monitor_option_count, device=device)
+    monitor_option_mask[:, :4] = 1
+    skill_mask = torch.zeros(batch_size, cfg.skill_count, device=device)
+    action_skill_mask = torch.zeros(batch_size, cfg.skill_count, cfg.action_rows, device=device)
+    for action in range(40):
+        skill = action % cfg.skill_count
+        skill_mask[:, skill] = 1
+        action_skill_mask[:, skill, action] = 1
     return {
         "level_tensor": torch.rand(batch_size, cfg.level_channels - 1, height, width, device=device),
         "explored_global_matrix": torch.rand(batch_size, 127, 127, device=device),
@@ -22,6 +33,12 @@ def make_dummy_batch(batch_size: int = 8, height: int = 32, width: int = 32, dev
         "history_matrix": torch.rand(batch_size, cfg.history_rows, cfg.history_features, device=device),
         "action_matrix": torch.rand(batch_size, cfg.action_rows, cfg.action_features, device=device),
         "action_mask": action_mask,
+        "monitor_item_mask": monitor_item_mask,
+        "monitor_cell_mask": monitor_cell_mask,
+        "monitor_option_mask": monitor_option_mask,
+        "skill_mask": skill_mask,
+        "action_skill_mask": action_skill_mask,
+        "forced_skill": torch.full((batch_size,), -1, dtype=torch.long, device=device),
     }
 
 
@@ -40,6 +57,13 @@ def main() -> None:
     rollout = RolloutBatch(
         **batch,
         actions=action_out["action"],
+        skills=action_out["skill"],
+        heads=action_out["head"],
+        talent_target_embeddings=action_out["talent_target_embedding"],
+        talent_target_types=action_out["talent_target_type"],
+        monitor_item_rows=action_out["monitor_item_row"],
+        monitor_cell_indices=action_out["monitor_cell_index"],
+        monitor_option_indices=action_out["monitor_option_index"],
         old_log_probs=action_out["log_prob"].detach(),
         returns=torch.randn(8, device=device),
         advantages=torch.randn(8, device=device),

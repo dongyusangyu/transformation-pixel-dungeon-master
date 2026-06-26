@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -88,9 +89,23 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 		powerLossBuffer = bundle.getInt(POWER_BUFFER);
 		levelRecovery = bundle.getFloat(LEVEL_RECOVERY);
 		turnRecovery = bundle.getInt(TURN_RECOVERY);
+	}
 
-		if (power >= 1f && state == State.NORMAL){
+	@Override
+	public boolean attachTo(Char target) {
+		if (super.attachTo(target)){
+			updateActionIndicator();
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private void updateActionIndicator(){
+		if (usable()){
 			ActionIndicator.setAction(this);
+		} else {
+			ActionIndicator.clearAction(this);
 		}
 	}
 
@@ -225,7 +240,7 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 		BuffIndicator.refreshHero(); //show new power immediately
 		powerLossBuffer = 3; //2 turns until rage starts dropping
 		if (power >= 1f){
-			ActionIndicator.setAction(this);
+			updateActionIndicator();
 		}
 	}
 
@@ -360,6 +375,9 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 	@Override
 	public boolean usable() {
 		// 只有正常状态、怒气≥100%、且拥有破碎印记时，按钮才可用
-		return state == State.NORMAL && power >= 1f && target.buff(WarriorShield.class) != null;
+		return target != null
+				&& state == State.NORMAL
+				&& power >= 1f
+				&& target.buff(WarriorShield.class) != null;
 	}
 }

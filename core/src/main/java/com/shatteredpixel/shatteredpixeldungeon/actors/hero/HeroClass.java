@@ -74,6 +74,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.En
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.HeroicLeap;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.Shockwave;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.ChallengeBag;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRuntimeLog;
 import com.shatteredpixel.shatteredpixeldungeon.custom.dict.DictBook;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.BackpackCleaner;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.BlobsEmitter;
@@ -87,6 +89,7 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.MobPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.StrengthSetting;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TerrainPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag1;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TimeReverser;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TrapPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.LazyTest;
@@ -103,6 +106,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.SpecialPackage;
+import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeArmor;
@@ -209,6 +213,15 @@ public enum HeroClass {
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
 		doChallengeSpawn(hero);
+        /*
+		if (AgentMinBridgeConfig.ENABLED) {
+			Item stylus = new Stylus();
+			if (stylus.collect()) {
+				AgentMinRuntimeLog.log("startup stylus granted for item head verification");
+			}
+		}
+
+         */
 		Waterskin waterskin = new Waterskin();
         if(Dungeon.isChallenged(Challenges.TEST_MODE)){
             waterskin.fill();
@@ -803,8 +816,10 @@ public enum HeroClass {
 			 */
 			//new WandOfScanningBeam().identify().collect();
 
-			new MobPlacer().collect();
+			new TestBag().collect();
+			new TestBag1().collect();
 
+			new MobPlacer().collect();
 
 			CustomWeapon customWeapon = new CustomWeapon();
 			customWeapon.adjustStatus();
@@ -812,8 +827,6 @@ public enum HeroClass {
 
 			CustomWand customWand = new CustomWand();
 			customWand.identify().collect();
-
-			new TestBag().collect();
 
 			new TrapPlacer().collect();
 

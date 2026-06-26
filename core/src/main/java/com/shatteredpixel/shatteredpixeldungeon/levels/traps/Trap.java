@@ -105,7 +105,7 @@ public abstract class Trap implements Bundlable {
 			Bestiary.setSeen(getClass());
 			Bestiary.countEncounter(getClass());
             Char c= Actor.findChar(pos);
-            if(c!=null && c==hero && hero.heroClass== HeroClass.FRIAR){
+            if(c!=null && c==hero && hero.buff(Reason.class)!=null){
                 Reason.loseReason(hero,10);
             }
 			activate();

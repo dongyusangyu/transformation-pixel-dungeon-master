@@ -149,6 +149,7 @@ public class AndroidLauncher extends AndroidApplication {
 		config.depth = 0;
 		config.useCompass = false;
 		config.useAccelerometer = false;
+		config.useImmersiveMode = SPDSettings.fullscreen();
 
 		if (support == null) support = new AndroidPlatformSupport();
 		else support.reloadGenerators();

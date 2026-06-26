@@ -163,6 +163,9 @@ public class CursedWand {
 	private static float[] EFFECT_CAT_CHANCES = new float[]{60, 30, 9, 1};
 
 	public static CursedEffect randomEffect(){
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			return Random.element(allEffects());
+		}
 		switch (Random.chances(EFFECT_CAT_CHANCES)){
 			case 0: default:
 				return randomCommonEffect();
@@ -176,6 +179,13 @@ public class CursedWand {
 	}
 
 	public static CursedEffect randomValidEffect(Item origin, Char user, Ballistica bolt, boolean positiveOnly){
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			CursedEffect effect;
+			do {
+				effect = Random.element(allEffects());
+			} while (!effect.valid(origin, user, bolt, positiveOnly));
+			return effect;
+		}
 		switch (Random.chances(EFFECT_CAT_CHANCES)){
 			case 0: default:
 				return randomValidCommonEffect(origin, user, bolt, positiveOnly);
@@ -186,6 +196,15 @@ public class CursedWand {
 			case 3:
 				return randomValidVeryRareEffect(origin, user, bolt, positiveOnly);
 		}
+	}
+
+	private static ArrayList<CursedEffect> allEffects() {
+		ArrayList<CursedEffect> effects = new ArrayList<>();
+		effects.addAll(COMMON_EFFECTS);
+		effects.addAll(UNCOMMON_EFFECTS);
+		effects.addAll(RARE_EFFECTS);
+		effects.addAll(VERY_RARE_EFFECTS);
+		return effects;
 	}
 
 	//**********************

@@ -136,6 +136,7 @@ public class SeedFindScene extends PixelScene {
                 } else if (!positive && !text.isEmpty()) {
                     text = DungeonSeed.formatText(text);
                     long seed = DungeonSeed.convertFromText(text);
+                    SeedFinder.Options.randomMode = SPDSettings.randomMode();
 
                     RenderedTextBlock renderedTextBlock = PixelScene.renderTextBlock(new SeedFinder().logSeedItems(Long.toString(seed),26),9);
                     renderedTextBlock.setRect((Camera.main.width - colWidth)/2f, 12, colWidth, 0);

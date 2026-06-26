@@ -86,8 +86,10 @@ abstract public class MissileWeapon extends Weapon {
 		usesTargeting = true;
 	}
 
+	public static final long UNASSIGNED_SET_ID = Long.MIN_VALUE;
+
 	//TODO maybe make this like actor IDs, instead of random? collisions unlikely, but it's messy
-	public long setID = new SecureRandom().nextLong();
+	public long setID = UNASSIGNED_SET_ID;
 
 	//whether or not this instance of the item exists purely to trigger its effect. i.e. no dropping
 	public boolean spawnedForEffect = false;
@@ -165,6 +167,7 @@ abstract public class MissileWeapon extends Weapon {
 
 	public Item upgrade( boolean enchant ) {
 		if (!bundleRestoring) {
+			ensureSetIDAssigned();
 			durability = MAX_DURABILITY;
 			extraThrownLeft = false;
 			quantity = defaultQuantity();
@@ -183,6 +186,7 @@ abstract public class MissileWeapon extends Weapon {
 	//FIXME some logic here assumes the items are in the player's inventory. Might need to adjust
 	public Item upgrade() {
 		if (!bundleRestoring) {
+			ensureSetIDAssigned();
 			durability = MAX_DURABILITY;
 			extraThrownLeft = false;
 			quantity = defaultQuantity();
@@ -200,12 +204,32 @@ abstract public class MissileWeapon extends Weapon {
 	
 	@Override
 	public boolean collect(Bag container) {
+		if (container != null && container.owner instanceof Hero){
+			ensureSetIDAssigned();
+		}
 		if (container instanceof MagicalHolster) holster = true;
-		return super.collect(container);
+		boolean collected = super.collect(container);
+		if (collected && container != null && container.owner instanceof Hero) {
+			sanitizeInventorySets((Hero) container.owner, this);
+		}
+		return collected;
 	}
 
 	public boolean isSimilar( Item item ) {
-		return trueLevel() == item.trueLevel() && getClass() == item.getClass() && setID == (((MissileWeapon) item).setID);
+		if (!(item instanceof MissileWeapon)) return false;
+		MissileWeapon other = (MissileWeapon) item;
+		if (trueLevel() != other.trueLevel() || getClass() != other.getClass()) return false;
+
+		if (!usesIndependentSetID()){
+			return true;
+		}
+
+		boolean thisAssigned = hasAssignedSetID();
+		boolean otherAssigned = other.hasAssignedSetID();
+		if (thisAssigned && otherAssigned){
+			return setID == other.setID;
+		}
+		return !thisAssigned && !otherAssigned;
 	}
 	
 	@Override
@@ -297,17 +321,7 @@ abstract public class MissileWeapon extends Weapon {
 		if (enemy == null || enemy == curUser) {
 			parent = null;
 
-			//metamorphed seer shot logic
-			if (curUser.hasTalent(Talent.SEER_SHOT)
-					&& curUser.heroClass != HeroClass.HUNTRESS
-					&& curUser.buff(Talent.SeerShotCooldown.class) == null){
-				if (Actor.findChar(cell) == null) {
-					RevealedArea a = Buff.affect(curUser, RevealedArea.class, 5 * curUser.pointsInTalent(Talent.SEER_SHOT));
-					a.depth = Dungeon.depth;
-					a.pos = cell;
-					Buff.affect(curUser, Talent.SeerShotCooldown.class, 20f);
-				}
-			}
+			triggerSeerShot(cell);
 
 			if (!spawnedForEffect) super.onThrow( cell );
 		} else {
@@ -318,6 +332,18 @@ abstract public class MissileWeapon extends Weapon {
 				rangedHit( enemy, cell );
 
 			}
+		}
+	}
+
+	protected void triggerSeerShot(int cell) {
+		if (curUser.hasTalent(Talent.SEER_SHOT)
+				&& curUser.heroClass != HeroClass.HUNTRESS
+				&& curUser.buff(Talent.SeerShotCooldown.class) == null
+				&& Actor.findChar(cell) == null) {
+			RevealedArea a = Buff.affect(curUser, RevealedArea.class, 5 * curUser.pointsInTalent(Talent.SEER_SHOT));
+			a.depth = Dungeon.depth;
+			a.pos = cell;
+			Buff.affect(curUser, Talent.SeerShotCooldown.class, 20f);
 		}
 	}
 
@@ -405,6 +431,19 @@ abstract public class MissileWeapon extends Weapon {
 			}
 		}
 		level(n);
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			switch (Random.chances(new float[]{5, 20, 75})) {
+				case 0:
+					quantity(1);
+					break;
+				case 1:
+					quantity(2);
+					break;
+				case 2: default:
+					quantity(3);
+					break;
+			}
+		}
 
 		//we use a separate RNG here so that variance due to things like parchment scrap
 		//does not affect levelgen
@@ -590,8 +629,7 @@ abstract public class MissileWeapon extends Weapon {
 				durability += MAX_DURABILITY;
 			}
 
-			//hashcode check is for pre-3.2 saves, 0 check is for darts
-			if (quantity > defaultQuantity() && setID != 0 && setID != getClass().getSimpleName().hashCode()){
+			if (quantity > defaultQuantity() && hasAssignedSetID()){
 				quantity = defaultQuantity();
 				durability = MAX_DURABILITY;
 			}
@@ -648,6 +686,7 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public boolean doPickUp(Hero hero, int pos) {
 		parent = null;
+		ensureSetIDAssigned();
 		if (!UpgradedSetTracker.pickupValid(hero, this)){
 			Sample.INSTANCE.play( Assets.Sounds.ITEM );
 			hero.spendAndNext(pickupDelay());
@@ -656,7 +695,11 @@ abstract public class MissileWeapon extends Weapon {
 			return true;
 		} else {
 			extraThrownLeft = false;
-			return super.doPickUp(hero, pos);
+			boolean pickedUp = super.doPickUp(hero, pos);
+			if (pickedUp){
+				sanitizeInventorySets(hero, this);
+			}
+			return pickedUp;
 		}
 	}
 	
@@ -780,17 +823,11 @@ abstract public class MissileWeapon extends Weapon {
 			setID = bundle.getLong(SET_ID);
 		//pre v3.2.0 logic
 		} else {
-			//if we have a higher than 0 level, assume that this was a solitary thrown wep upgrade
-			//turn it into a set of full quantity
 			if (level() > 0){
-				//set ID will be a random long
 				quantity = defaultQuantity();
-
-			//otherwise treat all currently spawned thrown weapons of the same class as if they are part of the same set
-			//darts already do this though and need no conversion
-			} else if (!(this instanceof Dart)){
-				levelKnown = cursedKnown = true;
-				setID = getClass().getSimpleName().hashCode();
+			}
+			if (usesIndependentSetID()){
+				setID = UNASSIGNED_SET_ID;
 			}
 		}
 
@@ -865,6 +902,111 @@ abstract public class MissileWeapon extends Weapon {
 			for (int i = 0; i <IDs.length; i++){
 				levelThresholds.put(IDs[i], levels[i]);
 			}
+		}
+	}
+
+	private boolean usesIndependentSetID(){
+		return isUpgradable() && defaultQuantity() > 1;
+	}
+
+	private boolean hasAssignedSetID(){
+		return usesIndependentSetID() && setID != UNASSIGNED_SET_ID;
+	}
+
+	public void ensureSetIDAssigned(){
+		if (usesIndependentSetID() && setID == UNASSIGNED_SET_ID){
+			setID = new SecureRandom().nextLong();
+		}
+	}
+
+	public static void sanitizeInventorySets(Hero hero, Item preferredSource){
+		if (hero == null || hero.belongings == null || hero.belongings.backpack == null){
+			return;
+		}
+
+		HashMap<Long, ArrayList<MissileSetEntry>> grouped = new HashMap<>();
+		collectMissileEntries(hero.belongings.backpack, preferredSource, grouped);
+
+		for (ArrayList<MissileSetEntry> entries : grouped.values()){
+			if (entries.isEmpty()) continue;
+
+			MissileWeapon sample = entries.get(0).weapon;
+			if (!sample.hasAssignedSetID()) continue;
+
+			int totalQuantity = 0;
+			for (MissileSetEntry entry : entries){
+				totalQuantity += entry.weapon.quantity();
+			}
+
+			if (totalQuantity <= sample.defaultQuantity()) continue;
+
+			MissileSetEntry survivor = selectSurvivor(entries);
+			boolean warned = false;
+
+			for (MissileSetEntry entry : entries){
+				if (entry == survivor) continue;
+
+				MissileWeapon weapon = entry.weapon;
+				if (weapon.quantity() <= 0) continue;
+
+				if (!warned){
+					GLog.w(Messages.get(weapon, "duplicate_dust"));
+					warned = true;
+				}
+
+				weapon.detachAll(entry.container);
+				weapon.quantity(0);
+			}
+		}
+	}
+
+	private static void collectMissileEntries(Bag bag, Item preferredSource,
+			HashMap<Long, ArrayList<MissileSetEntry>> grouped){
+		for (Item item : bag.items.toArray(new Item[0])){
+			if (item instanceof MissileWeapon){
+				MissileWeapon weapon = (MissileWeapon) item;
+				if (!weapon.hasAssignedSetID()) continue;
+				grouped.computeIfAbsent(weapon.setID, ignored -> new ArrayList<>())
+						.add(new MissileSetEntry(weapon, bag, isPreferredSource(item, preferredSource)));
+			} else if (item instanceof Bag){
+				collectMissileEntries((Bag) item, preferredSource, grouped);
+			}
+		}
+	}
+
+	private static boolean isPreferredSource(Item item, Item preferredSource){
+		if (preferredSource == null) return false;
+		if (item == preferredSource) return true;
+		return preferredSource instanceof Bag && ((Bag) preferredSource).contains(item);
+	}
+
+	private static MissileSetEntry selectSurvivor(ArrayList<MissileSetEntry> entries){
+		MissileSetEntry survivor = entries.get(0);
+		for (int i = 1; i < entries.size(); i++){
+			MissileSetEntry candidate = entries.get(i);
+			if (candidate.weapon.quantity() > survivor.weapon.quantity()){
+				survivor = candidate;
+			} else if (candidate.weapon.quantity() == survivor.weapon.quantity()){
+				if (candidate.weapon.trueLevel() > survivor.weapon.trueLevel()){
+					survivor = candidate;
+				} else if (candidate.weapon.trueLevel() == survivor.weapon.trueLevel()
+						&& survivor.preferred && !candidate.preferred){
+					survivor = candidate;
+				}
+			}
+		}
+		return survivor;
+	}
+
+	private static class MissileSetEntry {
+		private final MissileWeapon weapon;
+		private final Bag container;
+		private final boolean preferred;
+
+		private MissileSetEntry(MissileWeapon weapon, Bag container, boolean preferred) {
+			this.weapon = weapon;
+			this.container = container;
+			this.preferred = preferred;
 		}
 	}
 }

@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
  */
 public class AgentMinState {
 
-	public static final int SCHEMA_VERSION = 1;
+	public static final int SCHEMA_VERSION = 2;
 
 	public static final int CELL_UNKNOWN = 0;
 	public static final int FLAG_MAPPED = 1 << 16;
@@ -87,6 +87,7 @@ public class AgentMinState {
 		public boolean hasWornKey;
 		public LinkedHashMap<String, Integer> talents = new LinkedHashMap<>();
 		public LinkedHashMap<String, Integer> negativeTalents = new LinkedHashMap<>();
+		public ArrayList<TalentSlotState> talentSlots = new ArrayList<>();
 		public ArrayList<BuffState> buffs = new ArrayList<>();
 	}
 
@@ -143,9 +144,14 @@ public class AgentMinState {
 	}
 
 	public static class ItemState {
+		public int itemRow = -1;
 		public String slot;
 		public String className;
 		public String name;
+		public int itemIdentityId;
+		public int modifierIdentityId;
+		public int modifierKind;
+		public String modifierClassName;
 		public int image;
 		public int quantity;
 		public int level;
@@ -155,19 +161,56 @@ public class AgentMinState {
 		public boolean cursedKnown;
 		public boolean equipped;
 		public boolean usesTargeting;
+		public boolean stackable;
+		public boolean unique;
+		public boolean bones;
+		public int icon;
+		public String equipmentKind;
+		public int strengthRequirement;
+		public int strengthMargin;
+		public float equipmentScore;
+		public float equipmentScoreDiff;
+		public float equipmentCooldown;
+		public boolean equipmentUpgradeCandidate;
+		public boolean equipmentSidegrade;
+		public boolean inContainer;
+		public String containerClassName;
+		public String containerName;
+		public int containerDepth;
+		public int containerItemIndex;
+		public int containerSize;
+		public int containerCapacity;
+		public boolean bag;
+		public int bagSize;
+		public int bagCapacity;
 		public String defaultAction;
 		public ArrayList<String> actions = new ArrayList<>();
 	}
 
 	public static class ActionState {
+		public int itemRow = -1;
 		public String itemClassName;
 		public String itemName;
 		public String slot;
 		public String action;
 		public String actionName;
+		public int actionIndex;
+		public int actionCount;
 		public boolean defaultAction;
 		public boolean usesTargeting;
 		public int quickSlot = -1;
+	}
+
+	public static class TalentSlotState {
+		public String talentName;
+		public int talentIdentityId;
+		public int tier;
+		public int slot;
+		public int icon;
+		public int points;
+		public int maxPoints;
+		public boolean unlocked;
+		public boolean placeholder;
 	}
 
 	public static class QuickSlotState {

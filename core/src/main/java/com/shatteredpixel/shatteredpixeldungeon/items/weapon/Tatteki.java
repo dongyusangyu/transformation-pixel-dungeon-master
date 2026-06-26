@@ -189,7 +189,7 @@ public class Tatteki extends Weapon {
                 Hero hero = Dungeon.hero;
                 bombnumber = hero.pointsInTalent(Talent.KUNIKUCHI)*2-1;
                 hero.sprite.operate( hero.pos );
-                Sample.INSTANCE.play( Assets.Sounds.CLICK );
+                Sample.INSTANCE.play( Assets.Sounds.UNLOCK );
                 hero.busy();
                 hero.spend( Actor.TICK );
                 item.detach(hero.belongings.backpack);
@@ -452,6 +452,7 @@ public class Tatteki extends Weapon {
             Char enemy = Actor.findChar( cell );
             if (enemy == null || enemy == curUser) {
                 parent = null;
+                triggerSeerShot(cell);
                 Splash.at( cell, 0x88FFFFFF, 1 );
             } else {
                 if (!curUser.shoot( enemy, this )) {

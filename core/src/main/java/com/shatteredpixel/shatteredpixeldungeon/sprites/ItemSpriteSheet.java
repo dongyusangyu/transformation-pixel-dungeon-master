@@ -985,7 +985,35 @@ public class ItemSpriteSheet {
             assignIconRect( RING_KING,        7, 7 );
 		}
 
-		                                                                                //16 free slots
+		private static final int WANDS          =                            xy(1, 2);  //16 slots
+		public static final int WAND_MAGIC_MISSILE  = WANDS+0;
+		public static final int WAND_LIGHTNING      = WANDS+1;
+		public static final int WAND_DISINTEGRATION = WANDS+2;
+		public static final int WAND_FIREBOLT       = WANDS+3;
+		public static final int WAND_CORROSION      = WANDS+4;
+		public static final int WAND_BLAST_WAVE     = WANDS+5;
+		public static final int WAND_LIVING_EARTH   = WANDS+6;
+		public static final int WAND_FROST          = WANDS+7;
+		public static final int WAND_PRISMATIC_LIGHT= WANDS+8;
+		public static final int WAND_WARDING        = WANDS+9;
+		public static final int WAND_TRANSFUSION    = WANDS+10;
+		public static final int WAND_CORRUPTION     = WANDS+11;
+		public static final int WAND_REGROWTH       = WANDS+12;
+		static {
+			assignIconRect( WAND_MAGIC_MISSILE,  7, 5 );
+			assignIconRect( WAND_LIGHTNING,      4, 6 );
+			assignIconRect( WAND_DISINTEGRATION, 7, 5 );
+			assignIconRect( WAND_FIREBOLT,       7, 7 );
+			assignIconRect( WAND_CORROSION,      7, 7 );
+			assignIconRect( WAND_BLAST_WAVE,     7, 7 );
+			assignIconRect( WAND_LIVING_EARTH,   5, 7 );
+			assignIconRect( WAND_FROST,          7, 7 );
+			assignIconRect( WAND_PRISMATIC_LIGHT,7, 7 );
+			assignIconRect( WAND_WARDING,        7, 5 );
+			assignIconRect( WAND_TRANSFUSION,    7, 6 );
+			assignIconRect( WAND_CORRUPTION,     5, 6 );
+			assignIconRect( WAND_REGROWTH,       5, 6 );
+		}
 
 		private static final int SCROLLS        =                            xy(1, 3);  //16 slots
 		public static final int SCROLL_UPGRADE  = SCROLLS+0;

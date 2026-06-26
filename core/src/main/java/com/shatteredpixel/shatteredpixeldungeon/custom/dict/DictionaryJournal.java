@@ -383,6 +383,7 @@ public enum DictionaryJournal {
 //        DOCUMENTS.d.put("quest_windmaker",  DictSpriteSheet.WAND_MAKER);
         DOCUMENTS.d.put("quest_blacksmith", DictSpriteSheet.BLACKSMITH);
         DOCUMENTS.d.put("quest_blacksmith1", DictSpriteSheet.CRYSTAL_SPIRE);
+        DOCUMENTS.d.put("misc_random_mode",   DictSpriteSheet.RANDOM_MODE);
 //        DOCUMENTS.d.put("quest_imp",        DictSpriteSheet.IMP);
 
         //unclassified
@@ -395,6 +396,7 @@ public enum DictionaryJournal {
         UNCLASSIFIED.d.put("misc_amulet_curse",  DictSpriteSheet.BUFF_AMULET_CURSE);
         UNCLASSIFIED.d.put("misc_sac_fire", DictSpriteSheet.BUFF_SAC_FIRE);
         UNCLASSIFIED.d.put("misc_reason",   DictSpriteSheet.BUFF_REASON);
+
         //miscs
         UNCLASSIFIED.d.put("misc_ankh",  ItemSpriteSheet.ANKH);
         UNCLASSIFIED.d.put("misc_seal",  ItemSpriteSheet.SEAL);

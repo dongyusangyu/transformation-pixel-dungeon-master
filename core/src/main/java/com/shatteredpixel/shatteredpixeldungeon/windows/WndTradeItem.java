@@ -300,7 +300,7 @@ public class WndTradeItem extends WndInfoItem {
 		if (item == null) return;
 		
 		int price = Shopkeeper.sellPrice( item );
-		if(hero.pointsNegative(Talent.COWBOY)*3> Random.Int(20)){
+		if(hero.pointsNegative(Talent.COWBOY)*3> Random.Int(20) && hero.pointsNegative(Talent.COWBOY)>0){
 			item.detach(hero.belongings.backpack);
 			item =new ThrowingStone();
 			//Dungeon.level.drop(item,hero.pos).sprite.drop(hero.pos);

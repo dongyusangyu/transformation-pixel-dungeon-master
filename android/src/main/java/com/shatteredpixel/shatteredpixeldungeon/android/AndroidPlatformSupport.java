@@ -28,6 +28,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
+import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -46,6 +47,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AndroidPlatformSupport extends PlatformSupport {
+
+	private static final int IMMERSIVE_SYSTEM_UI_FLAGS =
+			View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+			| View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+			| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+			| View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+			| View.SYSTEM_UI_FLAG_FULLSCREEN
+			| View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+	private static final long RESTORE_SYSTEM_UI_DELAY = 300L;
+
+	private View systemUiListenerDecor;
+	private final Runnable restoreSystemUI = new Runnable() {
+		@Override
+		public void run() {
+			updateSystemUI();
+		}
+	};
 	
 	public void updateDisplaySize(){
 		if (SPDSettings.landscape() != null) {
@@ -116,14 +135,60 @@ public class AndroidPlatformSupport extends PlatformSupport {
 		}
 	}
 	
+	private boolean canUseFullscreen() {
+		return Build.VERSION.SDK_INT < Build.VERSION_CODES.N
+				|| !AndroidLauncher.instance.isInMultiWindowMode();
+	}
+
+	private boolean shouldUseFullscreen() {
+		return canUseFullscreen() && SPDSettings.fullscreen();
+	}
+
+	private void installSystemUIRestoreListener(final View decor) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT || systemUiListenerDecor == decor) {
+			return;
+		}
+
+		if (systemUiListenerDecor != null) {
+			systemUiListenerDecor.setOnSystemUiVisibilityChangeListener(null);
+			systemUiListenerDecor.removeCallbacks(restoreSystemUI);
+		}
+
+		systemUiListenerDecor = decor;
+		decor.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+			@Override
+			public void onSystemUiVisibilityChange(int visibility) {
+				if (!shouldUseFullscreen()) {
+					decor.removeCallbacks(restoreSystemUI);
+					return;
+				}
+
+				boolean missingFullscreen = (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
+				boolean missingNavigation = (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0;
+				if (missingFullscreen || missingNavigation) {
+					decor.removeCallbacks(restoreSystemUI);
+					decor.postDelayed(restoreSystemUI, RESTORE_SYSTEM_UI_DELAY);
+				}
+			}
+		});
+	}
+
+	@SuppressLint("InlinedApi")
+	private void applySoftInputMode(boolean fullscreen) {
+		AndroidLauncher.instance.getWindow().setSoftInputMode(fullscreen
+				? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+				: WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED);
+	}
+
 	public void updateSystemUI() {
 		
 		AndroidLauncher.instance.runOnUiThread(new Runnable() {
 			@SuppressLint("NewApi")
 			@Override
 			public void run() {
-				boolean fullscreen = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
-						|| !AndroidLauncher.instance.isInMultiWindowMode();
+				boolean fullscreen = shouldUseFullscreen();
+				View decor = AndroidLauncher.instance.getWindow().getDecorView();
+				applySoftInputMode(fullscreen);
 				
 				if (fullscreen){
 					AndroidLauncher.instance.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -134,14 +199,12 @@ public class AndroidPlatformSupport extends PlatformSupport {
 				}
 				
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
-					if (SPDSettings.fullscreen()) {
-						AndroidLauncher.instance.getWindow().getDecorView().setSystemUiVisibility(
-								View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-										| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN
-										| View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY );
+					installSystemUIRestoreListener(decor);
+					if (fullscreen) {
+						decor.setSystemUiVisibility(IMMERSIVE_SYSTEM_UI_FLAGS);
 					} else {
-						AndroidLauncher.instance.getWindow().getDecorView().setSystemUiVisibility(
-								View.SYSTEM_UI_FLAG_LAYOUT_STABLE );
+						decor.removeCallbacks(restoreSystemUI);
+						decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
 					}
 				}
 			}
@@ -169,6 +232,18 @@ public class AndroidPlatformSupport extends PlatformSupport {
 	@Override
 	public boolean supportsVibration() {
 		return true; //always true on Android
+	}
+
+	@Override
+	public String cloudDeviceFingerprint() {
+		try {
+			String androidId = Settings.Secure.getString(AndroidLauncher.instance.getContentResolver(), Settings.Secure.ANDROID_ID);
+			if (androidId != null && androidId.length() > 0) {
+				return "android:" + androidId;
+			}
+		} catch (Exception ignored) {
+		}
+		return super.cloudDeviceFingerprint();
 	}
 
 	/* FONT SUPPORT */

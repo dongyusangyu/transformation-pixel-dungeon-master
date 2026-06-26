@@ -134,12 +134,12 @@ public class Terrain {
 	public static int discover( int terr ) {
 		switch (terr) {
 		case SECRET_DOOR:
-            if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+            if(hero!=null && hero.buff(Reason.class)!=null){
                 Reason.gainReason(hero,5);
             }
 			return DOOR;
 		case SECRET_TRAP:
-            if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+            if(hero!=null && hero.buff(Reason.class)!=null){
                 Reason.gainReason(hero,2);
             }
 			return TRAP;

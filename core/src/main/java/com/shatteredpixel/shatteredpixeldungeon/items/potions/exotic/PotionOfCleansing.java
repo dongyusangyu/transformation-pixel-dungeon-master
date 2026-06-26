@@ -49,7 +49,7 @@ public class PotionOfCleansing extends ExoticPotion {
 	@Override
 	public void apply( Hero hero ) {
 		identify();
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,20);
             if(hero.buff(Panic.class)!=null){
                 hero.buff(Panic.class).detach();
@@ -82,13 +82,17 @@ public class PotionOfCleansing extends ExoticPotion {
 	}
 
 	public static void cleanse(Char ch, float duration){
+		cleanse(ch, duration, true);
+	}
+
+	public static void cleanse(Char ch, float duration, boolean satisfyHunger){
 		for (Buff b : ch.buffs()){
 			if (b.type == Buff.buffType.NEGATIVE
 					&& !(b instanceof AllyBuff)
 					&& !(b instanceof LostInventory)){
 				b.detach();
 			}
-			if (b instanceof Hunger){
+			if (satisfyHunger && b instanceof Hunger){
 				((Hunger) b).satisfy(Hunger.STARVING);
 			}
 		}

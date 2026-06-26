@@ -24,8 +24,11 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee;
 
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -35,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
@@ -91,7 +95,7 @@ public class WornShortsword extends MeleeWeapon {
 
 		@Override
 		public String textPrompt() {
-			return Messages.get(WornShortsword.class, "prompt");
+			return Messages.get(WornShortsword.class, "prompt1");
 		}
 
 
@@ -127,8 +131,44 @@ public class WornShortsword extends MeleeWeapon {
 			detach(curUser.belongings.backpack);
 		}
 
-		new ScrollOfUpgrade().upgradeItem(item);
+		upgradeRecastTarget(item);
 		curUser.spend(1f);
+	}
+
+	private void upgradeRecastTarget(Item item){
+		ScrollOfUpgrade.upgrade(curUser);
+
+		Degrade.detach(curUser, Degrade.class);
+
+		if (item instanceof Weapon){
+			Weapon w = (Weapon)item;
+			boolean wasCursed = w.cursed;
+
+			if (w.enchantment != null){
+				item = w.upgrade(true);
+			} else {
+				item = w.upgrade();
+			}
+
+			if (w.cursedKnown && wasCursed && !w.cursed){
+				ScrollOfUpgrade.weakenCurse(curUser);
+			}
+		} else {
+			item = item.upgrade();
+		}
+
+		Badges.validateItemLevelAquired(item);
+		Statistics.upgradesUsed++;
+		Badges.validateMageUnlock();
+
+		Catalog.countUse(item.getClass());
+		if (curUser.pointsNegative(Talent.CURSEDMAN) == 2){
+			if (item instanceof Weapon) {
+				Weapon w = (Weapon)item;
+				w.enchant(Weapon.Enchantment.randomCurse());
+			}
+			item.cursed = true;
+		}
 	}
 
 	@Override

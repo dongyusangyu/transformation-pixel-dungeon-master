@@ -986,13 +986,14 @@ public abstract class Char extends Actor {
 			return;
 		}
 
+		boolean unavoidable = Talent.isUnavoidableDamage(src);
 
-		if(isInvulnerable(src.getClass()) && !(src instanceof Reason)){
+		if(!unavoidable && isInvulnerable(src.getClass())){
 			sprite.showStatus(CharSprite.POSITIVE, Messages.get(this, "invulnerable"));
 			return;
 		}
 
-		if (!(src instanceof LifeLink || src instanceof Hunger) && buff(LifeLink.class) != null){
+		if (!unavoidable && !(src instanceof LifeLink || src instanceof Hunger) && buff(LifeLink.class) != null){
 			HashSet<LifeLink> links = buffs(LifeLink.class);
 			for (LifeLink link : links.toArray(new LifeLink[0])){
 				if (Actor.findById(link.object) == null){
@@ -1021,7 +1022,7 @@ public abstract class Char extends Actor {
 		float damage = dmg;
 
 		//if dmg is from a character we already reduced it in Char.attack
-		if (!(src instanceof Char)) {
+		if (!unavoidable && !(src instanceof Char)) {
 			if (Dungeon.hero.alignment == alignment
 					&& Dungeon.hero.buff(AuraOfProtection.AuraBuff.class) != null
 					&& (Dungeon.level.distance(pos, Dungeon.hero.pos) <= 2 || buff(LifeLinkSpell.LifeLinkSpellBuff.class) != null)) {
@@ -1029,7 +1030,7 @@ public abstract class Char extends Actor {
 			}
 		}
 
-		if (buff(PowerOfMany.PowerBuff.class) != null){
+		if (!unavoidable && buff(PowerOfMany.PowerBuff.class) != null){
 			if (buff(LifeLinkSpell.LifeLinkSpellBuff.class) != null){
 				damage *= 0.70f - 0.05f*Dungeon.hero.pointsInTalent(Talent.LIFE_LINK);
 			} else {
@@ -1082,9 +1083,9 @@ public abstract class Char extends Actor {
 		}
 
 		Class<?> srcClass = src.getClass();
-		if (isImmune( srcClass )) {
+		if (!unavoidable && isImmune( srcClass )) {
 			damage = 0;
-		} else {
+		} else if (!unavoidable) {
 			damage *= resist( srcClass );
 		}
         if(isAlive()){
@@ -1098,12 +1099,14 @@ public abstract class Char extends Actor {
 
 		//we ceil these specifically to favor the player vs. champ dmg reduction
 		// most important vs. giant champions in the earlygame
-		for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
-			dmg = (int) Math.ceil(dmg * buff.damageTakenFactor());
+		if (!unavoidable) {
+			for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
+				dmg = (int) Math.ceil(dmg * buff.damageTakenFactor());
+			}
 		}
 
 		//TODO improve this when I have proper damage source logic
-		if (AntiMagic.RESISTS.contains(src.getClass())){
+		if (!unavoidable && AntiMagic.RESISTS.contains(src.getClass())){
 			dmg -= AntiMagic.drRoll(this, glyphLevel(AntiMagic.class));
 			if (buff(ArcaneArmor.class) != null) {
 				dmg -= Random.NormalIntRange(0, buff(ArcaneArmor.class).level());
@@ -1111,7 +1114,7 @@ public abstract class Char extends Actor {
 			if (dmg < 0) dmg = 0;
 		}
         //史莱姆
-        if(this==hero && !(src instanceof Reason)){
+        if(this==hero && !unavoidable){
             if(hero.hasTalent(Talent.ENERGY_ABSORPTION)){
                 float ddmg=dmg;
                 if(hero.heroClass == HeroClass.SLIMEGIRL){
@@ -1155,13 +1158,13 @@ public abstract class Char extends Actor {
             }
         }
 
-		if (buff( Paralysis.class ) != null && !(src instanceof Hero && hero.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken)) {
+		if (!unavoidable && buff( Paralysis.class ) != null && !(src instanceof Hero && hero.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken)) {
 			buff( Paralysis.class ).processDamage(dmg);
 		}
 
 		int shielded = dmg;
 		//FIXME: when I add proper damage properties, should add an IGNORES_SHIELDS property to use here.
-		if (!(src instanceof Hunger)){
+		if (!unavoidable && !(src instanceof Hunger)){
 			for (ShieldBuff s : buffs(ShieldBuff.class)){
 				dmg = s.absorbDamage(dmg);
 				if (dmg == 0) break;
@@ -1644,6 +1647,9 @@ public abstract class Char extends Actor {
 		}
 		if(buff(ChampionEnemy.Corrosion.class) != null){
 			props.add(Property.ACIDIC);
+		}
+		if(buff(ChampionEnemy.RandomMiniBoss.class) != null){
+			props.add(Property.MINIBOSS);
 		}
 
 		return props;

@@ -199,6 +199,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfDra
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfMastery;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfForce;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfKing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRage;
@@ -2222,8 +2223,8 @@ public enum Talent {
 			Buff.affect( hero, PhysicalEmpower.class).set(3, 1 + hero.pointsInTalent(STRENGTHENING_MEAL));
 		}
 		if (hero.hasTalent(FOCUSED_MEAL)){
-			if (hero.heroClass == HeroClass.DUELIST){
-				//0.67/1 charge for the duelist
+			if (canUseWeaponAbilities(hero)){
+				//0.67/1 charge for heroes who can use weapon abilities
 				Buff.affect( hero, MeleeWeapon.Charger.class ).gainCharge((hero.pointsInTalent(FOCUSED_MEAL)+1)/3f);
 				ScrollOfRecharging.charge( hero );
 			} else {
@@ -3209,7 +3210,8 @@ public enum Talent {
 				}
 			}
 		}
-		if(hero.subClass.is(HeroSubClass.TATTEKI_NINJA) && (hero.belongings.attackingWeapon() instanceof MissileWeapon)){
+		if(hero.subClass.is(HeroSubClass.TATTEKI_NINJA) && (hero.belongings.attackingWeapon() instanceof MissileWeapon)
+                && !(hero.belongings.attackingWeapon() instanceof Tatteki) && !(hero.belongings.attackingWeapon() instanceof Tatteki.Tamaru)){
 			Buff.affect(enemy, Tatteki.Fix.class);
 		}
 		if(attacker==hero && hero.buff(Ninja_Energy.Throw_Skill.class)!=null && (hero.belongings.attackingWeapon() instanceof MissileWeapon) && enemy.isAlive()){
@@ -3523,6 +3525,9 @@ public enum Talent {
 
 
 	public static int onDamage(  int dmg, Object src  ){
+		if (isUnavoidableDamage(src)){
+			return dmg;
+		}
 		if (hero != null){
 			AlchemyShield shield = hero.buff(AlchemyShield.class);
 			if (shield != null){
@@ -3656,9 +3661,13 @@ public enum Talent {
 		return Math.round(dmg);
 	}
 
+	public static boolean isUnavoidableDamage(Object src){
+		return src instanceof Reason;
+	}
+
 	private static boolean triggerDyingWill(int dmg,Object src){
 
-		if (hero == null || !hero.hasTalent(NEVER_COMPROMISE) || !hasSufferingOrVirtue(hero) || src instanceof Reason){
+		if (hero == null || !hero.hasTalent(NEVER_COMPROMISE) || !hasSufferingOrVirtue(hero) || isUnavoidableDamage(src)){
 			return false;
 		}
 		int shift = 60 - 10 * hero.pointsInTalent(NEVER_COMPROMISE);
@@ -3921,7 +3930,8 @@ public enum Talent {
 			}
 			if (hero.heroClass != HeroClass.DUELIST
 					&& hero.hasTalent(Talent.LETHAL_HASTE)
-					&& hero.buff(Talent.LethalHasteCooldown.class) == null){
+					&& hero.buff(Talent.LethalHasteCooldown.class) == null
+					&& !canTriggerLethalHasteWithWeaponAbility(hero)){
 				Buff.affect(hero, Talent.LethalHasteCooldown.class, 100f);
 				Buff.affect(hero, GreaterHaste.class).set(2 + 2* hero.pointsInTalent(Talent.LETHAL_HASTE));
 			}
@@ -3988,11 +3998,13 @@ public enum Talent {
 			Buff.affect(hero, Healing.class).setHeal((int)((0.025f+0.025f*hero.pointsInTalent(KILL_SPREE))*emeny.HT),0.25f, 0);
 			Buff.affect(hero,ArtifactRecharge.class).extend(1+1*hero.pointsInTalent(KILL_SPREE));
 		}
-        if(hero.heroClass==HeroClass.FRIAR){
+		if(hero.subClass.is(HeroSubClass.PIOUS)){
 			RitualDagger ritualDagger = hero.belongings.getItem(RitualDagger.class);
 			if (ritualDagger != null){
 				ritualDagger.onKill(hero);
 			}
+		}
+        if(hero.heroClass==HeroClass.FRIAR){
 			int virtueKillExtend = hero.subClass.is(HeroSubClass.PIOUS) && hero.hasTalent(BRIGHT_WARRIOR) ? 3 + hero.pointsInTalent(BRIGHT_WARRIOR)*3 : 3;
             if(emeny instanceof YogDzewa){
                 Reason.gainReason(hero,100);
@@ -4400,14 +4412,51 @@ public enum Talent {
 		}
 	}
 
+	public static boolean canUseWeaponAbilities(Hero hero) {
+		return hero != null
+				&& (hero.heroClass == HeroClass.DUELIST
+				|| hero.subClass.is(HeroSubClass.CHAMPION)
+				|| hero.hasTalent(Talent.MARTIAL_TRAIN));
+	}
+
+	public static boolean canUseWeaponAbility(Hero hero, KindOfWeapon weapon) {
+		if (!(weapon instanceof MeleeWeapon) || !weapon.isEquipped(hero)) {
+			return false;
+		}
+		return canUseWeaponAbilities(hero)
+				&& (!(weapon instanceof MagesStaff) || hero.heroClass == HeroClass.DUELIST || hero.subClass.is(HeroSubClass.CHAMPION));
+	}
+
+	private static boolean canTriggerLethalHasteWithWeaponAbility(Hero hero) {
+		if (hero == null) {
+			return false;
+		}
+		if (canUseWeaponAbility(hero, hero.belongings.weapon())
+				|| canUseWeaponAbility(hero, hero.belongings.secondWep())) {
+			return true;
+		}
+		RingOfForce force = hero.belongings.getItem(RingOfForce.class);
+		return force != null
+				&& force.isEquipped(hero)
+				&& canUseWeaponAbilities(hero);
+	}
+
 	public static final int MAX_TALENT_TIERS = 4;
 
 	public static void initClassTalents( Hero hero ){
-		initClassTalents( hero.heroClass, hero.talents, hero.metamorphedTalents ,hero.sublimationTalents);
+		initClassTalents( hero, hero.talents, hero.metamorphedTalents ,hero.sublimationTalents);
 	}
 
 	public static void initClassTalents( HeroClass cls, ArrayList<LinkedHashMap<Talent, Integer>> talents){
 		initClassTalents( cls, talents, new LinkedHashMap<>(), new LinkedHashMap<>());
+	}
+
+	public static void initClassTalents( Hero hero, ArrayList<LinkedHashMap<Talent, Integer>> talents, LinkedHashMap<Talent, Talent> replacements ,LinkedHashMap<Talent, String> sublimation){
+		if (HeroRandomizer.hasRandomClassTalents(hero)){
+			initRandomClassTalents(hero, talents, replacements, sublimation);
+		} else {
+			initClassTalents(HeroRandomizer.talentClass(hero), talents, replacements, sublimation);
+		}
 	}
 
 	public static void initNegativeTalent(HeroClass cls,ArrayList<LinkedHashMap<Talent, Integer>> talents, LinkedHashMap<Talent, Integer> negativeTalents){
@@ -4500,6 +4549,32 @@ public enum Talent {
 
 		Random.shuffle(ClericTalent);
 		return ClericTalent;
+	}
+
+	private static void initRandomClassTalents( Hero hero, ArrayList<LinkedHashMap<Talent, Integer>> talents, LinkedHashMap<Talent, Talent> replacements ,LinkedHashMap<Talent, String> sublimation){
+		while (talents.size() < MAX_TALENT_TIERS){
+			talents.add(new LinkedHashMap<>());
+		}
+
+		addRandomClassTalents(HeroRandomizer.classTalents(hero, 1), talents.get(0), replacements);
+		talents.get(0).put(bossTalentForSlot(BOSS_TALENT_SLOT_1, sublimation), 0);
+		talents.get(0).put(bossTalentForSlot(BOSS_TALENT_SLOT_2, sublimation), 0);
+
+		addRandomClassTalents(HeroRandomizer.classTalents(hero, 2), talents.get(1), replacements);
+		talents.get(1).put(bossTalentForSlot(BOSS_TALENT_SLOT_3, sublimation), 0);
+		talents.get(1).put(bossTalentForSlot(BOSS_TALENT_SLOT_4, sublimation), 0);
+
+		addRandomClassTalents(HeroRandomizer.classTalents(hero, 3), talents.get(2), replacements);
+		talents.get(2).put(bossTalentForSlot(BOSS_TALENT_SLOT_5, sublimation), 0);
+	}
+
+	private static void addRandomClassTalents(List<Talent> tierTalents, LinkedHashMap<Talent, Integer> tier, LinkedHashMap<Talent, Talent> replacements){
+		for (Talent talent : tierTalents){
+			if (replacements.containsKey(talent)){
+				talent = replacements.get(talent);
+			}
+			tier.put(talent, 0);
+		}
 	}
 
 

@@ -32,13 +32,26 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FightStance;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfKing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SprayGun;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -79,7 +92,7 @@ public class TengusMask extends Item {
 		if (action.equals( AC_WEAR )) {
 			
 			curUser = hero;
-			if(curUser.heroClass== HeroClass.FREEMAN){
+			if(curUser.heroClass== HeroClass.FREEMAN && !HeroRandomizer.active(curUser)){
 
 				detach( curUser.belongings.backpack );
 				Dungeon.level.drop(new ScrollOfMetamorphosis(),curUser.pos).sprite.drop();
@@ -125,6 +138,7 @@ public class TengusMask extends Item {
 		
 		curUser.subClass = way;
 		Talent.initSubclassTalents(curUser);
+		grantRandomModeKit(way);
 
 		if (way.is(HeroSubClass.ASSASSIN) && curUser.invisible > 0){
 			Buff.affect(curUser, Preparation.class);
@@ -147,6 +161,9 @@ public class TengusMask extends Item {
 			Buff.affect(curUser, Ninja_Energy.class);
 			//Ninja_Energy ninjaenergy=curUser.buff(Ninja_Energy.class);
 			//ninjaenergy.energy=5;
+		}
+		if (way.is(HeroSubClass.CHAMPION) && HeroRandomizer.active(curUser)){
+			Buff.affect(curUser, MeleeWeapon.Charger.class);
 		}
 		if (way.is(HeroSubClass.PIOUS) && curUser.belongings.getItem(RitualDagger.class) == null){
 			RitualDagger dagger = new RitualDagger();
@@ -171,5 +188,62 @@ public class TengusMask extends Item {
 		e.start(Speck.factory(Speck.MASK), 0.05f, 20);
 		GLog.p( Messages.get(this, "used"));
 		
+	}
+
+	private void grantRandomModeKit(HeroSubClass way) {
+		if (!HeroRandomizer.active(curUser)) {
+			return;
+		}
+
+		if ((way.is(HeroSubClass.BERSERKER) || way.is(HeroSubClass.GLADIATOR))
+				&& !hasBrokenSeal()) {
+			collectOrDrop(new BrokenSeal());
+		}
+		if ((way.is(HeroSubClass.BATTLEMAGE))
+				&& curUser.belongings.getItem(MagesStaff.class) == null) {
+			collectOrDrop(new MagesStaff((Wand) Generator.random(Generator.Category.WAND)));
+		}
+		if ((way.is(HeroSubClass.ASSASSIN))
+				&& curUser.belongings.getItem(CloakOfShadows.class) == null) {
+			collectOrDrop(new CloakOfShadows());
+		}
+		if ((way.is(HeroSubClass.SNIPER))
+				&& curUser.belongings.getItem(SpiritBow.class) == null) {
+			collectOrDrop(new SpiritBow());
+		}
+		if ((way.is(HeroSubClass.PRIEST) || way.is(HeroSubClass.PALADIN))
+				&& curUser.belongings.getItem(HolyTome.class) == null) {
+			collectOrDrop(new HolyTome());
+		}
+		if ((way.is(HeroSubClass.AT400) || way.is(HeroSubClass.AU400))
+				&& curUser.belongings.getItem(InstructionTool.class) == null) {
+			collectOrDrop(new InstructionTool());
+		}
+        /*
+		if ((way.is(HeroSubClass.RUNEMAGE) || way.is(HeroSubClass.COMBATMASTER))
+				&& curUser.belongings.getItem(RingOfKing.class) == null) {
+			collectOrDrop(new RingOfKing());
+		}
+
+         */
+		if (way.is(HeroSubClass.ALCHEMIST) && curUser.belongings.getItem(SprayGun.class) == null) {
+			collectOrDrop(new SprayGun());
+		}
+        if (way.is(HeroSubClass.PIOUS) && curUser.buff(Reason.class) == null) {
+            Buff.affect(curUser,Reason.class);
+        }
+	}
+
+	private boolean hasBrokenSeal() {
+		Armor armor = curUser.belongings.armor();
+		return curUser.belongings.getItem(BrokenSeal.class) != null
+				|| (armor != null && armor.checkSeal() != null);
+	}
+
+	private void collectOrDrop(Item item) {
+		item.identify();
+		if (!item.collect(curUser.belongings.backpack)){
+			Dungeon.level.drop(item, curUser.pos).sprite.drop();
+		}
 	}
 }

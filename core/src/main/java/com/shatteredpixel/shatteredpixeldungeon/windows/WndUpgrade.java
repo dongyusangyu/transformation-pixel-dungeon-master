@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
@@ -221,8 +222,7 @@ public class WndUpgrade extends Window {
 		}
 
 
-		if (Dungeon.hero != null && Dungeon.hero.heroClass == HeroClass.DUELIST
-				&& toUpgrade instanceof MeleeWeapon && ((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelFrom) != null){
+		if (canViewWeaponAbilityUpgrade(toUpgrade, levelFrom)){
 			bottom = fillFields(Messages.get(toUpgrade, "upgrade_ability_stat_name"),
 					((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelFrom),
 					((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelTo),
@@ -603,6 +603,17 @@ public class WndUpgrade extends Window {
 		add(message);
 
 		return message.bottom();
+	}
+
+	private boolean canViewWeaponAbilityUpgrade(Item toUpgrade, int levelFrom){
+		if (Dungeon.hero == null
+				|| !(toUpgrade instanceof MeleeWeapon)
+				|| ((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelFrom) == null) {
+			return false;
+		}
+		return Dungeon.hero.heroClass == HeroClass.DUELIST
+				|| Dungeon.hero.subClass.is(HeroSubClass.CHAMPION)
+				|| (Dungeon.hero.hasTalent(Talent.MARTIAL_TRAIN) && !(toUpgrade instanceof MagesStaff));
 	}
 
 }

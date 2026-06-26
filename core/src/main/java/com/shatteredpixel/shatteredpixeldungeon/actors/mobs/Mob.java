@@ -95,6 +95,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.RedEnvelope;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
@@ -852,10 +853,10 @@ public abstract class Mob extends Char {
 			int restoration = Math.min(damage, HP+shielding());
 			
 			//physical damage that doesn't come from the hero is less effective
-			if (enemy != hero){
+			if (hero != null && enemy != hero){
 				restoration = Math.round(restoration * 0.4f* hero.pointsInTalent(Talent.SOUL_SIPHON)/3f);
 			}
-			if (restoration > 0) {
+			if (hero != null && restoration > 0) {
 				Buff.affect(hero, Hunger.class).affectHunger(restoration* hero.pointsInTalent(Talent.SOUL_EATER)/3f);
 
 				if (hero.HP < hero.HT) {
@@ -918,6 +919,7 @@ public abstract class Mob extends Char {
 
 	@Override
 	public void damage( int dmg, Object src ) {
+		Hero currentHero = hero;
 
 		if (!isInvulnerable(src.getClass())) {
 			if (state == SLEEPING) {
@@ -927,22 +929,22 @@ public abstract class Mob extends Char {
 				if (state != HUNTING) {
 					alerted = true;
 					//assume the hero is hitting us in these common cases
-					if (src instanceof Wand || src instanceof ClericSpell || src instanceof ArmorAbility) {
-						aggro(Dungeon.hero);
-						target = Dungeon.hero.pos;
+					if ((src instanceof Wand || src instanceof ClericSpell || src instanceof ArmorAbility) && currentHero != null) {
+						aggro(currentHero);
+						target = currentHero.pos;
 					}
 				} else {
-					if (src instanceof Wand || src instanceof ClericSpell || src instanceof ArmorAbility) {
-						recentlyAttackedBy.add(Dungeon.hero);
+					if ((src instanceof Wand || src instanceof ClericSpell || src instanceof ArmorAbility) && currentHero != null) {
+						recentlyAttackedBy.add(currentHero);
 					}
 				}
 			}
 		}
-		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
-			dmg*=1+hero.pointsInTalent(Talent.WELLFED_MEAL)*0.15f;
+		if (currentHero != null && currentHero.hasTalent(Talent.WELLFED_MEAL) && !currentHero.buffs(WellFed.class).isEmpty()){
+			dmg*=1+currentHero.pointsInTalent(Talent.WELLFED_MEAL)*0.15f;
 		}
-		if(hero.hasTalent(Talent.QUICK_TOOL) && hero.heroClass!=HeroClass.DM400 && alignment==Alignment.ALLY){
-			dmg*=1-hero.pointsInTalent(Talent.QUICK_TOOL)*0.1f;
+		if (currentHero != null && currentHero.hasTalent(Talent.QUICK_TOOL) && currentHero.heroClass!=HeroClass.DM400 && alignment==Alignment.ALLY){
+			dmg*=1-currentHero.pointsInTalent(Talent.QUICK_TOOL)*0.1f;
 		}
 		super.damage( dmg, src );
 	}
@@ -955,12 +957,13 @@ public abstract class Mob extends Char {
 		
 		Dungeon.level.mobs.remove( this );
 
-		if (hero.buff(MindVision.class) != null){
+		Hero currentHero = hero;
+		if (currentHero != null && currentHero.buff(MindVision.class) != null){
 			Dungeon.observe();
 			GameScene.updateFog(pos, 2);
 		}
 
-		if (hero.isAlive()) {
+		if (currentHero != null && currentHero.isAlive()) {
 			
 			if (alignment == Alignment.ENEMY) {
 				Statistics.enemiesSlain++;
@@ -975,18 +978,18 @@ public abstract class Mob extends Char {
 					mlvl+=hero.pointsInTalent(Talent.FAST_BREAK)+1;
 				}
 				
-				int exp = hero.lvl <= mlvl ? EXP : 0;
+				int exp = currentHero.lvl <= mlvl ? EXP : 0;
 
 				//during ascent, under-levelled enemies grant 10 xp each until level 30
 				// after this enemy kills which reduce the amulet curse still grant 10 effective xp
 				// for the purposes of on-exp effects, see AscensionChallenge.processEnemyKill
-				if (hero.buff(AscensionChallenge.class) != null &&
-						exp == 0 && mlvl > 0 && EXP > 0 && hero.lvl < Hero.MAX_LEVEL){
+				if (currentHero.buff(AscensionChallenge.class) != null &&
+						exp == 0 && mlvl > 0 && EXP > 0 && currentHero.lvl < Hero.MAX_LEVEL){
 					exp = Math.round(10 * spawningWeight());
 				}
 
 				if (exp > 0) {
-					hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(exp), FloatingText.EXPERIENCE);
+					currentHero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(exp), FloatingText.EXPERIENCE);
 				}
 				hero.earnExp(exp, getClass());
 
@@ -1025,7 +1028,7 @@ public abstract class Mob extends Char {
 			Buff b=this.buff(Resurrection.REsurrection.class);
 			b.detach();
 			this.HP=this.HT;
-			if(hero.pointsInTalent(Talent.RESURRECTION)==3){
+			if(hero != null && hero.pointsInTalent(Talent.RESURRECTION)==3){
 				Buff.affect(this, Bless.class,20);
 			}
 			return;
@@ -1043,7 +1046,7 @@ public abstract class Mob extends Char {
 			if (EXP % 2 == 1) EXP += Random.Int(2);
 			EXP /= 2;
 		}
-		if(hero.hasTalent(Talent.RETURNING_HONOR)){
+		if(hero != null && hero.hasTalent(Talent.RETURNING_HONOR)){
 			EXP+=(int)(EXP*0.25*hero.pointsInTalent(Talent.RETURNING_HONOR));
 		}
 
@@ -1056,15 +1059,15 @@ public abstract class Mob extends Char {
 			Talent.onEmenyDie(this,cause);
 			rollToDropLoot();
 		}
-		if(hero.pointsInTalent(Talent.ZHUOJUN_BUTCHER)>Random.Int(10) && this.properties().isEmpty() && (!(this instanceof NPC) && hero.lvl <= mlvl + 2)){
+		if(hero != null && hero.pointsInTalent(Talent.ZHUOJUN_BUTCHER)>Random.Int(10) && this.properties().isEmpty() && (!(this instanceof NPC) && hero.lvl <= mlvl + 2)){
 			Dungeon.level.drop(new MysteryMeat(),pos).sprite.drop(pos);
 		}
-		if(hero.hasTalent(Talent.INSTANT_REFINING) && hero.pointsInTalent(Talent.INSTANT_REFINING)+1>Random.Int(5) &&
+		if(hero != null && hero.hasTalent(Talent.INSTANT_REFINING) && hero.pointsInTalent(Talent.INSTANT_REFINING)+1>Random.Int(5) &&
 				buff(AllyBuff.class)==null && this.alignment== Alignment.ENEMY  && hero.lvl <= mlvl + 2){
 			Dungeon.energy+=1;
 			hero.sprite.showStatusWithIcon( 0x44CCFF, Integer.toString(1), FloatingText.ENERGY );
 		}
-		if (hero.isAlive() && !Dungeon.level.heroFOV[pos] ) {
+		if (hero != null && hero.isAlive() && !Dungeon.level.heroFOV[pos] ) {
 			GLog.i( Messages.get(this, "died") );
 			if(hero.hasTalent(Talent.POWERFUL_CALCULATIONS)){
                 hero.heal(hero.pointsInTalent(Talent.POWERFUL_CALCULATIONS));
@@ -1082,6 +1085,7 @@ public abstract class Mob extends Char {
 		}
 		if (!(this instanceof Wraith)
 				&& soulMarked
+				&& hero != null
 				&& Random.Float() < (0.4f* hero.pointsInTalent(Talent.NECROMANCERS_MINIONS)/3f)){
 			Wraith w = Wraith.spawnAt(pos, Wraith.class);
 			if (w != null) {
@@ -1124,6 +1128,7 @@ public abstract class Mob extends Char {
 
 
 		if (!(this instanceof Wraith) && Dungeon.level.water[this.pos]
+				&& hero != null
 				&& hero.hasTalent(Talent.WATER_GHOST) && Random.Int(5)==1){
 			Wraith w = Wraith.spawnAt(pos, Wraith.class);
 			if(w!=null){
@@ -1146,6 +1151,11 @@ public abstract class Mob extends Char {
 		float lootChance = this.lootChance;
 
 		float dropBonus = RingOfWealth.dropChanceMultiplier( hero );
+
+		if (hero == null) {
+			dropBonus += ShardOfOblivion.lootChanceMultiplier()-1f;
+			return lootChance * dropBonus;
+		}
 
 		Talent.BountyHunterTracker bhTracker = hero.buff(Talent.BountyHunterTracker.class);
 		if (bhTracker != null){
@@ -1185,6 +1195,28 @@ public abstract class Mob extends Char {
 			}
 		}
 
+		if (buff(ChampionEnemy.RandomMiniBoss.class) != null) {
+			Item loot;
+			switch (Random.Int(3)) {
+				case 0:
+				default:
+					loot = Generator.random(Generator.Category.WEAPON);
+					break;
+				case 1:
+					loot = Generator.random(Generator.Category.MISSILE);
+					break;
+				case 2:
+					loot = Generator.random(Generator.Category.ARMOR);
+					break;
+			}
+			if (loot != null) {
+				loot.level(Random.Int(4));
+				loot.cursed = false;
+				loot.cursedKnown = true;
+				Dungeon.level.drop(loot, pos).sprite.drop();
+			}
+		}
+
 		//ring of wealth logic
 		if (Ring.getBuffedBonus(hero, RingOfWealth.Wealth.class) > 0) {
 			int rolls = 1;
@@ -1206,6 +1238,7 @@ public abstract class Mob extends Char {
 
 		//soul eater talent
 		if (buff(SoulMark.class) != null &&
+				hero != null &&
 				Random.Int(10) < hero.pointsInTalent(Talent.SOUL_EATER)){
 			Talent.onFoodEaten(hero, 0, null);
 		}
@@ -1331,7 +1364,7 @@ public abstract class Mob extends Char {
 						float bestChance = detectionChance(ch);
 						//silent steps rogue talent, which also applies to rogue's shadow clone
 						if ((ch instanceof Hero || ch instanceof ShadowClone.ShadowAlly)
-								&& Dungeon.hero.hasTalent(Talent.SILENT_STEPS)){
+								&& Dungeon.hero != null && Dungeon.hero.hasTalent(Talent.SILENT_STEPS)){
 							if (distance(ch) >= 4 - Dungeon.hero.pointsInTalent(Talent.SILENT_STEPS)) {
 								bestChance = Float.POSITIVE_INFINITY;
 							}
@@ -1391,8 +1424,8 @@ public abstract class Mob extends Char {
 				for (Mob mob : Dungeon.level.mobs) {
 					if (mob.paralysed <= 0
 							&& Dungeon.level.distance(pos, mob.pos) <= distance && mob.alignment != Char.Alignment.ALLY
-							&& mob.state != mob.HUNTING && !(hero.hasTalent(Talent.NO_MORE_MOB) && Random.Int(2)==1)) {
-						if(hero.pointsInTalent(Talent.NO_MORE_MOB)>1){
+							&& mob.state != mob.HUNTING && !(hero != null && hero.hasTalent(Talent.NO_MORE_MOB) && Random.Int(2)==1)) {
+						if(hero != null && hero.pointsInTalent(Talent.NO_MORE_MOB)>1){
 							state = WANDERING;
 						}else{
 							mob.beckon(target);

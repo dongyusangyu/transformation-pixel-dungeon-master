@@ -80,7 +80,7 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
 
     @Override
     public int indicatorColor() {
-        return 0x000000;
+        return 0x444444;
     }
     @Override
     public void doAction() {

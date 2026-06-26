@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotio
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -74,6 +75,8 @@ public class StoneOfIntuition extends InventoryStone {
 			return !((Potion) item).isKnown();
 		} else if (item instanceof Scroll){
 			return !((Scroll) item).isKnown();
+		} else if (item instanceof Wand && Dungeon.hero != null && Dungeon.hero.randomMode){
+			return !((Wand) item).isKnown();
 		}
 		return false;
 	}
@@ -101,14 +104,17 @@ public class StoneOfIntuition extends InventoryStone {
 
 	public static class IntuitionUseTracker extends Buff {{ revivePersists = true; }};
 	
-	private static Class curGuess = null;
+	private static Class<? extends Item> curGuess = null;
 
 	public class WndGuess extends Window {
 		
 		private static final int WIDTH = 120;
 		private static final int BTN_SIZE = 20;
+		private final Item agentMinItem;
+		private final ArrayList<Class<? extends Item>> agentMinChoices = new ArrayList<>();
 		
 		public WndGuess(final Item item){
+			agentMinItem = item;
 			
 			IconTitle titlebar = new IconTitle();
 			titlebar.icon( new ItemSprite(item) );
@@ -126,69 +132,7 @@ public class StoneOfIntuition extends InventoryStone {
 				@Override
 				protected void onClick() {
 					super.onClick();
-					/*
-					useAnimation();
-					Catalog.countUse(StoneOfIntuition.class);
-					if (item.getClass() == curGuess){
-						if (item instanceof Ring){
-							((Ring) item).setKnown();
-						} else {
-							item.identify();
-						}
-						GLog.p( Messages.get(WndGuess.class, "correct") );
-						curUser.sprite.parent.add( new Identification( curUser.sprite.center().offset( 0, -16 ) ) );
-					} else {
-						GLog.w( Messages.get(WndGuess.class, "incorrect") );
-					}
-					if (curUser.buff(IntuitionUseTracker.class) == null){
-						Buff.affect(curUser, IntuitionUseTracker.class);
-					} else {
-						curItem.detach( curUser.belongings.backpack );
-						curUser.buff(IntuitionUseTracker.class).detach();
-					}
-					curGuess = null;
-					hide();
-
-					 */
-					useAnimation();
-					if (item.getClass() == curGuess){
-						if (item instanceof Ring){
-							((Ring) item).setKnown();
-							Item.updateQuickslot();
-						} else {
-							item.identify();
-						}
-						GLog.p( Messages.get(WndGuess.class, "correct") );
-						curUser.sprite.parent.add( new Identification( curUser.sprite.center().offset( 0, -16 ) ) );
-
-						if(hero != null && hero.hasTalent(Talent.FLASH_GENIUS)){
-                            int cnt =0;
-							for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
-								Buff.affect(mob, Blindness.class,hero.pointsInTalent(Talent.FLASH_GENIUS));
-								Buff.affect(mob, Vertigo.class,hero.pointsInTalent(Talent.FLASH_GENIUS));
-								cnt++;
-							}
-                            if(cnt>0){
-                                GameScene.flash(0x80FFFFFF);
-                                Sample.INSTANCE.play( Assets.Sounds.BLAST );
-                            }
-						}
-
-					} else {
-						GLog.w( Messages.get(WndGuess.class, "incorrect") );
-					}
-					if (!anonymous) {
-						Catalog.countUse(StoneOfIntuition.class);
-						if (curUser.buff(IntuitionUseTracker.class) == null) {
-							Buff.affect(curUser, IntuitionUseTracker.class);
-						} else {
-							curItem.detach(curUser.belongings.backpack);
-							curUser.buff(IntuitionUseTracker.class).detach();
-						}
-						Talent.onRunestoneUsed(curUser, curUser.pos, StoneOfIntuition.class);
-					}
-					curGuess = null;
-					hide();
+					submitGuess(item);
 				}
 			};
 			guess.visible = false;
@@ -224,6 +168,8 @@ public class StoneOfIntuition extends InventoryStone {
 				}
 			} else if (item instanceof Ring) {
 				unIDed.addAll(Ring.getUnknown());
+			} else if (item instanceof Wand && Dungeon.hero != null && Dungeon.hero.randomMode) {
+				unIDed.addAll(Wand.getUnknown());
 			} else {
 				hide();
 				return;
@@ -239,6 +185,7 @@ public class StoneOfIntuition extends InventoryStone {
 			}
 			
 			for (final Class<?extends Item> i : unIDed){
+				agentMinChoices.add(i);
 
 				IconButton btn = new IconButton(){
 					@Override
@@ -251,7 +198,11 @@ public class StoneOfIntuition extends InventoryStone {
 					}
 				};
 				Image im = new Image(Assets.Sprites.ITEM_ICONS);
-				im.frame(ItemSpriteSheet.Icons.film.get(Reflection.newInstance(i).icon));
+				if (item instanceof Wand && Dungeon.hero != null && Dungeon.hero.randomMode) {
+					im.frame(ItemSpriteSheet.Icons.film.get(Wand.randomModeIconForClass(i)));
+				} else {
+					im.frame(ItemSpriteSheet.Icons.film.get(Reflection.newInstance(i).icon));
+				}
 				im.scale.set(2f);
 				btn.icon(im);
 				btn.setRect(left + placed*BTN_SIZE, top, BTN_SIZE, BTN_SIZE);
@@ -269,6 +220,64 @@ public class StoneOfIntuition extends InventoryStone {
 			
 			resize(WIDTH, 100);
 			
+		}
+
+		public int agentMinOptionCount() {
+			return agentMinChoices.size();
+		}
+
+		public boolean agentMinSelectOption(int index) {
+			if (index < 0 || index >= agentMinChoices.size() || agentMinItem == null) {
+				return false;
+			}
+			curGuess = agentMinChoices.get(index);
+			submitGuess(agentMinItem);
+			return true;
+		}
+
+		private void submitGuess(Item item) {
+			useAnimation();
+			if (item.getClass() == curGuess){
+				if (item instanceof Ring){
+					((Ring) item).setKnown();
+					Item.updateQuickslot();
+				} else if (item instanceof Wand && curGuess != null && Dungeon.hero != null && Dungeon.hero.randomMode){
+					Wand.setKnown((Class<? extends Wand>) curGuess);
+					Item.updateQuickslot();
+				} else {
+					item.identify();
+				}
+				GLog.p( Messages.get(WndGuess.class, "correct") );
+				curUser.sprite.parent.add( new Identification( curUser.sprite.center().offset( 0, -16 ) ) );
+
+				if(hero != null && hero.hasTalent(Talent.FLASH_GENIUS)){
+					int cnt = 0;
+					for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
+						Buff.affect(mob, Blindness.class,hero.pointsInTalent(Talent.FLASH_GENIUS));
+						Buff.affect(mob, Vertigo.class,hero.pointsInTalent(Talent.FLASH_GENIUS));
+						cnt++;
+					}
+					if(cnt>0){
+						GameScene.flash(0x80FFFFFF);
+						Sample.INSTANCE.play( Assets.Sounds.BLAST );
+					}
+				}
+
+			} else {
+				GLog.w( Messages.get(WndGuess.class, "incorrect") );
+			}
+			if (!anonymous) {
+				Catalog.countUse(StoneOfIntuition.class);
+				if (curUser.buff(IntuitionUseTracker.class) == null) {
+					Buff.affect(curUser, IntuitionUseTracker.class);
+				} else {
+					curItem.detach(curUser.belongings.backpack);
+					curUser.buff(IntuitionUseTracker.class).detach();
+				}
+				Talent.onRunestoneUsed(curUser, curUser.pos, StoneOfIntuition.class);
+			}
+			curGuess = null;
+			hide();
 		}
 
 	}

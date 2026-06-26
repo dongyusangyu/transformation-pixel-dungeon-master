@@ -20,8 +20,11 @@ import java.util.Locale;
 public class AgentMinDatasetRecorder {
 
 	private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS");
+	private static final String ENABLED_PROPERTY = "agentmin.record.enabled";
 	private static final String ENABLED_ENV = "AGENTMIN_RECORD_ENABLED";
+	private static final String DIR_PROPERTY = "agentmin.record.dir";
 	private static final String DIR_ENV = "AGENTMIN_RECORD_DIR";
+	private static final String REPORT_INTERVAL_PROPERTY = "agentmin.record.reward_interval";
 	private static final String REPORT_INTERVAL_ENV = "AGENTMIN_RECORD_REWARD_INTERVAL";
 
 	private static BufferedWriter writer;
@@ -35,10 +38,9 @@ public class AgentMinDatasetRecorder {
 	}
 
 	public static boolean enabled() {
-		String enabled = System.getenv(ENABLED_ENV);
-		String dir = System.getenv(DIR_ENV);
-		return enabled != null
-				&& enabled.equalsIgnoreCase("true")
+		String enabled = value(ENABLED_PROPERTY, ENABLED_ENV, "false");
+		String dir = recordDirectory();
+		return enabled.equalsIgnoreCase("true")
 				&& dir != null
 				&& !dir.trim().isEmpty()
 				&& !AgentMinBridgeConfig.ENABLED;
@@ -236,7 +238,7 @@ public class AgentMinDatasetRecorder {
 		if (writer != null) {
 			return;
 		}
-		Path dir = Paths.get(System.getenv(DIR_ENV));
+		Path dir = Paths.get(recordDirectory());
 		Files.createDirectories(dir);
 		runId = "agentmin_demo_" + LocalDateTime.now().format(FILE_TIME);
 		Path file = dir.resolve(runId + ".jsonl");
@@ -277,7 +279,7 @@ public class AgentMinDatasetRecorder {
 	}
 
 	private static int rewardReportInterval() {
-		String raw = System.getenv(REPORT_INTERVAL_ENV);
+		String raw = value(REPORT_INTERVAL_PROPERTY, REPORT_INTERVAL_ENV, "10");
 		if (raw == null || raw.trim().isEmpty()) {
 			return 10;
 		}
@@ -286,5 +288,21 @@ public class AgentMinDatasetRecorder {
 		} catch (NumberFormatException ignored) {
 			return 10;
 		}
+	}
+
+	private static String recordDirectory() {
+		return value(DIR_PROPERTY, DIR_ENV, "");
+	}
+
+	private static String value(String property, String environment, String fallback) {
+		String configured = System.getProperty(property);
+		if (configured != null && !configured.trim().isEmpty()) {
+			return configured;
+		}
+		configured = System.getenv(environment);
+		if (configured != null && !configured.trim().isEmpty()) {
+			return configured;
+		}
+		return fallback;
 	}
 }

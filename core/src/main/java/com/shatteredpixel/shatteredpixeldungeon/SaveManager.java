@@ -58,6 +58,7 @@ public class SaveManager {
     private static final String JOURNAL_KEY = "journal";
     private static final String LEGACY_GLOBAL_FILE = "global.json";
     private static final String CLOUD_DEVICE_ID_KEY = "cloud_device_id";
+    private static final String CLOUD_PLAYER_UUID_KEY = "cloud_player_uuid";
     private static final Pattern LEGACY_LEVEL_FILE = Pattern.compile("depth(\\d+)(?:-branch(\\d+))?\\.dat");
 
     private static final HashMap<Integer, SaveInfo> saveInfoCache = new HashMap<>();
@@ -368,6 +369,10 @@ public class SaveManager {
             if (deviceID != null && !deviceID.isEmpty() && SPDSettings.cloudDeviceID() == null) {
                 SPDSettings.cloudDeviceID(deviceID);
             }
+            String playerUUID = global.getString(CLOUD_PLAYER_UUID_KEY);
+            if (playerUUID != null && !playerUUID.isEmpty() && SPDSettings.cloudPlayerUUID() == null) {
+                SPDSettings.cloudPlayerUUID(playerUUID);
+            }
             saveGlobal(global);
             FileUtils.deleteFile(LEGACY_GLOBAL_FILE);
         } catch (Exception e) {
@@ -386,6 +391,12 @@ public class SaveManager {
      * @throws IOException 保存失败
      */
     public static void saveGlobal(Bundle bundle) throws IOException {
+        if (bundle.contains(CLOUD_DEVICE_ID_KEY)) {
+            SPDSettings.cloudDeviceID(bundle.getString(CLOUD_DEVICE_ID_KEY));
+        }
+        if (bundle.contains(CLOUD_PLAYER_UUID_KEY)) {
+            SPDSettings.cloudPlayerUUID(bundle.getString(CLOUD_PLAYER_UUID_KEY));
+        }
         if (bundle.contains(BADGES_KEY)) {
             FileUtils.bundleToFile(Badges.BADGES_FILE, bundle.getBundle(BADGES_KEY));
         }
@@ -407,6 +418,12 @@ public class SaveManager {
         Bundle global = new Bundle();
         global.put("lastSaved", System.currentTimeMillis());
         global.put("version", Game.versionCode);
+        if (SPDSettings.cloudDeviceID() != null) {
+            global.put(CLOUD_DEVICE_ID_KEY, SPDSettings.cloudDeviceID());
+        }
+        if (SPDSettings.cloudPlayerUUID() != null) {
+            global.put(CLOUD_PLAYER_UUID_KEY, SPDSettings.cloudPlayerUUID());
+        }
         putFileBundle(global, BADGES_KEY, Badges.BADGES_FILE);
         putFileBundle(global, RANKINGS_KEY, Rankings.RANKINGS_FILE);
         putFileBundle(global, JOURNAL_KEY, Journal.JOURNAL_FILE);

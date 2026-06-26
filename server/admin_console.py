@@ -7,6 +7,7 @@ import re
 import secrets
 import sqlite3
 import time
+import uuid
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -34,6 +35,16 @@ def day_key(timestamp_ms: int = None) -> str:
     return time.strftime("%Y-%m-%d", time.localtime((timestamp_ms or now_ms()) / 1000))
 
 
+def valid_uuid(value: str) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        uuid.UUID(value)
+        return True
+    except ValueError:
+        return False
+
+
 class AdminStore:
     def __init__(self, db_path: Path, snapshot_dir: Path, keep_snapshots: int, actors_zh_path: Path = None):
         self.db_path = db_path
@@ -56,14 +67,35 @@ class AdminStore:
                     global_data TEXT NOT NULL,
                     talent_stats TEXT NOT NULL,
                     updated_at INTEGER NOT NULL,
-                    created_at INTEGER NOT NULL DEFAULT 0
+                    created_at INTEGER NOT NULL DEFAULT 0,
+                    restore_allowed INTEGER NOT NULL DEFAULT 0
                 )
                 """
             )
             cols = [row[1] for row in db.execute("PRAGMA table_info(player_cloud_data)").fetchall()]
             if "created_at" not in cols:
                 db.execute("ALTER TABLE player_cloud_data ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0")
+            if "player_uuid" not in cols:
+                db.execute("ALTER TABLE player_cloud_data ADD COLUMN player_uuid TEXT")
+            if "restore_allowed" not in cols:
+                db.execute("ALTER TABLE player_cloud_data ADD COLUMN restore_allowed INTEGER NOT NULL DEFAULT 0")
             db.execute("UPDATE player_cloud_data SET created_at = updated_at WHERE created_at = 0")
+            db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS device_uuid_map (
+                    device_key TEXT PRIMARY KEY,
+                    player_uuid TEXT NOT NULL UNIQUE,
+                    updated_at INTEGER NOT NULL
+                )
+                """
+            )
+            rows = db.execute("SELECT device_ip FROM player_cloud_data WHERE player_uuid IS NULL OR player_uuid = ''").fetchall()
+            for (device_ip,) in rows:
+                player_uuid = self._new_uuid(db)
+                db.execute("UPDATE player_cloud_data SET player_uuid = ? WHERE device_ip = ?", (player_uuid, device_ip))
+            for device_ip, player_uuid in db.execute("SELECT device_ip, player_uuid FROM player_cloud_data").fetchall():
+                self._bind_device_key(db, device_ip, player_uuid)
+            db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_player_cloud_uuid ON player_cloud_data(player_uuid)")
             db.execute(
                 """
                 CREATE TABLE IF NOT EXISTS device_blacklist (
@@ -88,6 +120,23 @@ class AdminStore:
             )
             self._seed_activity_baseline(db)
 
+    @staticmethod
+    def _bind_device_key(db, device_key: str, player_uuid: str):
+        if not device_key or not player_uuid:
+            return
+        db.execute("DELETE FROM device_uuid_map WHERE device_key = ? OR player_uuid = ?", (device_key, player_uuid))
+        db.execute(
+            "INSERT INTO device_uuid_map(device_key, player_uuid, updated_at) VALUES (?, ?, ?)",
+            (device_key, player_uuid, now_ms()),
+        )
+
+    @staticmethod
+    def _new_uuid(db):
+        while True:
+            value = str(uuid.uuid4())
+            if db.execute("SELECT 1 FROM player_cloud_data WHERE player_uuid = ?", (value,)).fetchone() is None:
+                return value
+
     def player_stats(self):
         with self._connect() as db:
             total = db.execute("SELECT COUNT(*) FROM player_cloud_data").fetchone()[0]
@@ -98,17 +147,18 @@ class AdminStore:
         with self._connect() as db:
             rows = db.execute(
                 """
-                SELECT p.device_ip, p.talent_stats, p.updated_at, p.created_at, b.reason, b.updated_at
+                SELECT p.player_uuid, p.device_ip, p.talent_stats, p.updated_at, p.created_at, p.restore_allowed, b.reason, b.updated_at
                 FROM player_cloud_data p
                 LEFT JOIN device_blacklist b ON b.device_ip = p.device_ip
                 ORDER BY p.updated_at DESC
                 """
             ).fetchall()
         players = []
-        for device_ip, stats_json, updated_at, created_at, reason, blacklisted_at in rows:
+        for player_uuid, device_ip, stats_json, updated_at, created_at, restore_allowed, reason, blacklisted_at in rows:
             stats = self._loads(stats_json)
             selected, appeared, targeted = self._totals(stats)
             players.append({
+                "player_uuid": player_uuid,
                 "device_ip": device_ip,
                 "updated_at": updated_at,
                 "created_at": created_at,
@@ -116,40 +166,53 @@ class AdminStore:
                 "selected": selected,
                 "appeared": appeared,
                 "targeted": targeted,
+                "restore_allowed": bool(restore_allowed),
                 "blacklisted": reason is not None,
                 "blacklist_reason": reason or "",
                 "blacklisted_at": blacklisted_at or 0,
             })
         return players
 
-    def get_player(self, device_ip: str):
+    def get_player(self, player_uuid: str = "", device_ip: str = ""):
         with self._connect() as db:
-            row = db.execute(
-                "SELECT device_ip, global_data, talent_stats, updated_at, created_at FROM player_cloud_data WHERE device_ip = ?",
-                (device_ip,),
-            ).fetchone()
+            if player_uuid:
+                row = db.execute(
+                    "SELECT player_uuid, device_ip, global_data, talent_stats, updated_at, created_at, restore_allowed FROM player_cloud_data WHERE player_uuid = ?",
+                    (player_uuid,),
+                ).fetchone()
+            else:
+                row = db.execute(
+                    "SELECT player_uuid, device_ip, global_data, talent_stats, updated_at, created_at, restore_allowed FROM player_cloud_data WHERE device_ip = ?",
+                    (device_ip,),
+                ).fetchone()
         if row is None:
             return None
         return {
-            "device_ip": row[0],
-            "global_data": self._loads(row[1]),
-            "talent_stats": self._loads(row[2]),
-            "updated_at": row[3],
-            "created_at": row[4],
-            "blacklisted": self.is_blacklisted(row[0]),
+            "player_uuid": row[0],
+            "device_ip": row[1],
+            "global_data": self._loads(row[2]),
+            "talent_stats": self._loads(row[3]),
+            "updated_at": row[4],
+            "created_at": row[5],
+            "restore_allowed": bool(row[6]),
+            "blacklisted": self.is_blacklisted(row[1]),
         }
 
-    def update_player(self, device_ip: str, global_data: dict, talent_stats: dict):
+    def update_player(self, player_uuid: str, device_ip: str, global_data: dict, talent_stats: dict):
         ts = now_ms()
         with self._connect() as db:
-            old_row = db.execute("SELECT talent_stats FROM player_cloud_data WHERE device_ip = ?", (device_ip,)).fetchone()
+            if not valid_uuid(player_uuid):
+                row = db.execute("SELECT player_uuid FROM player_cloud_data WHERE device_ip = ?", (device_ip,)).fetchone()
+                player_uuid = row[0] if row else self._new_uuid(db)
+            old_row = db.execute("SELECT talent_stats FROM player_cloud_data WHERE player_uuid = ?", (player_uuid,)).fetchone()
             old_totals = self._totals(self._loads(old_row[0])) if old_row else (0, 0, 0)
             new_totals = self._totals(talent_stats)
             db.execute(
                 """
-                INSERT INTO player_cloud_data(device_ip, global_data, talent_stats, updated_at, created_at)
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(device_ip) DO UPDATE SET
+                INSERT INTO player_cloud_data(device_ip, player_uuid, global_data, talent_stats, updated_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(player_uuid) DO UPDATE SET
+                    device_ip = excluded.device_ip,
                     global_data = excluded.global_data,
                     talent_stats = excluded.talent_stats,
                     updated_at = excluded.updated_at,
@@ -160,6 +223,7 @@ class AdminStore:
                 """,
                 (
                     device_ip,
+                    player_uuid,
                     json.dumps(global_data, ensure_ascii=False, separators=(",", ":")),
                     json.dumps(talent_stats, ensure_ascii=False, separators=(",", ":")),
                     ts,
@@ -174,10 +238,68 @@ class AdminStore:
                 appeared_delta=max(0, new_totals[1] - old_totals[1]),
                 targeted_delta=max(0, new_totals[2] - old_totals[2]),
             )
+            self._bind_device_key(db, device_ip, player_uuid)
 
-    def delete_player(self, device_ip: str):
+    def delete_player(self, player_uuid: str = "", device_ip: str = ""):
         with self._connect() as db:
-            db.execute("DELETE FROM player_cloud_data WHERE device_ip = ?", (device_ip,))
+            if player_uuid:
+                db.execute("DELETE FROM player_cloud_data WHERE player_uuid = ?", (player_uuid,))
+                db.execute("DELETE FROM device_uuid_map WHERE player_uuid = ?", (player_uuid,))
+            elif device_ip:
+                row = db.execute("SELECT player_uuid FROM player_cloud_data WHERE device_ip = ?", (device_ip,)).fetchone()
+                db.execute("DELETE FROM player_cloud_data WHERE device_ip = ?", (device_ip,))
+                db.execute("DELETE FROM device_uuid_map WHERE device_key = ?", (device_ip,))
+                if row:
+                    db.execute("DELETE FROM device_uuid_map WHERE player_uuid = ?", (row[0],))
+
+    def device_for_uuid(self, player_uuid: str):
+        with self._connect() as db:
+            row = db.execute("SELECT device_ip FROM player_cloud_data WHERE player_uuid = ?", (player_uuid,)).fetchone()
+        return row[0] if row else ""
+
+    def set_restore_allowed(self, player_uuid: str, allowed: bool):
+        if not valid_uuid(player_uuid):
+            raise ValueError("invalid_uuid")
+        with self._connect() as db:
+            cursor = db.execute(
+                "UPDATE player_cloud_data SET restore_allowed = ? WHERE player_uuid = ?",
+                (1 if allowed else 0, player_uuid),
+            )
+        return cursor.rowcount > 0
+
+    def migrate_player(self, source_uuid: str, target_uuid: str):
+        if not valid_uuid(source_uuid) or not valid_uuid(target_uuid) or source_uuid == target_uuid:
+            raise ValueError("invalid_uuid")
+        ts = now_ms()
+        with self._connect() as db:
+            source = db.execute(
+                "SELECT device_ip, global_data, talent_stats, created_at FROM player_cloud_data WHERE player_uuid = ?",
+                (source_uuid,),
+            ).fetchone()
+            if source is None:
+                raise KeyError("source_not_found")
+            target = db.execute(
+                "SELECT device_ip, created_at FROM player_cloud_data WHERE player_uuid = ?",
+                (target_uuid,),
+            ).fetchone()
+            target_device = target[0] if target else source[0]
+            created_at = min(source[3] or ts, target[1] if target else source[3] or ts)
+            db.execute(
+                """
+                INSERT INTO player_cloud_data(device_ip, player_uuid, global_data, talent_stats, updated_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(player_uuid) DO UPDATE SET
+                    global_data = excluded.global_data,
+                    talent_stats = excluded.talent_stats,
+                    updated_at = excluded.updated_at,
+                    created_at = excluded.created_at
+                """,
+                (target_device, target_uuid, source[1], source[2], ts, created_at),
+            )
+            db.execute("DELETE FROM player_cloud_data WHERE player_uuid = ?", (source_uuid,))
+            db.execute("DELETE FROM device_uuid_map WHERE player_uuid = ?", (source_uuid,))
+            self._bind_device_key(db, target_device, target_uuid)
+        return {"source_uuid": source_uuid, "target_uuid": target_uuid}
 
     def set_blacklisted(self, device_ip: str, blacklisted: bool, reason: str = ""):
         with self._connect() as db:
@@ -332,7 +454,7 @@ class AdminStore:
         with self._connect() as db:
             rows = db.execute(
                 f"""
-                SELECT p.device_ip, p.global_data, p.talent_stats, p.updated_at, p.created_at, b.reason, b.updated_at
+                SELECT p.player_uuid, p.device_ip, p.global_data, p.talent_stats, p.updated_at, p.created_at, p.restore_allowed, b.reason, b.updated_at
                 FROM player_cloud_data p
                 LEFT JOIN device_blacklist b ON b.device_ip = p.device_ip
                 {where}
@@ -340,14 +462,16 @@ class AdminStore:
                 """
             ).fetchall()
         return [{
-            "device_ip": row[0],
-            "global_data": self._loads(row[1]),
-            "talent_stats": self._loads(row[2]),
-            "updated_at": row[3],
-            "created_at": row[4],
-            "blacklisted": row[5] is not None,
-            "blacklist_reason": row[5] or "",
-            "blacklisted_at": row[6] or 0,
+            "player_uuid": row[0],
+            "device_ip": row[1],
+            "global_data": self._loads(row[2]),
+            "talent_stats": self._loads(row[3]),
+            "updated_at": row[4],
+            "created_at": row[5],
+            "restore_allowed": bool(row[6]),
+            "blacklisted": row[7] is not None,
+            "blacklist_reason": row[7] or "",
+            "blacklisted_at": row[8] or 0,
         } for row in rows]
 
     def export_csv(self):
@@ -507,8 +631,10 @@ class AdminHandler(BaseHTTPRequestHandler):
             self._send_json({"ok": True, "snapshots": self.store.list_snapshots()})
             return
         if parsed.path == "/api/player":
-            device_ip = parse_qs(parsed.query).get("device_ip", [""])[0]
-            player = self.store.get_player(device_ip)
+            params = parse_qs(parsed.query)
+            player_uuid = params.get("player_uuid", [""])[0]
+            device_ip = params.get("device_ip", [""])[0]
+            player = self.store.get_player(player_uuid, device_ip)
             self._send_json({"ok": player is not None, "player": player} if player else {"ok": False, "error": "not_found"}, status=200 if player else 404)
             return
         if parsed.path == "/api/export.json":
@@ -540,22 +666,50 @@ class AdminHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/player/update":
             payload = self._read_json()
+            player_uuid = payload.get("player_uuid", "").strip()
             device_ip = payload.get("device_ip", "").strip()
             global_data = payload.get("global_data") or {}
             talent_stats = payload.get("talent_stats") or {}
             if not device_ip or not isinstance(global_data, dict) or not isinstance(talent_stats, dict):
                 self._send_json({"ok": False, "error": "invalid_payload"}, status=400)
                 return
-            self.store.update_player(device_ip, global_data, talent_stats)
+            self.store.update_player(player_uuid, device_ip, global_data, talent_stats)
             self._send_json({"ok": True})
             return
         if parsed.path == "/api/player/delete":
-            self.store.delete_player(self._read_json().get("device_ip", "").strip())
+            payload = self._read_json()
+            self.store.delete_player(payload.get("player_uuid", "").strip(), payload.get("device_ip", "").strip())
             self._send_json({"ok": True})
+            return
+        if parsed.path == "/api/player/migrate":
+            payload = self._read_json()
+            try:
+                self._send_json({"ok": True, "migration": self.store.migrate_player(
+                    payload.get("source_uuid", "").strip(),
+                    payload.get("target_uuid", "").strip(),
+                )})
+            except ValueError:
+                self._send_json({"ok": False, "error": "invalid_uuid"}, status=400)
+            except KeyError:
+                self._send_json({"ok": False, "error": "source_not_found"}, status=404)
+            return
+        if parsed.path == "/api/player/restore_allowed":
+            payload = self._read_json()
+            try:
+                updated = self.store.set_restore_allowed(
+                    payload.get("player_uuid", "").strip(),
+                    bool(payload.get("restore_allowed")),
+                )
+                self._send_json({"ok": updated}, status=200 if updated else 404)
+            except ValueError:
+                self._send_json({"ok": False, "error": "invalid_uuid"}, status=400)
             return
         if parsed.path == "/api/blacklist/set":
             payload = self._read_json()
             device_ip = payload.get("device_ip", "").strip()
+            player_uuid = payload.get("player_uuid", "").strip()
+            if not device_ip and player_uuid:
+                device_ip = self.store.device_for_uuid(player_uuid)
             if not device_ip:
                 self._send_json({"ok": False, "error": "device_ip_required"}, status=400)
                 return
@@ -653,7 +807,7 @@ input{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;pad
 </style></head><body>
 <form class="login" id="login"><div class="sigil"></div><h1>蜕变地牢控制台</h1><p class="sub">云端玩家数据、黑名单与天赋统计管理</p><label>账号</label><input id="username" autocomplete="username" autofocus><label>密码</label><input id="password" type="password" autocomplete="current-password"><button>登录控制台</button><div class="error" id="error"></div></form>
 <script>const el=id=>document.getElementById(id);document.querySelector('#login').addEventListener('submit',async e=>{e.preventDefault();const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:el('username').value.trim(),password:el('password').value})});if(r.ok&&(await r.json()).ok)location.href='/';else el('error').textContent='账号或密码不正确';});</script>
-</body></html>"""
+</body><script>document.title='蜕变地牢控制台';const login=document.querySelector('.login');if(login){login.querySelector('h1').textContent='蜕变地牢控制台';login.querySelector('.sub').textContent='云端玩家数据、黑名单、恢复许可与天赋统计管理';const labels=login.querySelectorAll('label');if(labels[0])labels[0].textContent='账号';if(labels[1])labels[1].textContent='密码';login.querySelector('button').textContent='登录控制台';}</script></html>"""
 
 
 DASHBOARD_HTML = r"""<!doctype html>
@@ -664,26 +818,28 @@ DASHBOARD_HTML = r"""<!doctype html>
 *{box-sizing:border-box}body{margin:0;font-family:"Microsoft YaHei","Segoe UI",sans-serif;background:radial-gradient(circle at 20% 0,#2d1450,#08050f 48%),linear-gradient(135deg,#08050f,#170d24);color:var(--ink)}
 header{position:sticky;top:0;z-index:4;height:70px;background:rgba(8,5,15,.86);backdrop-filter:blur(14px);border-bottom:1px solid rgba(168,85,247,.3);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
 h1{font-size:22px;margin:0}.brand{display:flex;gap:12px;align-items:center}.orb{width:36px;height:36px;border-radius:12px;background:radial-gradient(circle,#f6c76e,#a855f7 55%,#0d0714);box-shadow:0 0 28px rgba(168,85,247,.7)}
-button,a.btn{border:0;border-radius:12px;padding:9px 13px;background:linear-gradient(135deg,#7e22ce,#a855f7);color:white;text-decoration:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:800}button.secondary,a.secondary{background:#2b2038}button.danger{background:linear-gradient(135deg,#be123c,#f43f5e)}
-main{padding:22px;display:grid;gap:18px;grid-template-columns:minmax(720px,1.55fr) minmax(430px,.9fr)}.activity-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.chart-card,.panel{background:linear-gradient(145deg,rgba(29,18,48,.95),rgba(13,8,21,.96));border:1px solid rgba(168,85,247,.22);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04)}
+button,a.btn{border:0;border-radius:12px;padding:9px 13px;background:linear-gradient(135deg,#7e22ce,#a855f7);color:white;text-decoration:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:800;box-shadow:0 12px 26px rgba(126,34,206,.22);transition:transform .16s ease,filter .16s ease,box-shadow .16s ease}button:hover,a.btn:hover{transform:translateY(-1px);filter:brightness(1.08);box-shadow:0 16px 32px rgba(126,34,206,.3)}button.secondary,a.secondary{background:linear-gradient(135deg,#2b2038,#3b2757);box-shadow:none}button.danger{background:linear-gradient(135deg,#be123c,#f43f5e)}
+main{padding:22px;display:grid;gap:18px;grid-template-columns:1fr}.tabs{position:sticky;top:70px;z-index:3;display:flex;gap:10px;padding:13px 22px;background:linear-gradient(180deg,rgba(13,8,21,.94),rgba(13,8,21,.72));backdrop-filter:blur(16px);border-bottom:1px solid rgba(168,85,247,.24);overflow-x:auto}.tab{white-space:nowrap;background:#1a1026;border:1px solid rgba(168,85,247,.24);color:#d8b4fe;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}.tab.active{background:linear-gradient(135deg,#7e22ce,#a855f7);color:white;box-shadow:0 0 24px rgba(168,85,247,.35),inset 0 1px 0 rgba(255,255,255,.18)}.view-card{display:none}.view-card.active{display:block;animation:fadeIn .18s ease}.activity-grid.view-card.active{display:grid}.activity-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.chart-card,.panel{background:linear-gradient(145deg,rgba(29,18,48,.96),rgba(13,8,21,.98));border:1px solid rgba(168,85,247,.26);border-radius:20px;box-shadow:0 20px 58px rgba(0,0,0,.34),0 0 0 1px rgba(255,255,255,.025) inset,inset 0 1px 0 rgba(255,255,255,.05)}.side-right{grid-column:1/-1}.side-right .top-layout{grid-template-columns:minmax(0,1fr) 190px}.side-right .pie-card{width:auto}@keyframes fadeIn{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
 .chart-card{padding:14px;min-height:182px;position:relative;overflow:hidden}.chart-title{font-weight:900;font-size:14px}.chart-subtitle{color:var(--muted);font-size:12px;margin-top:4px}.chart-card svg{width:100%;height:118px;margin-top:10px;display:block}.chart-grid{stroke:rgba(170,154,184,.16);stroke-width:1}.chart-line-a{fill:none;stroke:#a855f7;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}.chart-line-b{fill:none;stroke:#34d399;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.chart-dot{fill:#f4ecff;stroke:#120a1d;stroke-width:2}.chart-tip{position:absolute;left:12px;right:12px;bottom:10px;border:1px solid rgba(168,85,247,.24);border-radius:12px;background:rgba(8,5,15,.86);padding:7px 9px;font-size:12px;color:#e9d5ff;opacity:0;transform:translateY(6px);transition:.16s}.chart-card:hover .chart-tip{opacity:1;transform:none}.panel{overflow:hidden}.panel h2{font-size:16px;margin:0;padding:15px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)}
-.toolbar{display:flex;gap:9px;padding:12px 16px;border-bottom:1px solid rgba(59,39,87,.75);flex-wrap:wrap}input,textarea{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0b0712;color:var(--ink);font:13px Consolas,"Microsoft YaHei",monospace;outline:none}input{min-width:0;flex:1}
+.toolbar{display:flex;gap:9px;padding:12px 16px;border-bottom:1px solid rgba(59,39,87,.75);flex-wrap:wrap;background:rgba(255,255,255,.018)}input,textarea{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0b0712;color:var(--ink);font:13px Consolas,"Microsoft YaHei",monospace;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}input:focus,textarea:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.15)}input{min-width:0;flex:1}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid rgba(59,39,87,.62);vertical-align:middle}th{color:#e9d5ff;background:rgba(255,255,255,.035);position:sticky;top:0;z-index:1}th.sortable{cursor:pointer}tr:hover{background:rgba(168,85,247,.08)}.scroll{max-height:530px;overflow:auto}.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);font-size:12px}.bad{color:#fecdd3;border-color:#881337;background:rgba(244,63,94,.12)}.ok{color:#bbf7d0;border-color:#166534;background:rgba(34,197,94,.1)}
 .detail{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}.detail textarea{width:100%;height:250px;resize:vertical}.actions{display:flex;gap:8px;padding:0 16px 16px;flex-wrap:wrap}.hint{color:var(--muted);font-size:13px;padding:14px 16px}.full{grid-column:1/-1}.result{padding:12px 16px;color:#e9d5ff}
 .top-layout{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px;padding:12px}.pie-card{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.035);padding:12px;display:grid;place-items:center;text-align:center}.pie{width:132px;height:132px;border-radius:50%;background:conic-gradient(#a855f7 0deg,#a855f7 var(--selectedDeg),#f6c76e var(--selectedDeg),#f6c76e var(--appearedDeg),#7dd3fc var(--appearedDeg),#7dd3fc 360deg);box-shadow:0 0 35px rgba(168,85,247,.28);position:relative}.pie:after{content:"";position:absolute;inset:34px;border-radius:50%;background:#120a1d;border:1px solid var(--line)}.pie-title{margin-top:10px;font-weight:800;font-size:13px}.pie-meta{color:var(--muted);font-size:12px;line-height:1.7}.legend{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:8px;font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px}.top-row{cursor:pointer}.top-row.active{background:rgba(168,85,247,.18)}
-@media(max-width:1440px){main{grid-template-columns:minmax(620px,1.45fr) minmax(360px,.95fr)}.activity-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:1200px){header{height:auto;min-height:70px;padding:12px 16px;gap:12px;flex-wrap:wrap}.brand{flex-wrap:wrap}main{grid-template-columns:1fr;padding:16px}.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel h2{font-size:15px}.scroll{max-height:460px}.chart-card{min-height:168px}.chart-card svg{height:108px}.top-layout{grid-template-columns:1fr 170px}.pie{width:120px;height:120px}}
-@media(max-width:900px){.activity-grid{grid-template-columns:1fr 1fr}.detail,.top-layout{grid-template-columns:1fr}.chart-card,.panel{border-radius:16px}.toolbar{padding:10px 12px}.panel h2{padding:12px 14px}.scroll{max-height:400px}.pie-card{padding:10px}.pie{width:108px;height:108px}.pie:after{inset:28px}}
-@media(max-width:700px){header{position:static;padding:12px}h1{font-size:18px}.brand{gap:8px}button,a.btn{width:100%;justify-content:center}.activity-grid{grid-template-columns:1fr}.chart-card{min-height:156px;padding:12px}.chart-card svg{height:96px}.chart-tip{font-size:11px;line-height:1.4}.toolbar{gap:8px}.toolbar input,.toolbar button,.toolbar a.btn{width:100%}.scroll{max-height:none;overflow-x:auto;overflow-y:visible}table{min-width:760px}th,td{padding:8px 10px;font-size:12px}.top-layout{padding:10px}.pie-card{min-height:176px}.detail textarea{height:190px}.actions button{width:100%}.result,.hint{padding:12px 14px}}
+@media(max-width:1440px){.activity-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1200px){header{height:auto;min-height:70px;padding:12px 16px;gap:12px;flex-wrap:wrap}.tabs{top:94px;padding:10px 16px}.brand{flex-wrap:wrap}main{padding:16px}.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel h2{font-size:15px}.scroll{max-height:460px}.chart-card{min-height:168px}.chart-card svg{height:108px}.top-layout{grid-template-columns:1fr 170px}.pie{width:120px;height:120px}.side-right .top-layout{grid-template-columns:1fr 170px}}
+@media(max-width:900px){.activity-grid{grid-template-columns:1fr 1fr}.detail,.top-layout{grid-template-columns:1fr}.chart-card,.panel{border-radius:16px}.toolbar{padding:10px 12px}.panel h2{padding:12px 14px}.scroll{max-height:400px}.pie-card{padding:10px}.pie{width:108px;height:108px}.pie:after{inset:28px}.side-right .top-layout{grid-template-columns:1fr}}
+@media(max-width:700px){header{position:static;padding:12px}.tabs{position:static;padding:10px 12px}.tabs .tab{min-width:104px}.brand{gap:8px}h1{font-size:18px}button,a.btn{width:100%;justify-content:center}.activity-grid{grid-template-columns:1fr}.chart-card{min-height:156px;padding:12px}.chart-card svg{height:96px}.chart-tip{font-size:11px;line-height:1.4}.toolbar{gap:8px}.toolbar input,.toolbar button,.toolbar a.btn{width:100%}.scroll{max-height:none;overflow-x:auto;overflow-y:visible}table{min-width:640px}th,td{padding:8px 10px;font-size:12px}.top-layout{padding:10px}.pie-card{min-height:176px}.detail{grid-template-columns:1fr}.detail textarea{height:190px}.actions button{width:100%}.result,.hint{padding:12px 14px}}
 </style></head><body>
 <header><div class="brand"><div class="orb"></div><div><h1>蜕变地牢控制台</h1><div style="color:var(--muted);font-size:12px">黑名单设备不参与全服统计</div></div></div><div><a class="btn secondary" href="/api/export.csv">导出 CSV</a> <a class="btn secondary" href="/api/export.json">导出 JSON</a> <button onclick="logout()">退出</button></div></header>
+<nav class="tabs"><button class="tab active" data-view="overview" onclick="switchView('overview')">总览</button><button class="tab" data-view="players" onclick="switchView('players')">玩家管理</button><button class="tab" data-view="talents" onclick="switchView('talents')">天赋统计</button><button class="tab" data-view="maintenance" onclick="switchView('maintenance')">维护工具</button></nav>
 <main>
-<section class="activity-grid" id="activityCharts"></section>
-<section class="panel"><h2>玩家数据</h2><div class="toolbar"><input id="filter" placeholder="搜索设备 ID / IP" oninput="renderPlayers()"></div><div class="scroll"><table><thead><tr><th class="sortable" onclick="sortPlayers('device_ip')">设备 <span id="psort-device_ip"></span></th><th class="sortable" onclick="sortPlayers('blacklisted')">状态 <span id="psort-blacklisted"></span></th><th class="sortable" onclick="sortPlayers('updated_at')">最后上传 <span id="psort-updated_at"></span></th><th class="sortable" onclick="sortPlayers('selected')">普通选择 <span id="psort-selected"></span></th><th class="sortable" onclick="sortPlayers('appeared')">候选出现 <span id="psort-appeared"></span></th><th class="sortable" onclick="sortPlayers('targeted')">指定蜕变 <span id="psort-targeted"></span></th><th>操作</th></tr></thead><tbody id="players"></tbody></table></div></section>
-<section class="panel"><h2>全体天赋统计 Top 12</h2><div class="top-layout"><div class="scroll" style="max-height:318px"><table><thead><tr><th>天赋</th><th>普通选择</th><th>候选出现</th><th>选中率</th><th>指定</th></tr></thead><tbody id="topRows"></tbody></table></div><div class="pie-card"><div class="pie" id="topPie" style="--selectedDeg:0deg;--appearedDeg:0deg"></div><div class="pie-title" id="pieTitle">暂无数据</div><div class="pie-meta" id="pieMeta">选择左侧天赋查看构成</div><div class="legend"><span><i class="dot" style="background:#a855f7"></i>普通选择</span><span><i class="dot" style="background:#f6c76e"></i>候选未选</span><span><i class="dot" style="background:#7dd3fc"></i>指定蜕变</span></div></div></div></section>
+<section class="activity-grid view-card view-overview active" id="activityCharts"></section>
+<section class="panel"><h2>玩家数据</h2><div class="toolbar"><input id="filter" placeholder="搜索 UUID / 设备 ID / IP" oninput="renderPlayers()"></div><div class="scroll"><table><thead><tr><th class="sortable" onclick="sortPlayers('player_uuid')">UUID <span id="psort-player_uuid"></span></th><th class="sortable" onclick="sortPlayers('device_ip')">设备 <span id="psort-device_ip"></span></th><th class="sortable" onclick="sortPlayers('blacklisted')">状态 <span id="psort-blacklisted"></span></th><th class="sortable" onclick="sortPlayers('updated_at')">最后上传 <span id="psort-updated_at"></span></th><th class="sortable" onclick="sortPlayers('selected')">普通选择 <span id="psort-selected"></span></th><th class="sortable" onclick="sortPlayers('appeared')">候选出现 <span id="psort-appeared"></span></th><th class="sortable" onclick="sortPlayers('targeted')">指定蜕变 <span id="psort-targeted"></span></th><th>操作</th></tr></thead><tbody id="players"></tbody></table></div></section>
+<section class="panel view-card view-overview side-right"><h2>全体天赋统计 Top 12</h2><div class="top-layout"><div class="scroll" style="max-height:318px"><table><thead><tr><th>天赋</th><th>普通选择</th><th>候选出现</th><th>选中率</th><th>指定</th></tr></thead><tbody id="topRows"></tbody></table></div><div class="pie-card"><div class="pie" id="topPie" style="--selectedDeg:0deg;--appearedDeg:0deg"></div><div class="pie-title" id="pieTitle">暂无数据</div><div class="pie-meta" id="pieMeta">选择左侧天赋查看构成</div><div class="legend"><span><i class="dot" style="background:#a855f7"></i>普通选择</span><span><i class="dot" style="background:#f6c76e"></i>候选未选</span><span><i class="dot" style="background:#7dd3fc"></i>指定蜕变</span></div></div></div></section>
 <section class="panel full"><h2>天赋查询</h2><div class="toolbar"><input id="talentSearch" placeholder="输入中文名或枚举名，例如 晶体火药 / CRYSTAL_GUNPOWDER" oninput="renderTalentQuery()"><button class="secondary" onclick="renderTalentQuery()">查询</button></div><div class="result" id="queryResult">输入天赋名后查看全服统计。</div></section>
 <section class="panel full"><h2>全服天赋汇总</h2><div class="toolbar"><span class="pill">点击表头可按普通选择、候选出现、选中率、指定蜕变升序/降序排序</span></div><div class="scroll"><table><thead><tr><th>天赋</th><th class="sortable" onclick="sortAgg('selected')">普通选择 <span id="sort-selected"></span></th><th class="sortable" onclick="sortAgg('appeared')">候选出现 <span id="sort-appeared"></span></th><th class="sortable" onclick="sortAgg('rate')">选中率 <span id="sort-rate"></span></th><th class="sortable" onclick="sortAgg('targeted')">指定蜕变 <span id="sort-targeted"></span></th></tr></thead><tbody id="aggregateRows"></tbody></table></div></section>
-<section class="panel full"><h2>玩家详情与编辑</h2><div class="hint" id="empty">选择左侧玩家后，可编辑 global_data 与 talent_stats，也可以将该设备拉入或移出黑名单。</div><div class="detail" id="detail" style="display:none"><div><label>设备 ID</label><input id="deviceIp"><label>global_data JSON</label><textarea id="globalData"></textarea></div><div><label>talent_stats JSON</label><textarea id="talentStats"></textarea></div></div><div class="actions" id="actions" style="display:none"><button onclick="savePlayer()">保存</button><button class="danger" onclick="deletePlayer()">删除玩家数据</button><button class="danger" id="blackBtn" onclick="toggleBlacklist()">拉入黑名单</button><button class="secondary" onclick="refresh()">刷新</button></div><div class="scroll" id="playerTalentWrap" style="display:none"><table><thead><tr><th>天赋</th><th>普通选择</th><th>候选出现</th><th>选中率</th><th>指定蜕变</th></tr></thead><tbody id="playerTalentRows"></tbody></table></div></section>
+<section class="panel full"><h2>玩家详情与编辑</h2><div class="hint" id="empty">选择左侧玩家后，可编辑 global_data 与 talent_stats，也可以将该设备拉入或移出黑名单。</div><div class="detail" id="detail" style="display:none"><div><label>玩家 UUID</label><input id="playerUUID"><label>设备 ID</label><input id="deviceIp"><label>global_data JSON</label><textarea id="globalData"></textarea></div><div><label>talent_stats JSON</label><textarea id="talentStats"></textarea></div></div><div class="actions" id="actions" style="display:none"><button onclick="savePlayer()">保存</button><button class="danger" onclick="deletePlayer()">删除玩家数据</button><button class="danger" id="blackBtn" onclick="toggleBlacklist()">拉入黑名单</button><button class="secondary" onclick="refresh()">刷新</button></div><div class="scroll" id="playerTalentWrap" style="display:none"><table><thead><tr><th>天赋</th><th>普通选择</th><th>候选出现</th><th>选中率</th><th>指定蜕变</th></tr></thead><tbody id="playerTalentRows"></tbody></table></div></section>
+<section class="panel full"><h2>UUID 进度迁移</h2><div class="toolbar"><input id="sourceUUID" placeholder="原 UUID"><input id="targetUUID" placeholder="新 UUID"><button class="secondary" onclick="migratePlayer()">迁移进度</button></div><div class="hint">迁移会把原 UUID 的云端数据覆盖到新 UUID，并删除原 UUID 记录。</div></section>
 <section class="panel full"><h2>数据库快照</h2><div class="toolbar"><button onclick="createSnapshot()">新增快照</button><button class="secondary" onclick="loadSnapshots()">刷新快照</button><span class="pill">每天 0 点自动保存，最多保留 7 个最新快照</span></div><div class="scroll"><table><thead><tr><th>快照文件</th><th>大小</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="snapshots"></tbody></table></div></section>
 </main>
 <script>
@@ -695,17 +851,18 @@ function tName(k){const n=state.talentNames[k]||k;return n===k?k:`${n} (${k})`;}
 async function api(url,opt){const r=await fetch(url,opt);if(r.status===401)location.reload();return r.json();}
 async function refresh(){const d=await api('/api/players?t='+Date.now());state.players=d.players||[];state.aggregate=d.aggregate||{};state.talentNames=d.talent_names||{};state.blacklist=d.blacklist||[];state.playerStats=d.player_stats||{total:state.players.length,today_new:0};state.activity=d.activity||[];renderActivityCharts();renderPlayers();renderTop12();renderAggregateRows();renderTalentQuery();loadSnapshots();}
 function dateOnly(ms){if(!ms)return '-';const d=new Date(ms);if(Number.isNaN(d.getTime()))return '-';const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
-function sortPlayers(key){if(state.playerSort.key===key)state.playerSort.dir=state.playerSort.dir==='asc'?'desc':'asc';else state.playerSort={key,dir:key==='device_ip'?'asc':'desc'};renderPlayers();}
-function sortedPlayers(){const q=el('filter').value.trim().toLowerCase(),m=state.playerSort.dir==='asc'?1:-1,key=state.playerSort.key;return state.players.filter(p=>!q||p.device_ip.toLowerCase().includes(q)).sort((a,b)=>{let av=a[key],bv=b[key];if(key==='device_ip')return String(av).localeCompare(String(bv),'zh-CN')*m;if(key==='blacklisted'){av=av?1:0;bv=bv?1:0}return ((Number(av)||0)-(Number(bv)||0))*m||String(a.device_ip).localeCompare(String(b.device_ip),'zh-CN');});}
-function renderPlayers(){['device_ip','blacklisted','updated_at','selected','appeared','targeted'].forEach(k=>el('psort-'+k).textContent=state.playerSort.key===k?(state.playerSort.dir==='asc'?'↑':'↓'):'');el('players').innerHTML=sortedPlayers().map(p=>`<tr><td onclick="loadPlayer('${js(p.device_ip)}')">${esc(p.device_ip)}</td><td>${p.blacklisted?'<span class="pill bad">黑名单</span>':'<span class="pill ok">正常</span>'}</td><td>${dateOnly(p.updated_at)}</td><td>${fmt(p.selected)}</td><td>${fmt(p.appeared)}</td><td>${fmt(p.targeted)}</td><td><button class="secondary" onclick="loadPlayer('${js(p.device_ip)}')">详情</button> <button class="${p.blacklisted?'secondary':'danger'}" onclick="setBlacklist('${js(p.device_ip)}',${!p.blacklisted})">${p.blacklisted?'移出':'拉黑'}</button></td></tr>`).join('')||'<tr><td colspan="7">暂无玩家</td></tr>';}
+function sortPlayers(key){if(state.playerSort.key===key)state.playerSort.dir=state.playerSort.dir==='asc'?'desc':'asc';else state.playerSort={key,dir:(key==='device_ip'||key==='player_uuid')?'asc':'desc'};renderPlayers();}
+function sortedPlayers(){const q=el('filter').value.trim().toLowerCase(),m=state.playerSort.dir==='asc'?1:-1,key=state.playerSort.key;return state.players.filter(p=>!q||String(p.device_ip||'').toLowerCase().includes(q)||String(p.player_uuid||'').toLowerCase().includes(q)).sort((a,b)=>{let av=a[key],bv=b[key];if(key==='device_ip'||key==='player_uuid')return String(av||'').localeCompare(String(bv||''),'zh-CN')*m;if(key==='blacklisted'){av=av?1:0;bv=bv?1:0}return ((Number(av)||0)-(Number(bv)||0))*m||String(a.player_uuid||a.device_ip).localeCompare(String(b.player_uuid||b.device_ip),'zh-CN');});}
+function renderPlayers(){['player_uuid','device_ip','blacklisted','updated_at','selected','appeared','targeted'].forEach(k=>el('psort-'+k).textContent=state.playerSort.key===k?(state.playerSort.dir==='asc'?'↑':'↓'):'');el('players').innerHTML=sortedPlayers().map(p=>`<tr><td onclick="loadPlayer('${js(p.player_uuid)}')">${esc(p.player_uuid||'-')}</td><td>${esc(p.device_ip)}</td><td>${p.blacklisted?'<span class="pill bad">黑名单</span>':'<span class="pill ok">正常</span>'}</td><td>${dateOnly(p.updated_at)}</td><td>${fmt(p.selected)}</td><td>${fmt(p.appeared)}</td><td>${fmt(p.targeted)}</td><td><button class="secondary" onclick="loadPlayer('${js(p.player_uuid)}')">详情</button> <button class="${p.blacklisted?'secondary':'danger'}" onclick="setBlacklist('${js(p.player_uuid)}',${!p.blacklisted})">${p.blacklisted?'移出':'拉黑'}</button></td></tr>`).join('')||'<tr><td colspan="8">暂无玩家</td></tr>';}
 function linePoints(rows,key,w,h,pad,maxv){if(!rows.length)return '';const denom=Math.max(1,rows.length-1);return rows.map((r,i)=>{const x=pad+i*(w-pad*2)/denom,y=h-pad-((Number(r[key])||0)/maxv)*(h-pad*2);return `${x.toFixed(1)},${y.toFixed(1)}`}).join(' ');}
 function chartSvg(rows,aKey,bKey){const w=260,h=118,p=14,maxv=Math.max(1,...rows.flatMap(r=>[Number(r[aKey])||0,Number(r[bKey])||0]));const grid=[.25,.5,.75].map(v=>`<line class="chart-grid" x1="${p}" y1="${(h-p-v*(h-p*2)).toFixed(1)}" x2="${w-p}" y2="${(h-p-v*(h-p*2)).toFixed(1)}"></line>`).join('');const ptsA=linePoints(rows,aKey,w,h,p,maxv),ptsB=linePoints(rows,bKey,w,h,p,maxv);const last=rows[rows.length-1]||{};const lx=p+(rows.length-1)*(w-p*2)/Math.max(1,rows.length-1);const lyA=h-p-((Number(last[aKey])||0)/maxv)*(h-p*2),lyB=h-p-((Number(last[bKey])||0)/maxv)*(h-p*2);return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}<polyline class="chart-line-a" points="${ptsA}"></polyline><polyline class="chart-line-b" points="${ptsB}"></polyline><circle class="chart-dot" cx="${lx.toFixed(1)}" cy="${lyA.toFixed(1)}" r="3"></circle><circle class="chart-dot" cx="${lx.toFixed(1)}" cy="${lyB.toFixed(1)}" r="3"></circle></svg>`;}
 function renderActivityCharts(){const rows=state.activity.length?state.activity:[{day:dateOnly(Date.now()),player_uploads:0,new_players:0,blacklist_added:0,selected_delta:0,appeared_delta:0,targeted_delta:0,cumulative_players:0,cumulative_blacklist:0,cumulative_selected:0,cumulative_appeared:0,cumulative_targeted:0}];const last=rows[rows.length-1]||{};const charts=[['上传玩家','累计上传玩家','今日上传玩家','cumulative_players','player_uploads'],['黑名单设备','累计黑名单','今日新增黑名单','cumulative_blacklist','blacklist_added'],['普通选择','累计普通选择','今日新增普通选择','cumulative_selected','selected_delta'],['候选出现','累计候选出现','今日新增候选出现','cumulative_appeared','appeared_delta'],['指定蜕变','累计指定蜕变','今日新增指定蜕变','cumulative_targeted','targeted_delta']];el('activityCharts').innerHTML=charts.map(([title,aLabel,bLabel,aKey,bKey])=>`<article class="chart-card"><div class="chart-title">${title}</div><div class="chart-subtitle"><span style="color:#c084fc">${aLabel}</span> / <span style="color:#34d399">${bLabel}</span></div>${chartSvg(rows,aKey,bKey)}<div class="chart-tip">${esc(last.day||'-')}：${aLabel} ${fmt(last[aKey])}，${bLabel} ${fmt(last[bKey])}</div></article>`).join('');}
-async function loadPlayer(id){const d=await api('/api/player?device_ip='+encodeURIComponent(id));if(!d.ok)return;state.selected=d.player.device_ip;state.selectedPlayer=d.player;el('empty').style.display='none';el('detail').style.display='grid';el('actions').style.display='flex';el('playerTalentWrap').style.display='block';el('deviceIp').value=d.player.device_ip;el('globalData').value=JSON.stringify(d.player.global_data||{},null,2);el('talentStats').value=JSON.stringify(d.player.talent_stats||{},null,2);el('blackBtn').textContent=d.player.blacklisted?'移出黑名单':'拉入黑名单';el('blackBtn').className=d.player.blacklisted?'secondary':'danger';renderPlayerTalentRows(d.player.talent_stats||{});}
-async function savePlayer(){let global_data,talent_stats;try{global_data=JSON.parse(el('globalData').value||'{}');talent_stats=JSON.parse(el('talentStats').value||'{}')}catch(e){alert('JSON 格式有误');return}const d=await api('/api/player/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_ip:el('deviceIp').value.trim(),global_data,talent_stats})});if(d.ok){await refresh();alert('已保存')}else alert('保存失败');}
-async function deletePlayer(){if(!state.selected||!confirm('确认删除该玩家云端数据？'))return;const d=await api('/api/player/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_ip:state.selected})});if(d.ok){state.selected=null;state.selectedPlayer=null;el('detail').style.display='none';el('actions').style.display='none';el('playerTalentWrap').style.display='none';el('empty').style.display='block';await refresh();}}
-async function setBlacklist(id,blacklisted){const reason=blacklisted?(prompt('拉黑原因，可留空','')||''):'';const d=await api('/api/blacklist/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_ip:id,blacklisted,reason})});if(d.ok){await refresh();if(state.selected===id)loadPlayer(id);}else alert('黑名单操作失败');}
-async function toggleBlacklist(){if(state.selectedPlayer)setBlacklist(state.selectedPlayer.device_ip,!state.selectedPlayer.blacklisted);}
+async function loadPlayer(id){const d=await api('/api/player?player_uuid='+encodeURIComponent(id));if(!d.ok)return;state.selected=d.player.player_uuid;state.selectedPlayer=d.player;el('empty').style.display='none';el('detail').style.display='grid';el('actions').style.display='flex';el('playerTalentWrap').style.display='block';el('playerUUID').value=d.player.player_uuid||'';el('deviceIp').value=d.player.device_ip;el('globalData').value=JSON.stringify(d.player.global_data||{},null,2);el('talentStats').value=JSON.stringify(d.player.talent_stats||{},null,2);el('blackBtn').textContent=d.player.blacklisted?'移出黑名单':'拉入黑名单';el('blackBtn').className=d.player.blacklisted?'secondary':'danger';renderPlayerTalentRows(d.player.talent_stats||{});}
+async function savePlayer(){let global_data,talent_stats;try{global_data=JSON.parse(el('globalData').value||'{}');talent_stats=JSON.parse(el('talentStats').value||'{}')}catch(e){alert('JSON 格式有误');return}const d=await api('/api/player/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({player_uuid:el('playerUUID').value.trim(),device_ip:el('deviceIp').value.trim(),global_data,talent_stats})});if(d.ok){await refresh();alert('已保存')}else alert('保存失败');}
+async function deletePlayer(){if(!state.selected||!confirm('确认删除该玩家云端数据？'))return;const d=await api('/api/player/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({player_uuid:state.selected})});if(d.ok){state.selected=null;state.selectedPlayer=null;el('detail').style.display='none';el('actions').style.display='none';el('playerTalentWrap').style.display='none';el('empty').style.display='block';await refresh();}}
+async function setBlacklist(id,blacklisted){const reason=blacklisted?(prompt('拉黑原因，可留空','')||''):'';const d=await api('/api/blacklist/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({player_uuid:id,blacklisted,reason})});if(d.ok){await refresh();if(state.selected===id)loadPlayer(id);}else alert('黑名单操作失败');}
+async function toggleBlacklist(){if(state.selectedPlayer)setBlacklist(state.selectedPlayer.player_uuid,!state.selectedPlayer.blacklisted);}
+async function migratePlayer(){const source_uuid=el('sourceUUID').value.trim(),target_uuid=el('targetUUID').value.trim();if(!source_uuid||!target_uuid){alert('请填写原 UUID 和新 UUID');return}if(!confirm('确认将原 UUID 的云端进度迁移到新 UUID？'))return;const d=await api('/api/player/migrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_uuid,target_uuid})});if(d.ok){el('sourceUUID').value='';el('targetUUID').value='';await refresh();alert('迁移完成')}else alert('迁移失败：'+(d.error||'unknown'))}
 function rowsFrom(stats){return Object.entries(stats).map(([k,v])=>({key:k,selected:+v.selected||0,appeared:+v.appeared||0,targeted:+v.targeted||0}));}
 function sortAgg(key){if(state.sort.key===key)state.sort.dir=state.sort.dir==='asc'?'desc':'asc';else state.sort={key,dir:'desc'};renderAggregateRows();}
 function sortedRows(){const m=state.sort.dir==='asc'?1:-1;return rowsFrom(state.aggregate).filter(r=>r.selected||r.appeared||r.targeted).sort((a,b)=>{const av=state.sort.key==='rate'?rate(a):a[state.sort.key],bv=state.sort.key==='rate'?rate(b):b[state.sort.key];return (av===bv?tName(a.key).localeCompare(tName(b.key),'zh-CN'):(av-bv)*m);});}
@@ -722,6 +879,17 @@ async function createSnapshot(){const d=await api('/api/snapshot/create',{method
 async function deleteSnapshot(name){if(!confirm('确认删除快照 '+name+'？'))return;const d=await api('/api/snapshot/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(d.ok)loadSnapshots();else alert('删除快照失败')}
 async function restoreSnapshot(name){if(!confirm('确认用该快照覆盖当前数据库？'))return;const d=await api('/api/snapshot/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(d.ok){await refresh();alert('已恢复快照')}else alert('恢复失败')}
 async function logout(){await fetch('/api/logout',{method:'POST'});location.reload()}
+function panelOf(id){const node=el(id);return node?node.closest('.panel'):null}
+function initViews(){const groups=[['overview',['activityCharts','topRows']],['players',['filter','empty']],['talents',['talentSearch','aggregateRows']],['maintenance',['sourceUUID','snapshots']]];groups.forEach(([view,ids])=>ids.forEach(id=>{const node=id==='activityCharts'?el(id):panelOf(id);if(node){node.classList.add('view-card','view-'+view)}}));}
+function switchView(view){initViews();document.querySelectorAll('.view-card').forEach(node=>node.classList.toggle('active',node.classList.contains('view-'+view)));document.querySelectorAll('.tab').forEach(node=>node.classList.toggle('active',node.dataset.view===view));}
+function localizeStaticText(){document.title='蜕变地牢控制台';const brand=document.querySelector('.brand');if(brand){const orb=brand.querySelector('.orb');if(orb)orb.textContent='';const title=brand.querySelector('h1');if(title)title.textContent='蜕变地牢控制台';const sub=title?title.nextElementSibling:null;if(sub)sub.textContent='黑名单设备不参与全服统计，恢复许可为一次性授权';}const links=document.querySelectorAll('header a.btn');if(links[0])links[0].textContent='导出 CSV';if(links[1])links[1].textContent='导出 JSON';const logoutBtn=document.querySelector('header button');if(logoutBtn)logoutBtn.textContent='退出登录';}
+function renderPlayers(){['player_uuid','device_ip','blacklisted','updated_at','selected','appeared','targeted'].forEach(k=>{const s=el('psort-'+k);if(s)s.textContent=state.playerSort.key===k?(state.playerSort.dir==='asc'?'↑':'↓'):''});el('players').innerHTML=sortedPlayers().map(p=>{const restore=p.restore_allowed?'<span class="pill ok">允许恢复</span>':'<span class="pill">未授权恢复</span>';const status=p.blacklisted?'<span class="pill bad">黑名单</span>':'<span class="pill ok">正常</span>';return `<tr><td onclick="loadPlayer('${js(p.player_uuid)}')">${esc(p.player_uuid||'-')}</td><td>${esc(p.device_ip)}</td><td>${status} ${restore}</td><td>${dateOnly(p.updated_at)}</td><td>${fmt(p.selected)}</td><td>${fmt(p.appeared)}</td><td>${fmt(p.targeted)}</td><td><button class="secondary" onclick="loadPlayer('${js(p.player_uuid)}')">详情</button> <button class="${p.restore_allowed?'secondary':'danger'}" onclick="setRestoreAllowed('${js(p.player_uuid)}',${!p.restore_allowed})">${p.restore_allowed?'关闭恢复许可':'允许恢复'}</button> <button class="${p.blacklisted?'secondary':'danger'}" onclick="setBlacklist('${js(p.player_uuid)}',${!p.blacklisted})">${p.blacklisted?'移出黑名单':'拉入黑名单'}</button></td></tr>`}).join('')||'<tr><td colspan="8">暂无玩家数据</td></tr>';}
+async function setRestoreAllowed(id,allowed){const d=await api('/api/player/restore_allowed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({player_uuid:id,restore_allowed:allowed})});if(d.ok){await refresh();if(state.selected===id)loadPlayer(id);}else alert('恢复许可更新失败');}
+async function toggleRestoreAllowed(){if(state.selectedPlayer)setRestoreAllowed(state.selectedPlayer.player_uuid,!state.selectedPlayer.restore_allowed);}
+const originalLoadPlayer=loadPlayer;
+loadPlayer=async function(id){await originalLoadPlayer(id);const actions=el('actions');if(actions&&!el('restoreBtn')){const btn=document.createElement('button');btn.id='restoreBtn';btn.className='secondary';btn.onclick=toggleRestoreAllowed;actions.insertBefore(btn,actions.children[3]||null);}if(state.selectedPlayer&&el('restoreBtn')){el('restoreBtn').textContent=state.selectedPlayer.restore_allowed?'关闭恢复许可':'允许恢复许可';el('restoreBtn').className=state.selectedPlayer.restore_allowed?'secondary':'danger';}}
+localizeStaticText();
+switchView('overview');
 refresh();
 </script></body></html>"""
 

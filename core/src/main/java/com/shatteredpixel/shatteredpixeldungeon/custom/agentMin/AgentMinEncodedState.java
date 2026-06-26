@@ -14,18 +14,20 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.agentMin;
  */
 public class AgentMinEncodedState {
 
-	public static final int SCHEMA_VERSION = 8;
+	public static final int SCHEMA_VERSION = 20;
 
 	public static final int LOCAL_MAP_SIZE = 31;
 	public static final int GLOBAL_MAP_SIZE = 127;
 	public static final int LEVEL_CHANNELS = 19;
 	public static final int HERO_BASE_FEATURES = 32;
-	public static final int INVENTORY_ROWS = 80;
-	public static final int INVENTORY_FEATURES = 32;
+	public static final int INVENTORY_ROWS = 128;
+	public static final int TALENT_ICON_SLOTS = 24;
+	public static final int TALENT_ICON_FEATURES = 4;
+	public static final int INVENTORY_FEATURES = 76;
 	public static final int ACTION_ROWS = 160;
-	public static final int ACTION_FEATURES = 40;
+	public static final int ACTION_FEATURES = 52;
 	public static final int MOB_ROWS = 32;
-	public static final int MOB_FEATURES = 28;
+	public static final int MOB_FEATURES = 29;
 	public static final int HISTORY_ROWS = AgentMinHistoryTracker.HISTORY_ROWS;
 	public static final int HISTORY_FEATURES = AgentMinHistoryTracker.HISTORY_FEATURES;
 	public static final int INVENTORY_SUMMARY_FEATURES = 24;
@@ -37,6 +39,7 @@ public class AgentMinEncodedState {
 	public int heroVectorSize;
 	public int talentOffset;
 	public int negativeTalentOffset;
+	public int forcedSkill = -1;
 	public float pendingReward;
 	public float episodeReward;
 

@@ -279,6 +279,21 @@ public class WndRanking extends WndTabbed {
 
 				pos += GAP;
 
+				if (record.randomMode || Dungeon.hero.randomMode) {
+					float randomInfoTop = pos;
+					pos = statSlot(this, Messages.get(this, "random_mode"), Messages.get(this, "random_mode_on"), pos);
+					IconButton randomInfo = new IconButton(Icons.get(Icons.INFO)) {
+						@Override
+						protected void onClick() {
+							super.onClick();
+							ShatteredPixelDungeon.scene().addToFront(new WndMessage(randomModeDetails()));
+						}
+					};
+					randomInfo.setSize(16, 16);
+					randomInfo.setPos(WIDTH - randomInfo.width(), randomInfoTop - 3);
+					add(randomInfo);
+				}
+
 				pos = statSlot(this, Messages.get(this, "enemies"), num.format(Statistics.enemiesSlain), pos);
 				pos = statSlot(this, Messages.get(this, "gold"), num.format(Statistics.goldCollected), pos);
 				pos = statSlot(this, Messages.get(this, "food"), num.format(Statistics.foodEaten), pos);
@@ -332,6 +347,83 @@ public class WndRanking extends WndTabbed {
 			parent.add( txt );
 
 			return pos + GAP + txt.height();
+		}
+
+		private String randomSubClassName() {
+			if (Dungeon.hero != null && Dungeon.hero.subClass != null && Dungeon.hero.subClass != HeroSubClass.NONE) {
+				return Messages.titleCase(Dungeon.hero.subClass.title());
+			}
+			if (record.subClass != null && !record.subClass.isEmpty()) {
+				try {
+					HeroSubClass subClass = HeroSubClass.valueOf(record.subClass);
+					if (subClass != HeroSubClass.NONE) {
+						return Messages.titleCase(subClass.title());
+					}
+				} catch (Exception ignored) {
+				}
+			}
+			return "";
+		}
+
+		private String randomArmorAbilityName() {
+			if (Dungeon.hero != null && Dungeon.hero.armorAbility != null) {
+				return Messages.titleCase(Dungeon.hero.armorAbility.name());
+			}
+			if (record.armorAbility != null && !record.armorAbility.isEmpty()) {
+				return simpleClassName(record.armorAbility);
+			}
+			return "";
+		}
+
+		private String simpleClassName(String name) {
+			int lastDot = name.lastIndexOf('.');
+			return lastDot == -1 ? name : name.substring(lastDot + 1);
+		}
+
+		private String randomModeDetails() {
+			String subClass = randomSubClassName();
+			String armorAbility = randomArmorAbilityName();
+			String initialTalents = talentList(record.randomTalents);
+			String selectedTalents = talentList(record.selectedTalents);
+
+			return Messages.get(this, "random_mode") + ": " + Messages.get(this, "random_mode_on")
+					+ "\n" + Messages.get(this, "subclass") + ": " + (subClass.isEmpty() ? Messages.get(this, "none") : subClass)
+					+ "\n" + Messages.get(this, "armor_ability") + ": " + (armorAbility.isEmpty() ? Messages.get(this, "none") : armorAbility)
+					+ "\n\n" + Messages.get(this, "initial_talents") + ": " + initialTalents
+					+ "\n\n" + Messages.get(this, "selected_talents") + ": " + selectedTalents;
+		}
+
+		private String talentList(String[] talents) {
+			if (talents == null || talents.length == 0) {
+				return Messages.get(this, "none");
+			}
+			StringBuilder list = new StringBuilder();
+			for (String talent : talents) {
+				if (talent == null || talent.isEmpty()) {
+					continue;
+				}
+				for (String token : talent.split(",")) {
+					if (token.isEmpty()) {
+						continue;
+					}
+					if (list.length() > 0) {
+						list.append(", ");
+					}
+					list.append(talentName(token));
+				}
+			}
+			return list.length() == 0 ? Messages.get(this, "none") : list.toString();
+		}
+
+		private String talentName(String token) {
+			int separator = token.indexOf(':');
+			String name = separator == -1 ? token : token.substring(0, separator);
+			String points = separator == -1 ? "" : token.substring(separator);
+			try {
+				return Talent.valueOf(name).title() + points;
+			} catch (Exception ignored) {
+				return token;
+			}
 		}
 	}
 

@@ -231,7 +231,7 @@ public class Item implements Bundlable {
 	
 	protected void onThrow( int cell ) {
 		Heap heap = Dungeon.level.drop( this, cell );
-		if (!heap.isEmpty()) {
+		if (!heap.isEmpty() && heap.sprite != null) {
 			heap.sprite.drop( cell );
 		}
 		if(!(this instanceof Weapon) && hero.hasTalent(Talent.FEINT) && curUser==hero && hero.buff(Talent.FeintCooldown.class)==null){

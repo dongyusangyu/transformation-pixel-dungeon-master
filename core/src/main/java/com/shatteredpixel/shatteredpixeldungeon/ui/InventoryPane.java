@@ -388,6 +388,10 @@ public class InventoryPane extends Component {
 
 	public void setSelector(WndBag.ItemSelector selector){
 		this.selector = selector;
+		if (selector == null) {
+			updateInventory();
+			return;
+		}
 		if (selector.preferredBag() == Belongings.Backpack.class){
 			lastBag = Dungeon.hero.belongings.backpack;
 		} else if (selector.preferredBag() != null) {

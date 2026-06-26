@@ -3,10 +3,10 @@
 本目录是 AgentMin 的第一版深度强化学习主体，训练环境建议使用：
 
 ```powershell
-D:\anaconda\envs\wy\python.exe
+python.exe
 ```
 
-当前 `wy` 环境已经检测到 PyTorch 与 CUDA 可用。
+当前相关环境已经检测到 PyTorch 与 CUDA 可用。
 
 ## 文件说明
 

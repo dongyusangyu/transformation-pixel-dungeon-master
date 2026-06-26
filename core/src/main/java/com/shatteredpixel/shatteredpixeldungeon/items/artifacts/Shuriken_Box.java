@@ -235,6 +235,7 @@ public class Shuriken_Box extends Artifact {
             Char enemy = Actor.findChar( cell );
             if (enemy == null || enemy == curUser) {
                 parent = null;
+                triggerSeerShot(cell);
                 Splash.at( cell, 0xA9A6ABFF, 1 );
                 if(hero.buff(Ninja_Energy.Throw_Skill.class)!=null && Dungeon.level.water[hero.pos]){
                     if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){

@@ -94,6 +94,7 @@ import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class Armor extends EquipableItem {
 
@@ -127,6 +128,7 @@ public class Armor extends EquipableItem {
 	public boolean glyphHardened = false;
 	public boolean curseInfusionBonus = false;
 	public boolean masteryPotionBonus = false;
+	public int randomModeSTRReqOffset = 0;
 	
 	protected BrokenSeal seal;
 	
@@ -146,6 +148,7 @@ public class Armor extends EquipableItem {
 	private static final String GLYPH_HARDENED	= "glyph_hardened";
 	private static final String CURSE_INFUSION_BONUS = "curse_infusion_bonus";
 	private static final String MASTERY_POTION_BONUS = "mastery_potion_bonus";
+	private static final String RANDOM_MODE_STR_REQ_OFFSET = "random_mode_str_req_offset";
 	private static final String SEAL            = "seal";
 	private static final String AUGMENT			= "augment";
 
@@ -158,6 +161,7 @@ public class Armor extends EquipableItem {
 		bundle.put( GLYPH_HARDENED, glyphHardened );
 		bundle.put( CURSE_INFUSION_BONUS, curseInfusionBonus );
 		bundle.put( MASTERY_POTION_BONUS, masteryPotionBonus );
+		bundle.put( RANDOM_MODE_STR_REQ_OFFSET, randomModeSTRReqOffset );
 		bundle.put( SEAL, seal);
 		bundle.put( AUGMENT, augment);
 	}
@@ -171,6 +175,7 @@ public class Armor extends EquipableItem {
 		glyphHardened = bundle.getBoolean(GLYPH_HARDENED);
 		curseInfusionBonus = bundle.getBoolean( CURSE_INFUSION_BONUS );
 		masteryPotionBonus = bundle.getBoolean( MASTERY_POTION_BONUS );
+		randomModeSTRReqOffset = bundle.getInt( RANDOM_MODE_STR_REQ_OFFSET );
 		seal = (BrokenSeal)bundle.get(SEAL);
 		
 		augment = bundle.getEnum(AUGMENT, Augment.class);
@@ -485,17 +490,19 @@ public class Armor extends EquipableItem {
 	}
 	
 	public float speedFactor( Char owner, float speed ){
+		Hero currentHero = hero;
 		
 		if (owner instanceof Hero) {
 			int aEnc = STRReq() - ((Hero) owner).STR();
-			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
-				aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
+			if(currentHero != null && currentHero.hasTalent(Talent.FALSEHOOD_POWER)){
+				aEnc = Math.max(0, aEnc - currentHero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
 			}
 			if (aEnc > 0) speed /= Math.pow(1.2, aEnc);
 		}
 
-        if(Dungeon.hero.buff(HolyWard.HolyArmBuff.class) != null
-                && (!Dungeon.hero.subClass.is(HeroSubClass.PALADIN) && (glyph == null || !hasCurseGlyph()))){
+        if(currentHero != null
+				&& currentHero.buff(HolyWard.HolyArmBuff.class) != null
+                && (!currentHero.subClass.is(HeroSubClass.PALADIN) && (glyph == null || !hasCurseGlyph()))){
             return speed;
         }
         speed *= Bulk.speedBoost(owner, owner.glyphLevel(Bulk.class));
@@ -779,6 +786,9 @@ public class Armor extends EquipableItem {
 			}
 		}
 		level(n);
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			randomModeSTRReqOffset = Random.IntRange(-2, 1);
+		}
 
 		//we use a separate RNG here so that variance due to things like parchment scrap
 		//does not affect levelgen
@@ -801,6 +811,7 @@ public class Armor extends EquipableItem {
 
 	public int STRReq(){
 		int req = STRReq(level());
+		req += randomModeSTRReqOffset;
 		if (hero != null && hasGlyph(Leaden.class, hero)) {
 			req += (int) (2 * Glyph.genericProcChanceMultiplier(hero));
 		}
@@ -952,6 +963,8 @@ public class Armor extends EquipableItem {
 				AntiEntropy.class, Corrosion.class, Displacement.class, Metabolism.class,
 				Multiplicity.class, Stench.class, Overgrowth.class, Bulk.class, Leaden.class
 		};
+
+		private static final long RANDOM_MODE_POOL_SEED = 0x5EED5A11A7102L;
 		
 		public abstract int proc( Armor armor, Char attacker, Char defender, int damage );
 
@@ -1010,8 +1023,43 @@ public class Armor extends EquipableItem {
 		
 		public abstract ItemSprite.Glowing glowing();
 
+		private static Class<?>[] pool(Class<?>[] original, int poolIndex) {
+			if (Dungeon.hero == null || !Dungeon.hero.randomMode) {
+				return original;
+			}
+			ArrayList<Class<?>> glyphs = new ArrayList<>();
+			glyphs.addAll(Arrays.asList(common));
+			glyphs.addAll(Arrays.asList(uncommon));
+			glyphs.addAll(Arrays.asList(rare));
+			glyphs.addAll(Arrays.asList(curses));
+			Collections.shuffle(glyphs, new java.util.Random(Dungeon.seed ^ RANDOM_MODE_POOL_SEED));
+
+			int start = 0;
+			if (poolIndex > 0) start += common.length;
+			if (poolIndex > 1) start += uncommon.length;
+			if (poolIndex > 2) start += rare.length;
+
+			Class<?>[] result = new Class<?>[original.length];
+			for (int i = 0; i < result.length; i++) {
+				result[i] = glyphs.get(start + i);
+			}
+			return result;
+		}
+
 		@SuppressWarnings("unchecked")
 		public static Glyph random( Class<? extends Glyph> ... toIgnore ) {
+			if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+				ArrayList<Class<?>> glyphs = new ArrayList<>();
+				glyphs.addAll(Arrays.asList(pool(common, 0)));
+				glyphs.addAll(Arrays.asList(pool(uncommon, 1)));
+				glyphs.addAll(Arrays.asList(pool(rare, 2)));
+				glyphs.removeAll(Arrays.asList(toIgnore));
+				if (glyphs.isEmpty()) {
+					return random();
+				} else {
+					return (Glyph) Reflection.newInstance(Random.element(glyphs));
+				}
+			}
 			switch(Random.chances(typeChances)){
 				case 0: default:
 					return randomCommon( toIgnore );
@@ -1024,7 +1072,7 @@ public class Armor extends EquipableItem {
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomCommon( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(common));
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(pool(common, 0)));
 			glyphs.removeAll(Arrays.asList(toIgnore));
 			if (glyphs.isEmpty()) {
 				return random();
@@ -1035,7 +1083,7 @@ public class Armor extends EquipableItem {
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomUncommon( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(uncommon));
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(pool(uncommon, 1)));
 			glyphs.removeAll(Arrays.asList(toIgnore));
 			if (glyphs.isEmpty()) {
 				return random();
@@ -1046,7 +1094,7 @@ public class Armor extends EquipableItem {
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomRare( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(rare));
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(pool(rare, 2)));
 			glyphs.removeAll(Arrays.asList(toIgnore));
 			if (glyphs.isEmpty()) {
 				return random();
@@ -1057,7 +1105,7 @@ public class Armor extends EquipableItem {
 		
 		@SuppressWarnings("unchecked")
 		public static Glyph randomCurse( Class<? extends Glyph> ... toIgnore ){
-			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(curses));
+			ArrayList<Class<?>> glyphs = new ArrayList<>(Arrays.asList(pool(curses, 3)));
 			glyphs.removeAll(Arrays.asList(toIgnore));
 			if (glyphs.isEmpty()) {
 				return random();

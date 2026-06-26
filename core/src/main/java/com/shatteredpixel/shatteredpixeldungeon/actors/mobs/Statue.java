@@ -269,8 +269,13 @@ public class Statue extends Mob {
 
 	public static Statue random( boolean useDecks ){
 		Statue statue;
-		float altChance = 1/10f * RatSkull.exoticChanceMultiplier();
-		if (altChance > 0.1f) altChance = (altChance+0.1f)/2f; //rat skull is 1/2 as effective here
+		float altChance;
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			altChance = 0.4f * Math.max(1f, RatSkull.exoticChanceMultiplier()/2f);
+		} else {
+			altChance = 1/10f * RatSkull.exoticChanceMultiplier();
+			if (altChance > 0.1f) altChance = (altChance+0.1f)/2f; //rat skull is 1/2 as effective here
+		}
 		if (Random.Float() < altChance){
 			statue = new ArmoredStatue();
 		} else {

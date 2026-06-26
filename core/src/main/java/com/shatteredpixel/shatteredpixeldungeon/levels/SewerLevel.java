@@ -149,7 +149,7 @@ public class SewerLevel extends RegularLevel {
 		if (transition.type == LevelTransition.Type.SURFACE){
 			if (hero.belongings.getItem( Amulet.class ) == null) {
 				if (AgentMinBridgeConfig.ENABLED) {
-                    ScrollOfTeleportation.teleportChar(Dungeon.hero);
+                    //ScrollOfTeleportation.teleportChar(Dungeon.hero);
 					return false;
 				}
 				Game.runOnRenderThread(new Callback() {

@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import static com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon.seamlessResetScene;
 
+import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -887,6 +888,7 @@ public class WndSettings extends WndTabbed {
 		ColorBlock sep1;
 		RedButton btnUploadData;
 		RedButton btnSyncData;
+		RedButton btnCloudUUID;
 		CheckBox chkUpdates;
 		CheckBox chkBetas;
 		RedButton btnExportData;
@@ -922,6 +924,7 @@ public class WndSettings extends WndTabbed {
 						public void onSuccess() {
 							enable(true);
 							text(Messages.get(DataTab.class, "upload_data"));
+							updateCloudUUIDText();
 							parent.add(new WndMessage(Messages.get(DataTab.class, "upload_success")));
 						}
 
@@ -936,6 +939,23 @@ public class WndSettings extends WndTabbed {
 			};
 			btnUploadData.icon(Icons.get(Icons.COPY));
 			add(btnUploadData);
+
+			btnCloudUUID = new RedButton("") {
+				@Override
+				protected void onClick() {
+					super.onClick();
+					String uuid = CloudSyncService.currentPlayerUUID();
+					if (uuid == null || uuid.isEmpty()) {
+						parent.add(new WndMessage(Messages.get(DataTab.class, "cloud_uuid_missing")));
+					} else {
+						Gdx.app.getClipboard().setContents(uuid);
+						parent.add(new WndMessage(Messages.get(DataTab.class, "cloud_uuid_copied")));
+					}
+				}
+			};
+			btnCloudUUID.icon(Icons.get(Icons.COPY));
+			add(btnCloudUUID);
+			updateCloudUUIDText();
 
 			if (Updates.supportsUpdates() && Updates.supportsUpdatePrompts()) {
 				chkUpdates = new CheckBox(Messages.get(this, "updates")) {
@@ -974,6 +994,7 @@ public class WndSettings extends WndTabbed {
 						public void onSuccess() {
 							enable(true);
 							text(Messages.get(DataTab.class, "sync_data"));
+							updateCloudUUIDText();
 							parent.add(new WndMessage(Messages.get(DataTab.class, "sync_success")));
 						}
 
@@ -1098,6 +1119,8 @@ public class WndSettings extends WndTabbed {
 					pos = chkUpdates.bottom();
 				}
 			}
+			btnCloudUUID.setRect(0, pos + GAP, width, BTN_HEIGHT);
+			pos = btnCloudUUID.bottom();
 
 			if (chkBetas != null){
 				chkBetas.setRect(0, pos + GAP, width, BTN_HEIGHT);
@@ -1174,6 +1197,16 @@ public class WndSettings extends WndTabbed {
 		private void updateSeedTimeText() {
 			if (txtSeedTime != null) {
 				txtSeedTime.text(Messages.get(this, "seed_selected_time") + SEED_TIME_NAMES[seedTimeIndex()]);
+			}
+		}
+
+		private void updateCloudUUIDText() {
+			if (btnCloudUUID != null) {
+				String uuid = CloudSyncService.currentPlayerUUID();
+				if (uuid == null || uuid.isEmpty()) {
+					uuid = Messages.get(this, "cloud_uuid_unassigned");
+				}
+				btnCloudUUID.text(Messages.get(this, "cloud_uuid_copy") + uuid);
 			}
 		}
 	}

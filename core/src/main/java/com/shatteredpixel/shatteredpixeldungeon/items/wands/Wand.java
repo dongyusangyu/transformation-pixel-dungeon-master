@@ -68,6 +68,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
@@ -82,6 +83,7 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetR
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -98,6 +100,10 @@ import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 public abstract class Wand extends Item {
 
@@ -119,8 +125,61 @@ public abstract class Wand extends Item {
 	private static final int USES_TO_ID = 10;
 	private float usesLeftToID = USES_TO_ID;
 	private float availableUsesToID = USES_TO_ID/2f;
+	private boolean randomModeNonCursedZapped = false;
+	private static final long RANDOM_MODE_WAND_VISUAL_SEED = 0x6A4F9D35B3A12C7EL;
+	private static final String PFX_KNOWN_TYPE = "_known_wand_type";
 
 	protected int collisionProperties = Ballistica.MAGIC_BOLT;
+	private static LinkedHashSet<Class<? extends Wand>> knownTypes = new LinkedHashSet<>();
+
+	@SuppressWarnings("unchecked")
+	private static final Class<? extends Wand>[] RANDOM_MODE_WAND_CLASSES = new Class[]{
+			WandOfMagicMissile.class,
+			WandOfFireblast.class,
+			WandOfFrost.class,
+			WandOfLightning.class,
+			WandOfDisintegration.class,
+			WandOfPrismaticLight.class,
+			WandOfCorrosion.class,
+			WandOfLivingEarth.class,
+			WandOfBlastWave.class,
+			WandOfCorruption.class,
+			WandOfWarding.class,
+			WandOfRegrowth.class,
+			WandOfTransfusion.class
+	};
+
+	private static final int[] RANDOM_MODE_WAND_IMAGES = new int[]{
+			ItemSpriteSheet.WAND_MAGIC_MISSILE,
+			ItemSpriteSheet.WAND_FIREBOLT,
+			ItemSpriteSheet.WAND_FROST,
+			ItemSpriteSheet.WAND_LIGHTNING,
+			ItemSpriteSheet.WAND_DISINTEGRATION,
+			ItemSpriteSheet.WAND_PRISMATIC_LIGHT,
+			ItemSpriteSheet.WAND_CORROSION,
+			ItemSpriteSheet.WAND_LIVING_EARTH,
+			ItemSpriteSheet.WAND_BLAST_WAVE,
+			ItemSpriteSheet.WAND_CORRUPTION,
+			ItemSpriteSheet.WAND_WARDING,
+			ItemSpriteSheet.WAND_REGROWTH,
+			ItemSpriteSheet.WAND_TRANSFUSION
+	};
+
+	private static final int[] RANDOM_MODE_WAND_ICONS = new int[]{
+			ItemSpriteSheet.Icons.WAND_MAGIC_MISSILE,
+			ItemSpriteSheet.Icons.WAND_FIREBOLT,
+			ItemSpriteSheet.Icons.WAND_FROST,
+			ItemSpriteSheet.Icons.WAND_LIGHTNING,
+			ItemSpriteSheet.Icons.WAND_DISINTEGRATION,
+			ItemSpriteSheet.Icons.WAND_PRISMATIC_LIGHT,
+			ItemSpriteSheet.Icons.WAND_CORROSION,
+			ItemSpriteSheet.Icons.WAND_LIVING_EARTH,
+			ItemSpriteSheet.Icons.WAND_BLAST_WAVE,
+			ItemSpriteSheet.Icons.WAND_CORRUPTION,
+			ItemSpriteSheet.Icons.WAND_WARDING,
+			ItemSpriteSheet.Icons.WAND_REGROWTH,
+			ItemSpriteSheet.Icons.WAND_TRANSFUSION
+	};
 	
 	{
 		defaultAction = AC_ZAP;
@@ -286,6 +345,8 @@ public abstract class Wand extends Item {
 		
 		curChargeKnown = true;
 		super.identify(byHero);
+		setKnown();
+		applyRandomModeIcon();
 		
 		updateQuickslot();
 		
@@ -312,7 +373,9 @@ public abstract class Wand extends Item {
 	public String info() {
 		String desc = super.info();
 
-		desc += "\n\n" + statsDesc();
+		if (!randomModeStatsHidden()) {
+			desc += "\n\n" + statsDesc();
+		}
 
 		if (resinBonus == 1){
 			desc += "\n\n" + Messages.get(Wand.class, "resin_one");
@@ -331,6 +394,123 @@ public abstract class Wand extends Item {
 		}
 
 		return desc;
+	}
+
+	@Override
+	public String desc() {
+		if (hero != null && hero.randomMode) {
+			if (!isIdentified() && !isKnown()) {
+				return Messages.get(Wand.class, "random_unknown_desc");
+			} else {
+				return Messages.get(Wand.class, "random_desc", name());
+			}
+		}
+		return super.desc();
+	}
+
+	@Override
+	public String name() {
+		if (hero != null && hero.randomMode && !isIdentified() && !isKnown()) {
+			return Messages.get(Wand.class, randomModeVisualNameKey(image()));
+		}
+		return super.name();
+	}
+
+	@Override
+	public int image() {
+		if (hero != null && hero.randomMode && randomModeWandIndex(getClass()) >= 0) {
+			applyRandomModeIcon();
+			return randomModeImageForClass(getClass());
+		}
+		if (hero != null && !hero.randomMode) {
+			icon = -1;
+		}
+		return super.image();
+	}
+
+	private boolean randomModeStatsHidden() {
+		return hero != null && hero.randomMode && !isIdentified() && !isKnown() && !randomModeNonCursedZapped;
+	}
+
+	public boolean isKnown() {
+		return knownTypes != null && knownTypes.contains(getClass());
+	}
+
+	public void setKnown() {
+		setKnown(getClass());
+		applyRandomModeIcon();
+	}
+
+	public static void setKnown(Class<? extends Wand> wandClass) {
+		if (knownTypes == null) {
+			knownTypes = new LinkedHashSet<>();
+		}
+		if (wandClass != null && !knownTypes.contains(wandClass)) {
+			knownTypes.add(wandClass);
+			Item.updateQuickslot();
+		}
+		if (hero != null && hero.isAlive() && wandClass != null) {
+			Catalog.setSeen(wandClass);
+			Statistics.itemTypesDiscovered.add(wandClass);
+			for (Item item : hero.belongings) {
+				if (item != null && item.getClass() == wandClass && item instanceof Wand) {
+					((Wand) item).applyRandomModeIcon();
+				}
+			}
+		}
+	}
+
+	public static boolean isKnown(Class<? extends Wand> wandClass) {
+		return wandClass != null && knownTypes != null && knownTypes.contains(wandClass);
+	}
+
+	public static HashSet<Class<? extends Wand>> getKnown() {
+		return knownTypes == null ? new LinkedHashSet<>() : new LinkedHashSet<>(knownTypes);
+	}
+
+	public static HashSet<Class<? extends Wand>> getUnknown() {
+		LinkedHashSet<Class<? extends Wand>> result = new LinkedHashSet<>();
+		for (Class<? extends Wand> wandClass : RANDOM_MODE_WAND_CLASSES) {
+			if (!isKnown(wandClass)) {
+				result.add(wandClass);
+			}
+		}
+		return result;
+	}
+
+	public static boolean allKnown() {
+		return knownTypes != null && knownTypes.size() >= RANDOM_MODE_WAND_CLASSES.length;
+	}
+
+	public static void initKnownTypes() {
+		knownTypes = new LinkedHashSet<>();
+	}
+
+	public static void clearKnownTypes() {
+		knownTypes = null;
+	}
+
+	public static void save(Bundle bundle) {
+		if (knownTypes == null) {
+			knownTypes = new LinkedHashSet<>();
+		}
+		for (Class<? extends Wand> wandClass : RANDOM_MODE_WAND_CLASSES) {
+			bundle.put(wandClass.getSimpleName() + PFX_KNOWN_TYPE, knownTypes.contains(wandClass));
+		}
+	}
+
+	public static void saveSelectively(Bundle bundle, ArrayList<Item> items) {
+		save(bundle);
+	}
+
+	public static void restore(Bundle bundle) {
+		knownTypes = new LinkedHashSet<>();
+		for (Class<? extends Wand> wandClass : RANDOM_MODE_WAND_CLASSES) {
+			if (bundle.contains(wandClass.getSimpleName() + PFX_KNOWN_TYPE)
+					&& bundle.getBoolean(wandClass.getSimpleName() + PFX_KNOWN_TYPE)) {
+				knownTypes.add(wandClass);
+			}
+		}
 	}
 
 	public String statsDesc(){
@@ -481,6 +661,13 @@ public abstract class Wand extends Item {
 	}
 
 	public void wandUsed() {
+		if (!cursed) {
+			randomModeNonCursedZapped = true;
+			if (hero != null && hero.randomMode) {
+				setKnown();
+			}
+			applyRandomModeIcon();
+		}
 		if (!isIdentified()) {
 			float uses = Math.min( availableUsesToID, Talent.itemIDSpeedFactor(hero, this) );
 			availableUsesToID -= uses;
@@ -589,18 +776,40 @@ public abstract class Wand extends Item {
 	
 	@Override
 	public Item random() {
-		//+0: 66.67% (2/3)
-		//+1: 26.67% (4/15)
-		//+2: 6.67%  (1/15)
-		int n = 0;
-		if (Random.Int(3) == 0) {
-			n++;
-			if (Random.Int(5) == 0){
+		int n;
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			switch (Random.chances(new float[]{75, 20, 4, 1})) {
+				case 0: default:
+					n = 0;
+					break;
+				case 1:
+					n = 1;
+					break;
+				case 2:
+					n = 2;
+					break;
+				case 3:
+					n = 3;
+					break;
+			}
+		} else {
+			//+0: 66.67% (2/3)
+			//+1: 26.67% (4/15)
+			//+2: 6.67%  (1/15)
+			n = 0;
+			if (Random.Int(3) == 0) {
 				n++;
+				if (Random.Int(5) == 0){
+					n++;
+				}
 			}
 		}
 		level(n);
 		curCharges += n;
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			applyRandomModeImage();
+			applyRandomModeIcon();
+		}
 		
 		//30% chance to be cursed
 		if (Random.Float() < 0.3f) {
@@ -643,6 +852,7 @@ public abstract class Wand extends Item {
 	private static final String PARTIALCHARGE       = "partialCharge";
 	private static final String CURSE_INFUSION_BONUS= "curse_infusion_bonus";
 	private static final String RESIN_BONUS         = "resin_bonus";
+	private static final String RANDOM_MODE_NON_CURSED_ZAPPED = "random_mode_non_cursed_zapped";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -654,6 +864,7 @@ public abstract class Wand extends Item {
 		bundle.put( PARTIALCHARGE , partialCharge );
 		bundle.put( CURSE_INFUSION_BONUS, curseInfusionBonus );
 		bundle.put( RESIN_BONUS, resinBonus );
+		bundle.put( RANDOM_MODE_NON_CURSED_ZAPPED, randomModeNonCursedZapped );
 	}
 	
 	@Override
@@ -663,12 +874,73 @@ public abstract class Wand extends Item {
 		availableUsesToID = bundle.getInt( AVAILABLE_USES );
 		curseInfusionBonus = bundle.getBoolean(CURSE_INFUSION_BONUS);
 		resinBonus = bundle.getInt(RESIN_BONUS);
+		randomModeNonCursedZapped = bundle.getBoolean(RANDOM_MODE_NON_CURSED_ZAPPED);
 
 		updateLevel();
 
 		curCharges = bundle.getInt( CUR_CHARGES );
 		curChargeKnown = bundle.getBoolean( CUR_CHARGE_KNOWN );
 		partialCharge = bundle.getFloat( PARTIALCHARGE );
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			applyRandomModeImage();
+			applyRandomModeIcon();
+		}
+	}
+
+	private void applyRandomModeImage() {
+		if (randomModeWandIndex(getClass()) >= 0) {
+			image = randomModeImageForClass(getClass());
+		}
+	}
+
+	private void applyRandomModeIcon() {
+		if (Dungeon.hero != null && Dungeon.hero.randomMode && (isIdentified() || isKnown() || randomModeNonCursedZapped)) {
+			icon = randomModeIconForClass(getClass());
+		} else {
+			icon = -1;
+		}
+	}
+
+	public static Class<? extends Wand>[] randomModeWandClasses() {
+		return RANDOM_MODE_WAND_CLASSES;
+	}
+
+	public static int randomModeIconForClass(Class<?> cl) {
+		int index = randomModeWandIndex(cl);
+		return index >= 0 ? RANDOM_MODE_WAND_ICONS[index] : -1;
+	}
+
+	public static int randomModeImageForClass(Class<?> cl) {
+		int index = randomModeWandIndex(cl);
+		if (index < 0) return ItemSpriteSheet.WAND_MAGIC_MISSILE;
+
+		ArrayList<Integer> images = new ArrayList<>();
+		for (int image : RANDOM_MODE_WAND_IMAGES) {
+			images.add(image);
+		}
+		Collections.shuffle(images, new java.util.Random(Dungeon.seed ^ RANDOM_MODE_WAND_VISUAL_SEED));
+		return images.get(index);
+	}
+
+	private static int randomModeWandIndex(Class<?> cl) {
+		return Arrays.asList(RANDOM_MODE_WAND_CLASSES).indexOf(cl);
+	}
+
+	private static String randomModeVisualNameKey(int image) {
+		if (image == ItemSpriteSheet.WAND_BLAST_WAVE)      return "random_visual_blast_wave";
+		if (image == ItemSpriteSheet.WAND_CORROSION)       return "random_visual_corrosion";
+		if (image == ItemSpriteSheet.WAND_CORRUPTION)      return "random_visual_corruption";
+		if (image == ItemSpriteSheet.WAND_DISINTEGRATION)  return "random_visual_disintegration";
+		if (image == ItemSpriteSheet.WAND_FIREBOLT)        return "random_visual_firebolt";
+		if (image == ItemSpriteSheet.WAND_FROST)           return "random_visual_frost";
+		if (image == ItemSpriteSheet.WAND_LIGHTNING)       return "random_visual_lightning";
+		if (image == ItemSpriteSheet.WAND_LIVING_EARTH)    return "random_visual_living_earth";
+		if (image == ItemSpriteSheet.WAND_MAGIC_MISSILE)   return "random_visual_magic_missile";
+		if (image == ItemSpriteSheet.WAND_PRISMATIC_LIGHT) return "random_visual_prismatic_light";
+		if (image == ItemSpriteSheet.WAND_REGROWTH)        return "random_visual_regrowth";
+		if (image == ItemSpriteSheet.WAND_TRANSFUSION)     return "random_visual_transfusion";
+		if (image == ItemSpriteSheet.WAND_WARDING)         return "random_visual_warding";
+		return "random_visual_magic_missile";
 	}
 	
 	@Override

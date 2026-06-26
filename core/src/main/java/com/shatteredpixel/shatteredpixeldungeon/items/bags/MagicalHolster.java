@@ -58,8 +58,12 @@ public class MagicalHolster extends Bag {
 					if (item instanceof Wand) {
 						((Wand) item).charge(owner, HOLSTER_SCALE_FACTOR);
 					} else if (item instanceof MissileWeapon){
+						((MissileWeapon) item).ensureSetIDAssigned();
 						((MissileWeapon) item).holster = true;
 					}
+				}
+				if (owner instanceof com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero) {
+					MissileWeapon.sanitizeInventorySets((com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero) owner, this);
 				}
 			}
 			return true;

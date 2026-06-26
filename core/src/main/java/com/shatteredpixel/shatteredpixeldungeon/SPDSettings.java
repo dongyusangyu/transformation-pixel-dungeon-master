@@ -251,10 +251,12 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_CHALLENGES	= "challenges";
 	public static final String KEY_SKIN	= "skin";
 	public static final String KEY_SKIN_BY_CLASS	= "skin_by_class";
+	public static final String KEY_RANDOM_MODE	= "random_mode";
 	public static final String KEY_CUSTOM_SEED	= "custom_seed";
 	public static final String KEY_LAST_DAILY	= "last_daily";
 	public static final String KEY_INTRO		= "intro";
 	public static final String KEY_CLOUD_DEVICE_ID = "cloud_device_id";
+	public static final String KEY_CLOUD_PLAYER_UUID = "cloud_player_uuid";
 	public static final String KEY_LEGACY_SAVES_MIGRATED = "legacy_saves_migrated";
 
 	public static final String KEY_SUPPORT_NAGGED= "support_nagged";
@@ -283,6 +285,12 @@ public class SPDSettings extends GameSettings {
 	public static void challenges( int value ) {
 		put( KEY_CHALLENGES, value );
 	}
+	public static void randomMode( boolean value ) {
+		put( KEY_RANDOM_MODE, value );
+	}
+	public static boolean randomMode() {
+		return getBoolean( KEY_RANDOM_MODE, false );
+	}
 	public static void Skin( int value ) {
         put( KEY_SKIN, value );
     }
@@ -295,6 +303,7 @@ public class SPDSettings extends GameSettings {
 			return;
 		}
 		put( KEY_SKIN_BY_CLASS, putSkinValue(skinByClass(), heroClass, value) );
+
 	}
 	public static int Skin( HeroClass heroClass ) {
 		if (heroClass == null) {
@@ -372,6 +381,14 @@ public class SPDSettings extends GameSettings {
 
 	public static String cloudDeviceID() {
 		return getString( KEY_CLOUD_DEVICE_ID, null );
+	}
+
+	public static void cloudPlayerUUID( String value ){
+		put( KEY_CLOUD_PLAYER_UUID, value );
+	}
+
+	public static String cloudPlayerUUID() {
+		return getString( KEY_CLOUD_PLAYER_UUID, null );
 	}
 
 	public static void legacySavesMigrated( boolean value ){

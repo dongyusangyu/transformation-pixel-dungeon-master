@@ -188,6 +188,7 @@ public class BuffIndicator extends Component {
     public  static  final  int RITUAL=126;
     public  static  final  int HOLYPRAER=128;
     public  static  final  int DELAYEDSATISFACTION=129;
+    public  static  final  int MINIBOSS=130;
 
 
 

@@ -34,7 +34,38 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.connection.ConnectionRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.AlarmTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.BlazingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.BurningTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ChillingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ConfusionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CorrosionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CursingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisarmingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisintegrationTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DistortionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ExplosiveTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.FlashingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.FlockTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.FrostTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GatewayTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GeyserTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrippingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GuardianTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.OozeTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PitfallTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RockfallTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ShockingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.StormTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.SummoningTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TeleportationTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ToxicTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WarpingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WeakeningTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WornDartTrap;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Graph;
 import com.watabou.utils.PathFinder;
@@ -75,11 +106,34 @@ public abstract class RegularPainter extends Painter {
 	private int nTraps = 0;
 	private Class<? extends Trap>[] trapClasses;
 	private float[] trapChances;
+
+	private static final Class<?>[] RANDOM_MODE_TRAP_CLASSES = new Class<?>[]{
+			WornDartTrap.class, ChillingTrap.class, ShockingTrap.class, ToxicTrap.class,
+			AlarmTrap.class, OozeTrap.class, ConfusionTrap.class, FlockTrap.class,
+			SummoningTrap.class, TeleportationTrap.class, GatewayTrap.class,
+			BurningTrap.class, GrippingTrap.class, PoisonDartTrap.class, RockfallTrap.class,
+			FlashingTrap.class, GuardianTrap.class, WeakeningTrap.class,
+			DisarmingTrap.class, WarpingTrap.class, CursingTrap.class,
+			FrostTrap.class, StormTrap.class, CorrosionTrap.class, BlazingTrap.class,
+			DisintegrationTrap.class, GrimTrap.class, PitfallTrap.class, DistortionTrap.class,
+			GeyserTrap.class
+	};
+	private static final float[] RANDOM_MODE_TRAP_CHANCES = new float[RANDOM_MODE_TRAP_CLASSES.length];
+	static {
+		for (int i = 0; i < RANDOM_MODE_TRAP_CHANCES.length; i++) {
+			RANDOM_MODE_TRAP_CHANCES[i] = 1;
+		}
+	}
 	
 	public RegularPainter setTraps(int num, Class<?>[] classes, float[] chances){
 		nTraps = num;
-		trapClasses = (Class<? extends Trap>[]) classes;
-		trapChances = chances;
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			trapClasses = (Class<? extends Trap>[]) RANDOM_MODE_TRAP_CLASSES;
+			trapChances = RANDOM_MODE_TRAP_CHANCES;
+		} else {
+			trapClasses = (Class<? extends Trap>[]) classes;
+			trapChances = chances;
+		}
 		return this;
 	}
 
@@ -487,9 +541,12 @@ public abstract class RegularPainter extends Painter {
 			validNonHallways.remove(trapPos);
 
 			revealInc += revealedChance;
-			if (i >= nTraps || revealInc >= 1) {
+			boolean revealRandomDistortionTrap = randomModeRevealsDistortionTrap(trap);
+			if (i >= nTraps || revealInc >= 1 || revealRandomDistortionTrap) {
 				trap.reveal();
-				revealInc--;
+				if (!revealRandomDistortionTrap || i >= nTraps || revealInc >= 1) {
+					revealInc--;
+				}
 			} else {
 				trap.hide();
 			}
@@ -498,6 +555,15 @@ public abstract class RegularPainter extends Painter {
 			//some traps will not be hidden
 			l.map[trapPos] = trap.visible ? Terrain.TRAP : Terrain.SECRET_TRAP;
 		}
+	}
+
+	private boolean randomModeRevealsDistortionTrap(Trap trap) {
+		return Dungeon.hero != null
+				&& Dungeon.hero.randomMode
+				&& trap instanceof DistortionTrap
+				&& ((Dungeon.depth >= 1 && Dungeon.depth <= 4)
+					|| (Dungeon.depth >= 6 && Dungeon.depth <= 9)
+					|| (Dungeon.depth >= 11 && Dungeon.depth <= 14));
 	}
 	
 }

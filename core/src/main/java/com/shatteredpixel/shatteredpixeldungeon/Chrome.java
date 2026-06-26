@@ -35,7 +35,8 @@ public class Chrome {
 		RED_BUTTON,
 		GREY_BUTTON,
 		GREY_BUTTON_TR,
-		TAG,
+        TAG,
+		TAG_BUTTUN,
 		GEM,
 		SCROLL,
 		TAB_SET,
@@ -45,7 +46,8 @@ public class Chrome {
 	}
 	
 	public static NinePatch get( Type type ) {
-		String Asset = Assets.Interfaces.CHROME;
+		String Asset;
+        Asset = Assets.Interfaces.CHROME;
 		switch (type) {
 		case WINDOW:
 			return new NinePatch( Asset, 0, 0, 20, 20, 6 );
@@ -66,6 +68,8 @@ public class Chrome {
 			return new NinePatch( Asset, 38, 6, 6, 6, 2 );
 		case TAG:
 			return new NinePatch( Asset, 22, 18, 16, 14, 3 );
+		case TAG_BUTTUN:
+			return new NinePatch( Asset, 38, 12, 6, 6, 4 );
 		case GEM:
 			return new NinePatch( Asset, 0, 32, 32, 32, 13 );
 		case SCROLL:

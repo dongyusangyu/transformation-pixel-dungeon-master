@@ -117,7 +117,7 @@ public abstract class EquipableItem extends Item {
 	public static void equipCursed( Hero hero ) {
 		hero.sprite.emitter().burst( ShadowParticle.CURSE, 6 );
 		Sample.INSTANCE.play( Assets.Sounds.CURSED );
-        if(hero.heroClass== HeroClass.FRIAR){
+        if(hero.buff(Reason.class)!=null){
             Reason.loseReason(hero,10);
         }
 	}

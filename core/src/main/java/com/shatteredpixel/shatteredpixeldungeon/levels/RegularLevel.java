@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SacrificialFire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.EbonyMimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GoldenMimic;
@@ -317,6 +318,23 @@ public abstract class RegularLevel extends Level {
 
 		}
 
+		rollRandomModeMiniBoss();
+
+	}
+
+	private void rollRandomModeMiniBoss() {
+		if (Dungeon.hero == null || !Dungeon.hero.randomMode || Dungeon.depth <= 1) {
+			return;
+		}
+		ArrayList<Mob> candidates = new ArrayList<>();
+		for (Mob m : mobs) {
+			if (ChampionEnemy.RandomMiniBoss.validTarget(m)) {
+				candidates.add(m);
+			}
+		}
+		if (!candidates.isEmpty()) {
+			Buff.affect(Random.element(candidates), ChampionEnemy.RandomMiniBoss.class);
+		}
 	}
 
 	@Override

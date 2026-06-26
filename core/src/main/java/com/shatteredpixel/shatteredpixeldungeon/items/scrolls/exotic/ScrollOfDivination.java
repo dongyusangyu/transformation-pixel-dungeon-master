@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -63,8 +64,17 @@ public class ScrollOfDivination extends ExoticScroll {
 		HashSet<Class<? extends Potion>> potions = Potion.getUnknown();
 		HashSet<Class<? extends Scroll>> scrolls = Scroll.getUnknown();
 		HashSet<Class<? extends Ring>> rings = Ring.getUnknown();
+		HashSet<Class<? extends Wand>> wandTypes = hero != null && hero.randomMode ? Wand.getUnknown() : new HashSet<>();
+		ArrayList<Wand> wands = new ArrayList<>();
+		if (hero != null && !hero.randomMode) {
+			for (Item item : hero.belongings) {
+				if (item instanceof Wand && !((Wand) item).isIdentified()) {
+					wands.add((Wand) item);
+				}
+			}
+		}
 		
-		int total = potions.size() + scrolls.size() + rings.size();
+		int total = potions.size() + scrolls.size() + rings.size() + (hero != null && hero.randomMode ? wandTypes.size() : wands.size());
 		
 		ArrayList<Item> IDed = new ArrayList<>();
 		int left = 4;
@@ -72,7 +82,7 @@ public class ScrollOfDivination extends ExoticScroll {
 			left += hero.pointsInTalent(Talent.PREDICTIVE_LOVER);
 		}
 		
-		float[] baseProbs = new float[]{3, 3, 3};
+		float[] baseProbs = new float[]{3, 3, 3, 3};
 		float[] probs = baseProbs.clone();
 		
 		while (left > 0 && total > 0) {
@@ -112,6 +122,30 @@ public class ScrollOfDivination extends ExoticScroll {
 					r.setKnown();
 					IDed.add(r);
 					rings.remove(r.getClass());
+					break;
+				case 3:
+					if (hero != null && hero.randomMode) {
+						if (wandTypes.isEmpty()) {
+							probs[3] = 0;
+							continue;
+						}
+						probs[3]--;
+						Class<? extends Wand> wandClass = Random.element(wandTypes);
+						Wand w = Reflection.newInstance(wandClass);
+						w.setKnown();
+						IDed.add(w);
+						wandTypes.remove(wandClass);
+						break;
+					}
+					if (wands.isEmpty()) {
+						probs[3] = 0;
+						continue;
+					}
+					probs[3]--;
+					Wand w = Random.element(wands);
+					w.identify();
+					IDed.add(w);
+					wands.remove(w);
 					break;
 			}
 			left --;

@@ -47,7 +47,7 @@ public class WndActionList extends Window {
         ArrayList<ActionIndicator.Action> possibleActions = new ArrayList<>();
         for (Class<? extends Buff> possibleAction : ActionIndicator.actionBuffClasses){
             for(Buff b : Dungeon.hero.buffs(possibleAction)){
-                if (((ActionIndicator.Action)b).usable())
+                if (ActionIndicator.canShowAction((ActionIndicator.Action)b))
                     possibleActions.add((ActionIndicator.Action) b);
             }
         }
@@ -73,7 +73,7 @@ public class WndActionList extends Window {
         Visual secondVis;
 
         public ActionButton(ActionIndicator.Action action){
-            super(Chrome.Type.GREY_BUTTON, "");
+            super(Chrome.Type.TAG_BUTTUN, "");
             hotArea.blockLevel = PointerArea.NEVER_BLOCK;
             this.leftJustify = true;
             this.multiline = true;
@@ -90,7 +90,8 @@ public class WndActionList extends Window {
         @Override
         protected void onClick() {
             super.onClick();
-            action.doAction();
+            ActionIndicator.setAction(action);
+            //action.doAction();
             WndActionList.this.hide();
         }
 

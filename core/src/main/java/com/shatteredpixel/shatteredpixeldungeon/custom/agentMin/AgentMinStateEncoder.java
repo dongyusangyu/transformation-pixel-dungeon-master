@@ -27,8 +27,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
 
 public class AgentMinStateEncoder {
@@ -54,6 +52,10 @@ public class AgentMinStateEncoder {
 	private static final int LC_VISIBLE_HEAP = 16;
 	private static final int LC_DOOR = 17;
 	private static final int LC_BLOB = 18;
+	private static final int TALENT_ID_SCALE = 800;
+	private static final int ITEM_ID_SCALE = 512;
+	private static final int MODIFIER_ID_SCALE = 64;
+	private static final int MOB_ID_SCALE = 384;
 
 	public static AgentMinEncodedState captureEncoded() {
 		return encode(AgentMinStateBuilder.capture());
@@ -70,7 +72,8 @@ public class AgentMinStateEncoder {
 		encoded.height = AgentMinEncodedState.LOCAL_MAP_SIZE;
 		encoded.talentOffset = AgentMinEncodedState.HERO_BASE_FEATURES;
 		encoded.negativeTalentOffset = encoded.talentOffset + TALENTS.length;
-		encoded.heroVectorSize = AgentMinEncodedState.HERO_BASE_FEATURES + TALENTS.length * 2;
+		encoded.heroVectorSize = AgentMinEncodedState.HERO_BASE_FEATURES + TALENTS.length * 2
+				+ AgentMinEncodedState.TALENT_ICON_SLOTS * AgentMinEncodedState.TALENT_ICON_FEATURES;
 		encoded.pendingReward = AgentMinRewardTracker.pendingReward();
 		encoded.episodeReward = AgentMinRewardTracker.episodeReward();
 
@@ -85,6 +88,7 @@ public class AgentMinStateEncoder {
 		encoded.historyMatrix = AgentMinHistoryTracker.encode(state);
 		encoded.agentVisitedMatrix = AgentMinVisitTracker.encodeMatrix(state);
 		encoded.actionSpace = AgentMinActionSpaceBuilder.build(state);
+		encoded.forcedSkill = encoded.actionSpace == null ? -1 : encoded.actionSpace.forcedSkill;
 		return encoded;
 	}
 
@@ -121,7 +125,8 @@ public class AgentMinStateEncoder {
 				tensor[LC_VISIBLE][localY][localX] = visible ? 1f : 0f;
 				tensor[LC_TERRAIN][localY][localX] = terrainValue(code, known);
 				tensor[LC_AVOID][localY][localX] = hasFlag(code, AgentMinState.FLAG_AVOID) ? 1f : 0f;
-				tensor[LC_SOLID][localY][localX] = hasFlag(code, AgentMinState.FLAG_SOLID) ? 1f : 0f;
+				tensor[LC_SOLID][localY][localX] = hasFlag(code, AgentMinState.FLAG_SOLID)
+						&& !AgentMinStateBuilder.isPassableDoorTerrain(terrain(code)) ? 1f : 0f;
 				tensor[LC_WATER_FLAMABLE][localY][localX] = waterFlamableValue(code, known);
 				tensor[LC_ITEM][localY][localX] = itemValue(code);
 				tensor[LC_TRAP][localY][localX] = hasFlag(code, AgentMinState.FLAG_TRAP) ? 1f : 0f;
@@ -226,21 +231,54 @@ public class AgentMinStateEncoder {
 			vector[AgentMinEncodedState.HERO_BASE_FEATURES + i] = points == null ? 0f : norm(points, 5f);
 			vector[AgentMinEncodedState.HERO_BASE_FEATURES + TALENTS.length + i] = negative == null ? 0f : norm(negative, 5f);
 		}
+		encodeTalentIconSlots(vector, AgentMinEncodedState.HERO_BASE_FEATURES + TALENTS.length * 2, hero);
 		return vector;
+	}
+
+	private static void encodeTalentIconSlots(float[] vector, int offset, AgentMinState.HeroState hero) {
+		if (hero.talentSlots == null) {
+			return;
+		}
+		for (AgentMinState.TalentSlotState slot : hero.talentSlots) {
+			if (slot == null || slot.slot < 0 || slot.placeholder || !slot.unlocked) {
+				continue;
+			}
+			int tierBase = talentTierBase(slot.tier);
+			if (tierBase < 0) {
+				continue;
+			}
+			int index = tierBase + slot.slot;
+			if (index < 0 || index >= AgentMinEncodedState.TALENT_ICON_SLOTS) {
+				continue;
+			}
+			int write = offset + index * AgentMinEncodedState.TALENT_ICON_FEATURES;
+			if (write + AgentMinEncodedState.TALENT_ICON_FEATURES > vector.length) {
+				continue;
+			}
+			int talentId = slot.talentIdentityId >= 0 && slot.talentIdentityId < TALENT_ID_SCALE ? slot.talentIdentityId : 0;
+			vector[write] = norm(talentId, TALENT_ID_SCALE);
+			vector[write + 1] = norm(slot.points, 5f);
+			vector[write + 2] = norm(slot.maxPoints, 5f);
+			vector[write + 3] = slot.unlocked ? 1f : 0f;
+		}
+	}
+
+	private static int talentTierBase(int tier) {
+		if (tier == 1) return 0;
+		if (tier == 2) return 6;
+		if (tier == 3) return 12;
+		if (tier == 4) return 18;
+		return -1;
 	}
 
 	private static float[][] encodeInventory(AgentMinState state) {
 		float[][] matrix = new float[AgentMinEncodedState.INVENTORY_ROWS][AgentMinEncodedState.INVENTORY_FEATURES];
-		ArrayList<AgentMinState.ItemState> equipped = new ArrayList<>(state.inventory.equipped);
-		ArrayList<AgentMinState.ItemState> backpack = new ArrayList<>(state.inventory.backpack);
-		sortItemsForEncoding(equipped);
-		sortItemsForEncoding(backpack);
 		int row = 0;
-		for (AgentMinState.ItemState item : equipped) {
+		for (AgentMinState.ItemState item : state.inventory.equipped) {
 			if (row >= matrix.length) return matrix;
 			encodeItemRow(matrix[row++], item);
 		}
-		for (AgentMinState.ItemState item : backpack) {
+		for (AgentMinState.ItemState item : state.inventory.backpack) {
 			if (row >= matrix.length) return matrix;
 			encodeItemRow(matrix[row++], item);
 		}
@@ -423,6 +461,56 @@ public class AgentMinStateEncoder {
 		row[23] = item.actions == null ? 0f : norm(item.actions.size(), 12f);
 		row[24] = item.slot != null && item.slot.startsWith("quickslot_") ? 1f : 0f;
 		row[25] = item.slot != null && item.slot.contains("/") ? 1f : 0f;
+		row[26] = classHash(item.className);
+		row[27] = item.stackable ? 1f : 0f;
+		row[28] = item.unique ? 1f : 0f;
+		row[29] = item.bones ? 1f : 0f;
+		row[30] = item.icon < 0 ? 0f : norm(item.icon, 1024f);
+		row[31] = isMeleeWeapon(item) ? 1f : 0f;
+		row[32] = isThrowableWeapon(item) ? 1f : 0f;
+		row[33] = hasPath(item, ".items.armor.") ? 1f : 0f;
+		row[34] = hasPath(item, ".items.rings.") ? 1f : 0f;
+		row[35] = hasPath(item, ".items.artifacts.") ? 1f : 0f;
+		row[36] = isWandLike(item) ? 1f : 0f;
+		row[37] = hasPath(item, ".items.potions.") ? 1f : 0f;
+		row[38] = hasPath(item, ".items.scrolls.") || hasPath(item, ".items.ScrollOfSublimation") ? 1f : 0f;
+		row[39] = isFood(item) || isEatLike(item) ? 1f : 0f;
+		row[40] = hasPath(item, ".items.spells.") ? 1f : 0f;
+		row[41] = hasPath(item, ".items.bags.") ? 1f : 0f;
+		row[42] = hasPath(item, ".items.keys.") ? 1f : 0f;
+		row[43] = hasPath(item, ".items.trinkets.") ? 1f : 0f;
+		row[44] = isAlchemyMaterial(item) ? 1f : 0f;
+		row[45] = isTalentResource(item) ? 1f : 0f;
+		row[46] = defaultActionIndex(item);
+		row[47] = norm(item.quantity * Math.max(1, item.actions == null ? 0 : item.actions.size()), 60f);
+		row[48] = equipmentKind(item.equipmentKind);
+		row[49] = norm(item.strengthRequirement, 25f);
+		row[50] = normSigned(item.strengthMargin, 15f);
+		row[51] = norm(item.equipmentScore, 80f);
+		row[52] = item.strengthRequirement <= 0 || item.strengthMargin >= 0 ? 1f : 0f;
+		row[53] = item.strengthRequirement > 0 && item.strengthMargin < 0 ? norm(-item.strengthMargin, 10f) : 0f;
+		row[54] = item.equipmentScore > 0f ? 1f : 0f;
+		row[55] = item.cursedKnown ? (item.cursed ? -1f : 1f) : 0f;
+		row[56] = norm(item.itemRow + 1, AgentMinEncodedState.INVENTORY_ROWS);
+		row[57] = item.inContainer ? 1f : 0f;
+		row[58] = norm(item.containerDepth, 4f);
+		row[59] = norm(item.containerItemIndex + 1, 24f);
+		row[60] = norm(item.containerSize, 24f);
+		row[61] = norm(item.containerCapacity, 24f);
+		row[62] = item.bag ? 1f : 0f;
+		row[63] = item.bagCapacity <= 0 ? 0f : clamp(item.bagSize / (float)item.bagCapacity);
+		row[64] = normSigned(item.equipmentScoreDiff, 40f);
+		row[65] = item.equipmentUpgradeCandidate ? 1f : 0f;
+		row[66] = item.equipmentSidegrade ? 1f : 0f;
+		row[67] = norm(item.equipmentCooldown, AgentMinRewardConfig.EQUIP_ACTION_COOLDOWN_TURNS);
+		row[68] = item.equipmentScoreDiff >= AgentMinRewardConfig.EQUIP_MIN_SCORE_IMPROVEMENT ? 1f : 0f;
+		row[69] = item.equipmentScoreDiff <= 0f && item.equipmentScore > 0f ? 1f : 0f;
+		row[70] = item.equipped && item.strengthRequirement > 0 && item.strengthMargin < 0 ? 1f : 0f;
+		row[71] = !item.equipped && item.strengthRequirement > 0 && item.strengthMargin >= 0 ? 1f : 0f;
+		row[72] = norm(item.itemIdentityId, ITEM_ID_SCALE);
+		row[73] = norm(item.modifierIdentityId, MODIFIER_ID_SCALE);
+		row[74] = norm(item.modifierKind, 8f);
+		row[75] = item.modifierIdentityId > 0 ? 1f : 0f;
 	}
 
 	private static float[][] encodeActions(AgentMinState state) {
@@ -454,6 +542,8 @@ public class AgentMinStateEncoder {
 			row[19] = action.itemClassName != null && action.itemClassName.contains(".keys.") ? 1f : 0f;
 			row[20] = action.itemClassName != null && action.itemClassName.contains(".bags.") ? 1f : 0f;
 			row[21] = action.usesTargeting ? 1f : 0f;
+			row[22] = norm(action.actionIndex + 1, 16f);
+			row[23] = norm(action.actionCount, 16f);
 			fillActionOptionAffinities(row, action, optionVector);
 		}
 		return matrix;
@@ -493,6 +583,7 @@ public class AgentMinStateEncoder {
 			row[25] = norm(state.hero.expectedArmor, 100f);
 			row[26] = norm(state.depth, 30f);
 			row[27] = mob.hp <= state.hero.damageMax ? 1f : 0f;
+			row[28] = 0f;
 		}
 		return matrix;
 	}
@@ -509,10 +600,11 @@ public class AgentMinStateEncoder {
 		if (!known) {
 			return 0f;
 		}
-		if (terrain(code) == Terrain.CHASM) {
+		int terrain = terrain(code);
+		if (terrain == Terrain.CHASM) {
 			return 0f;
 		}
-		return hasFlag(code, AgentMinState.FLAG_PASSABLE) ? 1f : -1f;
+		return hasFlag(code, AgentMinState.FLAG_PASSABLE) || AgentMinStateBuilder.isPassableDoorTerrain(terrain) ? 1f : -1f;
 	}
 
 	private static float waterFlamableValue(int code, boolean known) {
@@ -676,31 +768,6 @@ public class AgentMinStateEncoder {
 		return 0f;
 	}
 
-	private static void sortItemsForEncoding(ArrayList<AgentMinState.ItemState> items) {
-		Collections.sort(items, Comparator.comparingDouble(AgentMinStateEncoder::itemEncodingPriority).reversed());
-	}
-
-	private static double itemEncodingPriority(AgentMinState.ItemState item) {
-		if (item == null) {
-			return -1;
-		}
-		double score = item.equipped ? 200 : 0;
-		if (item.className != null && item.className.contains(".keys.")) score += 180;
-		if (isHealingPotion(item)) score += 160;
-		if (isFood(item) || isEatLike(item)) score += 120;
-		if (isWandLike(item)) score += 110;
-		if (isThrowableWeapon(item)) score += 90 + Math.min(20, item.quantity);
-		if (item.className != null && item.className.contains(".weapon.")) score += 80;
-		if (item.className != null && item.className.contains(".armor.")) score += 70;
-		if (item.className != null && item.className.contains(".artifacts.")) score += 60;
-		if (item.className != null && item.className.contains(".bags.")) score += 30;
-		if (item.usesTargeting) score += 20;
-		if (!item.levelKnown) score += 5;
-		score += Math.min(15, Math.max(0, item.quantity));
-		score += Math.max(0, item.buffedLevel) * 2;
-		return score;
-	}
-
 	private static int codeAt(AgentMinState state, int cell) {
 		if (state.level.visibleMap != null && cell >= 0 && cell < state.level.visibleMap.length
 				&& state.level.visibleMap[cell] != AgentMinState.CELL_UNKNOWN) {
@@ -750,6 +817,53 @@ public class AgentMinStateEncoder {
 		return item.className.contains(".items.wands.") || item.className.endsWith(".MagesStaff");
 	}
 
+	private static boolean isMeleeWeapon(AgentMinState.ItemState item) {
+		return hasPath(item, ".items.weapon.melee.") || hasPath(item, ".items.weapon.SpiritBow");
+	}
+
+	private static boolean isAlchemyMaterial(AgentMinState.ItemState item) {
+		return hasPath(item, ".items.potions.")
+				|| hasPath(item, ".items.scrolls.")
+				|| hasPath(item, ".items.stones.")
+				|| hasPath(item, ".items.plants.")
+				|| hasPath(item, ".items.bombs.")
+				|| hasPath(item, ".items.EnergyCrystal")
+				|| hasPath(item, ".items.ArcaneResin")
+				|| hasPath(item, ".items.LiquidMetal");
+	}
+
+	private static boolean isTalentResource(AgentMinState.ItemState item) {
+		return hasPath(item, ".items.scrolls.exotic.ScrollOfMetamorphosis")
+				|| hasPath(item, ".items.spells.TransformSpell")
+				|| hasPath(item, ".items.ScrollOfSublimation");
+	}
+
+	private static boolean hasPath(AgentMinState.ItemState item, String part) {
+		return item != null && item.className != null && item.className.contains(part);
+	}
+
+	private static float defaultActionIndex(AgentMinState.ItemState item) {
+		if (item == null || item.actions == null || item.defaultAction == null) {
+			return 0f;
+		}
+		for (int i = 0; i < item.actions.size(); i++) {
+			if (item.defaultAction.equals(item.actions.get(i))) {
+				return norm(i + 1, 16f);
+			}
+		}
+		return 0f;
+	}
+
+	private static float equipmentKind(String kind) {
+		if (kind == null) return 0f;
+		if (kind.equals("weapon")) return 1f / 6f;
+		if (kind.equals("armor")) return 2f / 6f;
+		if (kind.equals("ring")) return 3f / 6f;
+		if (kind.equals("artifact")) return 4f / 6f;
+		if (kind.equals("misc")) return 5f / 6f;
+		return 0f;
+	}
+
 	private static float category(String className) {
 		if (className == null) return 0f;
 		String c = className.toLowerCase();
@@ -782,17 +896,27 @@ public class AgentMinStateEncoder {
 
 	private static float actionKind(String action) {
 		if (action == null) return 0f;
-		if (action.equals("DROP")) return 1f / 16f;
-		if (action.equals("THROW")) return 2f / 16f;
-		if (action.equals("EQUIP")) return 3f / 16f;
-		if (action.equals("UNEQUIP")) return 4f / 16f;
-		if (action.equals("DRINK")) return 5f / 16f;
-		if (action.equals("READ")) return 6f / 16f;
-		if (action.equals("EAT")) return 7f / 16f;
-		if (action.equals("ZAP")) return 8f / 16f;
-		if (action.equals("CAST")) return 9f / 16f;
-		if (action.equals("OPEN")) return 10f / 16f;
-		if (action.equals("INSPECT")) return 11f / 16f;
+		if (action.equals("DROP")) return 1f / 24f;
+		if (action.equals("THROW")) return 2f / 24f;
+		if (action.equals("EQUIP")) return 3f / 24f;
+		if (action.equals("UNEQUIP")) return 4f / 24f;
+		if (action.equals("DRINK")) return 5f / 24f;
+		if (action.equals("READ")) return 6f / 24f;
+		if (action.equals("EAT") || action.equals("eat")) return 7f / 24f;
+		if (action.equals("ZAP")) return 8f / 24f;
+		if (action.equals("CAST")) return 9f / 24f;
+		if (action.equals("OPEN")) return 10f / 24f;
+		if (action.equals("INSPECT")) return 11f / 24f;
+		if (action.equals("PLANT")) return 12f / 24f;
+		if (action.equals("PLANT_IN_BODY")) return 13f / 24f;
+		if (action.equals("LIGHTTHROW")) return 14f / 24f;
+		if (action.equals("LIGHT")) return 15f / 24f;
+		if (action.equals("USE")) return 16f / 24f;
+		if (action.equals("BLESS")) return 17f / 24f;
+		if (action.equals("SNACK")) return 18f / 24f;
+		if (action.equals("STEALTH")) return 19f / 24f;
+		if (action.equals("ROOT")) return 20f / 24f;
+		if (action.equals("ACTIVATE")) return 21f / 24f;
 		return 1f;
 	}
 

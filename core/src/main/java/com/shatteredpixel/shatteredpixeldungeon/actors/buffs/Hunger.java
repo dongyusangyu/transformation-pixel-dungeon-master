@@ -99,7 +99,7 @@ public class Hunger extends Buff implements Hero.Doom {
 					if(hero.hasTalent(Talent.CHOCOLATE_COINS) && Dungeon.gold>100-25*hero.pointsInTalent(Talent.CHOCOLATE_COINS)){
 						Dungeon.gold-=49-12*hero.pointsInTalent(Talent.CHOCOLATE_COINS);
 					}else{
-                        if(heroClassIs(HeroClass.FRIAR)){
+                        if(hero.buff(Reason.class)!=null){
                             Reason.loseReason(target,2);
                         }
 						target.damage( (int)partialDamage, this);
@@ -247,7 +247,7 @@ public class Hunger extends Buff implements Hero.Doom {
 			level = STARVING;
 			partialDamage += excess * (target.HT/1000f);
 			if (partialDamage > 1f){
-                if(heroClassIs(HeroClass.FRIAR)){
+                if(hero.buff(Reason.class)!=null){
                     Reason.loseReason(target,2);
                 }
 				target.damage( (int)partialDamage, this );
@@ -271,7 +271,7 @@ public class Hunger extends Buff implements Hero.Doom {
 			}
 
 			target.damage( 1, this );
-            if(heroClassIs(HeroClass.FRIAR)){
+            if(hero.buff(Reason.class)!=null){
                 Reason.loseReason(target,2);
             }
 		}

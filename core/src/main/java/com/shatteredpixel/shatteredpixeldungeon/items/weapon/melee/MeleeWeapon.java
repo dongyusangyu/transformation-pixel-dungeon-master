@@ -78,16 +78,14 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public void activate(Char ch) {
 		super.activate(ch);
-		if (ch instanceof Hero && (((Hero) ch).heroClass == HeroClass.DUELIST
-				|| ((Hero) ch).hasTalent(Talent.MARTIAL_TRAIN))){
+		if (ch instanceof Hero && canUseWeaponAbility((Hero) ch)){
 			Buff.affect(ch, Charger.class);
 		}
 	}
 
 	@Override
 	public String defaultAction() {
-		if (hero != null && (hero.heroClass == HeroClass.DUELIST
-			|| hero.hasTalent(Talent.MARTIAL_TRAIN))){
+		if (canUseWeaponAbility(hero)){
 			return AC_ABILITY;
 		}else {
 			return super.defaultAction();
@@ -97,7 +95,7 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public ArrayList<String> actions(Hero hero) {
 		ArrayList<String> actions = super.actions(hero);
-		if (isEquipped(hero) && (hero.heroClass == HeroClass.DUELIST || hero.hasTalent(Talent.MARTIAL_TRAIN) && !(this instanceof MagesStaff))){
+		if (isEquipped(hero) && canUseWeaponAbilityAction(hero)){
 			actions.add(AC_ABILITY);
 		}
 		return actions;
@@ -140,7 +138,7 @@ public class MeleeWeapon extends Weapon {
 				} else if (hero.heroClass == HeroClass.DUELIST) {
 					GLog.w(Messages.get(this, "ability_need_equip"));
 				}
-			} else if (hero.heroClass != HeroClass.DUELIST && hero.pointsInTalent(Talent.MARTIAL_TRAIN)<1){
+			} else if (hero.heroClass != HeroClass.DUELIST && hero.pointsInTalent(Talent.MARTIAL_TRAIN)<1 && hero.subClass!=HeroSubClass.CHAMPION){
 				//do nothing
 			} else if (aEnc>0){
 				GLog.w(Messages.get(this, "ability_low_str"));
@@ -213,7 +211,7 @@ public class MeleeWeapon extends Weapon {
 			charger.partialCharge++;
 		}
 
-		if ((hero.heroClass == HeroClass.DUELIST)
+		if (Talent.canUseWeaponAbility(hero, this)
 				&& hero.hasTalent(Talent.AGGRESSIVE_BARRIER)
 				&& (hero.HP / (float)hero.HT) <= 0.5f){
 			int shieldAmt = 1 + 2*hero.pointsInTalent(Talent.AGGRESSIVE_BARRIER);
@@ -408,12 +406,26 @@ public class MeleeWeapon extends Weapon {
 			}
 		}
 
-		//the mage's staff has no ability as it can only be gained by the mage
-		if (hero != null && (hero.heroClass == HeroClass.DUELIST || hero.hasTalent(Talent.MARTIAL_TRAIN)) && !(this instanceof MagesStaff)){
-			info += "\n\n" + abilityInfo();
-		}
+		//the mage's staff has no ability as it can only be gained by the mage, except for champion weapon abilities
+        if(canUseWeaponAbility(hero) && !(this instanceof RitualDagger) && !(this instanceof MagesStaff)){
+            info += "\n\n" + abilityInfo();
+        }
 		
 		return info;
+	}
+
+	private static boolean canUseWeaponAbility(Hero hero) {
+		return hero != null
+				&& (hero.heroClass == HeroClass.DUELIST
+				|| hero.pointsInTalent(Talent.MARTIAL_TRAIN) > 0
+				|| hero.subClass.is(HeroSubClass.CHAMPION));
+	}
+
+	private boolean canUseWeaponAbilityAction(Hero hero) {
+		return hero != null
+				&& (hero.heroClass == HeroClass.DUELIST
+				|| (hero.pointsInTalent(Talent.MARTIAL_TRAIN) > 0 && !(this instanceof MagesStaff))
+				|| hero.subClass.is(HeroSubClass.CHAMPION));
 	}
 	
 	public String statsInfo(){
@@ -475,7 +487,7 @@ public class MeleeWeapon extends Weapon {
 				if (Regeneration.regenOn()){
 					//60 to 45 turns per charge
 					float chargeToGain = Math.max(0.01f,1/(60f-1.5f*(chargeCap()-charges)));
-					if(hero.heroClass!=HeroClass.DUELIST){
+					if(hero.heroClass!=HeroClass.DUELIST && !hero.subClass.is(HeroSubClass.CHAMPION)){
 						chargeToGain = 1/90f;
 					}
 

@@ -138,7 +138,8 @@ public class AscensionChallenge extends Buff {
 
 	//mobs move at 2x speed when not hunting/fleeing at 4 stacks or higher
 	public static float enemySpeedModifier(Mob m){
-		if (Dungeon.hero.buff(AscensionChallenge.class) != null
+		if (Dungeon.hero != null
+				&& Dungeon.hero.buff(AscensionChallenge.class) != null
 				&& m.alignment == Char.Alignment.ENEMY
 				&& Dungeon.hero.buff(AscensionChallenge.class).stacks >= 4f
 				&& m.state != m.HUNTING && m.state != m.FLEEING){
@@ -150,7 +151,8 @@ public class AscensionChallenge extends Buff {
 
 	//hero speed is halved and capped at 1x at 6+ stacks
 	public static float modifyHeroSpeed(float speed){
-		if (Dungeon.hero.buff(AscensionChallenge.class) != null
+		if (Dungeon.hero != null
+				&& Dungeon.hero.buff(AscensionChallenge.class) != null
 				&& Dungeon.hero.buff(AscensionChallenge.class).stacks >= 6f){
 			return Math.min(speed/2f, 1f);
 		}
@@ -159,7 +161,7 @@ public class AscensionChallenge extends Buff {
 	}
 
 	public static boolean qualifiedForPacifist(){
-		if (Dungeon.hero.buff(AscensionChallenge.class) != null){
+		if (Dungeon.hero != null && Dungeon.hero.buff(AscensionChallenge.class) != null){
 			return !Dungeon.hero.buff(AscensionChallenge.class).stacksLowered;
 		}
 		return false;

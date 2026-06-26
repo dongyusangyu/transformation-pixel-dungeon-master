@@ -679,6 +679,56 @@ public class Generator {
 	private static HashMap<Category,Float> defaultCatProbs = new LinkedHashMap<>();
 	private static HashMap<Category,Float> categoryProbs = new LinkedHashMap<>();
 
+	private static boolean randomMode(){
+		return Dungeon.hero != null && Dungeon.hero.randomMode;
+	}
+
+	private static float[] effectiveProbs(float[] probs){
+		if (!randomMode()){
+			return probs;
+		}
+		float[] result = new float[probs.length];
+		for (int i = 0; i < probs.length; i++){
+			if (probs[i] > 0){
+				result[i] = 1;
+			}
+		}
+		return result;
+	}
+
+	private static HashMap<Category,Float> effectiveProbs(HashMap<Category,Float> probs){
+		if (!randomMode()){
+			return probs;
+		}
+		HashMap<Category,Float> result = new LinkedHashMap<>();
+		for (Category cat : probs.keySet()){
+			result.put(cat, probs.get(cat) > 0 ? 1f : 0f);
+		}
+		return result;
+	}
+
+	private static boolean hasPositiveProbs(float[] probs){
+		for (float prob : probs){
+			if (prob > 0){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static int randomTier(Category[] tiers, int floorSet){
+		if (!randomMode()){
+			return Random.chances(floorSetTierProbs[floorSet]);
+		}
+		float[] tierProbs = new float[tiers.length];
+		for (int i = 0; i < tiers.length; i++){
+			if (tiers[i].defaultProbs != null && hasPositiveProbs(tiers[i].defaultProbs)){
+				tierProbs[i] = 1;
+			}
+		}
+		return Random.chances(tierProbs);
+	}
+
 	public static void fullReset() {
 		usingFirstDeck = Random.Int(2) == 0;
 		generalReset();
@@ -730,11 +780,11 @@ public class Generator {
 	}
 	
 	public static Item random() {
-		Category cat = Random.chances( categoryProbs );
+		Category cat = Random.chances( effectiveProbs(categoryProbs) );
 		if (cat == null){
 			usingFirstDeck = !usingFirstDeck;
 			generalReset();
-			cat = Random.chances( categoryProbs );
+			cat = Random.chances( effectiveProbs(categoryProbs) );
 		}
 		categoryProbs.put( cat, categoryProbs.get( cat ) - 1);
 
@@ -749,7 +799,7 @@ public class Generator {
 	}
 
 	public static Item randomUsingDefaults(){
-		return randomUsingDefaults(Random.chances( defaultCatProbs ));
+		return randomUsingDefaults(Random.chances( effectiveProbs(defaultCatProbs) ));
 	}
 	
 	public static Item random( Category cat ) {
@@ -770,10 +820,10 @@ public class Generator {
 					for (int i = 0; i < cat.dropped; i++) Random.Long();
 				}
 
-				int i = Random.chances(cat.probs);
+				int i = Random.chances(effectiveProbs(cat.probs));
 				if (i == -1) {
 					reset(cat);
-					i = Random.chances(cat.probs);
+					i = Random.chances(effectiveProbs(cat.probs));
 				}
 				if (cat.defaultProbs != null) cat.probs[i]--;
 				Class<?> itemCls = cat.classes[i];
@@ -807,9 +857,9 @@ public class Generator {
 		} else if (cat.defaultProbs == null || cat == Category.ARTIFACT) {
 			return random(cat);
 		} else if (cat.defaultProbsTotal != null){
-			return ((Item) Reflection.newInstance(cat.classes[Random.chances(cat.defaultProbsTotal)])).random();
+			return ((Item) Reflection.newInstance(cat.classes[Random.chances(effectiveProbs(cat.defaultProbsTotal))])).random();
 		} else {
-			Class<?> itemCls = cat.classes[Random.chances(cat.defaultProbs)];
+			Class<?> itemCls = cat.classes[Random.chances(effectiveProbs(cat.defaultProbs))];
 
 			if (ExoticPotion.regToExo.containsKey(itemCls)){
 				if (Random.Float() < ExoticCrystals.consumableExoticChance()){
@@ -837,7 +887,7 @@ public class Generator {
 
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
 		
-		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(floorSetTierProbs[floorSet])]);
+		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(randomMode() ? effectiveProbs(Category.ARMOR.probs) : floorSetTierProbs[floorSet])]);
 		a.random();
 		return a;
 	}
@@ -868,9 +918,9 @@ public class Generator {
 
 		MeleeWeapon w;
 		if (useDefaults){
-			w = (MeleeWeapon) randomUsingDefaults(wepTiers[Random.chances(floorSetTierProbs[floorSet])]);
+			w = (MeleeWeapon) randomUsingDefaults(wepTiers[randomTier(wepTiers, floorSet)]);
 		} else {
-			w = (MeleeWeapon) random(wepTiers[Random.chances(floorSetTierProbs[floorSet])]);
+			w = (MeleeWeapon) random(wepTiers[randomTier(wepTiers, floorSet)]);
 		}
 		return w;
 	}
@@ -901,9 +951,9 @@ public class Generator {
 
 		MissileWeapon w;
 		if (useDefaults){
-			w = (MissileWeapon)randomUsingDefaults(misTiers[Random.chances(floorSetTierProbs[floorSet])]);
+			w = (MissileWeapon)randomUsingDefaults(misTiers[randomTier(misTiers, floorSet)]);
 		} else {
-			w = (MissileWeapon)random(misTiers[Random.chances(floorSetTierProbs[floorSet])]);
+			w = (MissileWeapon)random(misTiers[randomTier(misTiers, floorSet)]);
 		}
 		return w;
 	}

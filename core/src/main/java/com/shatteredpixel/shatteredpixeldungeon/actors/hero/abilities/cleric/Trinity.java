@@ -263,13 +263,16 @@ public class Trinity extends ArmorAbility {
 							hide();
 							return;
 						}
-						Invisibility.dispel();
 						//Rings and the Chalice specifically get their passive effects for 20 turns
 						if (spiritForm instanceof Ring || spiritForm instanceof ChaliceOfBlood) {
+							Invisibility.dispel();
 							Buff.prolong(hero, SpiritForm.SpiritFormBuff.class, SpiritForm.SpiritFormBuff.DURATION).setEffect(spiritForm);
 							hero.spendAndNext(1f);
 						} else {
-							SpiritForm.applyActiveArtifactEffect(armor, (Artifact) spiritForm);
+							if (!SpiritForm.applyActiveArtifactEffect(armor, (Artifact) spiritForm)){
+								return;
+							}
+							Invisibility.dispel();
 							//turn spending is handled within the application of the artifact effect
 						}
 						Sample.INSTANCE.play(Assets.Sounds.TELEPORT);

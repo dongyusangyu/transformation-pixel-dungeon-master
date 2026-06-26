@@ -22,7 +22,7 @@ public class Tincture extends Food {
     }
     @Override
     protected void satisfy(Hero hero) {
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,50);
             if(hero.buff(Panic.class)!=null) hero.buff(Panic.class).detach();
         }

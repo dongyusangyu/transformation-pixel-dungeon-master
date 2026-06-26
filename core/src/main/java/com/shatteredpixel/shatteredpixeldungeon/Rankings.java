@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -116,6 +117,11 @@ public enum Rankings {
 		rec.score       = calculateScore();
 		rec.customSeed  = Dungeon.customSeedText;
 		rec.daily       = Dungeon.daily;
+		rec.randomMode  = hero.randomMode;
+		rec.randomTalents = hero.randomClassTalents == null ? new String[0] : hero.randomClassTalents.clone();
+		rec.selectedTalents = talentSummary(hero);
+		rec.subClass = hero.subClass == null ? "" : hero.subClass.name();
+		rec.armorAbility = hero.armorAbility == null ? "" : hero.armorAbility.getClass().getName();
 
 		Badges.validateHighScore( rec.score );
 		
@@ -328,6 +334,7 @@ public enum Rankings {
 		if (belongings.misc != null)        belongings.backpack.items.add(belongings.misc);
 		if (belongings.ring != null)        belongings.backpack.items.add(belongings.ring);
 		Ring.saveSelectively(handler, belongings.backpack.items);
+		Wand.saveSelectively(handler, belongings.backpack.items);
 		rec.gameData.put( HANDLERS, handler);
 
 		//restore items now that we're done saving
@@ -364,6 +371,7 @@ public enum Rankings {
 		Scroll.restore(handler);
 		Potion.restore(handler);
 		Ring.restore(handler);
+		Wand.restore(handler);
 
 		Badges.loadLocal(data.getBundle(BADGES));
 
@@ -481,6 +489,19 @@ public enum Rankings {
 		} catch (IOException e) {
 		}
 	}
+
+	private String[] talentSummary(Hero hero) {
+		ArrayList<String> summary = new ArrayList<>();
+		for (LinkedHashMap<Talent, Integer> tier : hero.talents) {
+			for (Talent talent : tier.keySet()) {
+				int points = tier.get(talent);
+				if (points > 0) {
+					summary.add(talent.name() + ":" + points);
+				}
+			}
+		}
+		return summary.toArray(new String[0]);
+	}
 	
 	public static class Record implements Bundlable {
 
@@ -497,6 +518,11 @@ public enum Rankings {
 		private static final String ID      = "gameID";
 		private static final String SEED    = "custom_seed";
 		private static final String DAILY   = "daily";
+		private static final String RANDOM_MODE = "random_mode";
+		private static final String RANDOM_TALENTS = "random_talents";
+		private static final String SELECTED_TALENTS = "selected_talents";
+		private static final String SUBCLASS = "subclass";
+		private static final String ARMOR_ABILITY = "armor_ability";
 
 		private static final String DATE    = "date";
 		private static final String VERSION = "version";
@@ -519,6 +545,11 @@ public enum Rankings {
 
 		public String customSeed;
 		public boolean daily;
+		public boolean randomMode;
+		public String[] randomTalents = new String[0];
+		public String[] selectedTalents = new String[0];
+		public String subClass = "";
+		public String armorAbility = "";
 
 		public String date;
 		public String version;
@@ -562,6 +593,15 @@ public enum Rankings {
 			score	    = bundle.getInt( SCORE );
 			customSeed  = bundle.getString( SEED );
 			daily       = bundle.getBoolean( DAILY );
+			randomMode  = bundle.contains( RANDOM_MODE ) && bundle.getBoolean( RANDOM_MODE );
+			randomTalents = bundle.contains( RANDOM_TALENTS ) ? bundle.getStringArray( RANDOM_TALENTS ) : new String[0];
+			selectedTalents = bundle.contains( SELECTED_TALENTS ) ? bundle.getStringArray( SELECTED_TALENTS ) : new String[0];
+			subClass = bundle.contains( SUBCLASS ) ? bundle.getString( SUBCLASS ) : "";
+			armorAbility = bundle.contains( ARMOR_ABILITY ) ? bundle.getString( ARMOR_ABILITY ) : "";
+			if (randomTalents == null) randomTalents = new String[0];
+			if (selectedTalents == null) selectedTalents = new String[0];
+			if (subClass == null) subClass = "";
+			if (armorAbility == null) armorAbility = "";
 
 			heroClass	= bundle.getEnum( CLASS, HeroClass.class );
 			armorTier	= bundle.getInt( TIER );
@@ -593,6 +633,11 @@ public enum Rankings {
 			bundle.put( SCORE, score );
 			bundle.put( SEED, customSeed );
 			bundle.put( DAILY, daily );
+			bundle.put( RANDOM_MODE, randomMode );
+			bundle.put( RANDOM_TALENTS, randomTalents );
+			bundle.put( SELECTED_TALENTS, selectedTalents );
+			bundle.put( SUBCLASS, subClass );
+			bundle.put( ARMOR_ABILITY, armorAbility );
 
 			bundle.put( CLASS, heroClass );
 			bundle.put( TIER, armorTier );

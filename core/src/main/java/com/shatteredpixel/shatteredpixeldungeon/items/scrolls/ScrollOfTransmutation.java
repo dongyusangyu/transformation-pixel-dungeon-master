@@ -261,6 +261,9 @@ public class ScrollOfTransmutation extends InventoryScroll {
 
 		n.level(0);
 		n.quantity(w.quantity());
+		if (w instanceof MissileWeapon && n instanceof MissileWeapon){
+			((MissileWeapon) n).setID = ((MissileWeapon) w).setID;
+		}
 		int level = w.trueLevel();
 		if (level > 0) {
 			n.upgrade( level );
@@ -277,9 +280,7 @@ public class ScrollOfTransmutation extends InventoryScroll {
 		n.augment = w.augment;
 		n.enchantHardened = w.enchantHardened;
 
-		//technically a new set, ensure old one is destroyed (except for darts)
 		if (w instanceof MissileWeapon && w.isUpgradable()){
-			Buff.affect(hero, MissileWeapon.UpgradedSetTracker.class).levelThresholds.put(((MissileWeapon) w).setID, Integer.MAX_VALUE);
 			//also extra missile weapon properties
 			((MissileWeapon) n).damage(100 - ((MissileWeapon)w).durabilityLeft());
 		}
@@ -367,6 +368,10 @@ public class ScrollOfTransmutation extends InventoryScroll {
 		n.cursed = w.cursed;
 		n.curseInfusionBonus = w.curseInfusionBonus;
 		n.resinBonus = w.resinBonus;
+		if (Dungeon.hero != null && Dungeon.hero.randomMode && !Wand.isKnown((Class<? extends Wand>) n.getClass())) {
+			n.levelKnown = false;
+			n.curChargeKnown = false;
+		}
 
 		n.curCharges =  w.curCharges;
 		n.updateLevel();
