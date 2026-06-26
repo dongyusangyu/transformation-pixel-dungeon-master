@@ -166,7 +166,7 @@ public class Ring extends KindofMisc {
 				handler.know(this);
 			}
 
-			if (hero.isAlive()) {
+			if (hero != null && hero.isAlive()) {
 				Catalog.setSeen(getClass());
 				Statistics.itemTypesDiscovered.add(getClass());
 			}
@@ -262,14 +262,32 @@ public class Ring extends KindofMisc {
 
 	@Override
 	public Item random() {
-		//+0: 66.67% (2/3)
-		//+1: 26.67% (4/15)
-		//+2: 6.67%  (1/15)
-		int n = 0;
-		if (Random.Int(3) == 0) {
-			n++;
-			if (Random.Int(5) == 0){
+		int n;
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			switch (Random.chances(new float[]{75, 20, 4, 1})) {
+				case 0: default:
+					n = 0;
+					break;
+				case 1:
+					n = 1;
+					break;
+				case 2:
+					n = 2;
+					break;
+				case 3:
+					n = 3;
+					break;
+			}
+		} else {
+			//+0: 66.67% (2/3)
+			//+1: 26.67% (4/15)
+			//+2: 6.67%  (1/15)
+			n = 0;
+			if (Random.Int(3) == 0) {
 				n++;
+				if (Random.Int(5) == 0){
+					n++;
+				}
 			}
 		}
 		level(n);
@@ -353,21 +371,25 @@ public class Ring extends KindofMisc {
 	@Override
 	public int buffedLvl() {
 		int lvl = super.buffedLvl();
-		if (hero.buff(EnhancedRings.class) != null){
+		Hero currentHero = hero;
+		if (currentHero == null) {
+			return lvl;
+		}
+		if (currentHero.buff(EnhancedRings.class) != null){
 			lvl++;
 		}
-        if (hero.buff(RoyalJewelry.JewelryEnhanced.class) != null){
+        if (currentHero.buff(RoyalJewelry.JewelryEnhanced.class) != null){
             lvl++;
         }
-        if (hero.buff(Talent.RoyalMeal2.class) != null && !(this instanceof RingOfKing)){
+        if (currentHero.buff(Talent.RoyalMeal2.class) != null && !(this instanceof RingOfKing)){
             lvl++;
         }
-        if(hero.hasTalent(Talent.RING_BOND) && hero.heroClass == HeroClass.PRINCESS){
-            RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
-            if(ring!=null && ring.isEquipped(hero)){
+        if(currentHero.hasTalent(Talent.RING_BOND) && currentHero.heroClass == HeroClass.PRINCESS){
+            RingOfKing ring = currentHero.belongings.getItem(RingOfKing.class);
+            if(ring!=null && ring.isEquipped(currentHero)){
                 int bonus = ring.level()-this.level();
                 if(bonus>0){
-                    lvl+=Math.min(bonus, hero.pointsInTalent(Talent.RING_BOND));
+                    lvl+=Math.min(bonus, currentHero.pointsInTalent(Talent.RING_BOND));
                 }
             }
         }
@@ -391,8 +413,9 @@ public class Ring extends KindofMisc {
 				&& spiritForm.ring().buffClass == type){
 			bonus += spiritForm.ring().soloBonus();
 		}
-        if(hero.hasTalent(Talent.RING_BOND) && hero.heroClass != HeroClass.PRINCESS && bonus>soloBonus){
-            bonus += hero.pointsInTalent(Talent.RING_BOND);
+		Hero currentHero = hero;
+        if(currentHero != null && currentHero.hasTalent(Talent.RING_BOND) && currentHero.heroClass != HeroClass.PRINCESS && bonus>soloBonus){
+            bonus += currentHero.pointsInTalent(Talent.RING_BOND);
         }
 		return bonus;
 	}
@@ -452,7 +475,7 @@ public class Ring extends KindofMisc {
         if (hero.belongings.artifact() != null && hero.belongings.artifact().getClass() == getClass()){
             bonus += ((Ring)hero.belongings.artifact()).soloBonus();
         }
-        if(hero.hasTalent(Talent.RING_BOND) && hero.heroClass != HeroClass.PRINCESS && bonus>this.soloBonus()){
+        if(hero != null && hero.hasTalent(Talent.RING_BOND) && hero.heroClass != HeroClass.PRINCESS && bonus>this.soloBonus()){
             bonus += hero.pointsInTalent(Talent.RING_BOND);
         }
 		return bonus;
@@ -470,7 +493,7 @@ public class Ring extends KindofMisc {
         if (hero.belongings.artifact() != null && hero.belongings.artifact().getClass() == getClass()){
             bonus += ((Ring)hero.belongings.artifact()).soloBuffedBonus();
         }
-        if(hero.hasTalent(Talent.RING_BOND) && hero.heroClass != HeroClass.PRINCESS && bonus>this.soloBuffedBonus()){
+        if(hero != null && hero.hasTalent(Talent.RING_BOND) && hero.heroClass != HeroClass.PRINCESS && bonus>this.soloBuffedBonus()){
             bonus += hero.pointsInTalent(Talent.RING_BOND);
         }
 		return bonus;

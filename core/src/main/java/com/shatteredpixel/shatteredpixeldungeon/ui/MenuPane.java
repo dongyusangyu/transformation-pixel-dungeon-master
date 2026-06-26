@@ -57,6 +57,7 @@ public class MenuPane extends Component {
 
 	private Image challengeIcon;
 	private Image redEnvelopeIcon;
+    private Image ShuffleIcon;
 	private BitmapText challengeText;
 	private Button challengeButton;
 
@@ -147,7 +148,12 @@ public class MenuPane extends Component {
 				add(redEnvelopeIcon);
 			}
 
+
 		}
+        ShuffleIcon=Icons.get(Icons.SHUFFLE_LITTLE);
+        if(Dungeon.hero.randomMode){
+            add(ShuffleIcon);
+        }
 
 		btnJournal = new JournalButton();
 		add( btnJournal );
@@ -218,12 +224,24 @@ public class MenuPane extends Component {
 
 			challengeButton.setRect(challengeIcon.x, challengeIcon.y, challengeIcon.width(), challengeIcon.height() + challengeText.height());
 		}
-		if (redEnvelopeIcon != null){
-			redEnvelopeIcon.x = challengeIcon.x - challengeIcon.width();
-			redEnvelopeIcon.y = challengeIcon.y - 1;
-			if (SPDSettings.interfaceSize() == 0) redEnvelopeIcon.y++;
-			PixelScene.align(redEnvelopeIcon);
-		}
+
+        float challengeLeft = challengeIcon != null ? challengeIcon.x : depthIcon.x;
+        float challengeTop = challengeIcon != null ? challengeIcon.y : depthIcon.y;
+
+        if (ShuffleIcon != null){
+            ShuffleIcon.x = challengeLeft - ShuffleIcon.width() ;
+            ShuffleIcon.y = challengeTop;
+            if (SPDSettings.interfaceSize() == 0) ShuffleIcon.y++;
+            PixelScene.align(ShuffleIcon);
+        }
+        if (redEnvelopeIcon != null){
+            float shuffleLeft = ShuffleIcon != null ? ShuffleIcon.x : challengeLeft;
+            float shuffleTop = ShuffleIcon != null ? ShuffleIcon.y : challengeTop;
+            redEnvelopeIcon.x = shuffleLeft - redEnvelopeIcon.width() ;
+            redEnvelopeIcon.y = shuffleTop - 2;
+            if (SPDSettings.interfaceSize() == 0) redEnvelopeIcon.y++;
+            PixelScene.align(redEnvelopeIcon);
+        }
 
 
 		danger.setPos( x + WIDTH - danger.width(), y + bg.height + 1 );

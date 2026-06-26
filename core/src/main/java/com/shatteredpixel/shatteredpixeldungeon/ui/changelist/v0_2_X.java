@@ -51,6 +51,15 @@ public class v0_2_X {
         ChangeInfo changes = new ChangeInfo("v0.2.9fix", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+        changes = new ChangeInfo("fix3", false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.CHALLENGE_COLOR),
+                Messages.get(v0_2_X.class, "v0_2_9fix3.button_1.title"), Messages.get(v0_2_X.class, "v0_2_9fix3.button_1.text")));
+        changes.addButton(new ChangeButton(Icons.get(Icons.CATALOG),
+                Messages.get(v0_2_X.class, "v0_2_9fix3.button_2.title"), Messages.get(v0_2_X.class, "v0_2_9fix3.button_2.text")));
+        changes.addButton(new ChangeButton(Icons.get(Icons.BUFFS),
+                Messages.get(v0_2_X.class, "v0_2_9fix3.button_3.title"), Messages.get(v0_2_X.class, "v0_2_9fix3.button_3.text")));
 
         changes = new ChangeInfo("fix2", false, null);
         changes.hardlight(Window.TITLE_COLOR);

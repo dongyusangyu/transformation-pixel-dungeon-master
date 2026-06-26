@@ -21,8 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
-import static com.shatteredpixel.shatteredpixeldungeon.Assets.Sprites.MAGICGIRL;
-
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
@@ -67,6 +65,7 @@ public class HeroSprite extends CharSprite {
 	
 	protected Animation fly;
 	protected Animation read;
+	protected boolean magicGirlDisguise = false;
 
 	public HeroSprite() {
 		super();
@@ -83,23 +82,41 @@ public class HeroSprite extends CharSprite {
 	}
 
 	public void disguise(HeroClass cls){
+		magicGirlDisguise = false;
 		texture( cls.spritesheet() );
 		updateArmor();
+		placeCurrentCell();
 	}
 	public void disguise(HeroClass cls,int skin){
+		magicGirlDisguise = false;
 		texture( cls.spritesheet(skin) );
 		updateArmor();
+		placeCurrentCell();
 	}
 	public void magic_girl(){
+		if (magicGirlDisguise) {
+			placeCurrentCell();
+			return;
+		}
+		magicGirlDisguise = true;
 		texture( Assets.Sprites.MAGICGIRL );
+		updateMagicGirlFrames();
+		placeCurrentCell();
 		transform();
 	}
 
 
 	public void updateArmor() {
 
+		if (magicGirlDisguise) {
+			updateMagicGirlFrames();
+			return;
+		}
 		TextureFilm film = new TextureFilm( tiers(), Dungeon.hero.tier(), FRAME_WIDTH, FRAME_HEIGHT );
-		
+		updateHeroFrames(film);
+	}
+
+	protected void updateHeroFrames(TextureFilm film) {
 		idle = new Animation( 1, true );
 		idle.frames( film, 0, 0, 0, 1, 0, 0, 1, 1 );
 		
@@ -129,9 +146,33 @@ public class HeroSprite extends CharSprite {
 			die();
 	}
 
+	protected void updateMagicGirlFrames() {
+		TextureFilm film = new TextureFilm( tiers(Assets.Sprites.MAGICGIRL, FRAME_HEIGHT),
+				Dungeon.hero.tier(), FRAME_WIDTH, FRAME_HEIGHT );
+		updateHeroFrames(film);
+	}
+
+	protected void placeCurrentCell() {
+		if (ch != null && Dungeon.level != null && ch.pos >= 0 && ch.pos < Dungeon.level.length()) {
+			place(ch.pos);
+		}
+	}
+
 	public void transform() {
 		if (Dungeon.hero.isAlive()){
-			read();
+			if (SPDSettings.charAnimations()) {
+				if (animCallback == null) {
+					animCallback = new Callback() {
+						@Override
+						public void call() {
+							idle();
+						}
+					};
+				}
+				play(read);
+			} else {
+				idle();
+			}
 		}else{
 			die();
 		}
@@ -228,11 +269,15 @@ public class HeroSprite extends CharSprite {
 	}
 
 	public static Image avatar( Hero hero ){
-		if (hero.buff(HeroDisguise.class) != null){
-			return avatar(hero.buff(HeroDisguise.class).getDisguise(), hero.tier(),hero.buff(HeroDisguise.class).getSkin());
-		} else {
-			return avatar(hero.heroClass, hero.tier(), Dungeon.skin);
+		HeroDisguise disguise = hero.buff(HeroDisguise.class);
+		if (disguise != null){
+			if (disguise.isMagicGirlDisguise()) {
+				return magicGirlAvatar(hero.tier());
+			} else if (disguise.getDisguise() != null) {
+				return avatar(disguise.getDisguise(), hero.tier(), disguise.getSkin());
+			}
 		}
+		return avatar(hero.heroClass, hero.tier(), Dungeon.skin);
 	}
 	
 	public static Image avatar( HeroClass cl, int armorTier ) {
@@ -245,6 +290,16 @@ public class HeroSprite extends CharSprite {
 		RectF patch = tiers().get( armorTier );
 		Image avatar = new Image( cl.spritesheet(skin) );
 		RectF frame = avatar.texture.uvRect( 0, 0, frameWidth(cl), frameHeight(cl) );
+		frame.shift( patch.left, patch.top );
+		avatar.frame( frame );
+
+		return avatar;
+	}
+
+	public static Image magicGirlAvatar( int armorTier ) {
+		RectF patch = tiers(Assets.Sprites.MAGICGIRL, FRAME_HEIGHT).get( armorTier );
+		Image avatar = new Image( Assets.Sprites.MAGICGIRL );
+		RectF frame = avatar.texture.uvRect( 0, 0, FRAME_WIDTH, FRAME_HEIGHT );
 		frame.shift( patch.left, patch.top );
 		avatar.frame( frame );
 

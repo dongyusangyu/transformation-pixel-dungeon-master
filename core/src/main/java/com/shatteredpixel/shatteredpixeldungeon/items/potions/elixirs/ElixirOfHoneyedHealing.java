@@ -48,7 +48,7 @@ public class ElixirOfHoneyedHealing extends Elixir {
 	public void apply(Hero hero) {
 		PotionOfHealing.cure(hero);
 		PotionOfHealing.heal(hero);
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,5);
             if(hero.buff(Panic.class)!=null){
                 hero.buff(Panic.class).detach();

@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.ShopBoss;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -61,6 +62,7 @@ import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Callback;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -180,7 +182,11 @@ public class TalentButton extends Button {
 					if (ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE != null){
 						ScrollOfMetamorphosis.WndMetamorphChoose.INSTANCE.hide();
 					}
-					GameScene.show(new ScrollOfMetamorphosis.WndType(tier,talent));
+					if (Dungeon.hero.randomMode){
+						GameScene.show(new ScrollOfMetamorphosis.WndMetamorphReplace(talent, tier, Random.element(ScrollOfMetamorphosis.commonTypes())));
+					} else {
+						GameScene.show(new ScrollOfMetamorphosis.WndType(tier,talent));
+					}
 
 				}
 			});
@@ -382,18 +388,8 @@ public class TalentButton extends Button {
 
 				@Override
 				public void call() {
-					int tier=0;
-					for(int i=0;i<5;i++){
-						if(!Statistics.negativetalents[i]){
-							tier = i+1;
-							break;
-						}
-					}
-					addTalent(talent,0,tier);
-
-					//ScrollOfMetamorphosis.onMetamorph(replacing, talent);
 					if (WndNegative.INSTANCE != null){
-						WndNegative.INSTANCE.hide();
+						WndNegative.INSTANCE.select(talent);
 					}
 
 				}
@@ -456,6 +452,7 @@ public class TalentButton extends Button {
 	public void upgradeTalent(){
 		if (Dungeon.hero.talentPointsAvailable(tier) > 0 && parent != null) {
 			Dungeon.hero.upgradeTalent(talent);
+			AgentMinRewardTracker.onTalentUpgradeDecision(true);
 			float oldWidth = fill.width();
 			pointsInTalent++;
 			layout();

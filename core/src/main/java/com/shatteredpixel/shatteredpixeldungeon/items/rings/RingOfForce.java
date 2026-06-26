@@ -25,12 +25,14 @@ import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SpearShield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -183,7 +185,7 @@ public class RingOfForce extends Ring {
 	@Override
 	public String upgradeStat3(int level) {
 		if (cursed && cursedKnown) level = Math.min(-1, level-3);
-		if (Dungeon.hero != null && (Dungeon.hero.heroClass == HeroClass.DUELIST  || Dungeon.hero.hasTalent(Talent.MARTIAL_TRAIN))){
+		if (Talent.canUseWeaponAbilities(Dungeon.hero)){
 			float tier = tier(Dungeon.hero != null ? Dungeon.hero.STR() : 10);
 			int bonus = Math.round(3+tier+(level*((4+2*tier)/8f)));
 			return (min(level+1, tier) + bonus) + "-" + (max(level+1, tier) + bonus);
@@ -202,14 +204,14 @@ public class RingOfForce extends Ring {
 	@Override
 	public void activate(Char ch) {
 		super.activate(ch);
-		if (ch instanceof Hero && (((Hero) ch).heroClass == HeroClass.DUELIST || ((Hero) ch).hasTalent(Talent.MARTIAL_TRAIN))){
+		if (ch instanceof Hero && Talent.canUseWeaponAbilities((Hero) ch)){
 			Buff.affect(ch, MeleeWeapon.Charger.class);
 		}
 	}
 
 	@Override
 	public String defaultAction() {
-		if (Dungeon.hero != null && (Dungeon.hero.heroClass == HeroClass.DUELIST  || Dungeon.hero.hasTalent(Talent.MARTIAL_TRAIN))){
+		if (Talent.canUseWeaponAbilities(Dungeon.hero)){
 			return AC_ABILITY;
 		} else {
 			return super.defaultAction();
@@ -219,7 +221,7 @@ public class RingOfForce extends Ring {
 	@Override
 	public ArrayList<String> actions(Hero hero) {
 		ArrayList<String> actions = super.actions(hero);
-		if (isEquipped(hero) && (hero.heroClass == HeroClass.DUELIST || hero.hasTalent(Talent.MARTIAL_TRAIN))){
+		if (isEquipped(hero) && Talent.canUseWeaponAbilities(hero)){
 			actions.add(AC_ABILITY);
 		}
 		return actions;
@@ -251,6 +253,12 @@ public class RingOfForce extends Ring {
 
 			} else {
 				Buff.affect(hero, BrawlersStance.class).reset();
+				if (hero.hasTalent(Talent.AGGRESSIVE_BARRIER)
+						&& (hero.HP / (float)hero.HT) <= 0.5f){
+					int shieldAmt = 1 + 2*hero.pointsInTalent(Talent.AGGRESSIVE_BARRIER);
+					Buff.affect(hero, Barrier.class).setShield(shieldAmt);
+					hero.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(shieldAmt), FloatingText.SHIELDING);
+				}
 				AttackIndicator.updateState();
 				hero.sprite.operate(hero.pos);
 			}
@@ -263,7 +271,7 @@ public class RingOfForce extends Ring {
 	public String info() {
 		String info = super.info();
 
-		if (Dungeon.hero != null && (Dungeon.hero.heroClass == HeroClass.DUELIST  || Dungeon.hero.hasTalent(Talent.MARTIAL_TRAIN))
+		if (Talent.canUseWeaponAbilities(Dungeon.hero)
 			&& (anonymous || isIdentified() || isEquipped(Dungeon.hero))){
 			//0 if unidentified, solo level if unequipped, combined level if equipped
 			int level = isIdentified() ? (isEquipped(Dungeon.hero) ? getBuffedBonus(Dungeon.hero, Force.class) : soloBuffedBonus()) : 0;

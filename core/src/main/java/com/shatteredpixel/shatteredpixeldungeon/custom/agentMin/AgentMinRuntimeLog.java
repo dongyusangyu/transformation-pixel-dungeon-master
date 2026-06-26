@@ -1,12 +1,17 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.agentMin;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Game;
+import com.watabou.utils.Callback;
 
 import java.util.ArrayList;
 
 public class AgentMinRuntimeLog {
+
+	private static final int STYLE_INFO = 0;
+	private static final int STYLE_HIGHLIGHT = 1;
+	private static final int STYLE_WARNING = 2;
 
 	private static int stepCounter;
 
@@ -15,7 +20,7 @@ public class AgentMinRuntimeLog {
 
 	public static void log(String message) {
 		if (AgentMinBridgeConfig.LOGGING) {
-			GLog.i("[AgentMin] " + message);
+			gameLog("[AgentMin] " + message, STYLE_INFO);
 		}
 	}
 
@@ -29,11 +34,13 @@ public class AgentMinRuntimeLog {
 		}
 		String label = action == null ? "null" : action.label;
 		String kind = action == null || action.kind == null ? "UNKNOWN" : action.kind.name();
+		String skill = action == null || action.skill == null ? "UNKNOWN" : action.skill.name();
 		int from = action == null ? -1 : action.fromCell;
 		int target = action == null ? -1 : action.targetCell;
 		int heroPos = Dungeon.hero == null ? -1 : Dungeon.hero.pos;
 		String line = "[AgentMin] step=" + stepCounter
 				+ " action=" + actionId
+				+ " skill=" + skill
 				+ " " + kind + "/" + label
 				+ " executed=" + executed
 				+ " from=" + from
@@ -42,11 +49,7 @@ public class AgentMinRuntimeLog {
 				+ " reward=" + fmt(sentReward)
 				+ " total=" + fmt(AgentMinRewardTracker.episodeReward())
 				+ " events=" + rewardEvents();
-		if (executed) {
-			GLog.h(line);
-		} else {
-			GLog.w(line);
-		}
+		gameLog(line, executed ? STYLE_HIGHLIGHT : STYLE_WARNING);
         /*
 		if (Dungeon.hero != null && Dungeon.hero.sprite != null) {
 			Dungeon.hero.sprite.showStatus(executed ? CharSprite.POSITIVE : CharSprite.WARNING,
@@ -54,6 +57,29 @@ public class AgentMinRuntimeLog {
 		}
 
          */
+	}
+
+	private static void gameLog(final String line, final int style) {
+		try {
+			Game.runOnRenderThread(new Callback() {
+				@Override
+				public void call() {
+					try {
+						if (style == STYLE_HIGHLIGHT) {
+							GLog.h(line);
+						} else if (style == STYLE_WARNING) {
+							GLog.w(line);
+						} else {
+							GLog.i(line);
+						}
+					} catch (Throwable ignored) {
+						// Logging must never interrupt realtime training.
+					}
+				}
+			});
+		} catch (Throwable ignored) {
+			// Logging must never interrupt realtime training.
+		}
 	}
 
 	private static String rewardEvents() {

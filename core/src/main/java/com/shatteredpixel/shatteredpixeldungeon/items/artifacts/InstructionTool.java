@@ -91,6 +91,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class InstructionTool extends Artifact {
+    public static final int MAX_DRONES = 10;
+
     {
         image = ItemSpriteSheet.ARTIFACT_TOOL;
         defaultAction = AC_MAKE;
@@ -139,7 +141,10 @@ public class InstructionTool extends Artifact {
                 return;
             }
             ArrayList<Drone> drone = getDroneAlly();
-            if((drone != null && drone.size()+1>charge) || charge<1){
+            if (reachedMaxDrones()){
+                GLog.w( Messages.get(InstructionTool.class, "max_drone") );
+                return;
+            } else if((drone != null && drone.size()+1>charge) || charge<1){
                 GLog.w( Messages.get(InstructionTool.class, "more_drone") );
                 return;
             }else{
@@ -250,7 +255,25 @@ public class InstructionTool extends Artifact {
         }
     };
 
+    public static int droneCount(){
+        int count = 0;
+        for (Char ch : Actor.chars()){
+            if (ch instanceof Drone){
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public static boolean reachedMaxDrones(){
+        return droneCount() >= MAX_DRONES;
+    }
+
     public Mob createDrone(int chargeUse,Class s){
+        if (reachedMaxDrones()){
+            GLog.w(Messages.get(InstructionTool.class, "max_drone"));
+            return null;
+        }
         ArrayList<Integer> respawnPoints = new ArrayList<>();
         Mob mob1 = null;
         for (int i = 0; i < PathFinder.NEIGHBOURS9.length; i++) {
@@ -468,7 +491,7 @@ public class InstructionTool extends Artifact {
 
             if (cooldown > 0)
                 cooldown --;
-            ActionIndicator.setAction(this);
+            //ActionIndicator.setAction(this);
             updateQuickslot();
 
             spend( TICK );
@@ -493,7 +516,7 @@ public class InstructionTool extends Artifact {
         }
         @Override
         public int indicatorColor() {
-            return 0x000000;
+            return 0x444444;
         }
         @Override
         public String actionName() {

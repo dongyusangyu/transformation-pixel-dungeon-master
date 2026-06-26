@@ -72,7 +72,7 @@ public class ScrollOfRemoveCurse extends InventoryScroll {
 			identify();
 			Sample.INSTANCE.play( Assets.Sounds.READ );
 			readAnimation();
-            if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+            if(hero!=null && hero.buff(Reason.class)!=null){
                 Reason.gainReason(hero,10);
             }
 
@@ -124,7 +124,7 @@ public class ScrollOfRemoveCurse extends InventoryScroll {
 		new Flare( 6, 32 ).show( curUser.sprite, 2f );
 
 		boolean procced = uncurse( curUser, item );
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,10);
         }
 

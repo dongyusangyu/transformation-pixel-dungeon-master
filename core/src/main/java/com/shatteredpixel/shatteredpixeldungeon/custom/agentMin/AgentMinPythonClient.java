@@ -26,6 +26,7 @@ public class AgentMinPythonClient {
 			out.write('\n');
 			out.flush();
 			String response = in.readLine();
+			AgentMinPolicyContext.updateFromResponse(response);
 			return AgentMinJsonBridge.parseActionId(response);
 		} catch (IOException e) {
 			close();

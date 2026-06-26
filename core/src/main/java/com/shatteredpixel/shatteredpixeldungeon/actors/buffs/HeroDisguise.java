@@ -21,8 +21,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
-import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
-
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -42,6 +40,7 @@ public class HeroDisguise extends FlavourBuff {
 
 	private HeroClass cls = null;
 	private int skin = 0;
+	private boolean magicGirlDisguise = false;
 
 	public static float DURATION = 1000f;
 
@@ -50,6 +49,9 @@ public class HeroDisguise extends FlavourBuff {
 	}
 	public int getSkin(){
 		return skin;
+	}
+	public boolean isMagicGirlDisguise(){
+		return magicGirlDisguise;
 	}
 
 	@Override
@@ -65,37 +67,51 @@ public class HeroDisguise extends FlavourBuff {
 	@Override
 	public void fx(boolean on) {
 		if (target instanceof Hero && target.sprite instanceof HeroSprite){
+			Hero targetHero = (Hero)target;
 			if (cls == null) {
-				if(hero.hasTalent(Talent.MAGIC_GIRL)){
-					cls=((Hero) target).heroClass;
+				if(targetHero.hasTalent(Talent.MAGIC_GIRL)){
+					cls = targetHero.heroClass;
+					magicGirlDisguise = true;
 				}else{
+					magicGirlDisguise = false;
 					//HeroClass[] canDisguise=new HeroClass[]{HeroClass.DUELIST,HeroClass.WARRIOR,HeroClass.MAGE,HeroClass.HUNTRESS,HeroClass.ROGUE};
 					do {
 						//cls = Random.oneOf(canDisguise);
 						cls = Random.oneOf(HeroClass.values());
 						skin = Random.Int(cls.getSkinNums());
-					} while (cls == ((Hero) target).heroClass || cls == HeroClass.RATKING);}
+					} while (cls == targetHero.heroClass || cls == HeroClass.RATKING);}
+			} else if (targetHero.hasTalent(Talent.MAGIC_GIRL) && cls == targetHero.heroClass) {
+				magicGirlDisguise = true;
 			}
 
 			if (on) {
-				if (hero.hasTalent(Talent.MAGIC_GIRL)){
+				if (magicGirlDisguise){
 					((HeroSprite)target.sprite).magic_girl();
 				}else{
 					((HeroSprite)target.sprite).disguise(cls,skin);}
 			}
-			else    ((HeroSprite)target.sprite).disguise(((Hero) target).heroClass, Dungeon.skin);
-			GameScene.updateAvatar();
+			else    ((HeroSprite)target.sprite).disguise(targetHero.heroClass, Dungeon.skin);
+			updateHeroView(targetHero);
+		}
+	}
+
+	private void updateHeroView(Hero targetHero){
+		GameScene.updateAvatar();
+		if (Dungeon.level != null && Dungeon.hero == targetHero && GameScene.fogReady()) {
+			Dungeon.observe();
 		}
 	}
 
 	private static final String CLASS = "class";
 	private static final String SKIN = "skin";
+	private static final String MAGIC_GIRL = "magic_girl";
 
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(CLASS, cls);
 		bundle.put(SKIN, skin);
+		bundle.put(MAGIC_GIRL, magicGirlDisguise);
 	}
 
 	@Override
@@ -103,5 +119,6 @@ public class HeroDisguise extends FlavourBuff {
 		super.restoreFromBundle(bundle);
 		cls = bundle.getEnum(CLASS, HeroClass.class);
 		skin = bundle.getInt(SKIN);
+		magicGirlDisguise = bundle.getBoolean(MAGIC_GIRL);
 	}
 }

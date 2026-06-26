@@ -14,6 +14,8 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 
 public enum  TalentCatalog {
@@ -29,6 +31,15 @@ public enum  TalentCatalog {
     }
     public ArrayList<Talent> entities2(){
         return tierTalents;
+    }
+
+    public ArrayList<Talent> entities(SortMode sortMode){
+        ArrayList<Talent> sorted = new ArrayList<>(tierTalents);
+        if (sortMode == SortMode.DEFAULT){
+            return sorted;
+        }
+        Collections.sort(sorted, sortMode.comparator(this));
+        return sorted;
     }
 
     public String title(){
@@ -58,6 +69,75 @@ public enum  TalentCatalog {
     private final LinkedHashMap<Talent, Integer> serverTransformSpellTalents = new LinkedHashMap<Talent, Integer>();
 
     private static final LinkedHashMap<Talent, TalentCatalog> CATALOG_BY_TALENT = new LinkedHashMap<>();
+
+    public enum SortMode {
+        DEFAULT("default"),
+        LOCAL_SELECTED("local_selected"),
+        LOCAL_RATE("local_rate"),
+        LOCAL_TARGETED("local_targeted"),
+        SERVER_SELECTED("server_selected"),
+        SERVER_RATE("server_rate"),
+        SERVER_TARGETED("server_targeted");
+
+        private final String messageKey;
+
+        SortMode(String messageKey){
+            this.messageKey = messageKey;
+        }
+
+        public String title(){
+            return Messages.get(TalentCatalog.class, "sort_" + messageKey);
+        }
+
+        public SortMode next(){
+            SortMode[] values = values();
+            return values[(ordinal() + 1) % values.length];
+        }
+
+        private Comparator<Talent> comparator(TalentCatalog catalog){
+            return new Comparator<Talent>() {
+                @Override
+                public int compare(Talent lhs, Talent rhs) {
+                    int result;
+                    switch (SortMode.this){
+                        case LOCAL_SELECTED:
+                            result = Integer.compare(catalog.talents.get(rhs), catalog.talents.get(lhs));
+                            break;
+                        case LOCAL_RATE:
+                            result = Float.compare(localRate(catalog, rhs), localRate(catalog, lhs));
+                            break;
+                        case LOCAL_TARGETED:
+                            result = Integer.compare(catalog.transformSpellTalents.get(rhs), catalog.transformSpellTalents.get(lhs));
+                            break;
+                        case SERVER_SELECTED:
+                            result = Integer.compare(catalog.serverTalents.get(rhs), catalog.serverTalents.get(lhs));
+                            break;
+                        case SERVER_RATE:
+                            result = Float.compare(serverRate(catalog, rhs), serverRate(catalog, lhs));
+                            break;
+                        case SERVER_TARGETED:
+                            result = Integer.compare(catalog.serverTransformSpellTalents.get(rhs), catalog.serverTransformSpellTalents.get(lhs));
+                            break;
+                        case DEFAULT:
+                        default:
+                            result = 0;
+                            break;
+                    }
+                    return result == 0 ? Integer.compare(catalog.tierTalents.indexOf(lhs), catalog.tierTalents.indexOf(rhs)) : result;
+                }
+            };
+        }
+
+        private static float localRate(TalentCatalog catalog, Talent talent){
+            int appearances = Math.max(catalog.metamorphAppearances.get(talent), catalog.talents.get(talent));
+            return appearances <= 0 ? 0f : (float) catalog.talents.get(talent) / appearances;
+        }
+
+        private static float serverRate(TalentCatalog catalog, Talent talent){
+            int appearances = Math.max(catalog.serverMetamorphAppearances.get(talent), catalog.serverTalents.get(talent));
+            return appearances <= 0 ? 0f : (float) catalog.serverTalents.get(talent) / appearances;
+        }
+    }
 
     private void registerTalent(Talent talent) {
         if (Talent.forbiddenInCatalogOrMetamorphosis(talent) || talents.containsKey(talent)) {

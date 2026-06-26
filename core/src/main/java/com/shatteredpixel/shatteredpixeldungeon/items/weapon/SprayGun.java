@@ -498,6 +498,7 @@ public class SprayGun extends Weapon {
 	}
 
 	private void perCellEffect(ArrayList<Integer> cells, boolean alchemist, ArrayList<Loaded> effects) {
+		boolean alchemistLiquidFlame = alchemist && effects.contains(Loaded.LIQUID_FLAME);
 		if (!effects.contains(Loaded.LIQUID_FLAME)) {
 
 			Fire fire = (Fire)Dungeon.level.blobs.get(Fire.class);
@@ -513,7 +514,14 @@ public class SprayGun extends Weapon {
 		}
 
 		for (int cell : cells) {
-            if(Dungeon.level.map[cell]==Terrain.DOOR)  Dungeon.level.pressCell(cell);
+            if (Dungeon.level.map[cell] == Terrain.DOOR) {
+				if (alchemistLiquidFlame) {
+					Level.set(cell, Terrain.OPEN_DOOR);
+					GameScene.updateMap(cell);
+				} else {
+					Dungeon.level.pressCell(cell);
+				}
+			}
 			for (Loaded effect : effects) {
 				switch (effect) {
 					case FROST:
@@ -529,7 +537,9 @@ public class SprayGun extends Weapon {
                             }
                         }else{
                             GameScene.add(Blob.seed(cell, 2, Fire.class));
-                            Dungeon.level.pressCell(cell);
+                            if (!alchemist) {
+                                Dungeon.level.pressCell(cell);
+                            }
                             Fire.burn(cell);
                         }
                         //if wand was shot right at a wall
@@ -544,7 +554,6 @@ public class SprayGun extends Weapon {
                                 if (Dungeon.level.trueDistance(cell+i, bolt.collisionPos) < Dungeon.level.trueDistance(cell, bolt.collisionPos)
                                         && Dungeon.level.flamable[cell+i]
                                         && Fire.volumeAt(cell+i, Fire.class) == 0){
-                                    Dungeon.level.pressCell(cell);
                                     GameScene.add( Blob.seed( c+i, 2, Fire.class ) );
                                 }
                             }

@@ -7,6 +7,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.ArmoredStatue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalMimic;
@@ -68,6 +70,7 @@ public class SeedFinder {
         public static int floors;
         public static Condition condition;
         public static long seed;
+        public static boolean randomMode;
     }
 
     public interface ProgressListener {
@@ -237,6 +240,10 @@ public class SeedFinder {
         itemLists = new ArrayList<>(Arrays.asList(wanted));
         itemList = new ArrayList<>();
         talentLists = new ArrayList<>();
+        Options.randomMode = SPDSettings.randomMode() || itemLists.removeIf(i ->
+                i.equalsIgnoreCase("random mode")
+                        || i.equalsIgnoreCase("randommode")
+                        || i.contains("随机模式"));
         int cnt=0;
         for(String i:itemLists){
             if(cnt==0){
@@ -672,17 +679,28 @@ public class SeedFinder {
     private MatchResult evaluateSeedLocked(String seed, int floors) {
         String oldSeed = SPDSettings.customSeed();
         int a = SPDSettings.challenges();
+        boolean oldRandomMode = SPDSettings.randomMode();
         int matched = 0;
         int total = itemList.size() + talentLists.size();
         try {
             SPDSettings.customSeed(seed);
             SPDSettings.challenges( Challenges.TEST_MODE);
+            SPDSettings.randomMode(Options.randomMode);
             Dungeon.hero = null;
             Dungeon.daily = Dungeon.dailyReplay = false;
             Dungeon.initSeed();
 
             boolean[] talentFound = new boolean[talentLists.size()];
-            if(!talentLists.isEmpty()){
+            boolean dungeonInitialized = false;
+            if(!talentLists.isEmpty() && Options.randomMode){
+                GamesInProgress.selectedClass = HeroClass.WARRIOR;
+                Dungeon.init();
+                dungeonInitialized = true;
+                ArrayList<String> talentNames = randomModeTalentNames();
+                for(int cnt=0;cnt<talentLists.size();cnt++){
+                    talentFound[cnt] = matchesTalent(talentLists.get(cnt), talentNames);
+                }
+            } else if(!talentLists.isEmpty()){
                 ArrayList<Talent> getNegativeTalent=getNegativeTalent();
                 ArrayList<String> getNegativeTalents=new ArrayList<String>();
                 for(int cnt=0;cnt<8;cnt++){
@@ -721,7 +739,9 @@ public class SeedFinder {
 
             GamesInProgress.selectedClass = HeroClass.WARRIOR;
 
-            Dungeon.init();
+            if (!dungeonInitialized) {
+                Dungeon.init();
+            }
 
             boolean[] itemsFound = new boolean[itemList.size()];
             Arrays.fill(itemsFound, false);
@@ -812,6 +832,7 @@ public class SeedFinder {
         } finally {
             SPDSettings.challenges(a);
             SPDSettings.customSeed(oldSeed);
+            SPDSettings.randomMode(oldRandomMode);
         }
     }
 
@@ -829,6 +850,78 @@ public class SeedFinder {
         return true;
     }
 
+    private ArrayList<String> randomModeTalentNames() {
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Talent> negatives = getNegativeTalent();
+        for (int i = 0; i < Math.min(8, negatives.size()); i++) {
+            names.add(negatives.get(i).title().toLowerCase());
+        }
+        if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+            for (int tier = 1; tier <= Talent.MAX_TALENT_TIERS; tier++) {
+                for (Talent talent : HeroRandomizer.classTalents(Dungeon.hero, tier)) {
+                    names.add(talent.title().toLowerCase());
+                    names.add(talent.name().toLowerCase());
+                }
+            }
+            if (Dungeon.hero.randomSubClasses != null) {
+                for (HeroSubClass subClass : Dungeon.hero.randomSubClasses) {
+                    names.add(subClass.title().toLowerCase());
+                    names.add(subClass.name().toLowerCase());
+                }
+            }
+            if (Dungeon.hero.randomArmorAbilities != null) {
+                for (String ability : Dungeon.hero.randomArmorAbilities) {
+                    names.add(ability.substring(ability.lastIndexOf('.') + 1).toLowerCase());
+                }
+            }
+        }
+        return names;
+    }
+
+    private boolean matchesTalent(String wantingTalent, ArrayList<String> candidates) {
+        wantingTalent = wantingTalent.toLowerCase().replaceAll(" ", "");
+        if (wantingTalent.contains("**")) {
+            return true;
+        }
+        for (String candidate : candidates) {
+            String normalized = candidate.replaceAll(" ", "");
+            if (normalized.contains(wantingTalent) || wantingTalent.contains(normalized)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addRandomModeInfo(StringBuilder result) {
+        if (Dungeon.hero == null || !Dungeon.hero.randomMode) {
+            return;
+        }
+        result.append("\n_----- ").append(Messages.get(this, "random_mode")).append(" -----_\n\n");
+        result.append(Messages.get(this, "random_talent_class"))
+                .append(HeroRandomizer.talentClass(Dungeon.hero).title()).append("\n\n");
+        for (int tier = 1; tier <= Talent.MAX_TALENT_TIERS; tier++) {
+            ArrayList<Talent> talents = HeroRandomizer.classTalents(Dungeon.hero, tier);
+            if (!talents.isEmpty()) {
+                result.append(Messages.get(this, "random_talent_tier")).append(tier).append(":\n");
+                addTextTalent(talents, result);
+            }
+        }
+        if (Dungeon.hero.randomSubClasses != null && Dungeon.hero.randomSubClasses.length > 0) {
+            result.append(Messages.get(this, "random_subclasses")).append(":\n");
+            for (HeroSubClass subClass : Dungeon.hero.randomSubClasses) {
+                result.append(subClass.title()).append("\n");
+            }
+            result.append("\n");
+        }
+        if (Dungeon.hero.randomArmorAbilities != null && Dungeon.hero.randomArmorAbilities.length > 0) {
+            result.append(Messages.get(this, "random_armor_abilities")).append(":\n");
+            for (String ability : Dungeon.hero.randomArmorAbilities) {
+                result.append(ability.substring(ability.lastIndexOf('.') + 1)).append("\n");
+            }
+            result.append("\n");
+        }
+    }
+
     public String logSeedItems(String seed, int floors) {
         return logSeedItems(seed, floors, -1);
     }
@@ -842,9 +935,11 @@ public class SeedFinder {
     private String logSeedItemsLocked(String seed, int floors, int matchScore) {
         String oldSeed = SPDSettings.customSeed();
         int a = SPDSettings.challenges();
+        boolean oldRandomMode = SPDSettings.randomMode();
         try {
             SPDSettings.challenges( Challenges.TEST_MODE);
             SPDSettings.customSeed(seed);
+            SPDSettings.randomMode(Options.randomMode || oldRandomMode);
             Dungeon.initSeed();
             GamesInProgress.selectedClass = HeroClass.WARRIOR;
             Dungeon.init();
@@ -866,6 +961,7 @@ public class SeedFinder {
             StringBuilder talentBuilder = new StringBuilder();
             addTextTalent(getNegativeTalents, talentBuilder);
             result.append("\n").append(talentBuilder);
+            addRandomModeInfo(result);
 
             for (int i = 0; i < floors; i++) {
                 result.append("\n_----- ").append(Long.toString(Dungeon.depth)).append(" ").append(Messages.get(this, "floor") + " -----_\n\n");
@@ -959,7 +1055,8 @@ public class SeedFinder {
             return result.toString();
         } finally {
             SPDSettings.challenges(a);
-            SPDSettings.customSeed(seed);
+            SPDSettings.customSeed(oldSeed);
+            SPDSettings.randomMode(oldRandomMode);
             //SPDSettings.customSeed(oldSeed);
         }
     }

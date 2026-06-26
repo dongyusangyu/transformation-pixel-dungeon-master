@@ -53,6 +53,11 @@ public class Journal {
 		
 		loaded = true;
 	}
+
+	public static void reloadGlobal(){
+		loaded = false;
+		loadGlobal();
+	}
 	
 	//package-private
 	static boolean saveNeeded = false;

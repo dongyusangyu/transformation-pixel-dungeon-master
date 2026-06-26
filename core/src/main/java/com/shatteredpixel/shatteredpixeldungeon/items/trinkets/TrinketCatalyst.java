@@ -173,8 +173,10 @@ public class TrinketCatalyst extends Item {
 			message.setPos(0, titlebar.bottom() + GAP);
 			add( message );
 
+			boolean randomMode = Dungeon.hero != null && Dungeon.hero.randomMode;
+
 			//roll new trinkets if trinkets were not already rolled
-			while (cata.rolledTrinkets.size() < NUM_TRINKETS-1){
+			while (!randomMode && cata.rolledTrinkets.size() < NUM_TRINKETS-1){
 				cata.rolledTrinkets.add((Trinket) Generator.random(Generator.Category.TRINKET));
 			}
 
@@ -185,7 +187,7 @@ public class TrinketCatalyst extends Item {
 						ShatteredPixelDungeon.scene().addToFront(new RewardWindow(item()));
 					}
 				};
-				if (i == NUM_TRINKETS-1){
+				if (randomMode || i == NUM_TRINKETS-1){
 					btnReward.item(new RandomTrinket());
 				} else {
 					btnReward.item(cata.rolledTrinkets.get(i));

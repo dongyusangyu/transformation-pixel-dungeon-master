@@ -79,7 +79,7 @@ public class Torch extends Item {
 			
 			Emitter emitter = hero.sprite.centerEmitter();
 			emitter.start( FlameParticle.FACTORY, 0.2f, 3 );
-            if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+            if(hero!=null && hero.buff(Reason.class)!=null){
                 if(Dungeon.isChallenged(Challenges.DARKNESS)){
                     Reason.gainReason(hero,5);
                 }else{

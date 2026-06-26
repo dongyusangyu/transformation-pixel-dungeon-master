@@ -147,8 +147,11 @@ public class ScrollOfSublimation extends Item{
     }
 
     public void doRead() {
-
-        GameScene.show(new ScrollOfSublimation.WndSublimation(this.type));
+        if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+            applyRandomSublimation();
+        } else {
+            GameScene.show(new ScrollOfSublimation.WndSublimation(this.type));
+        }
     }
     private void confirmCancelation( Window chooseWindow ) {
         GameScene.show( new WndOptions(new ItemSprite(this),
@@ -325,6 +328,101 @@ public class ScrollOfSublimation extends Item{
             }
 
              */
+        }
+    }
+
+    private void applyRandomSublimation() {
+        String type = this.type;
+        int[] tierAndIndex = tierAndIndex(type);
+        Talent talent = Random.element(sublimationTalentPool(type));
+        applySublimationTalent(talent, type, tierAndIndex[0], tierAndIndex[1]);
+        detach(curUser.belongings.backpack);
+        Catalog.countUse(getClass());
+        onSublimation(talent);
+    }
+
+    private static List<Talent> sublimationTalentPool(String type) {
+        List<Talent> availableTalents = new ArrayList<>();
+        switch(type){
+            case "GOO" : default:
+                Collections.addAll(availableTalents, Talent.AQUATIC_RECOVER, Talent.PUMP_ATTACK,Talent.OOZE_ATTACK);
+                break;
+            case "WARRIOR":
+                Collections.addAll(availableTalents, Talent.STRONGEST_SHIELD, Talent.COMBO_PACKAGE,Talent.BREAK_ENEMY_RANKS);
+                break;
+            case "TENGU" :
+                Collections.addAll(availableTalents, Talent.SURPRISE_THROW, Talent.SMOKE_MASK,Talent.RUSH);
+                break;
+            case "ROGUE" :
+                Collections.addAll(availableTalents, Talent.SHADOW_KILLER, Talent.KILL_SPREE,Talent.SEAOFPEOPLE,Talent.PHANTOM_STEP);
+                break;
+            case "DM300":
+                Collections.addAll(availableTalents, Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE);
+                break;
+            case "DWARFKING":
+                Collections.addAll(availableTalents, Talent.KING_PROTECT, Talent.SUMMON_FOLLOWER,Talent.WOLFISH_GAZE,Talent.ENERGY_CONVERSION);
+                break;
+            case "YOG":
+                Collections.addAll(availableTalents, Talent.YOG_LARVA,Talent.YOG_FIST,Talent.YOG_RAY);
+                break;
+        }
+        return availableTalents;
+    }
+
+    private static int[] tierAndIndex(String type) {
+        switch(type){
+            case "DM300":
+                return new int[]{2, 2};
+            case "DWARFKING":
+                return new int[]{2, 3};
+            case "YOG":
+                return new int[]{3, 3};
+            case "TENGU":
+            case "ROGUE":
+                return new int[]{1, 2};
+            case "GOO":
+            case "WARRIOR":
+            default:
+                return new int[]{1, 1};
+        }
+    }
+
+    public static void applySublimationTalent(Talent talent, String type, int tier, int index) {
+        Talent targetSlot = Talent.bossTalentSlot(type);
+        Talent currentSlotTalent = Talent.bossTalentForSlot(targetSlot, Dungeon.hero.sublimationTalents);
+        int cnt = 1;
+        for (LinkedHashMap<Talent, Integer> tiers : Dungeon.hero.talents){
+            if(cnt == tier){
+                LinkedHashMap<Talent, Integer> newTier = new LinkedHashMap<>();
+                boolean replacedSlot = false;
+                boolean hasCorrespondingTalent = currentSlotTalent != targetSlot;
+                for (Talent t : tiers.keySet()){
+                    if (t == targetSlot || t == currentSlotTalent || Talent.bossTalentSlot(t) == targetSlot){
+                        newTier.put(talent, 0);
+                        replacedSlot = true;
+                        hasCorrespondingTalent = true;
+                    } else {
+                        newTier.put(t,  tiers.get(t));
+                    }
+                }
+                if (!replacedSlot && !hasCorrespondingTalent){
+                    newTier.put(talent, 0);
+                }
+                TalentCatalog.countUse(talent);
+                Dungeon.hero.talents.set(tier-1, newTier);
+                Dungeon.hero.sublimationTalents.remove(currentSlotTalent);
+                Dungeon.hero.sublimationTalents.put(targetSlot, talent.name());
+                ArrayList<String> S= new ArrayList<String>();
+                S.add("DM300");
+                S.add("YOG");
+                if(S.contains(type)){
+                    Buff.affect(hero, ScrollOfSublimation.Sublimation1.class).setBoosted(index);
+                }else{
+                    Buff.affect(hero, ScrollOfSublimation.Sublimation.class).setBoosted(index);
+                }
+                WndHero.lastIdx = 1;
+                break;
+            }else{cnt++;}
         }
     }
 

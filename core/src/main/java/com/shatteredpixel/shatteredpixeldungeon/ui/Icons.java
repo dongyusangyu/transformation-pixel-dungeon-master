@@ -62,7 +62,9 @@ public enum Icons {
 	RIGHTARROW,
 	CALENDAR,
 	CHEVRON,
+    SHUFFLE_SLIVER,
 	SHUFFLE,
+    SHUFFLE_LITTLE,
 
 	//misc larger icons, mainly used for buttons, tabs, and journal, spacing for 16x16
 	TARGET,
@@ -235,6 +237,9 @@ public enum Icons {
 			case SHUFFLE:
 				icon.frame(icon.texture.uvRectBySize( 240, 32, 15, 12 ) );
 				break;
+            case SHUFFLE_SLIVER:
+                icon.frame(icon.texture.uvRectBySize( 223, 32, 15, 12 ) );
+                break;
 
 			case TARGET:
 				icon.frame( icon.texture.uvRectBySize( 0, 32, 16, 16 ) );
@@ -456,6 +461,9 @@ public enum Icons {
                 break;
             case SKIN_COLOR:
                 icon.frame( icon.texture.uvRectBySize( 183, 0, 14, 12 ) );
+                break;
+            case SHUFFLE_LITTLE:
+                icon.frame( icon.texture.uvRectBySize( 8, 88, 5, 6 ) );
                 break;
 
 		}

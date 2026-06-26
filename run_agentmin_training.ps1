@@ -1,26 +1,35 @@
 param(
     [int]$Port = 8765,
-    [int]$UpdateInterval = 256,
-    [int]$WarmupSeconds = 45,
+    [int]$UpdateInterval = 64,
+    [int]$WarmupSeconds = 15,
     [string]$Device = "auto",
-    [int]$PPOEpochs = 4,
-    [int]$PPOMinibatchSize = 128,
-    [double]$PPOLearningRate = 0.00006,
-    [double]$PPOGamma = 0.997,
-    [double]$PPOGAELambda = 0.97,
-    [double]$PPOEntropyCoef = 0.018,
-    [double]$PPOClipRange = 0.18,
-    [double]$PPOValueCoef = 0.55,
-    [double]$PPOMaxGradNorm = 0.6,
-    [double]$PPOWeightDecay = 0.01,
+    [int]$PPOEpochs = 1,
+    [int]$PPOMinibatchSize = 2,
+    [double]$PPOLearningRate = 0.000015,
+    [double]$PPOGamma = 0.995,
+    [double]$PPOGAELambda = 0.95,
+    [double]$PPOEntropyCoef = 0.012,
+    [double]$PPOClipRange = 0.10,
+    [double]$PPOValueCoef = 0.50,
+    [double]$PPOMaxGradNorm = 0.5,
+    [double]$PPOWeightDecay = 0.0001,
+    [double]$PPOTargetKL = 0.020,
     [bool]$DisableAMP = $false,
+    [int]$MaxVramMB = 7168,
     [string]$JarPath = "",
+    [string]$InitialCheckpoint = "",
+    [bool]$PreferInitialCheckpoint = $false,
+    [string]$Curriculum = "",
     [switch]$SkipBuild,
     [bool]$StopExisting = $true,
     [bool]$ClearUnfinishedSaves = $true,
     [string]$SaveRoot = "",
     [bool]$MonitorGameProcess = $true,
     [int]$MonitorSeconds = 0,
+    [int]$BridgeStallSeconds = 90,
+    [int]$BridgeRequestTimeoutMs = 60000,
+    [string]$HeroClass = "WARRIOR",
+    [string]$WandProbe = "false",
     [switch]$StopGameOnExit
 )
 
@@ -32,8 +41,18 @@ $TrainingDir = Join-Path $Root "core\src\main\java\com\shatteredpixel\shatteredp
 $Server = Join-Path $TrainingDir "agent_min_bridge_server.py"
 $Log = Join-Path $TrainingDir "logs\bridge_server.log"
 $Checkpoint = Join-Path $TrainingDir "logs\agent_min_real_game_$Port.pt"
+$InitialCheckpointPath = $InitialCheckpoint.Trim()
+if ($InitialCheckpointPath -ne "" -and !(Test-Path -LiteralPath $InitialCheckpointPath)) {
+    throw "Initial checkpoint not found: $InitialCheckpointPath"
+}
+$CurriculumName = $Curriculum.Trim()
+if ($CurriculumName -ne "") {
+    $safeCurriculum = $CurriculumName -replace "[^A-Za-z0-9_-]", "_"
+    $Checkpoint = Join-Path $TrainingDir "logs\agent_min_${safeCurriculum}_$Port.pt"
+}
 $CrashLog = Join-Path $TrainingDir "logs\game_crashes.log"
 $CrashMarker = Join-Path $TrainingDir "logs\game_crash.marker"
+$EpisodeLog = Join-Path $TrainingDir "logs\agent_min_episode_results.log"
 $SupervisorLog = Join-Path $TrainingDir "logs\training_supervisor.log"
 $Java = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME "bin\java.exe" } else { "java.exe" }
 
@@ -49,30 +68,110 @@ if (!(Test-Path $Java)) {
 
 function Get-AgentMinProcesses {
     param([bool]$IncludeBridge = $true, [bool]$IncludeGame = $true, [int[]]$ExcludeProcessIds = @())
-    Get-CimInstance Win32_Process | Where-Object {
-        $cmd = if ($_.CommandLine) { $_.CommandLine } else { "" }
-        $name = if ($_.Name) { $_.Name.ToLowerInvariant() } else { "" }
-        $isExcluded = $ExcludeProcessIds -contains $_.ProcessId
-        $isBridge = $IncludeBridge -and $name -like "python*.exe" -and $cmd -like "*agent_min_bridge_server.py*"
-        $isGame = $IncludeGame -and ($name -eq "java.exe" -or $name -eq "javaw.exe") -and (
-            $cmd -like "*com.shatteredpixel.shatteredpixeldungeon.desktop.DesktopLauncher*" -or
-            $cmd -like "*-jar*desktop-*.jar*"
-        )
-        !$isExcluded -and ($isBridge -or $isGame)
+
+    $matched = New-Object System.Collections.Generic.List[object]
+    $candidates = New-Object System.Collections.Generic.List[object]
+    if ($IncludeBridge) {
+        Get-Process -Name "python", "python3" -ErrorAction SilentlyContinue | ForEach-Object { $candidates.Add($_) }
     }
+    if ($IncludeGame) {
+        Get-Process -Name "java", "javaw" -ErrorAction SilentlyContinue | ForEach-Object { $candidates.Add($_) }
+    }
+
+    foreach ($process in $candidates) {
+        if ($ExcludeProcessIds -contains $process.Id) {
+            continue
+        }
+        $name = if ($process.ProcessName) { ($process.ProcessName + ".exe").ToLowerInvariant() } else { "" }
+        $cmd = ""
+        try {
+            $cim = Get-CimInstance Win32_Process -Filter "ProcessId=$($process.Id)" -ErrorAction Stop
+            if ($cim -and $cim.CommandLine) {
+                $cmd = $cim.CommandLine
+            }
+        } catch {
+            Write-AgentMinSupervisorLog "Process command line probe skipped for PID $($process.Id): $($_.Exception.Message)"
+            continue
+        }
+
+        $isBridge = $IncludeBridge -and $name -like "python*.exe" -and $cmd -like "*agent_min_bridge_server.py*"
+        $isGame = $IncludeGame -and ($name -eq "java.exe" -or $name -eq "javaw.exe") -and $cmd -like "*-jar*desktop-*-debug.jar*"
+        if ($isBridge -or $isGame) {
+            $matched.Add([pscustomobject]@{
+                ProcessId = $process.Id
+                Name = $name
+                CommandLine = $cmd
+            })
+        }
+    }
+    return $matched
+}
+
+function Assert-AgentMinDebugJar {
+    param([string]$Path)
+    $name = [System.IO.Path]::GetFileName($Path)
+    if ($name -notlike "desktop-*-debug.jar") {
+        throw "AgentMin training requires a desktop debug jar. Got: $Path"
+    }
+}
+
+function Confirm-AgentMinDebugJarContents {
+    param([string]$Path)
+    Assert-AgentMinDebugJar -Path $Path
+    if (!(Test-Path $Path)) {
+        throw "Debug jar not found: $Path"
+    }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+    $requiredClasses = @(
+        "com/shatteredpixel/shatteredpixeldungeon/actors/buffs/Sleep.class",
+        "com/shatteredpixel/shatteredpixeldungeon/levels/traps/PoisonDartTrap`$1.class",
+        "com/shatteredpixel/shatteredpixeldungeon/levels/traps/PoisonDartTrap`$1`$1.class",
+        "com/shatteredpixel/shatteredpixeldungeon/effects/particles/EarthParticle.class",
+        "com/shatteredpixel/shatteredpixeldungeon/effects/Beam`$LightRay.class",
+        "com/shatteredpixel/shatteredpixeldungeon/ui/BuffIcon.class",
+        "com/badlogic/gdx/backends/lwjgl3/Lwjgl3Window`$4`$1.class"
+    )
+    $zip = $null
+    $missing = New-Object System.Collections.Generic.List[string]
+    try {
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+        $entries = New-Object "System.Collections.Generic.HashSet[string]"
+        foreach ($entry in $zip.Entries) {
+            [void]$entries.Add($entry.FullName)
+        }
+        foreach ($className in $requiredClasses) {
+            if (!$entries.Contains($className)) {
+                $missing.Add($className)
+            }
+        }
+    } finally {
+        if ($null -ne $zip) {
+            $zip.Dispose()
+        }
+    }
+    if ($missing.Count -gt 0) {
+        throw "Debug jar is missing required AgentMin runtime classes: $($missing -join ', ')"
+    }
+    Write-AgentMinSupervisorLog "Debug jar class check OK: $Path"
 }
 
 function Stop-AgentMinProcesses {
     param([bool]$IncludeBridge = $true, [bool]$IncludeGame = $true, [int[]]$ExcludeProcessIds = @())
-    Get-AgentMinProcesses -IncludeBridge $IncludeBridge -IncludeGame $IncludeGame -ExcludeProcessIds $ExcludeProcessIds |
-        ForEach-Object {
-            try {
-                Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
-                Write-Host "[AgentMin] Stopped PID $($_.ProcessId)"
-            } catch {
-                Write-Host "[AgentMin] Could not stop PID $($_.ProcessId): $($_.Exception.Message)"
-            }
+    try {
+        $processes = @(Get-AgentMinProcesses -IncludeBridge $IncludeBridge -IncludeGame $IncludeGame -ExcludeProcessIds $ExcludeProcessIds)
+    } catch {
+        Write-AgentMinSupervisorLog "Process scan failed while stopping AgentMin processes: $($_.Exception.Message)"
+        return
+    }
+    foreach ($process in $processes) {
+        try {
+            Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
+            Write-Host "[AgentMin] Stopped PID $($process.ProcessId)"
+        } catch {
+            Write-Host "[AgentMin] Could not stop PID $($process.ProcessId): $($_.Exception.Message)"
         }
+    }
 }
 
 function Write-AgentMinSupervisorLog {
@@ -93,6 +192,48 @@ function Test-RecentAgentMinCrash {
     }
     $marker = Get-Item -LiteralPath $CrashMarker
     return $marker.LastWriteTime -ge $Since.AddSeconds(-2)
+}
+
+function Test-AgentMinProcessAlive {
+    param([object]$Process)
+    if ($null -eq $Process) {
+        return $false
+    }
+    try {
+        $Process.Refresh()
+        return !$Process.HasExited
+    } catch {
+        Write-AgentMinSupervisorLog "Process handle probe failed: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Get-AgentMinLogAgeSeconds {
+    param([string]$Path)
+    if (!(Test-Path $Path)) {
+        return [double]::PositiveInfinity
+    }
+    try {
+        return ((Get-Date) - (Get-Item -LiteralPath $Path).LastWriteTime).TotalSeconds
+    } catch {
+        Write-AgentMinSupervisorLog "Log age probe failed for ${Path}: $($_.Exception.Message)"
+        return 0
+    }
+}
+
+function Restart-AgentMinTrainingRun {
+    param([string]$Reason)
+    Write-AgentMinSupervisorLog "$Reason Restarting bridge and desktop game."
+    Stop-AgentMinProcesses -IncludeBridge $true -IncludeGame $true -ExcludeProcessIds @($PID)
+    if ($ClearUnfinishedSaves) {
+        Clear-AgentMinUnfinishedSaves
+    }
+    Start-Sleep -Seconds 2
+    $script:serverProcess = Start-AgentMinBridge
+    Start-Sleep -Seconds 2
+    $script:gameStartTime = Get-Date
+    $script:gameProcess = Start-AgentMinGame -JarPath $script:desktopJar
+    Start-Sleep -Seconds 8
 }
 
 function Get-AgentMinSaveRoots {
@@ -175,11 +316,17 @@ function Build-AgentMinDesktopJar {
         throw "No desktop debug jar found in desktop\build\libs"
     }
     Write-AgentMinSupervisorLog "Using desktop debug jar: $($jar.FullName)"
+    Confirm-AgentMinDebugJarContents -Path $jar.FullName
     return $jar.FullName
 }
 
 function Start-AgentMinBridge {
     Write-Host "[AgentMin] Starting Python realtime training bridge..."
+    $bridgeEnv = [System.Environment]::GetEnvironmentVariable("PYTORCH_CUDA_ALLOC_CONF", "Process")
+    if ([string]::IsNullOrWhiteSpace($bridgeEnv)) {
+        [System.Environment]::SetEnvironmentVariable("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True,max_split_size_mb:64", "Process")
+    }
+    [System.Environment]::SetEnvironmentVariable("CUDA_MODULE_LOADING", "LAZY", "Process")
     $args = @(
         $Server,
         "--host", "127.0.0.1",
@@ -196,8 +343,17 @@ function Start-AgentMinBridge {
         "--ppo-clip-range", "$PPOClipRange",
         "--ppo-value-coef", "$PPOValueCoef",
         "--ppo-max-grad-norm", "$PPOMaxGradNorm",
-        "--ppo-weight-decay", "$PPOWeightDecay"
+        "--ppo-weight-decay", "$PPOWeightDecay",
+        "--ppo-target-kl", "$PPOTargetKL",
+        "--max-vram-mb", "$MaxVramMB"
     )
+    if ($InitialCheckpointPath -ne "") {
+        $args += @("--initial-checkpoint", $InitialCheckpointPath)
+        Write-Host "[AgentMin] Initializing PPO from supervised checkpoint: $InitialCheckpointPath"
+    }
+    if ($PreferInitialCheckpoint) {
+        $args += "--prefer-initial-checkpoint"
+    }
     if ($DisableAMP) {
         $args += "--disable-amp"
     }
@@ -210,15 +366,26 @@ function Start-AgentMinBridge {
 
 function Start-AgentMinGame {
     param([string]$JarPath)
-    Write-Host "[AgentMin] Starting desktop game, auto-selecting Warrior and creating a run..."
+    Assert-AgentMinDebugJar -Path $JarPath
+    Confirm-AgentMinDebugJarContents -Path $JarPath
+    Write-Host "[AgentMin] Starting desktop game, auto-selecting $HeroClass and creating a run..."
     $env:AGENTMIN_ENABLED = "true"
     $env:AGENTMIN_AUTO_START = "true"
     $env:AGENTMIN_HOST = "127.0.0.1"
     $env:AGENTMIN_PORT = "$Port"
-    $env:AGENTMIN_TIMEOUT_MS = "5000"
+    $env:AGENTMIN_TIMEOUT_MS = "$BridgeRequestTimeoutMs"
     $env:AGENTMIN_LOGGING = "true"
+	$env:AGENTMIN_HERO_CLASS = $HeroClass
+	$env:AGENTMIN_WAND_PROBE = $WandProbe
     $env:AGENTMIN_CRASH_LOG = $CrashLog
     $env:AGENTMIN_CRASH_MARKER = $CrashMarker
+    $env:AGENTMIN_EPISODE_LOG = $EpisodeLog
+    if ($CurriculumName -ne "") {
+        $env:AGENTMIN_CURRICULUM = $CurriculumName
+        Write-Host "[AgentMin] Curriculum mode: $CurriculumName"
+    } else {
+        Remove-Item Env:\AGENTMIN_CURRICULUM -ErrorAction SilentlyContinue
+    }
 
     Start-Process -FilePath $Java `
         -ArgumentList @("-jar", $JarPath) `
@@ -239,9 +406,18 @@ if ($SkipBuild -and $JarPath -ne "") {
         throw "Provided jar path not found: $JarPath"
     }
     $desktopJar = (Resolve-Path $JarPath).Path
-    Write-AgentMinSupervisorLog "Using prebuilt desktop jar: $desktopJar"
+    Assert-AgentMinDebugJar -Path $desktopJar
+    try {
+        Confirm-AgentMinDebugJarContents -Path $desktopJar
+        Write-AgentMinSupervisorLog "Using prebuilt desktop jar: $desktopJar"
+    } catch {
+        Write-AgentMinSupervisorLog "Prebuilt debug jar failed class check: $($_.Exception.Message). Rebuilding desktop:debugJar."
+        $desktopJar = Build-AgentMinDesktopJar
+        Assert-AgentMinDebugJar -Path $desktopJar
+    }
 } else {
     $desktopJar = Build-AgentMinDesktopJar
+    Assert-AgentMinDebugJar -Path $desktopJar
 }
 
 $serverProcess = Start-AgentMinBridge
@@ -267,7 +443,7 @@ try {
         return
     }
 
-    Write-Host "[AgentMin] Process monitor is running. Game crashes restart the desktop process; manually closing the game stops this script."
+    Write-Host "[AgentMin] Process monitor is running. Game crashes or stalled bridge decisions restart training; manually closing the game stops this script."
     $started = Get-Date
     while ($true) {
         Start-Sleep -Seconds 5
@@ -277,7 +453,15 @@ try {
             break
         }
 
-        $gameAlive = @(Get-AgentMinProcesses -IncludeBridge $false -IncludeGame $true).Count -gt 0
+        $gameAlive = Test-AgentMinProcessAlive -Process $gameProcess
+        if (!$gameAlive) {
+            try {
+                $gameAlive = @(Get-AgentMinProcesses -IncludeBridge $false -IncludeGame $true).Count -gt 0
+            } catch {
+                Write-AgentMinSupervisorLog "Fallback game process scan failed: $($_.Exception.Message)"
+                $gameAlive = $false
+            }
+        }
         if (!$gameAlive) {
             if (Test-RecentAgentMinCrash -Since $gameStartTime) {
                 Write-AgentMinSupervisorLog "Desktop game crashed during training. Crash details were appended to $CrashLog. Restarting a new game process."
@@ -293,12 +477,49 @@ try {
                 break
             }
         }
+
+        $bridgeAlive = Test-AgentMinProcessAlive -Process $serverProcess
+        if (!$bridgeAlive) {
+            Restart-AgentMinTrainingRun -Reason "Python bridge process exited while the game was still running."
+            continue
+        }
+
+        if ($BridgeStallSeconds -gt 0) {
+            $age = Get-AgentMinLogAgeSeconds -Path $Log
+            $runAge = ((Get-Date) - $gameStartTime).TotalSeconds
+            if ($runAge -gt [Math]::Max($WarmupSeconds, 30) -and $age -gt $BridgeStallSeconds) {
+                Restart-AgentMinTrainingRun -Reason "No bridge decision log update for $([int]$age) seconds."
+                continue
+            }
+        }
     }
 } finally {
     Write-Host "[AgentMin] Stopping AgentMin bridge processes."
+    try {
+        if ($null -ne $serverProcess) {
+            $serverProcess.Refresh()
+            if (!$serverProcess.HasExited) {
+                Stop-Process -Id $serverProcess.Id -Force -ErrorAction Stop
+                Write-Host "[AgentMin] Stopped bridge PID $($serverProcess.Id)"
+            }
+        }
+    } catch {
+        Write-AgentMinSupervisorLog "Could not stop tracked bridge process: $($_.Exception.Message)"
+    }
     Stop-AgentMinProcesses -IncludeBridge $true -IncludeGame $false -ExcludeProcessIds @($PID)
     if ($StopGameOnExit) {
         Write-Host "[AgentMin] Stopping AgentMin game processes."
+        try {
+            if ($null -ne $gameProcess) {
+                $gameProcess.Refresh()
+                if (!$gameProcess.HasExited) {
+                    Stop-Process -Id $gameProcess.Id -Force -ErrorAction Stop
+                    Write-Host "[AgentMin] Stopped game PID $($gameProcess.Id)"
+                }
+            }
+        } catch {
+            Write-AgentMinSupervisorLog "Could not stop tracked game process: $($_.Exception.Message)"
+        }
         Stop-AgentMinProcesses -IncludeBridge $false -IncludeGame $true -ExcludeProcessIds @($PID)
     }
 }

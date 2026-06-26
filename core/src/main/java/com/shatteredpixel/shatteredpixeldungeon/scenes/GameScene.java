@@ -69,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLiquidFlam
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.InventoryScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.DimensionalSundial;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -123,6 +124,8 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Toolbar;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndClericSpells;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndClericSpells1;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndGame;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndHero;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndInfoCell;
@@ -785,40 +788,8 @@ public class GameScene extends PixelScene {
 
 		if (!invVisible) toggleInvPane();
 		fadeIn();
-		if(Dungeon.isChallenged(Challenges.NEGATIVE)){
-			if(Dungeon.depth==2 && !Statistics.negativetalents[0]){
-				if(Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
-					List<Talent> availableTalents = Talent.getNegativeTalent();
-					List<Talent> selectedTalents = availableTalents.subList(0,2);
-					for(Talent t:selectedTalents){
-						TalentButton.addTalent(t,0,1);
-					}
-					GLog.n(Messages.get(Challenges.class,"weakened_text"));
-					Sample.INSTANCE.play(Assets.Sounds.CURSED);
-				} else{
-					add(new WndNegative(0));
-				}
-			}
-			if(Dungeon.depth==6 && !Statistics.negativetalents[1]){
-				add(new WndNegative(1));
-			}
-			if(Dungeon.depth==11 && !Statistics.negativetalents[2]){
-				add(new WndNegative(2));
-			}
-			if(Dungeon.depth==21 && !Statistics.negativetalents[3]){
-				if(Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
-					List<Talent> availableTalents = Talent.getNegativeTalent();
-					List<Talent> selectedTalents = availableTalents.subList(6,8);
-					for(Talent t:selectedTalents){
-						TalentButton.addTalent(t,0,4);
-					}
-					GLog.n(Messages.get(Challenges.class,"weakened_text"));
-					Sample.INSTANCE.play(Assets.Sounds.CURSED);
-				} else{
-					add(new WndNegative(4));
-				}
-			}
-		}/*
+		WndNegative.showIfNeeded();
+		/*
 		if(Game.instance.bombExplodePos!=-1){
 			new Bomb.ConjuredBomb().explode(Game.instance.bombExplodePos);
 			Game.instance.bombExplodePos=-1;
@@ -1530,24 +1501,28 @@ public class GameScene extends PixelScene {
 	}
 
 	public static void updateFog(){
-		if (scene != null) {
+		if (fogReady()) {
 			scene.fog.updateFog();
 			scene.wallBlocking.updateMap();
 		}
 	}
 
 	public static void updateFog(int x, int y, int w, int h){
-		if (scene != null) {
+		if (fogReady()) {
 			scene.fog.updateFogArea(x, y, w, h);
 			scene.wallBlocking.updateArea(x, y, w, h);
 		}
 	}
 
 	public static void updateFog( int cell, int radius ){
-		if (scene != null) {
+		if (fogReady()) {
 			scene.fog.updateFog( cell, radius );
 			scene.wallBlocking.updateArea( cell, radius );
 		}
+	}
+
+	public static boolean fogReady(){
+		return scene != null && scene.fog != null && scene.wallBlocking != null;
 	}
 
 	public static void afterObserve() {
@@ -1701,6 +1676,245 @@ public class GameScene extends PixelScene {
 		}
 
 		return null;
+	}
+
+	public static boolean agentMinCellSelectorActive() {
+		return cellSelector != null
+				&& cellSelector.listener != null
+				&& cellSelector.listener != defaultCellListener;
+	}
+
+	public static boolean agentMinSelectCell(int cell) {
+		if (!agentMinCellSelectorActive()) {
+			return false;
+		}
+		cellSelector.select(cell, PointerEvent.LEFT);
+		return true;
+	}
+
+	public static WndBag.ItemSelector agentMinActiveItemSelector() {
+		if (scene == null) {
+			return null;
+		}
+		if (scene.inventory != null && scene.inventory.getSelector() != null) {
+			return scene.inventory.getSelector();
+		}
+		for (Gizmo g : scene.members.toArray(new Gizmo[0])) {
+			if (g instanceof WndBag) {
+				WndBag.ItemSelector selector = ((WndBag) g).getSelector();
+				if (selector != null) {
+					return selector;
+				}
+			} else if (g instanceof InventoryScroll.WndConfirmCancel) {
+				WndBag.ItemSelector selector = ((InventoryScroll.WndConfirmCancel) g).getItemSelector();
+				if (selector != null) {
+					return selector;
+				}
+			} else if (g instanceof WndUpgrade) {
+				WndBag.ItemSelector selector = ((WndUpgrade) g).getItemSelector();
+				if (selector != null) {
+					return selector;
+				}
+			}
+		}
+		return null;
+	}
+
+	public static boolean agentMinItemSelectorActive() {
+		return agentMinActiveItemSelector() != null;
+	}
+
+	public static boolean agentMinSelectItem(Item item) {
+		WndBag.ItemSelector selector = agentMinActiveItemSelector();
+		if (selector == null || item == null || !selector.itemSelectable(item)) {
+			return false;
+		}
+		if (selector.hideAfterSelecting() && scene != null) {
+			if (scene.inventory != null && scene.inventory.getSelector() == selector) {
+				scene.inventory.setSelector(null);
+			}
+			for (Gizmo g : scene.members.toArray(new Gizmo[0])) {
+				if (g instanceof WndBag && ((WndBag) g).getSelector() == selector) {
+					((WndBag) g).hide();
+				} else if (g instanceof Window) {
+					if (g instanceof InventoryScroll.WndConfirmCancel
+							&& ((InventoryScroll.WndConfirmCancel) g).getItemSelector() == selector) {
+						((Window) g).hide();
+					} else if (g instanceof WndUpgrade
+							&& ((WndUpgrade) g).getItemSelector() == selector) {
+						((Window) g).hide();
+					}
+				}
+			}
+		}
+		selector.onSelect(item);
+		return true;
+	}
+
+	public static boolean agentMinCancelItemSelection() {
+		WndBag.ItemSelector selector = agentMinActiveItemSelector();
+		if (selector == null) {
+			return false;
+		}
+		if (scene != null) {
+			if (scene.inventory != null && scene.inventory.getSelector() == selector) {
+				scene.inventory.setSelector(null);
+			}
+			for (Gizmo g : scene.members.toArray(new Gizmo[0])) {
+				if (g instanceof WndBag && ((WndBag) g).getSelector() == selector) {
+					((WndBag) g).hide();
+				} else if (g instanceof Window) {
+					if (g instanceof InventoryScroll.WndConfirmCancel
+							&& ((InventoryScroll.WndConfirmCancel) g).getItemSelector() == selector) {
+						((Window) g).hide();
+					} else if (g instanceof WndUpgrade
+							&& ((WndUpgrade) g).getItemSelector() == selector) {
+						((Window) g).hide();
+					}
+				}
+			}
+		}
+		selector.onSelect(null);
+		return true;
+	}
+
+	/**
+	 * AgentMin only: terminate every transient monitor opened by an item action.
+	 * Item flows can chain a bag selector, options window and CellSelector; a
+	 * failed/cancelled choice must not leave one of those layers blocking turns.
+	 */
+	public static boolean agentMinAbortMonitors() {
+		boolean aborted = false;
+		aborted |= cancelCellSelector();
+		aborted |= agentMinCancelItemSelection();
+		aborted |= agentMinCancelOptions();
+		return aborted;
+	}
+
+	public static WndOptions agentMinActiveOptions() {
+		if (scene == null) {
+			return null;
+		}
+		Gizmo[] members = scene.members.toArray(new Gizmo[0]);
+		for (int i = members.length - 1; i >= 0; i--) {
+			Gizmo g = members[i];
+			if (g instanceof WndOptions) {
+				if (g instanceof InventoryScroll.WndConfirmCancel
+						&& ((InventoryScroll.WndConfirmCancel) g).getItemSelector() != null) {
+					continue;
+				}
+				if (g instanceof WndUpgrade
+						&& ((WndUpgrade) g).getItemSelector() != null) {
+					continue;
+				}
+				return (WndOptions) g;
+			}
+		}
+		return null;
+	}
+
+	public static StoneOfIntuition.WndGuess agentMinActiveIntuitionGuess() {
+		if (scene == null) {
+			return null;
+		}
+		Gizmo[] members = scene.members.toArray(new Gizmo[0]);
+		for (int i = members.length - 1; i >= 0; i--) {
+			Gizmo g = members[i];
+			if (g instanceof StoneOfIntuition.WndGuess) {
+				return (StoneOfIntuition.WndGuess) g;
+			}
+		}
+		return null;
+	}
+
+	public static WndClericSpells agentMinActiveClericSpells() {
+		if (scene == null) {
+			return null;
+		}
+		Gizmo[] members = scene.members.toArray(new Gizmo[0]);
+		for (int i = members.length - 1; i >= 0; i--) {
+			Gizmo g = members[i];
+			if (g instanceof WndClericSpells) {
+				return (WndClericSpells) g;
+			}
+		}
+		return null;
+	}
+
+	public static WndClericSpells1 agentMinActiveClericSpells1() {
+		if (scene == null) {
+			return null;
+		}
+		Gizmo[] members = scene.members.toArray(new Gizmo[0]);
+		for (int i = members.length - 1; i >= 0; i--) {
+			Gizmo g = members[i];
+			if (g instanceof WndClericSpells1) {
+				return (WndClericSpells1) g;
+			}
+		}
+		return null;
+	}
+
+	public static int agentMinOptionCount() {
+		StoneOfIntuition.WndGuess intuitionGuess = agentMinActiveIntuitionGuess();
+		if (intuitionGuess != null) {
+			return intuitionGuess.agentMinOptionCount();
+		}
+		WndClericSpells clericSpells = agentMinActiveClericSpells();
+		if (clericSpells != null) {
+			return clericSpells.agentMinOptionCount();
+		}
+		WndClericSpells1 rubbingsSpells = agentMinActiveClericSpells1();
+		if (rubbingsSpells != null) {
+			return rubbingsSpells.agentMinOptionCount();
+		}
+		WndOptions options = agentMinActiveOptions();
+		return options == null ? 0 : options.agentMinOptionCount();
+	}
+
+	public static boolean agentMinOptionsActive() {
+		return agentMinOptionCount() > 0;
+	}
+
+	public static boolean agentMinSelectOption(int index) {
+		StoneOfIntuition.WndGuess intuitionGuess = agentMinActiveIntuitionGuess();
+		if (intuitionGuess != null) {
+			return intuitionGuess.agentMinSelectOption(index);
+		}
+		WndClericSpells clericSpells = agentMinActiveClericSpells();
+		if (clericSpells != null) {
+			return clericSpells.agentMinSelectOption(index);
+		}
+		WndClericSpells1 rubbingsSpells = agentMinActiveClericSpells1();
+		if (rubbingsSpells != null) {
+			return rubbingsSpells.agentMinSelectOption(index);
+		}
+		WndOptions options = agentMinActiveOptions();
+		return options != null && options.agentMinSelectOption(index);
+	}
+
+	public static boolean agentMinCancelOptions() {
+		StoneOfIntuition.WndGuess intuitionGuess = agentMinActiveIntuitionGuess();
+		if (intuitionGuess != null) {
+			intuitionGuess.hide();
+			return true;
+		}
+		WndClericSpells clericSpells = agentMinActiveClericSpells();
+		if (clericSpells != null) {
+			clericSpells.hide();
+			return true;
+		}
+		WndClericSpells1 rubbingsSpells = agentMinActiveClericSpells1();
+		if (rubbingsSpells != null) {
+			rubbingsSpells.hide();
+			return true;
+		}
+		WndOptions options = agentMinActiveOptions();
+		if (options != null) {
+			options.hide();
+			return true;
+		}
+		return false;
 	}
 
 	//logic for preserving inventory selection windows on scene reset (e.g. via auto-rotate)

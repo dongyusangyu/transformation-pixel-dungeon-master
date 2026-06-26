@@ -65,6 +65,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.utils.Bundlable;
@@ -198,11 +199,12 @@ public class SpiritForm extends ClericSpell {
 
 	}
 
-	public static void applyActiveArtifactEffect(ClassArmor armor, Artifact effect){
+	public static boolean applyActiveArtifactEffect(ClassArmor armor, Artifact effect){
 		if (effect instanceof AlchemistsToolkit){
 			Talent.onArtifactUsed(hero);
 			AlchemyScene.assignToolkit((AlchemistsToolkit) effect);
 			Game.switchScene(AlchemyScene.class);
+			return true;
 
 		} else if (effect instanceof DriedRose){
 			ArrayList<Integer> spawnPoints = new ArrayList<>();
@@ -220,21 +222,25 @@ public class SpiritForm extends ClericSpell {
 			}
 			Talent.onArtifactUsed(hero);
 			hero.spendAndNext(1f);
+			return true;
 
 		} else if (effect instanceof EtherealChains){
 			GameScene.selectCell(((EtherealChains) effect).caster);
 			if (Dungeon.quickslot.contains(armor)) {
 				QuickSlotButton.useTargeting(Dungeon.quickslot.getSlot(armor));
 			}
+			return true;
 
 		} else if (effect instanceof HornOfPlenty){
 			((HornOfPlenty) effect).doEatEffect(hero, 1);
+			return true;
 
 		} else if (effect instanceof MasterThievesArmband){
 			GameScene.selectCell(((MasterThievesArmband) effect).targeter);
 			if (Dungeon.quickslot.contains(armor)) {
 				QuickSlotButton.useTargeting(Dungeon.quickslot.getSlot(armor));
 			}
+			return true;
 
 		} else if (effect instanceof SandalsOfNature){
 			((SandalsOfNature) effect).curSeedEffect = Random.oneOf(
@@ -246,27 +252,44 @@ public class SpiritForm extends ClericSpell {
 			if (Dungeon.quickslot.contains(armor)) {
 				QuickSlotButton.useTargeting(Dungeon.quickslot.getSlot(armor));
 			}
+			return true;
 
 		} else if (effect instanceof TalismanOfForesight){
 			GameScene.selectCell(((TalismanOfForesight) effect).scry);
+			return true;
 
 		} else if (effect instanceof TimekeepersHourglass){
 			Buff.affect(hero, Swiftthistle.TimeBubble.class).reset(artifactLevel());
 			hero.spendAndNext(1f);
+			return true;
 
 		} else if (effect instanceof UnstableSpellbook) {
 			((UnstableSpellbook) effect).doReadEffect(hero);
+			return true;
 		} else if (effect instanceof InstructionTool){
-			Mob m = ((InstructionTool) effect).createDrone(1,InstructionTool.Drone.class);
-			m.HT=(int)(0.1f*artifactLevel()*hero.HT);
-			m.HP=m.HT;
+			if (InstructionTool.reachedMaxDrones()){
+				GLog.w(Messages.get(Trinity.class, "max_drone"));
+				return false;
+			}
+			Mob createdDrone = ((InstructionTool) effect).createDrone(1, InstructionTool.Drone.class);
+			if (createdDrone == null){
+				return false;
+			}
+			int droneHT = (int) (0.1f * artifactLevel() * hero.HT);
+			createdDrone.HT = droneHT;
+			createdDrone.HP = droneHT;
+			return true;
 		} else if (effect instanceof Shuriken_Box){
 			GameScene.selectCell((( Shuriken_Box) effect).shooter);
+			return true;
 		} else if (effect instanceof CloakOfShadows){
 			Buff.affect(hero, Invisibility.class,artifactLevel());
+			return true;
 		}else if (effect instanceof SkeletonKey){
 			GameScene.selectCell(((SkeletonKey) effect).targeter);
+			return true;
 		}
+		return false;
 	}
 
 }

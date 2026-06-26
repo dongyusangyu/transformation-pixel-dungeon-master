@@ -53,6 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotio
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
@@ -651,6 +652,8 @@ public class WndJournal extends WndTabbed {
 		private static final int TALENT_IDX = 4;
 
 		private ScrollingGridPane grid;
+		private RedButton talentSortButton;
+		private static TalentCatalog.SortMode talentSortMode = TalentCatalog.SortMode.DEFAULT;
 		
 		@Override
 		protected void createChildren() {
@@ -662,6 +665,7 @@ public class WndJournal extends WndTabbed {
 					protected void onClick() {
 						currentItemIdx = idx;
 						updateList(true);
+
 					}
 				};
 				add( itemButtons[i] );
@@ -679,6 +683,15 @@ public class WndJournal extends WndTabbed {
 				}
 			};
 			add( grid );
+			talentSortButton = new RedButton("") {
+				@Override
+				protected void onClick() {
+					talentSortMode = talentSortMode.next();
+					updateTalentSortButton();
+					updateList(false);
+				}
+			};
+			add(talentSortButton);
 		}
 		
 		@Override
@@ -696,10 +709,9 @@ public class WndJournal extends WndTabbed {
 				PixelScene.align(itemButtons[i]);
 			}
 			
-			grid.setRect(x,
-					itemButtons[NUM_BUTTONS-1].bottom() + 1,
-					width,
-					height - itemButtons[NUM_BUTTONS-1].height() - 1);
+			updateTalentSortButton();
+			positionTalentSortButton();
+			grid.setRect(x, gridTop(), width, height - (gridTop() - y));
 		}
 		
 		public void updateList(boolean isup) {
@@ -793,10 +805,12 @@ public class WndJournal extends WndTabbed {
 
 
 				grid.addHeader("_" + Messages.get(this, "title_talent") + "_ " , 9, true);
+                updateTalentSortButton();
+                positionTalentSortButton();
 
 				for (TalentCatalog talent: TalentCatalog.values()){
 					grid.addHeader("_" + Messages.titleCase(talent.title()) + "_ ", 7, true);
-					addGridTalent(grid, talent.entities2());
+					addGridTalent(grid, talent.entities(talentSortMode));
 				}
 
 			} else {
@@ -847,10 +861,36 @@ public class WndJournal extends WndTabbed {
 				}
 			}
 
-			grid.setRect(x, itemButtons[NUM_BUTTONS-1].bottom() + 1, width,
-					height - itemButtons[NUM_BUTTONS-1].height() - 1);
+			positionTalentSortButton();
+			grid.setRect(x, gridTop(), width, height - (gridTop() - y));
 
 			grid.scrollTo(0, scrollPositions[currentItemIdx]);
+		}
+
+		private float gridTop(){
+			if (currentItemIdx == TALENT_IDX && talentSortButton != null) {
+				return talentSortButton.bottom() + 1;
+			}
+			return itemButtons[NUM_BUTTONS-1].bottom() + 1;
+		}
+
+		private void updateTalentSortButton(){
+			if (talentSortButton == null) {
+				return;
+			}
+			boolean talentTab = currentItemIdx == TALENT_IDX;
+			talentSortButton.visible = talentSortButton.active = talentTab;
+			talentSortButton.text(Messages.get(TalentCatalog.class, "sort_button", talentSortMode.title()));
+			talentSortButton.textColor(Window.TITLE_COLOR);
+		}
+
+		private void positionTalentSortButton(){
+			if (talentSortButton != null && currentItemIdx == TALENT_IDX) {
+				talentSortButton.setRect(x, itemButtons[NUM_BUTTONS-1].bottom() + 1, width, 18);
+                talentSortButton.visible=true;
+			}else if(talentSortButton != null ){
+                talentSortButton.visible=false;
+            }
 		}
 		
 	}
@@ -860,6 +900,7 @@ public class WndJournal extends WndTabbed {
 		for (Class<?> itemClass : classes) {
 
 			boolean seen = Catalog.isSeen(itemClass);;
+			boolean unidentifiedDisplay = !seen;
 			ItemSprite sprite = null;
 			Image secondIcon = null;
 			String title = "";
@@ -868,6 +909,26 @@ public class WndJournal extends WndTabbed {
 			if (Item.class.isAssignableFrom(itemClass)) {
 
 				Item item = (Item) Reflection.newInstance(itemClass);
+				boolean randomModeUnknownWand = false;
+
+				if (item instanceof Wand) {
+					if (hero != null && hero.randomMode) {
+						boolean knownWand = seen && Wand.isKnown(itemClass.asSubclass(Wand.class));
+						randomModeUnknownWand = !knownWand;
+						if (knownWand) {
+							item.image = Wand.randomModeImageForClass(itemClass);
+						} else {
+							item.image = ItemSpriteSheet.WAND_HOLDER;
+						}
+						if (seen || knownWand) {
+							item.icon = Wand.randomModeIconForClass(itemClass);
+						} else {
+							item.icon = -1;
+						}
+					} else {
+						item.icon = -1;
+					}
+				}
 
 				if (seen) {
 					if (item instanceof Ring) {
@@ -889,18 +950,14 @@ public class WndJournal extends WndTabbed {
 					desc = Messages.get(CatalogTab.class, "not_seen_item");
 					desc += "\n\n" + Messages.get(item, "discover_hint");
 				} else {
-					title = Messages.titleCase( item.name() );
+					title = randomModeUnknownWand ? "???" : Messages.titleCase( item.name() );
 					//some items don't include direct stats, generally when they're not applicable
 					if (item instanceof ClassArmor || item instanceof SpiritBow || item instanceof Tatteki || item instanceof RitualDagger){
 						desc += item.desc();
 					} else {
 						desc += item.info();
 					}
-					if (item instanceof MeleeWeapon && hero == null && !(item instanceof RitualDagger)){
-						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
-					}else if(hero != null && item instanceof MeleeWeapon && hero.heroClass!=HeroClass.DUELIST && !hero.hasTalent(Talent.MARTIAL_TRAIN) && !(item instanceof RitualDagger)){
-						desc += "\n\n" + ((MeleeWeapon)item).abilityInfo();
-					}
+
 
 					if (Catalog.useCount(itemClass) > 1) {
 						if (item.isUpgradable() || item instanceof Artifact) {
@@ -985,7 +1042,7 @@ public class WndJournal extends WndTabbed {
 			if (secondIcon != null){
 				gridItem.addSecondIcon(secondIcon);
 			}
-			if (!seen) {
+			if (unidentifiedDisplay) {
 				gridItem.hardLightBG(2f, 1f, 2f);
 			}
 			if(title.contains(inputtext) || desc.contains(inputtext) || inputtext.length()==0){

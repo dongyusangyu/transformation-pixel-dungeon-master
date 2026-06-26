@@ -167,7 +167,7 @@ public class Wraith extends Mob {
 			Wraith w;
 			//if no wraith type is specified, 1/100 chance for exotic, otherwise normal
 			if (wraithClass == null){
-				float altChance = 1/100f * RatSkull.exoticChanceMultiplier();
+				float altChance = Dungeon.hero != null && Dungeon.hero.randomMode ? 0.1f * RatSkull.exoticChanceMultiplier() : 1/100f * RatSkull.exoticChanceMultiplier();
 				if (Random.Float() < altChance){
 					w = new TormentedSpirit();
 				} else {

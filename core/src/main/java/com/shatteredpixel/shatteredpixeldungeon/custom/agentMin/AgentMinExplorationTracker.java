@@ -494,8 +494,12 @@ public class AgentMinExplorationTracker {
 			for (int cell = 0; cell < length; cell++) {
 				int code = codeAt(state, cell);
 				boolean known = code != AgentMinState.CELL_UNKNOWN;
-				boolean door = known && AgentMinStateBuilder.doorChannelValue(code & 0xFFFF) != 0;
-				traversable[cell] = known && (((code & AgentMinState.FLAG_PASSABLE) != 0) || door) && (code & AgentMinState.FLAG_SOLID) == 0;
+				int doorValue = known ? AgentMinStateBuilder.doorChannelValue(code & 0xFFFF) : 0;
+				boolean door = doorValue != 0;
+				boolean passableDoor = doorValue > 0;
+				traversable[cell] = known
+						&& (((code & AgentMinState.FLAG_PASSABLE) != 0) || passableDoor)
+						&& (((code & AgentMinState.FLAG_SOLID) == 0) || passableDoor);
 				if (door && !passedDoors.contains(doorKey(cell))) {
 					frontier[cell] = true;
 				} else if (traversable[cell]) {

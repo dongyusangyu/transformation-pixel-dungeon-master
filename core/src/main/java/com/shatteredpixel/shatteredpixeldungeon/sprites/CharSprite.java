@@ -512,11 +512,13 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	}
 
 	public final HashSet<State> stateAdditions = new HashSet<>();
+	private final HashSet<State> activeStates = new HashSet<>();
 
 	public void add( State state ) {
 		//instant as it just changes an animation property that will get read later
 		if (state == State.PARALYSED){
 			paused = true;
+			activeStates.add(state);
 		} else {
 			synchronized (State.class) {
 				stateRemovals.remove(state);
@@ -544,17 +546,19 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		}
 	}
 	public boolean isState( State state ) {
-		//instant as it just changes an animation property that will get read later
-		if(stateAdditions.contains(state)){
-			return true;
-		}else{
-			return false;
+		synchronized (State.class) {
+            if(stateAdditions==null || activeStates==null || stateRemovals==null) return false;
+			return stateAdditions.contains(state)
+					|| (activeStates.contains(state) && !stateRemovals.contains(state));
 		}
-
 	}
 
 	private int auraColor = 0;
 	private int auraRays = 0;
+
+	private float invisibleAlpha() {
+		return this instanceof HeroSprite ? 0.4f : 0.2f;
+	}
 
 	//Aura needs color and ray count data too
 	public void aura( int color, int nRays ){
@@ -580,11 +584,8 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				break;
 			case INVISIBLE:
 				if (invisible != null) invisible.killAndErase();
-				if(this instanceof HeroSprite){
-					invisible = new AlphaTweener(this, 0.4f, 0.4f);
-				}else{
-					invisible = new AlphaTweener(this, 0.2f, 0.4f);
-				}
+				invisible = null;
+				float targetAlpha = invisibleAlpha();
 				if(health!=null){
 					health.killAndErase();
 					health=null;
@@ -593,10 +594,14 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 
 
 
-				if (parent != null) {
+				if (!SPDSettings.charAnimations()) {
+					alpha(targetAlpha);
+				} else if (parent != null) {
+					invisible = new AlphaTweener(this, targetAlpha, 0.4f);
 					parent.add(invisible);
-				} else
-					alpha(0.4f);
+				} else {
+					alpha(targetAlpha);
+				}
 				break;
 			case PARALYSED:
 				paused = true;
@@ -685,6 +690,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				}
 				break;
 		}
+		activeStates.add(state);
 	}
 
 	private final HashSet<State> stateRemovals = new HashSet<>();
@@ -693,6 +699,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		//instant as it just changes an animation property that will get read later
 		if (state == State.PARALYSED){
 			paused = false;
+			activeStates.remove(state);
 		} else {
 			synchronized (State.class) {
 				stateAdditions.remove(state);
@@ -811,6 +818,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				}
 				break;
 		}
+		activeStates.remove(state);
 	}
 	
 	@Override
@@ -915,8 +923,8 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	@Override
 	public void resetColor() {
 		super.resetColor();
-		if (invisible != null){
-			alpha(0.4f);
+		if (isState(State.INVISIBLE)){
+			alpha(invisibleAlpha());
 		}
 	}
 	

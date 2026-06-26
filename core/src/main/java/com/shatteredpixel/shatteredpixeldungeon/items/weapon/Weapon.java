@@ -97,6 +97,7 @@ import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 abstract public class Weapon extends KindOfWeapon {
 
@@ -138,6 +139,7 @@ abstract public class Weapon extends KindOfWeapon {
 	public boolean enchantHardened = false;
 	public boolean curseInfusionBonus = false;
 	public boolean masteryPotionBonus = false;
+	public int randomModeSTRReqOffset = 0;
 	
 	@Override
 	public int proc( Char attacker, Char defender, int damage ) {
@@ -314,6 +316,7 @@ abstract public class Weapon extends KindOfWeapon {
 	private static final String ENCHANT_HARDENED = "enchant_hardened";
 	private static final String CURSE_INFUSION_BONUS = "curse_infusion_bonus";
 	private static final String MASTERY_POTION_BONUS = "mastery_potion_bonus";
+	private static final String RANDOM_MODE_STR_REQ_OFFSET = "random_mode_str_req_offset";
 	private static final String AUGMENT	        = "augment";
 
 	@Override
@@ -325,6 +328,7 @@ abstract public class Weapon extends KindOfWeapon {
 		bundle.put( ENCHANT_HARDENED, enchantHardened );
 		bundle.put( CURSE_INFUSION_BONUS, curseInfusionBonus );
 		bundle.put( MASTERY_POTION_BONUS, masteryPotionBonus );
+		bundle.put( RANDOM_MODE_STR_REQ_OFFSET, randomModeSTRReqOffset );
 		bundle.put( AUGMENT, augment );
 	}
 	
@@ -337,6 +341,7 @@ abstract public class Weapon extends KindOfWeapon {
 		enchantHardened = bundle.getBoolean( ENCHANT_HARDENED );
 		curseInfusionBonus = bundle.getBoolean( CURSE_INFUSION_BONUS );
 		masteryPotionBonus = bundle.getBoolean( MASTERY_POTION_BONUS );
+		randomModeSTRReqOffset = bundle.getInt( RANDOM_MODE_STR_REQ_OFFSET );
 
 		augment = bundle.getEnum(AUGMENT, Augment.class);
 	}
@@ -458,9 +463,9 @@ abstract public class Weapon extends KindOfWeapon {
 
 	public int STRReq(){
 		if(hero != null && hasEnchant(Heavy.class,hero)){
-			return STRReq(level())+(int)(2*Enchantment.genericProcChanceMultiplier(hero));
+			return STRReq(level()) + randomModeSTRReqOffset + (int)(2*Enchantment.genericProcChanceMultiplier(hero));
 		}else{
-		return STRReq(level());}
+		return STRReq(level()) + randomModeSTRReqOffset;}
 	}
 
 	public abstract int STRReq(int lvl);
@@ -556,6 +561,9 @@ abstract public class Weapon extends KindOfWeapon {
 			}
 		}
 		level(n);
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			randomModeSTRReqOffset = Random.IntRange(-2, 1);
+		}
 
 		//we use a separate RNG here so that variance due to things like parchment scrap
 		//does not affect levelgen
@@ -678,6 +686,8 @@ abstract public class Weapon extends KindOfWeapon {
 				Sacrificial.class, Wayward.class, Polarized.class, Friendly.class,
 				Heavy.class
 		};
+
+		private static final long RANDOM_MODE_POOL_SEED = 0x5EED5A11A71E1L;
 		
 			
 		public abstract int proc( Weapon weapon, Char attacker, Char defender, int damage );
@@ -761,9 +771,44 @@ abstract public class Weapon extends KindOfWeapon {
 		}
 		
 		public abstract ItemSprite.Glowing glowing();
+
+		private static Class<?>[] pool(Class<?>[] original, int poolIndex) {
+			if (Dungeon.hero == null || !Dungeon.hero.randomMode) {
+				return original;
+			}
+			ArrayList<Class<?>> enchants = new ArrayList<>();
+			enchants.addAll(Arrays.asList(common));
+			enchants.addAll(Arrays.asList(uncommon));
+			enchants.addAll(Arrays.asList(rare));
+			enchants.addAll(Arrays.asList(curses));
+			Collections.shuffle(enchants, new java.util.Random(Dungeon.seed ^ RANDOM_MODE_POOL_SEED));
+
+			int start = 0;
+			if (poolIndex > 0) start += common.length;
+			if (poolIndex > 1) start += uncommon.length;
+			if (poolIndex > 2) start += rare.length;
+
+			Class<?>[] result = new Class<?>[original.length];
+			for (int i = 0; i < result.length; i++) {
+				result[i] = enchants.get(start + i);
+			}
+			return result;
+		}
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment random( Class<? extends Enchantment> ... toIgnore ) {
+			if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+				ArrayList<Class<?>> enchants = new ArrayList<>();
+				enchants.addAll(Arrays.asList(pool(common, 0)));
+				enchants.addAll(Arrays.asList(pool(uncommon, 1)));
+				enchants.addAll(Arrays.asList(pool(rare, 2)));
+				enchants.removeAll(Arrays.asList(toIgnore));
+				if (enchants.isEmpty()) {
+					return random();
+				} else {
+					return (Enchantment) Reflection.newInstance(Random.element(enchants));
+				}
+			}
 			switch(Random.chances(typeChances)){
 				case 0: default:
 					return randomCommon( toIgnore );
@@ -776,7 +821,7 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomCommon( Class<? extends Enchantment> ... toIgnore ) {
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(common));
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(pool(common, 0)));
 			enchants.removeAll(Arrays.asList(toIgnore));
 			if (enchants.isEmpty()) {
 				return random();
@@ -787,7 +832,7 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomUncommon( Class<? extends Enchantment> ... toIgnore ) {
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(uncommon));
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(pool(uncommon, 1)));
 			enchants.removeAll(Arrays.asList(toIgnore));
 			if (enchants.isEmpty()) {
 				return random();
@@ -798,7 +843,7 @@ abstract public class Weapon extends KindOfWeapon {
 		
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomRare( Class<? extends Enchantment> ... toIgnore ) {
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(rare));
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(pool(rare, 2)));
 			enchants.removeAll(Arrays.asList(toIgnore));
 			if (enchants.isEmpty()) {
 				return random();
@@ -809,7 +854,7 @@ abstract public class Weapon extends KindOfWeapon {
 
 		@SuppressWarnings("unchecked")
 		public static Enchantment randomCurse( Class<? extends Enchantment> ... toIgnore ){
-			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(curses));
+			ArrayList<Class<?>> enchants = new ArrayList<>(Arrays.asList(pool(curses, 3)));
 			enchants.removeAll(Arrays.asList(toIgnore));
 			if (enchants.isEmpty()) {
 				return random();

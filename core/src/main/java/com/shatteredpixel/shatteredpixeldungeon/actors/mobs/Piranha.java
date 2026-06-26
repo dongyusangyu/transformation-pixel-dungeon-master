@@ -73,8 +73,9 @@ public class Piranha extends Mob {
 	
 	@Override
 	protected boolean act() {
-		if(hero.pointsNegative(Talent.LAND_SWIMMING)>0 && !Dungeon.level.water[pos] ){
-			if(hero.pointsNegative(Talent.LAND_SWIMMING)==2){
+		Hero currentHero = hero;
+		if(currentHero != null && currentHero.pointsNegative(Talent.LAND_SWIMMING)>0 && !Dungeon.level.water[pos] ){
+			if(currentHero.pointsNegative(Talent.LAND_SWIMMING)==2){
 				Buff.affect(this, Stamina.class,1);
 			}
 			return super.act();
@@ -131,7 +132,8 @@ public class Piranha extends Mob {
 
 	@Override
 	public void damage(int dmg, Object src) {
-		if(hero.hasTalent(Talent.FISHING_TIME)){
+		Hero currentHero = hero;
+		if(currentHero != null && currentHero.hasTalent(Talent.FISHING_TIME)){
 			dmg*=1.3;
 		}
 		super.damage(dmg, src);
@@ -224,8 +226,9 @@ public class Piranha extends Mob {
 	}
 
 	public static Mob random(){
-		float altChance = 1/50f * RatSkull.exoticChanceMultiplier();
-		if(hero.pointsNegative(Talent.LAND_SWIMMING)>0){
+		float altChance = hero != null && hero.randomMode ? 0.2f * RatSkull.exoticChanceMultiplier() : 1/50f * RatSkull.exoticChanceMultiplier();
+		Hero currentHero = hero;
+		if(currentHero != null && currentHero.pointsNegative(Talent.LAND_SWIMMING)>0){
 			if (Random.Float() < altChance){
 				return new PhantomLandPiranha();
 			} else {

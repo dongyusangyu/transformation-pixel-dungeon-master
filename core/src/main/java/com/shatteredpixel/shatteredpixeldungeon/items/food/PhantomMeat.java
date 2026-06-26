@@ -64,7 +64,7 @@ public class PhantomMeat extends Food {
 	}
 
 	public static void effect(Hero hero){
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,5);
         }
 		Barkskin.conditionallyAppend( hero, hero.HT / 4, 1 );

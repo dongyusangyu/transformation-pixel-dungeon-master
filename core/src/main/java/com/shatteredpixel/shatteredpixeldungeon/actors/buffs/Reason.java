@@ -290,7 +290,7 @@ public class Reason extends Buff implements ActionIndicator.Action {
         if(kaoyan){
             kaoyan=false;
             int virtueChance = 25;
-            if (target instanceof Hero && ((Hero) target).heroClass == HeroClass.FRIAR && ((Hero) target).hasTalent(Talent.HUMAN_GLORY)){
+            if (target instanceof Hero && target.buff(Reason.class)!=null && ((Hero) target).hasTalent(Talent.HUMAN_GLORY)){
                 virtueChance += 5 * ((Hero) target).pointsInTalent(Talent.HUMAN_GLORY);
             }
             if(Random.Int(100) < virtueChance){
@@ -334,7 +334,7 @@ public class Reason extends Buff implements ActionIndicator.Action {
 
     @Override
     public int indicatorColor() {
-        return 0x000000;
+        return 0x444444;
     }
 
 

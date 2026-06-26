@@ -77,7 +77,7 @@ public class TestTalent  extends TestGenerator {
             top = text.bottom() + 2;
 
             ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
-            Talent.initClassTalents(hero.heroClass, talents, hero.metamorphedTalents, new LinkedHashMap<>());
+            Talent.initClassTalents(hero, talents, hero.metamorphedTalents, new LinkedHashMap<>());
 
 
             for (LinkedHashMap<Talent, Integer> tier : talents) {

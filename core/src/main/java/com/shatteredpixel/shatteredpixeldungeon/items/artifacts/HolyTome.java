@@ -332,11 +332,14 @@ public class HolyTome extends Artifact {
 
 		@Override
 		public String actionName() {
-			return quickSpell.name();
+			return quickSpell == null ? Messages.get(HolyTome.this, "no_spell") : quickSpell.name();
 		}
 
 		@Override
 		public int actionIcon() {
+			if (quickSpell == null){
+				return HeroIcon.NONE;
+			}
 			if(quickSpell.icon()<128){
 				return quickSpell.icon() + HeroIcon.SPELL_ACTION_OFFSET;
 			}else{
@@ -347,6 +350,9 @@ public class HolyTome extends Artifact {
 
 		@Override
 		public int indicatorColor() {
+			if (quickSpell == null){
+				return 0x002157;
+			}
 			if (quickSpell == GuidingLight.INSTANCE && quickSpell.chargeUse(Dungeon.hero) == 0){
 				return 0x0063ff;
 			} else {
@@ -385,6 +391,11 @@ public class HolyTome extends Artifact {
 					QuickSlotButton.useTargeting(Dungeon.quickslot.getSlot(HolyTome.this));
 				}
 			}
+		}
+
+		@Override
+		public boolean usable() {
+			return quickSpell != null;
 		}
 	}
 

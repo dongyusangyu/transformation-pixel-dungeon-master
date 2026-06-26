@@ -38,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
@@ -52,6 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.curriculum.AgentMinCurriculum;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -62,6 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfWarding;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
@@ -271,6 +274,7 @@ public class Dungeon {
 			Scroll.initLabels();
 			Potion.initColors();
 			Ring.initGems();
+			Wand.initKnownTypes();
 
 			SpecialRoom.initForRun();
 			SecretRoom.initForRun();
@@ -310,6 +314,7 @@ public class Dungeon {
 		
 		Badges.reset();
 		skin=GamesInProgress.skin;
+		HeroRandomizer.setupNewRun( hero, GamesInProgress.selectedClass );
 		GamesInProgress.selectedClass.initHero( hero );
 	}
 
@@ -329,6 +334,7 @@ public class Dungeon {
 		Scroll.initLabels();
 		Potion.initColors();
 		Ring.initGems();
+		Wand.initKnownTypes();
 
 		SpecialRoom.initForRun();
 		SecretRoom.initForRun();
@@ -391,7 +397,10 @@ public class Dungeon {
 		Actor.clear();
 		
 		Level level;
-		if (branch == 0) {
+		Level curriculumLevel = AgentMinCurriculum.createLevel(depth, branch);
+		if (curriculumLevel != null) {
+			level = curriculumLevel;
+		} else if (branch == 0) {
 			switch (depth) {
 				/*
 				case 1:
@@ -822,6 +831,7 @@ public class Dungeon {
 			Scroll.save( bundle );
 			Potion.save( bundle );
 			Ring.save( bundle );
+			Wand.save( bundle );
 
 			Actor.storeNextID( bundle );
 			
@@ -899,6 +909,7 @@ public class Dungeon {
 		Scroll.restore( bundle );
 		Potion.restore( bundle );
 		Ring.restore( bundle );
+		Wand.restore( bundle );
 
 		quickslot.restorePlaceholders( bundle );
 		
@@ -1058,6 +1069,7 @@ public class Dungeon {
 			}else{
 				Rankings.INSTANCE.submit( false, cause );
 			}
+			AgentMinRewardTracker.writeEpisodeEndLog(false, Statistics.totalScore);
 
 		}
 	}
@@ -1073,6 +1085,7 @@ public class Dungeon {
 		}else{
 			Rankings.INSTANCE.submit( true, cause );
 		}
+		AgentMinRewardTracker.writeEpisodeEndLog(true, Statistics.totalScore);
 
 	}
 
@@ -1084,6 +1097,9 @@ public class Dungeon {
 
 	//default to recomputing based on max hero vision, in case vision just shrank/grew
 	public static void observe(){
+		if (Dungeon.hero == null){
+			return;
+		}
 		int dist = Math.max(Dungeon.hero.viewDistance, 8);
 		dist *= 1f + 0.25f*Dungeon.hero.pointsInTalent(Talent.FARSIGHT);
 		//dist *= 1f - 0.2f*Dungeon.hero.pointsNegative(Talent.SHORTSIGHTED);

@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.services.cloud;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Net;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SaveManager;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -12,6 +13,7 @@ import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
 
 import java.io.ByteArrayInputStream;
+import java.net.URLEncoder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -33,6 +35,8 @@ public class CloudSyncService {
         Journal.saveGlobal(true);
 
         Bundle payload = new Bundle();
+        payload.put("player_uuid", playerUUID());
+        payload.put("device_key", stableDeviceKey());
         payload.put("device_ip", deviceKey());
         payload.put("local_ip", localIp());
         payload.put("version", Game.versionCode);
@@ -54,7 +58,10 @@ public class CloudSyncService {
 
     public static void syncServerData(Callback callback){
         Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.GET);
-        request.setUrl(SERVER_URL + "/api/download?device_ip=" + deviceKey() + "&t=" + System.currentTimeMillis());
+        request.setUrl(SERVER_URL + "/api/download?player_uuid=" + encode(playerUUID())
+                + "&device_key=" + encode(stableDeviceKey())
+                + "&device_ip=" + encode(deviceKey())
+                + "&t=" + System.currentTimeMillis());
         request.setTimeOut(15000);
         Gdx.net.sendHttpRequest(request, new Net.HttpResponseListener() {
             @Override
@@ -65,17 +72,7 @@ public class CloudSyncService {
                         fail(callback);
                         return;
                     }
-                    if (response.contains("global_data")){
-                        SaveManager.saveGlobal(response.getBundle("global_data"));
-                    }
-                    if (response.contains("talent_stats")){
-                        TalentCatalog.restoreLocalStats(response.getBundle("talent_stats"));
-                        Journal.saveGlobal(true);
-                    }
-                    if (response.contains("aggregate")){
-                        TalentCatalog.restoreServerStats(response.getBundle("aggregate"));
-                        Journal.saveGlobal(true);
-                    }
+                    applySyncResponse(response);
                     success(callback);
                 } catch (Exception e){
                     ShatteredPixelDungeon.reportException(e);
@@ -141,10 +138,7 @@ public class CloudSyncService {
                 try {
                     Bundle response = read(httpResponse.getResultAsString());
                     if (response.getBoolean("ok")){
-                        if (response.contains("aggregate")){
-                            TalentCatalog.restoreServerStats(response.getBundle("aggregate"));
-                            Journal.saveGlobal(true);
-                        }
+                        applySyncResponse(response);
                         success(callback);
                     } else {
                         fail(callback);
@@ -171,6 +165,41 @@ public class CloudSyncService {
         return Bundle.read(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8.name())));
     }
 
+    private static void applySyncResponse(Bundle response) throws Exception {
+        boolean journalChanged = false;
+        if (response.contains("player_uuid")){
+            String uuid = response.getString("player_uuid");
+            if (uuid != null && !uuid.isEmpty()){
+                SPDSettings.cloudPlayerUUID(uuid);
+            }
+        }
+        if (response.contains("global_data")){
+            SaveManager.saveGlobal(response.getBundle("global_data"));
+            refreshGlobalState();
+        }
+        if (response.contains("talent_stats")){
+            TalentCatalog.restoreLocalStats(response.getBundle("talent_stats"));
+            journalChanged = true;
+        }
+        if (response.contains("aggregate")){
+            TalentCatalog.restoreServerStats(response.getBundle("aggregate"));
+            journalChanged = true;
+        }
+        if (journalChanged){
+            Journal.saveGlobal(true);
+        }
+    }
+
+    private static void refreshGlobalState(){
+        Badges.loadGlobal();
+        Rankings.INSTANCE.records = null;
+        Rankings.INSTANCE.latestDaily = null;
+        Rankings.INSTANCE.latestDailyReplay = null;
+        Rankings.INSTANCE.dailyScoreHistory.clear();
+        Rankings.INSTANCE.load();
+        Journal.reloadGlobal();
+    }
+
     private static void success(Callback callback){
         Gdx.app.postRunnable(callback::onSuccess);
     }
@@ -186,6 +215,32 @@ public class CloudSyncService {
             SPDSettings.cloudDeviceID(stored);
         }
         return stored;
+    }
+
+    private static String playerUUID(){
+        String stored = SPDSettings.cloudPlayerUUID();
+        return stored == null ? "" : stored;
+    }
+
+    public static String currentPlayerUUID(){
+        String stored = SPDSettings.cloudPlayerUUID();
+        return stored == null ? "" : stored;
+    }
+
+    private static String stableDeviceKey(){
+        String fingerprint = Game.platform.cloudDeviceFingerprint();
+        if (fingerprint != null && !fingerprint.isEmpty()){
+            return fingerprint;
+        }
+        return "local:" + deviceKey();
+    }
+
+    private static String encode(String value){
+        try {
+            return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8.name());
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private static String localIp(){

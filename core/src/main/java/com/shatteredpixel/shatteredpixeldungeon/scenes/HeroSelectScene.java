@@ -214,9 +214,8 @@ public class HeroSelectScene extends PixelScene {
 		updateOptionsColor();
 		btnOptions.visible = false;
 
-		if (DeviceCompat.isDebug() || Badges.isUnlocked(Badges.Badge.VICTORY)){
-			add(btnOptions);
-		} else {
+		add(btnOptions);
+		if (!DeviceCompat.isDebug() && !Badges.isUnlocked(Badges.Badge.VICTORY)){
 			Dungeon.challenges = 0;
 			SPDSettings.challenges(0);
 			SPDSettings.customSeed("");
@@ -386,6 +385,8 @@ public class HeroSelectScene extends PixelScene {
 			btnOptions.icon().hardlight(1f, 1.5f, 0.67f);
 		} else if (SPDSettings.challenges() != 0){
 			btnOptions.icon().hardlight(2f, 1.33f, 0.5f);
+		} else if (SPDSettings.randomMode()){
+			btnOptions.icon().hardlight(2.25f, 2.25f, 2.25f);
 		} else {
 			btnOptions.icon().resetColor();
 		}
@@ -739,6 +740,29 @@ public class HeroSelectScene extends PixelScene {
 				add(dailyButton);
 				buttons.add(dailyButton);
 
+                StyledButton randomModeButton = new StyledButton(Chrome.Type.BLANK, Messages.get(HeroSelectScene.class, "random_mode"), 6){
+                    @Override
+                    protected void onClick() {
+                        SPDSettings.randomMode(!SPDSettings.randomMode());
+                        updateIcon();
+                        updateOptionsColor();
+                    }
+
+                    private void updateIcon() {
+                        icon(Icons.get(Icons.SHUFFLE));
+                        if (SPDSettings.randomMode()){
+                            icon(Icons.get(Icons.SHUFFLE_SLIVER));
+                        }
+                    }
+                };
+                randomModeButton.leftJustify = true;
+                randomModeButton.icon(Icons.get(Icons.SHUFFLE));
+                if (SPDSettings.randomMode()){
+                    randomModeButton.icon(Icons.get(Icons.SHUFFLE_SLIVER));
+                }
+                add(randomModeButton);
+                buttons.add(randomModeButton);
+
 				StyledButton challengeButton = new StyledButton(Chrome.Type.BLANK, Messages.get(WndChallenges.class, "title"), 6){
 					@Override
 					protected void onClick() {
@@ -770,7 +794,7 @@ public class HeroSelectScene extends PixelScene {
 					}
 				};
 				SkinButton.leftJustify = true;
-				SkinButton.icon(Icons.get(Icons.SKIN_GREY));
+				SkinButton.icon(Icons.get(SPDSettings.Skin(GamesInProgress.selectedClass)>0 ? Icons.SKIN_COLOR : Icons.SKIN_GREY));
 				add(SkinButton);
 				buttons.add(SkinButton);
 			}

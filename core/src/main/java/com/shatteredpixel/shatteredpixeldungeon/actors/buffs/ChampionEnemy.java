@@ -33,15 +33,26 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bat;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Brute;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Crab;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.ArmoredStatue;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bee;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalGuardian;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.FungalSentry;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Ghoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollExile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Guard;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Pylon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RotLasher;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Statue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Thief;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.BArray;
@@ -78,6 +89,10 @@ public abstract class ChampionEnemy extends Buff {
 	}
 	@Override
 	public boolean act() {
+		if (!(this instanceof RandomMiniBoss) && target.buff(RandomMiniBoss.class) != null) {
+			detach();
+			return true;
+		}
 		if(hero!=null && target instanceof  Mob && target.isAlive() && !(target instanceof GnollExile)){
 			((Mob)target).beckon(hero.pos);
 		}
@@ -120,7 +135,26 @@ public abstract class ChampionEnemy extends Buff {
 	public float attackSpeedFactor(){
 		return 1f;
 	}
+
+	@Override
+	public boolean attachTo(Char target) {
+		if (target != null) {
+			if (this instanceof RandomMiniBoss) {
+				for (ChampionEnemy buff : target.buffs(ChampionEnemy.class)) {
+					if (!(buff instanceof RandomMiniBoss)) {
+						return false;
+					}
+				}
+			} else if (target.buff(RandomMiniBoss.class) != null) {
+				return false;
+			}
+		}
+		return super.attachTo(target);
+	}
+
 	public static void rollGiveChampion(Char m){
+		if (m.buff(RandomMiniBoss.class) != null) return;
+
 		Class<?extends ChampionEnemy> buffCls;
 		int random = 10;
 		switch (Random.Int(random)){
@@ -144,6 +178,8 @@ public abstract class ChampionEnemy extends Buff {
 
 	public static void rollForChampion(Mob m){
 		if (Dungeon.mobsToChampion <= 0) Dungeon.mobsToChampion = 8;
+
+		if (m.buff(RandomMiniBoss.class) != null) return;
 
 		Dungeon.mobsToChampion--;
 
@@ -233,6 +269,68 @@ public abstract class ChampionEnemy extends Buff {
 
 		{
 			immunities.add(Burning.class);
+		}
+	}
+
+	public static class RandomMiniBoss extends ChampionEnemy {
+
+		{
+			color = 0xFFFFFF;
+			rays = 6;
+		}
+        @Override
+        public void fx(boolean on) {
+            if (on) target.sprite.add(CharSprite.State.MARKED);
+            else target.sprite.remove(CharSprite.State.MARKED);
+        }
+
+		@Override
+		public int icon() {
+			return BuffIndicator.MINIBOSS;
+		}
+
+		@Override
+		public boolean attachTo(Char target) {
+			if (super.attachTo(target)) {
+				int boost = Dungeon.depth * 3;
+				target.HT += boost;
+				target.HP += boost;
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public float meleeDamageFactor() {
+			return 1.12f + Dungeon.depth*0.02f;
+		}
+
+		@Override
+		public float damageTakenFactor() {
+			return 1.0f;
+		}
+
+		@Override
+		public float evasionAndAccuracyFactor() {
+			return 1.16f + Dungeon.depth*0.01f;
+		}
+
+		public static boolean validTarget(Mob mob) {
+			return mob != null
+					&& mob.alignment == Char.Alignment.ENEMY
+					&& !mob.properties().contains(Char.Property.BOSS)
+					&& !mob.properties().contains(Char.Property.MINIBOSS)
+					&& mob.buffs(ChampionEnemy.class).isEmpty()
+					&& !(mob instanceof RotLasher)
+					&& !(mob instanceof Statue)
+					&& !(mob instanceof ArmoredStatue)
+					&& !(mob instanceof CrystalGuardian)
+					&& !(mob instanceof Pylon)
+					&& !(mob instanceof FungalSentry)
+					&& !(mob instanceof DemonSpawner)
+					&& !(mob instanceof Mimic)
+					&& !(mob instanceof Piranha)
+					&& !(mob instanceof Bee);
 		}
 	}
 

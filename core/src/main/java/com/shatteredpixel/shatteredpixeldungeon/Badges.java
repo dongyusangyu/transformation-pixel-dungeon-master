@@ -277,6 +277,7 @@ public class Badges {
 		CHAMPION_4  				( alloys+5),
         BETTER_TALENT  				( alloys+6),
         TALENT2025  				( alloys+7,BadgeType.SECRET),
+        RANDOM_HERO  				( alloys+8),
 
         ;
 
@@ -1227,6 +1228,12 @@ public class Badges {
 		Badge badge = Badge.VICTORY;
 		local.add( badge );
 		displayBadge( badge );
+
+		if (hero.randomMode) {
+			badge = Badge.RANDOM_HERO;
+			local.add( badge );
+			displayBadge( badge );
+		}
 
 		badge = victoryClassBadges.get(hero.heroClass);
 		if (badge == null) return;

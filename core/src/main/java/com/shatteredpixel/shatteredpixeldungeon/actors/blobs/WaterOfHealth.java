@@ -55,7 +55,7 @@ public class WaterOfHealth extends WellWater {
 	
 	@Override
 	protected boolean affectHero( Hero hero ) {
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,100);
             if(hero.buff(Panic.class)!=null){
                 hero.buff(Panic.class).detach();

@@ -313,16 +313,23 @@ public class BrokenSeal extends Item {
 		}
 
 		public synchronized int maxShield() {
-			//metamorphed iron will logic
-			if (((Hero)target).heroClass != HeroClass.WARRIOR && ((Hero) target).hasTalent(Talent.IRON_WILL)){
-				return ((Hero) target).pointsInTalent(Talent.IRON_WILL);
+			Hero hero = (Hero)target;
+			if (armor != null && armor.isEquipped(hero) && armor.checkSeal() != null) {
+				return armor.checkSeal().maxShield(armor.tier, armor.level());
 			}
 
-			if (armor != null && armor.isEquipped((Hero)target) && armor.checkSeal() != null) {
-				return armor.checkSeal().maxShield(armor.tier, armor.level());
-			} else {
-				return 0;
+			Armor equippedArmor = hero.belongings.armor();
+			if (equippedArmor != null && equippedArmor.checkSeal() != null) {
+				armor = equippedArmor;
+				return equippedArmor.checkSeal().maxShield(equippedArmor.tier, equippedArmor.level());
 			}
+
+			//metamorphed iron will logic
+			if (hero.heroClass != HeroClass.WARRIOR && hero.hasTalent(Talent.IRON_WILL)){
+				return hero.pointsInTalent(Talent.IRON_WILL);
+			}
+
+			return 0;
 		}
 		
 		@Override

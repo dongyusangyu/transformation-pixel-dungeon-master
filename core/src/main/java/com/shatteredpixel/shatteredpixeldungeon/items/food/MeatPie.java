@@ -48,7 +48,7 @@ public class MeatPie extends Food {
 	@Override
 	protected void satisfy(Hero hero) {
 		super.satisfy( hero );
-        if(hero!=null && hero.heroClass== HeroClass.FRIAR){
+        if(hero!=null && hero.buff(Reason.class)!=null){
             Reason.gainReason(hero,10);
         }
 		Buff.affect(hero, WellFed.class).reset();

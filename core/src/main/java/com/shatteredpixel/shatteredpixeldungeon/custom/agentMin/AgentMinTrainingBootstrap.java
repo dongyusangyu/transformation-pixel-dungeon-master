@@ -46,10 +46,11 @@ public class AgentMinTrainingBootstrap {
 		}
 
 		started = true;
-		AgentMinRuntimeLog.log("starting warrior training run in slot " + slot + " (" + reason + ")");
+		HeroClass heroClass = trainingHeroClass();
+		AgentMinRuntimeLog.log("starting " + heroClass.name().toLowerCase() + " training run in slot " + slot + " (" + reason + ")");
 
 		GamesInProgress.curSlot = slot;
-		GamesInProgress.selectedClass = HeroClass.WARRIOR;
+		GamesInProgress.selectedClass = heroClass;
 		GamesInProgress.skin = 0;
 		SPDSettings.Skin(0);
 
@@ -63,6 +64,16 @@ public class AgentMinTrainingBootstrap {
 
 		Game.switchScene(InterlevelScene.class);
 		return true;
+	}
+
+	private static HeroClass trainingHeroClass() {
+		String configured = value("agentmin.hero_class", "AGENTMIN_HERO_CLASS", "WARRIOR").trim();
+		try {
+			return HeroClass.valueOf(configured.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			AgentMinRuntimeLog.log("unknown training hero class '" + configured + "', using WARRIOR");
+			return HeroClass.WARRIOR;
+		}
 	}
 
 	private static String value(String property, String env, String fallback) {

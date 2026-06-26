@@ -5,10 +5,14 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIcon;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.watabou.noosa.Image;
 
 public class DictSpriteSheet {
     public static Image createImage(int sheet){
+        if (sheet == RANDOM_MODE) {
+            return Icons.get(Icons.SHUFFLE_SLIVER);
+        }
         if(sheet<10000) {
             return new ItemSprite(sheet);
         }
@@ -346,4 +350,5 @@ public class DictSpriteSheet {
     public static final int BUFF_GLYPH_5   = 4005 + 10000;
     public static final int BUFF_ENCH_5   = 4006 + 10000;
     public static final int BUFF_REASON   = 4007 + 10000;
+    public static final int RANDOM_MODE   = -1;
 }

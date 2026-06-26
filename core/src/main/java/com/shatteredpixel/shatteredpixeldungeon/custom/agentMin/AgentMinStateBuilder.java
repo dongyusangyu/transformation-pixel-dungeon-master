@@ -13,11 +13,14 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.CrystalKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.GoldenKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.IronKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.WornKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -26,10 +29,12 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public class AgentMinStateBuilder {
 
 	private static long observationCounter;
+	private static final int ITEM_EMBEDDING_TABLE_SIZE = 512;
 
 	public static AgentMinState capture() {
 		return capture(Dungeon.hero, Dungeon.level);
@@ -146,9 +151,45 @@ public class AgentMinStateBuilder {
 				state.hero.negativeTalents.put(talent.name(), negative);
 			}
 		}
+		captureTalentSlots(state, hero);
 
 		for (Buff buff : hero.buffs()) {
 			state.hero.buffs.add(buffState(buff));
+		}
+	}
+
+	private static void captureTalentSlots(AgentMinState state, Hero hero) {
+		int[] tierLimits = new int[]{6, 6, 6, 6};
+		if (hero.talents == null) {
+			return;
+		}
+		for (int tierIndex = 0; tierIndex < tierLimits.length; tierIndex++) {
+			if (tierIndex >= hero.talents.size()) {
+				continue;
+			}
+			int slot = 0;
+			for (Map.Entry<Talent, Integer> entry : hero.talents.get(tierIndex).entrySet()) {
+				if (slot >= tierLimits[tierIndex]) {
+					break;
+				}
+				Talent talent = entry.getKey();
+				if (talent == null) {
+					slot++;
+					continue;
+				}
+				AgentMinState.TalentSlotState talentSlot = new AgentMinState.TalentSlotState();
+				talentSlot.talentName = talent.name();
+				talentSlot.talentIdentityId = Math.max(0, talent.icon());
+				talentSlot.tier = tierIndex + 1;
+				talentSlot.slot = slot;
+				talentSlot.icon = talent.icon();
+				talentSlot.points = entry.getValue() == null ? 0 : entry.getValue();
+				talentSlot.maxPoints = talent.maxPoints();
+				talentSlot.unlocked = hero.lvl >= Talent.tierLevelThresholds[Math.min(talentSlot.tier, Talent.tierLevelThresholds.length - 1)];
+				talentSlot.placeholder = talentSlot.icon == 530 || talentSlot.maxPoints <= 0 || talentSlot.talentName.startsWith("BOSS_TALENT_SLOT");
+				state.hero.talentSlots.add(talentSlot);
+				slot++;
+			}
 		}
 	}
 
@@ -161,8 +202,8 @@ public class AgentMinStateBuilder {
 		addEquipped(state, hero, "ring", belongings.ring());
 		addEquipped(state, hero, "second_weapon", belongings.secondWep());
 
-		for (Item item : belongings.backpack.items) {
-			addItemTree(state, hero, item, "backpack");
+		for (int i = 0; i < belongings.backpack.items.size(); i++) {
+			addItemTree(state, hero, belongings.backpack.items.get(i), "backpack", null, 0, i);
 		}
 
 		if (Dungeon.quickslot != null) {
@@ -172,7 +213,7 @@ public class AgentMinStateBuilder {
 				quickSlot.slot = i;
 				quickSlot.placeholder = Dungeon.quickslot.isPlaceholder(i);
 				if (item != null) {
-					quickSlot.item = itemState(hero, item, "quickslot_" + i);
+					quickSlot.item = itemState(hero, item, "quickslot_" + i, null, 0, i, -1);
 				}
 				state.inventory.quickSlots.add(quickSlot);
 			}
@@ -210,13 +251,15 @@ public class AgentMinStateBuilder {
 	}
 
 	private static int encodeCell(Level level, int cell, boolean currentFov) {
-		int code = level.map[cell] & 0xFFFF;
+		int terrain = level.map[cell];
+		int code = terrain & 0xFFFF;
+		boolean passableDoor = isPassableDoorTerrain(terrain);
 		if (level.mapped[cell]) code |= AgentMinState.FLAG_MAPPED;
 		if (level.visited[cell]) code |= AgentMinState.FLAG_VISITED;
 		if (currentFov && visible(level, cell)) code |= AgentMinState.FLAG_VISIBLE;
-		if (level.passable[cell]) code |= AgentMinState.FLAG_PASSABLE;
+		if (level.passable[cell] || passableDoor) code |= AgentMinState.FLAG_PASSABLE;
 		if (level.avoid[cell]) code |= AgentMinState.FLAG_AVOID;
-		if (level.solid[cell]) code |= AgentMinState.FLAG_SOLID;
+		if (level.solid[cell] && !passableDoor) code |= AgentMinState.FLAG_SOLID;
 		if (level.water[cell]) code |= AgentMinState.FLAG_LIQUID;
 		if (level.pit[cell]) code |= AgentMinState.FLAG_PIT;
 		Heap heap = level.heaps.get(cell);
@@ -230,9 +273,13 @@ public class AgentMinStateBuilder {
 		if (trap != null && trap.visible) code |= AgentMinState.FLAG_TRAP;
 		if (level.plants.get(cell) != null && visible(level, cell)) code |= AgentMinState.FLAG_PLANT;
 		if (level.findMob(cell) != null && visible(level, cell)) code |= AgentMinState.FLAG_MOB;
-		if (level.map[cell] == Terrain.ENTRANCE || level.map[cell] == Terrain.EXIT || level.map[cell] == Terrain.UNLOCKED_EXIT) code |= AgentMinState.FLAG_STAIRS;
-		if (doorChannelValue(level.map[cell]) != 0) code |= AgentMinState.FLAG_DOOR;
+		if (terrain == Terrain.ENTRANCE || terrain == Terrain.EXIT || terrain == Terrain.UNLOCKED_EXIT) code |= AgentMinState.FLAG_STAIRS;
+		if (doorChannelValue(terrain) != 0) code |= AgentMinState.FLAG_DOOR;
 		return code;
+	}
+
+	static boolean isPassableDoorTerrain(int terrain) {
+		return doorChannelValue(terrain) > 0;
 	}
 
 	static int doorChannelValue(int terrain) {
@@ -333,27 +380,35 @@ public class AgentMinStateBuilder {
 		if (item == null) {
 			return;
 		}
-		AgentMinState.ItemState itemState = itemState(hero, item, slot);
+		int row = state.inventory.equipped.size();
+		AgentMinState.ItemState itemState = itemState(hero, item, slot, null, 0, row, row);
 		state.inventory.equipped.add(itemState);
-		addActions(state, hero, item, slot);
+		addActions(state, hero, item, slot, row);
 	}
 
-	private static void addItemTree(AgentMinState state, Hero hero, Item item, String slot) {
-		AgentMinState.ItemState itemState = itemState(hero, item, slot);
+	private static void addItemTree(AgentMinState state, Hero hero, Item item, String slot, Bag container, int depth, int containerIndex) {
+		int row = state.inventory.equipped.size() + state.inventory.backpack.size();
+		AgentMinState.ItemState itemState = itemState(hero, item, slot, container, depth, containerIndex, row);
 		state.inventory.backpack.add(itemState);
-		addActions(state, hero, item, slot);
+		addActions(state, hero, item, slot, row);
 		if (item instanceof Bag) {
-			for (Item child : ((Bag)item).items) {
-				addItemTree(state, hero, child, slot + "/" + item.getClass().getSimpleName());
+			Bag bag = (Bag)item;
+			for (int i = 0; i < bag.items.size(); i++) {
+				addItemTree(state, hero, bag.items.get(i), slot + "/" + item.getClass().getSimpleName(), bag, depth + 1, i);
 			}
 		}
 	}
 
-	private static AgentMinState.ItemState itemState(Hero hero, Item item, String slot) {
+	private static AgentMinState.ItemState itemState(Hero hero, Item item, String slot, Bag container, int depth, int containerIndex, int row) {
 		AgentMinState.ItemState state = new AgentMinState.ItemState();
+		state.itemRow = row;
 		state.slot = slot;
 		state.className = item.getClass().getName();
 		state.name = item.name();
+		state.itemIdentityId = itemIdentityId(item);
+		state.modifierIdentityId = modifierIdentityId(item);
+		state.modifierKind = modifierKind(item);
+		state.modifierClassName = modifierClassName(item);
 		state.image = item.image();
 		state.quantity = item.quantity();
 		state.level = item.level();
@@ -363,20 +418,175 @@ public class AgentMinStateBuilder {
 		state.cursedKnown = item.cursedKnown;
 		state.equipped = item.isEquipped(hero);
 		state.usesTargeting = item.usesTargeting;
+		state.stackable = item.stackable;
+		state.unique = item.unique;
+		state.bones = item.bones;
+		state.icon = item.icon;
+		state.equipmentKind = equipmentKind(item);
+		state.strengthRequirement = strengthRequirement(item);
+		state.strengthMargin = state.strengthRequirement <= 0 ? 0 : hero.STR() - state.strengthRequirement;
+		state.equipmentScore = equipmentScore(item);
+		float currentScore = currentEquipmentScore(hero, item, state.equipmentKind);
+		state.equipmentScoreDiff = state.equipped ? 0f : state.equipmentScore - currentScore;
+		state.equipmentCooldown = AgentMinRewardTracker.equipmentActionCooldownRemaining(state);
+		state.equipmentUpgradeCandidate = !state.equipped
+				&& state.equipmentScore > 0f
+				&& state.equipmentScoreDiff >= AgentMinRewardConfig.EQUIP_MIN_SCORE_IMPROVEMENT
+				&& state.strengthMargin >= -1
+				&& !(state.cursedKnown && state.cursed)
+				&& state.equipmentCooldown <= 0f;
+		state.equipmentSidegrade = !state.equipped
+				&& state.equipmentScore > 0f
+				&& Math.abs(state.equipmentScoreDiff) < AgentMinRewardConfig.EQUIP_MIN_SCORE_IMPROVEMENT;
+		state.inContainer = container != null;
+		state.containerClassName = container == null ? null : container.getClass().getName();
+		state.containerName = container == null ? null : container.name();
+		state.containerDepth = depth;
+		state.containerItemIndex = containerIndex;
+		state.containerSize = container == null ? 0 : container.items.size();
+		state.containerCapacity = container == null ? 0 : container.capacity();
+		if (item instanceof Bag) {
+			Bag bag = (Bag)item;
+			state.bag = true;
+			state.bagSize = bag.items.size();
+			state.bagCapacity = bag.capacity();
+		}
 		state.defaultAction = item.defaultAction();
 		state.actions.addAll(item.actions(hero));
 		return state;
 	}
 
-	private static void addActions(AgentMinState state, Hero hero, Item item, String slot) {
+	private static int itemIdentityId(Item item) {
+		if (item == null) {
+			return 0;
+		}
+		int image = Math.max(0, item.image());
+		int classBucket = positiveHash(item.getClass().getName()) % 257;
+		return 1 + positiveHash(image + ":" + classBucket) % (ITEM_EMBEDDING_TABLE_SIZE - 1);
+	}
+
+	private static int modifierIdentityId(Item item) {
+		String modifierClassName = modifierClassName(item);
+		if (modifierClassName != null && modifierClassName.length() > 0) {
+			return 1 + positiveHash(modifierClassName) % 63;
+		}
+		return 0;
+	}
+
+	private static String modifierClassName(Item item) {
+		if (item instanceof Weapon) {
+			Weapon weapon = (Weapon)item;
+			if (weapon.enchantment != null && (weapon.cursedKnown || !weapon.enchantment.curse())) {
+				return weapon.enchantment.getClass().getName();
+			}
+		}
+		if (item instanceof Armor) {
+			Armor armor = (Armor)item;
+			if (armor.glyph != null && (armor.cursedKnown || !armor.glyph.curse())) {
+				return armor.glyph.getClass().getName();
+			}
+		}
+		if (item != null && item.cursedKnown && item.cursed) {
+			return item.getClass().getName() + "#cursed";
+		}
+		return "";
+	}
+
+	private static int modifierKind(Item item) {
+		if (item instanceof Weapon) {
+			Weapon weapon = (Weapon)item;
+			if (weapon.enchantment != null && (weapon.cursedKnown || !weapon.enchantment.curse())) {
+				return weapon.enchantment.curse() ? 2 : 1;
+			}
+			return item.cursedKnown && item.cursed ? 5 : 0;
+		}
+		if (item instanceof Armor) {
+			Armor armor = (Armor)item;
+			if (armor.glyph != null && (armor.cursedKnown || !armor.glyph.curse())) {
+				return armor.glyph.curse() ? 4 : 3;
+			}
+			return item.cursedKnown && item.cursed ? 5 : 0;
+		}
+		return item != null && item.cursedKnown && item.cursed ? 5 : 0;
+	}
+
+	private static int positiveHash(String value) {
+		return value == null ? 0 : value.hashCode() & 0x7fffffff;
+	}
+
+	private static String equipmentKind(Item item) {
+		if (item instanceof Armor) {
+			return "armor";
+		}
+		if (item instanceof KindOfWeapon) {
+			return "weapon";
+		}
+		if (item instanceof Ring) {
+			return "ring";
+		}
+		if (item instanceof Artifact) {
+			return "artifact";
+		}
+		return item != null && item.isEquipped(Dungeon.hero) ? "misc" : "";
+	}
+
+	private static int strengthRequirement(Item item) {
+		if (item instanceof Weapon) {
+			return ((Weapon)item).STRReq();
+		}
+		if (item instanceof Armor) {
+			return ((Armor)item).STRReq();
+		}
+		return 0;
+	}
+
+	private static float equipmentScore(Item item) {
+		if (item instanceof KindOfWeapon) {
+			KindOfWeapon weapon = (KindOfWeapon)item;
+			return (weapon.min() + weapon.max()) * 0.5f + Math.max(0, weapon.buffedLvl()) * 1.5f;
+		}
+		if (item instanceof Armor) {
+			Armor armor = (Armor)item;
+			return (armor.DRMin() + armor.DRMax()) * 0.65f + armor.tier + Math.max(0, armor.buffedLvl()) * 1.5f;
+		}
+		if (item instanceof Ring || item instanceof Artifact) {
+			return 4f + Math.max(0, item.buffedLvl()) * 2f;
+		}
+		return item != null && item.isEquipped(Dungeon.hero) ? 2f + Math.max(0, item.buffedLvl()) : 0f;
+	}
+
+	private static float currentEquipmentScore(Hero hero, Item item, String kind) {
+		if (hero == null || item == null || kind == null || kind.length() == 0 || item.isEquipped(hero)) {
+			return item == null ? 0f : equipmentScore(item);
+		}
+		Item equipped = null;
+		if ("weapon".equals(kind)) {
+			equipped = hero.belongings.weapon();
+		} else if ("armor".equals(kind)) {
+			equipped = hero.belongings.armor();
+		} else if ("ring".equals(kind)) {
+			equipped = hero.belongings.ring() != null ? hero.belongings.ring() : hero.belongings.misc();
+		} else if ("artifact".equals(kind)) {
+			equipped = hero.belongings.artifact() != null ? hero.belongings.artifact() : hero.belongings.misc();
+		} else if ("misc".equals(kind)) {
+			equipped = hero.belongings.misc();
+		}
+		return equipped == null ? 0f : equipmentScore(equipped);
+	}
+
+	private static void addActions(AgentMinState state, Hero hero, Item item, String slot, int row) {
 		ArrayList<String> actions = item.actions(hero);
-		for (String action : actions) {
+		for (int i = 0; i < actions.size(); i++) {
+			String action = actions.get(i);
 			AgentMinState.ActionState actionState = new AgentMinState.ActionState();
+			actionState.itemRow = row;
 			actionState.itemClassName = item.getClass().getName();
 			actionState.itemName = item.name();
 			actionState.slot = slot;
 			actionState.action = action;
 			actionState.actionName = item.actionName(action, hero);
+			actionState.actionIndex = i;
+			actionState.actionCount = actions.size();
 			actionState.defaultAction = action.equals(item.defaultAction());
 			actionState.usesTargeting = item.usesTargeting;
 			actionState.quickSlot = Dungeon.quickslot == null ? -1 : Dungeon.quickslot.getSlot(item);

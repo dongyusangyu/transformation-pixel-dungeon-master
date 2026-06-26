@@ -39,6 +39,8 @@ public class WndOptions extends Window {
 	protected static final int MARGIN 		= 2;
 	protected static final int BUTTON_HEIGHT	= 18;
 
+	private int agentMinOptionCount;
+
 	public WndOptions(Image icon, String title, String message, String... options) {
 		super();
 
@@ -78,6 +80,7 @@ public class WndOptions extends Window {
 
 	protected void layoutBody(float pos, String message, String... options){
 		int width = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
+		agentMinOptionCount = options == null ? 0 : options.length;
 
 		RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
 		tfMesage.text(message, width);
@@ -141,6 +144,7 @@ public class WndOptions extends Window {
 
 	protected void layoutBody(float pos, String message, ArrayList<String> options){
 		int width = PixelScene.landscape() ? WIDTH_L : WIDTH_P;
+		agentMinOptionCount = options == null ? 0 : options.size();
 
 		RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
 		tfMesage.text(message, width);
@@ -200,5 +204,18 @@ public class WndOptions extends Window {
 
 	protected Image getIcon( int index ) {
 		return null;
+	}
+
+	public int agentMinOptionCount() {
+		return agentMinOptionCount;
+	}
+
+	public boolean agentMinSelectOption(int index) {
+		if (index < 0 || index >= agentMinOptionCount || !enabled(index)) {
+			return false;
+		}
+		hide();
+		onSelect(index);
+		return true;
 	}
 }

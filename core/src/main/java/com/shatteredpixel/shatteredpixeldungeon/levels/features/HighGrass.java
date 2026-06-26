@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.ArmoredStatue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -76,7 +77,7 @@ public class HighGrass {
 		Char ch = Actor.findChar(pos);
 		
 		if (level.map[pos] == Terrain.FURROWED_GRASS){
-			if (ch instanceof Hero && ((Hero) ch).heroClass == HeroClass.HUNTRESS){
+			if (ch instanceof Hero && (((Hero) ch).heroClass == HeroClass.HUNTRESS || hero.subClass.is(HeroSubClass.WARDEN))){
 				//Do nothing
 				freezeTrample = true;
 			} else {
@@ -106,7 +107,7 @@ public class HighGrass {
 
 
 			}
-			if (ch instanceof Hero && ((Hero) ch).heroClass == HeroClass.HUNTRESS){
+			if (ch instanceof Hero && ((Hero) ch).heroClass == HeroClass.HUNTRESS || hero.subClass.is(HeroSubClass.WARDEN)){
 				Level.set(pos, Terrain.FURROWED_GRASS);
 				freezeTrample = true;
 			} else {

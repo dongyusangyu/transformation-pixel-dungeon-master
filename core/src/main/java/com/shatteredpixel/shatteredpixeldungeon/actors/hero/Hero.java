@@ -273,6 +273,11 @@ public class Hero extends Char {
 	public HeroClass heroClass = HeroClass.ROGUE;
 	public HeroSubClass subClass = HeroSubClass.NONE;
 	public ArmorAbility armorAbility = null;
+	public boolean randomMode = false;
+	public HeroClass randomTalentClass = null;
+	public String[] randomClassTalents = null;
+	public HeroSubClass[] randomSubClasses = null;
+	public String[] randomArmorAbilities = null;
 	public ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
 	public LinkedHashMap<Talent, Talent> metamorphedTalents = new LinkedHashMap<>();
 	public LinkedHashMap<Talent, String> sublimationTalents = new LinkedHashMap<>();
@@ -415,6 +420,7 @@ public class Hero extends Char {
 		bundle.put( CLASS, heroClass );
 		bundle.put( SUBCLASS, subClass );
 		bundle.put( ABILITY, armorAbility );
+		HeroRandomizer.storeInBundle( bundle, this );
 		Talent.storeTalentsInBundle( bundle, this );
 
 		bundle.put( ATTACK, attackSkill );
@@ -445,6 +451,7 @@ public class Hero extends Char {
 		heroClass = bundle.getEnum( CLASS, HeroClass.class );
 		subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class );
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
+		HeroRandomizer.restoreFromBundle( bundle, this );
 		Talent.restoreTalentsFromBundle( bundle, this );
 		if(heroClass==HeroClass.DM400){
 			addProperties(Char.Property.INORGANIC);
@@ -715,7 +722,7 @@ public class Hero extends Char {
 			Buff.affect( this, Combo.class ).hit( enemy );
 		}
 
-		if (hit && (heroClass == HeroClass.DUELIST || hasTalent(Talent.MARTIAL_TRAIN)) && wasEnemy){
+		if (hit && Talent.canUseWeaponAbilities(this) && wasEnemy){
 			Buff.affect( this, Sai.ComboStrikeTracker.class).addHit();
 		}
 
@@ -848,7 +855,7 @@ public class Hero extends Char {
 		if (buff(HolyPrayer.HolyPrayerBlessing.class) != null){
 			accuracy *= buff(HolyPrayer.HolyPrayerBlessing.class).accuracyAndEvasionFactor();
 		}
-		if (heroClass != HeroClass.FRIAR && hasTalent(Talent.HUMAN_GLORY)){
+		if (hero.buff(Reason.class)!=null && hasTalent(Talent.HUMAN_GLORY)){
 			accuracy *= 1f + 0.1f * pointsInTalent(Talent.HUMAN_GLORY);
 		}
 		if (buff(Talent.HeavyWound.class) != null){
@@ -927,7 +934,7 @@ public class Hero extends Char {
 		if (buff(HolyPrayer.HolyPrayerBlessing.class) != null){
 			evasion *= buff(HolyPrayer.HolyPrayerBlessing.class).accuracyAndEvasionFactor();
 		}
-		if (heroClass != HeroClass.FRIAR && hasTalent(Talent.HUMAN_GLORY)){
+		if (hero.buff(Reason.class)!=null && hasTalent(Talent.HUMAN_GLORY)){
 			evasion *= 1f + 0.1f * pointsInTalent(Talent.HUMAN_GLORY);
 		}
 		if (buff(Talent.HeavyWound.class) != null){
@@ -994,7 +1001,7 @@ public class Hero extends Char {
 		if (buff(HolyPrayer.HolyPrayerBlessing.class) != null){
 			evasion *= buff(HolyPrayer.HolyPrayerBlessing.class).accuracyAndEvasionFactor();
 		}
-		if (heroClass != HeroClass.FRIAR && hasTalent(Talent.HUMAN_GLORY)){
+		if (hero.buff(Reason.class)!=null && hasTalent(Talent.HUMAN_GLORY)){
 			evasion *= 1f + 0.1f * pointsInTalent(Talent.HUMAN_GLORY);
 		}
 		if (buff(Talent.HeavyWound.class) != null){
@@ -1284,7 +1291,7 @@ public class Hero extends Char {
 			}
 			speed*=onespd;
 		}
-		if(hero.buff(Routine.OverLoad.class)!=null){
+		if(buff(Routine.OverLoad.class)!=null){
 			speed*=2f;
 		}
 		if(hasTalent(Talent.SEAOFPEOPLE)){
@@ -1373,7 +1380,7 @@ public class Hero extends Char {
 			}
 			delay/=spd;
 		}
-		if(hero.buff(Routine.OverLoad.class)!=null){
+		if(buff(Routine.OverLoad.class)!=null){
 			delay/=2;
 		}
         if(glyphLevel(Swiftness.class)>=0 && subClass.is(HeroSubClass.COMBATMASTER)){
@@ -2086,7 +2093,7 @@ public class Hero extends Char {
 
 		if (enemy.isAlive() && canAttack( enemy ) && enemy.invisible == 0) {
 
-			if (heroClass != HeroClass.DUELIST
+			if (!Talent.canUseWeaponAbilities(this)
 					&& hasTalent(Talent.AGGRESSIVE_BARRIER)
 					&& buff(Talent.AggressiveBarrierCooldown.class) == null
 					&& (HP / (float)HT) < 0.50f){
@@ -2333,12 +2340,13 @@ public class Hero extends Char {
 
 	@Override
 	public void damage( int dmg, Object src ) {
-		if (buff(TimekeepersHourglass.timeStasis.class) != null
-				|| buff(TimeStasis.class) != null) {
+		boolean unavoidable = Talent.isUnavoidableDamage(src);
+		if (!unavoidable && (buff(TimekeepersHourglass.timeStasis.class) != null
+				|| buff(TimeStasis.class) != null)) {
 			return;
 		}
 
-		if(!buffs(GreatShoper.GoldCurse.class).isEmpty() && !(src instanceof Viscosity.DeferedDamage) && !(src instanceof Reason)){
+		if(!unavoidable && !buffs(GreatShoper.GoldCurse.class).isEmpty() && !(src instanceof Viscosity.DeferedDamage)){
 			src = new Viscosity.DeferedDamage();
 		}
 
@@ -2355,7 +2363,7 @@ public class Hero extends Char {
 		}
 
 		Endure.EndureTracker endure = buff(Endure.EndureTracker.class);
-		if (!(src instanceof Char)){
+		if (!unavoidable && !(src instanceof Char)){
 			//reduce damage here if it isn't coming from a character (if it is we already reduced it)
 			if (endure != null){
 				dmg = Math.round(endure.adjustDamageTaken(dmg));
@@ -2371,18 +2379,20 @@ public class Hero extends Char {
 		}
 
 		CapeOfThorns.Thorns thorns = buff( CapeOfThorns.Thorns.class );
-		if (thorns != null) {
+		if (!unavoidable && thorns != null) {
 			dmg = thorns.proc(dmg, (src instanceof Char ? (Char)src : null),  this);
 		}
 
-		dmg = (int)Math.ceil(dmg * RingOfTenacity.damageMultiplier( this ));
+		if (!unavoidable) {
+			dmg = (int)Math.ceil(dmg * RingOfTenacity.damageMultiplier( this ));
+		}
 
 
 
 
 
 		dmg=Talent.onDamage(  dmg, src );
-		if(hasTalent(Talent.KING_PROTECT) && pointsInTalent(Talent.KING_PROTECT)+1>=Random.Int(4) &&
+		if(!unavoidable && hasTalent(Talent.KING_PROTECT) && pointsInTalent(Talent.KING_PROTECT)+1>=Random.Int(4) &&
 				!(src instanceof Viscosity.DeferedDamage) && !(src instanceof Hunger)){
 			if (dmg >= 0) {
 				Viscosity.DeferedDamage deferred = Buff.affect( this, Viscosity.DeferedDamage.class );
@@ -2832,6 +2842,9 @@ public class Hero extends Char {
 			}
 			
 			Item.updateQuickslot();
+			if (AgentMinBridgeConfig.ENABLED) {
+				AgentMinRealtimeController.onHeroLevelUp();
+			}
 			
 			Badges.validateLevelReached();
 		}
@@ -2999,7 +3012,7 @@ public class Hero extends Char {
 						return;
 					}
 				}
-                if(heroClass== HeroClass.FRIAR){
+                if(hero.buff(Reason.class)!=null){
                     Reason.gainReason(this,50);
                     if(hero.buff(Suffering.Fear.class)!=null){
                         hero.buff(Suffering.Fear.class).detach();
@@ -3204,7 +3217,7 @@ public class Hero extends Char {
 			Buff.affect( this, Combo.class ).hit( enemy );
 		}
 
-		if (hit && (heroClass == HeroClass.DUELIST || hasTalent(Talent.MARTIAL_TRAIN)) && wasEnemy){
+		if (hit && Talent.canUseWeaponAbilities(this) && wasEnemy){
 			Buff.affect( this, Sai.ComboStrikeTracker.class).addHit();
 		}
 

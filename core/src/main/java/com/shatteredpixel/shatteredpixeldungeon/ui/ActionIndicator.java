@@ -34,9 +34,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -107,7 +109,7 @@ public class ActionIndicator extends Tag {
 
 		synchronized (ActionIndicator.class) {
 			// auto clear unusable actions
-			if (action != null && !action.usable()) clearAction(action);
+			if (action != null && !canShowAction(action)) clearAction(action);
 
 			if (!visible && action != null) {
 				visible = true;
@@ -175,7 +177,7 @@ public class ActionIndicator extends Tag {
 
 	@Override
 	protected boolean onLongClick() {
-        if(hero!=null && hero.heroClass== HeroClass.RATKING){
+        if(usableActionCount() > 1){
             GameScene.show(new WndActionList());
         }
 
@@ -184,14 +186,26 @@ public class ActionIndicator extends Tag {
 
 	private final Button longClickListener = new Button() {
 		@Override public GameAction keyAction() { return SPDAction.TAG_CYCLE; }
-		@Override protected void onClick()      { GameScene.show(new WndActionList()); }
+		@Override protected void onClick()      {
+			if (usableActionCount() > 1) {
+				GameScene.show(new WndActionList());
+			}
+		}
 	};
 
 	public static boolean setAction(Action action){
-		if(action == null || !action.usable()) return false;
+		if(!canShowAction(action)) return false;
 		synchronized (ActionIndicator.class) {
 			ActionIndicator.action = action;
 			refresh();
+		}
+		return true;
+	}
+
+	public static boolean canShowAction(Action action) {
+		if (action == null || !action.usable()) return false;
+		if (action instanceof MeleeWeapon.Charger) {
+			return hero != null && hero.subClass.is(HeroSubClass.CHAMPION);
 		}
 		return true;
 	}
@@ -208,10 +222,26 @@ public class ActionIndicator extends Tag {
 			HolyTome.TomeRecharge.class,
 			DarkHook.class,
 			Ninja_Energy.class,
-			FightStance.class
+			FightStance.class,
+			Reason.class,
+			InstructionTool.toolRecharge.class
 
 	};
-	private static boolean findAction(boolean cycle) {
+
+	public static int usableActionCount() {
+		if(hero == null) return 0;
+		int count = 0;
+		for (Class<? extends Buff> possibleAction : actionBuffClasses){
+			for(Buff b : hero.buffs(possibleAction)){
+				if (canShowAction((Action)b)){
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	private static boolean findAction(boolean cycle,Action action1) {
 		if(hero == null) return false;
 		if(action == null) cycle = false;
 		int start = -1;
@@ -219,7 +249,9 @@ public class ActionIndicator extends Tag {
 
 		for(int i = (start+1)%actionBuffClasses.length; i != start && i < actionBuffClasses.length; i++) {
 			for(Buff b : hero.buffs(actionBuffClasses[i])) {
-				if( b != action && setAction( (Action) b ) ) return true;
+				if( b != action && b!=action1 ){
+                    if(setAction( (Action) b )) return true;
+                }
 			}
 			if(cycle && i+1 == actionBuffClasses.length) i = -1;
 		}
@@ -234,7 +266,7 @@ public class ActionIndicator extends Tag {
 		synchronized (ActionIndicator.class) {
 			if (action == null || ActionIndicator.action == action) {
 				ActionIndicator.action = null;
-				//findAction(false);
+				findAction(false,action);
 			}
 		}
 	}

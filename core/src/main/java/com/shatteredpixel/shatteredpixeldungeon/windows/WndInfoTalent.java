@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -53,7 +54,15 @@ public class WndInfoTalent extends Window {
 		add( titlebar );
 
 		boolean metaDesc = (buttonCallback != null && buttonCallback.metamorphDesc()) ||
-				(Dungeon.hero != null && Dungeon.hero.metamorphedTalents.containsValue(talent));
+				(Dungeon.hero != null && (Dungeon.hero.metamorphedTalents.containsValue(talent)
+						|| HeroRandomizer.randomInitialTalentNeedsMetaDesc(Dungeon.hero, talent)));
+		if (Dungeon.hero != null
+				&& Dungeon.hero.randomMode
+				&& HeroRandomizer.nativeClassTalent(Dungeon.hero.heroClass, talent)){
+			metaDesc = false;
+		}
+
+
 
 		RenderedTextBlock txtInfo = PixelScene.renderTextBlock(talent.desc(metaDesc), 6);
 		txtInfo.maxWidth(WIDTH);

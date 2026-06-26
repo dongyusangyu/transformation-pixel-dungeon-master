@@ -141,7 +141,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 	private void confirmCancelation( Window chooseWindow ) {
 		GameScene.show( new WndOptions(new ItemSprite(this),
 				Messages.titleCase(name()),
-				Messages.get(InventoryScroll.class, "warning"),
+				Messages.get(ScrollOfMetamorphosis.class, "cancel_warn"),
 				Messages.get(InventoryScroll.class, "yes"),
 				Messages.get(InventoryScroll.class, "no") ) {
 			@Override
@@ -189,7 +189,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 			top = text.bottom() + 2;
 
 			ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
-			Talent.initClassTalents(hero.heroClass, talents, hero.metamorphedTalents, new LinkedHashMap<>());
+			Talent.initClassTalents(hero, talents, hero.metamorphedTalents, new LinkedHashMap<>());
 
 
 			for (LinkedHashMap<Talent, Integer> tier : talents) {
@@ -288,13 +288,16 @@ public class ScrollOfMetamorphosis extends Scroll {
 				beilv *= 2;
                 hero.buff(Pasty.TranCake.class).detach();
 			}
-			List<Talent> availableTalents = Talent.metamorphCandidatePool(tier, preferredType, curTalentsAtTier, beilv);
+			boolean randomMode = hero != null && hero.randomMode;
+			List<Talent> availableTalents = Talent.metamorphCandidatePool(tier, preferredType, curTalentsAtTier, randomMode ? 1 : beilv);
 			int cnt=4;
 
-			if(hero.pointsInTalent(Talent.MORE_TALENT)>Random.Int(2)){
+			if(!randomMode && hero.pointsInTalent(Talent.MORE_TALENT)>Random.Int(2)){
 				cnt+=1;
 			}
-			cnt-=hero.pointsNegative(Talent.FATE_DECISION);
+			if (!randomMode){
+				cnt-=hero.pointsNegative(Talent.FATE_DECISION);
+			}
 
 			List<Talent> selectedTalents = new ArrayList<>();
 			while (selectedTalents.size() < cnt && !availableTalents.isEmpty()) {

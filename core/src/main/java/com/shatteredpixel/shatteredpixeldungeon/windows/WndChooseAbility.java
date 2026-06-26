@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.Trinity;
 import com.shatteredpixel.shatteredpixeldungeon.items.KingsCrown;
@@ -64,7 +65,7 @@ public class WndChooseAbility extends Window {
 		add( body );
 
 		float pos = body.bottom() + 3*GAP;
-		for (ArmorAbility ability : hero.heroClass.armorAbilities()) {
+		for (ArmorAbility ability : HeroRandomizer.armorAbilities(hero)) {
 
 			String warn;
 			if (Dungeon.initialVersion < 821 && ability instanceof Trinity){
@@ -105,7 +106,7 @@ public class WndChooseAbility extends Window {
 			IconButton abilityInfo = new IconButton(Icons.get(Icons.INFO)){
 				@Override
 				protected void onClick() {
-					GameScene.show(new WndInfoArmorAbility(Dungeon.hero.heroClass, ability));
+					GameScene.show(new WndInfoArmorAbility(HeroRandomizer.talentClass(Dungeon.hero), ability));
 				}
 			};
 			abilityInfo.setRect(WIDTH-20, abilityButton.top() + (abilityButton.height()-20)/2, 20, 20);
