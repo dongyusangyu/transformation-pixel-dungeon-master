@@ -128,6 +128,11 @@ public abstract class KindofMisc extends EquipableItem {
                                     hero.belongings.artifact = KindofMisc.this;
                                     KindofMisc.this.activate(hero);
 									Talent.onItemEquipped(hero, KindofMisc.this);
+									cursedKnown = true;
+									if (cursed) {
+										equipCursed(hero);
+										GLog.n(Messages.get(KindofMisc.this, "equip_cursed", KindofMisc.this));
+									}
                                     //doEquip(hero);
                                     updateQuickslot();
                                     //Dungeon.hero.belongings.backpack.items.add(KindofMisc.this);

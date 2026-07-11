@@ -64,6 +64,9 @@ public class ArmoredStatue extends Statue {
 		armor = Generator.randomArmor();
 		armor.cursed = false;
 		armor.inscribe(Armor.Glyph.random());
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			armor.cursedKnown = true;
+		}
 	}
 
 	private static final String ARMOR	= "armor";

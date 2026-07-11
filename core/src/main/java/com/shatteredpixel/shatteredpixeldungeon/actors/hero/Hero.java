@@ -74,6 +74,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invulnerability;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Light;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
@@ -112,6 +113,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Resurrection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Revelation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Smite;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatShoper;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DM300;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Monk;
@@ -156,6 +158,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
@@ -282,6 +285,7 @@ public class Hero extends Char {
 	public LinkedHashMap<Talent, Talent> metamorphedTalents = new LinkedHashMap<>();
 	public LinkedHashMap<Talent, String> sublimationTalents = new LinkedHashMap<>();
 	public LinkedHashMap<Talent, Integer> negativeTalents = new LinkedHashMap<>();
+	public Talent testModeNegativeTalent = null;
 	private int attackSkill = 10;
 	private int defenseSkill = 5;
 
@@ -804,7 +808,7 @@ public class Hero extends Char {
 					&& belongings.abilityWeapon != wep && buff(MonkEnergy.MonkAbility.UnarmedAbilityTracker.class) == null){
 
 				//non-duelist benefit for precise assault, can stack with liquid agility
-				if (heroClass != HeroClass.DUELIST) {
+				if (!Talent.canUseWeaponAbilities(this)) {
 					//persistent +10%/20%/30% ACC for other heroes
 					accuracy *= 1f + 0.1f * pointsInTalent(Talent.PRECISE_ASSAULT);
 				}
@@ -1079,14 +1083,16 @@ public class Hero extends Char {
                 aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
             }
 
-			int wepDr = Random.NormalIntRange( 0 , belongings.weapon().defenseFactor( this ) );
+			int wepDr=0;
 
 			//Spsh6
 			SpearShield spsh = Dungeon.hero.belongings.getItem(SpearShield.class);
 			if (spsh != null) {
 				//GLog.i("武器护甲("+0+"-"+belongings.weapon().defenseFactor( this )+")-->("+spsh.changeDrMin(0, belongings.weapon().defenseFactor( this ))+"-"+spsh.changeDrMax(0, belongings.weapon().defenseFactor( this ))+")");
 				wepDr += Random.NormalIntRange(spsh.changeDrMin(0, belongings.weapon().defenseFactor( this )),spsh.changeDrMax(0, belongings.weapon().defenseFactor( this )));
-			}
+			}else{
+                wepDr += Random.NormalIntRange( 0 , belongings.weapon().defenseFactor( this ) );
+            }
 
 			if (aEnc>0){
 				wepDr -= 2*aEnc;
@@ -1219,7 +1225,7 @@ public class Hero extends Char {
 			Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG, 0.75f, 1.2f);
 		}
 
-		if (heroClass != HeroClass.DUELIST
+		if (!Talent.canUseWeaponAbilities(this)
 				&& hasTalent(Talent.WEAPON_RECHARGING)
 				&& (buff(Recharging.class) != null || buff(ArtifactRecharge.class) != null)){
 			dmg = Math.round(dmg * (1.025f + 0.025f*pointsInTalent(Talent.WEAPON_RECHARGING)));
@@ -2286,6 +2292,15 @@ public class Hero extends Char {
 			berserk.damage(damage);
 		}
 
+		CapeOfThorns.Thorns thorns = buff( CapeOfThorns.Thorns.class );
+		if (thorns != null) {
+			damage = thorns.proc(damage, enemy, this);
+		}
+		CapeOfThorns.ThornsEffect thornsEffect = buff(CapeOfThorns.ThornsEffect.class);
+		if (thornsEffect != null) {
+			damage = thornsEffect.proc(damage, enemy);
+		}
+
 		if (belongings.armor() != null) {
 			damage = belongings.armor().proc( enemy, this, damage );
 
@@ -2316,6 +2331,9 @@ public class Hero extends Char {
 
 	@Override
 	public int glyphLevel(Class<? extends Armor.Glyph> cls) {
+		if (suppressGlyphBenefits(this)) {
+			return -1;
+		}
         int lvl = -1;
         RingOfKing ring = belongings.getItem(RingOfKing.class);
         if (ring != null && ring.isEquipped(this) && ring.glyph != null && !ring.cursed && ring.glyph.getClass() == cls){
@@ -2336,6 +2354,10 @@ public class Hero extends Char {
         } else {
 			return super.glyphLevel(cls);
 		}
+	}
+
+	static boolean suppressGlyphBenefits(Char ch) {
+		return ch != null && ch.buff(MagicImmune.class) != null;
 	}
 
 	@Override
@@ -2378,11 +2400,6 @@ public class Hero extends Char {
 			}
 		}
 
-		CapeOfThorns.Thorns thorns = buff( CapeOfThorns.Thorns.class );
-		if (!unavoidable && thorns != null) {
-			dmg = thorns.proc(dmg, (src instanceof Char ? (Char)src : null),  this);
-		}
-
 		if (!unavoidable) {
 			dmg = (int)Math.ceil(dmg * RingOfTenacity.damageMultiplier( this ));
 		}
@@ -2414,6 +2431,9 @@ public class Hero extends Char {
 		int effectiveDamage = preHP - postHP;
 
 		if (effectiveDamage <= 0) return;
+		if (Dungeon.depth == 15 && DM300.hasSuperchargedDM300()){
+			Statistics.qualifiedForBossChallengeBadge = false;
+		}
 		AgentMinRewardTracker.onHeroDamage(effectiveDamage);
 
 		if (buff(Challenge.DuelParticipant.class) != null){
@@ -2783,6 +2803,14 @@ public class Hero extends Char {
 		
 		AlchemistsToolkit.kitEnergy kit = buff(AlchemistsToolkit.kitEnergy.class);
 		if (kit != null) kit.gainCharge(percent);
+
+		if (source == PotionOfExperience.class) {
+			CapeOfThorns.Thorns thorns = buff(CapeOfThorns.Thorns.class);
+			if (thorns != null) thorns.gainCharge(percent);
+
+			LloydsBeacon.beaconRecharge beacon = buff(LloydsBeacon.beaconRecharge.class);
+			if (beacon != null) beacon.gainCharge(percent);
+		}
 
 		MasterThievesArmband.Thievery armband = buff(MasterThievesArmband.Thievery.class);
 		if (armband != null) armband.gainCharge(percent);

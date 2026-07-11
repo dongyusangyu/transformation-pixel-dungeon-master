@@ -37,12 +37,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
@@ -285,11 +287,31 @@ public class SpiritForm extends ClericSpell {
 		} else if (effect instanceof CloakOfShadows){
 			Buff.affect(hero, Invisibility.class,artifactLevel());
 			return true;
+		} else if (effect instanceof CapeOfThorns){
+			CapeOfThorns cape = hero.belongings.getItem(CapeOfThorns.class);
+			if (!((CapeOfThorns) effect).applyTrinityThorns(hero, artifactLevel(), cape == null ? 0 : cape.level())) {
+				return false;
+			}
+			hero.spendAndNext(1f);
+			return true;
+		} else if (effect instanceof LloydsBeacon){
+			((LloydsBeacon) effect).useTrinityTeleport(armor);
+			return true;
 		}else if (effect instanceof SkeletonKey){
 			GameScene.selectCell(((SkeletonKey) effect).targeter);
 			return true;
 		}
 		return false;
+	}
+
+	public static boolean activeArtifactNeedsTarget(Class<?> artifactClass) {
+		return EtherealChains.class.isAssignableFrom(artifactClass)
+				|| MasterThievesArmband.class.isAssignableFrom(artifactClass)
+				|| SandalsOfNature.class.isAssignableFrom(artifactClass)
+				|| TalismanOfForesight.class.isAssignableFrom(artifactClass)
+				|| Shuriken_Box.class.isAssignableFrom(artifactClass)
+				|| LloydsBeacon.class.isAssignableFrom(artifactClass)
+				|| SkeletonKey.class.isAssignableFrom(artifactClass);
 	}
 
 }

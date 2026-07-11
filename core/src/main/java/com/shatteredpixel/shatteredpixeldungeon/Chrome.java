@@ -46,8 +46,7 @@ public class Chrome {
 	}
 	
 	public static NinePatch get( Type type ) {
-		String Asset;
-        Asset = Assets.Interfaces.CHROME;
+		String Asset = Assets.Interfaces.chrome();
 		switch (type) {
 		case WINDOW:
 			return new NinePatch( Asset, 0, 0, 20, 20, 6 );

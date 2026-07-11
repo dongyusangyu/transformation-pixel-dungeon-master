@@ -69,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CounterBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Doom;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EnhancedRings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ErodingSoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FightStance;
@@ -1921,6 +1922,7 @@ public enum Talent {
 		onTalentUpgradedItem(hero,talent );
 
 		hero.updateHT(true);
+		MeleeWeapon.syncCharger(hero);
 		updateQuickslot();
 		//Dungeon.quickslot.reset();
 		//for metamorphosis
@@ -2069,8 +2071,8 @@ public enum Talent {
 
 
 
-		if(hero.hasTalent(MARTIAL_TRAIN) && hero.heroClass!=HeroClass.DUELIST && hero.belongings.weapon!=null){
-			Buff.affect(hero, MeleeWeapon.Charger.class);
+		if(hero.hasTalent(MARTIAL_TRAIN) && hero.belongings.weapon!=null){
+			MeleeWeapon.syncCharger(hero);
 			hero.belongings.weapon.activate(hero);
 		}
 		Item.updateQuickslot();
@@ -2812,15 +2814,9 @@ public enum Talent {
 		}
 	}
 
-	public static float sprayGunLoadTime( Hero hero ){
-		return hero != null && hero.hasTalent(FAST_RELOAD) ? 0f : 1f;
-	}
 
-	public static void onSprayGunLoaded( Hero hero ){
-		if (hero != null && hero.pointsInTalent(FAST_RELOAD) >= 2){
-			Buff.affect(hero, GreaterHaste.class).set(1);
-		}
-	}
+
+
 
 	public static int alchemyEnergyCost( Hero hero, int cost ){
 		if (hero == null || cost <= 0 || !hero.subClass.is(HeroSubClass.ALCHEMIST)){
@@ -2858,17 +2854,17 @@ public enum Talent {
 		return Random.Float() < 0.15f * (hero.pointsInTalent(CONSERVATION) + 1);
 	}
 
-	public static void onLiquidMetalApplied( Hero hero ){
-		if (hero != null && hero.hasTalent(FAST_RELOAD) && hero.heroClass != HeroClass.FRIAR){
-			Buff.affect(hero, GreaterHaste.class).set(hero.pointsInTalent(FAST_RELOAD));
-		}
-	}
+
 
 	public static float bullseyeAccuracyFactor( Hero hero ){
 		if (hero != null && hero.hasTalent(BULLSEYE)){
 			return hero.pointsInTalent(BULLSEYE) == 1 ? 1.5f : 1.75f;
 		}
 		return 1f;
+	}
+
+	public static boolean isArmedUprisingAlly(Char attacker) {
+		return attacker instanceof Mob && attacker.alignment == Char.Alignment.ALLY;
 	}
 
 	public static int onAttackProcMult( Hero hero, Char enemy, int dmg ){
@@ -3004,7 +3000,7 @@ public enum Talent {
 		if(hero.hasTalent(HEDONISM) && hero.buff(Hunger.class).level<300){
 			dmg += 2*hero.pointsInTalent(HEDONISM);
 		}
-		if (hero.belongings.attackingWeapon() != null && hero.hasTalent(CRYSTAL_GUNPOWDER)){
+		if (hero.hasTalent(CRYSTAL_GUNPOWDER)){
 			dmg += Math.min(2 * hero.pointsInTalent(CRYSTAL_GUNPOWDER), Dungeon.energy * hero.pointsInTalent(CRYSTAL_GUNPOWDER));
 		}
 		if (hero.belongings.attackingWeapon() instanceof Dart && hero.hasTalent(BULLSEYE) && enemy.alignment != hero.alignment){
@@ -3107,7 +3103,7 @@ public enum Talent {
 			Buff.affect( enemy, Ooze.class ).set(15);
 			Viscosity.DeferedDamage deferred=Buff.affect( enemy, Viscosity.DeferedDamage.class );
 			deferred.prolong( 10 );
-			enemy.sprite.burst( 0x000000, 5 );
+			showOozeAttackEffect(enemy);
 		}
 		if( hero.pointsInTalent(STRONG_ATTACK)>=1 && attacker.buffs(Talent.StrAtkCooldown.class).isEmpty() && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
 			Buff.affect( enemy, Vulnerable.class ,1+hero.pointsInTalent(STRONG_ATTACK)*2);
@@ -3367,6 +3363,12 @@ public enum Talent {
         }
 
 		return dmg;
+	}
+
+	static void showOozeAttackEffect(Char enemy) {
+		if (enemy.sprite != null) {
+			enemy.sprite.burst(0x000000, 5);
+		}
 	}
 
 	public static int onDefenseProc( Char enemy, int damage ) {
@@ -3852,7 +3854,7 @@ public enum Talent {
 		if (hero.hasTalent(PENETRATING_CAST) && target != null && target.alignment == Char.Alignment.ENEMY){
 			int removed = 0;
 			for (Buff buff : new ArrayList<>(target.buffs())){
-				if (buff.type == Buff.buffType.NEGATIVE){
+				if (buff.type == Buff.buffType.NEGATIVE && !(buff instanceof Doom)){
 					buff.detach();
 					removed++;
 				}
@@ -4416,6 +4418,7 @@ public enum Talent {
 		return hero != null
 				&& (hero.heroClass == HeroClass.DUELIST
 				|| hero.subClass.is(HeroSubClass.CHAMPION)
+				|| hero.buff(MeleeWeapon.MartialMastery.class) != null
 				|| hero.hasTalent(Talent.MARTIAL_TRAIN));
 	}
 
@@ -4424,7 +4427,10 @@ public enum Talent {
 			return false;
 		}
 		return canUseWeaponAbilities(hero)
-				&& (!(weapon instanceof MagesStaff) || hero.heroClass == HeroClass.DUELIST || hero.subClass.is(HeroSubClass.CHAMPION));
+				&& (!(weapon instanceof MagesStaff)
+				|| hero.heroClass == HeroClass.DUELIST
+				|| hero.subClass.is(HeroSubClass.CHAMPION)
+				|| hero.buff(MeleeWeapon.MartialMastery.class) != null);
 	}
 
 	private static boolean canTriggerLethalHasteWithWeaponAbility(Hero hero) {
@@ -4943,6 +4949,9 @@ public enum Talent {
 		bundle.put("replacements", replacementsBundle);
 		bundle.put("sublimation", sublimationBundle);
 		bundle.put("negative", negativeBundle);
+		if (hero.testModeNegativeTalent != null){
+			bundle.put("test_mode_negative", hero.testModeNegativeTalent.name());
+		}
 	}
 
 	private static final HashSet<String> removedTalents = new HashSet<>();
@@ -5023,6 +5032,17 @@ public enum Talent {
 				}
 
 
+			}
+		}
+		if (bundle.contains("test_mode_negative")){
+			String value = bundle.getString("test_mode_negative");
+			if (renamedTalents.containsKey(value)) value = renamedTalents.get(value);
+			if (!removedTalents.contains(value)){
+				try {
+					hero.testModeNegativeTalent = Talent.valueOf(value);
+				} catch (Exception e) {
+					ShatteredPixelDungeon.reportException(e);
+				}
 			}
 		}
 		if (hero.heroClass != null)     initClassTalents(hero);

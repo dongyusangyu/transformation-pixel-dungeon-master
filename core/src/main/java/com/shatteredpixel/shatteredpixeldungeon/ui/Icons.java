@@ -149,7 +149,7 @@ public enum Icons {
 	}
 	
 	public static Image get( Icons type ) {
-		Image icon = new Image( Assets.Interfaces.ICONS );
+		Image icon = new Image( Assets.Interfaces.icons() );
 		switch (type) {
 
 			case ENTER:

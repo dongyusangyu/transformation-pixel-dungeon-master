@@ -85,8 +85,6 @@ public class StatusPane extends Component {
 	private BusyIndicator busy;
 	private CircleArc counter;
 
-	private static String asset = Assets.Interfaces.STATUS;
-
 	private String hunger_bar = getHungerBar(SPDSettings.hunger());
 
 	private boolean large;
@@ -120,7 +118,7 @@ public class StatusPane extends Component {
 	public StatusPane( boolean large ){
 		super();
 
-		String asset = Assets.Interfaces.STATUS;
+		String asset = Assets.Interfaces.status();
 
 		this.large = large;
 

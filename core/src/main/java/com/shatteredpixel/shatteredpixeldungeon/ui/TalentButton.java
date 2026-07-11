@@ -91,6 +91,7 @@ public class TalentButton extends Button {
 		SUBLIMATION,
 		NEGATIVE,
 		METAMORPH_ALL,
+		TEST_NEGATIVE,
 	}
 
 	public TalentButton(int tier, Talent talent, int points, Mode mode){
@@ -119,7 +120,7 @@ public class TalentButton extends Button {
 		fill = new ColorBlock(0, 4, 0xFFFFFF44);
 		add(fill);
 
-		bg = new Image(Assets.Interfaces.TALENT_BUTTON);
+		bg = new Image(Assets.Interfaces.talentButton());
 		add(bg);
 	}
 
@@ -392,6 +393,23 @@ public class TalentButton extends Button {
 						WndNegative.INSTANCE.select(talent);
 					}
 
+				}
+			});
+		}else if (mode == Mode.TEST_NEGATIVE && Dungeon.hero != null && Dungeon.hero.isAlive()) {
+
+			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
+
+				@Override
+				public String prompt() {
+					return Messages.titleCase(Messages.get(TestTalent.class, "add_negative_talent"));
+				}
+
+				@Override
+				public void call() {
+					TestTalent.addOrReplaceTestNegativeTalent(talent);
+					if (TestTalent.WndNegativeChoose.INSTANCE != null){
+						TestTalent.WndNegativeChoose.INSTANCE.hide();
+					}
 				}
 			});
 		} else {

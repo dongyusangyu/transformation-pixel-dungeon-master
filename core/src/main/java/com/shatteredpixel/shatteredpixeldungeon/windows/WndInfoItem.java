@@ -21,12 +21,15 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ScrollOfDebug;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ItemSlot;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.watabou.noosa.ui.Component;
 
 public class WndInfoItem extends Window {
 	
@@ -34,9 +37,16 @@ public class WndInfoItem extends Window {
 
 	private static final int WIDTH_MIN = 120;
 	private static final int WIDTH_MAX = 220;
+	private static final float SCROLLABLE_MAX_HEIGHT = 0.7f;
+	private static final int SCROLLBAR_GUTTER = 6;
 
 	//only one WndInfoItem can appear at a time
 	private static WndInfoItem INSTANCE;
+	private ScrollPane infoPane;
+
+	private static int maxHeight() {
+		return (int)(PixelScene.uiCamera.height * SCROLLABLE_MAX_HEIGHT);
+	}
 
 	public WndInfoItem( Heap heap ) {
 
@@ -82,7 +92,7 @@ public class WndInfoItem extends Window {
 		
 		RenderedTextBlock txtInfo = PixelScene.renderTextBlock( heap.info(), 6 );
 
-		layoutFields(titlebar, txtInfo);
+		layoutFields(titlebar, txtInfo, false);
 	}
 	
 	private void fillFields( Item item ) {
@@ -99,20 +109,20 @@ public class WndInfoItem extends Window {
 		
 		RenderedTextBlock txtInfo = PixelScene.renderTextBlock( item.info(), 6 );
 		
-		layoutFields(titlebar, txtInfo);
+		layoutFields(titlebar, txtInfo, item instanceof ScrollOfDebug);
 	}
 
-	private void layoutFields(IconTitle title, RenderedTextBlock info){
+	private void layoutFields(IconTitle title, RenderedTextBlock info, boolean scrollable){
 		int width = WIDTH_MIN;
 
-		info.maxWidth(width);
+		info.maxWidth(infoWidth(width, scrollable));
 
 		//window can go out of the screen on landscape, so widen it as appropriate
 		while (PixelScene.landscape()
 				&& info.height() > 100
 				&& width < WIDTH_MAX){
 			width += 20;
-			info.maxWidth(width);
+			info.maxWidth(infoWidth(width, scrollable));
 		}
 
 		//leaves some space to add the journal button in WndUseItem. This is messy I know.
@@ -122,12 +132,57 @@ public class WndInfoItem extends Window {
 			title.setRect( 0, 0, width, 0 );
 		}
 		add( title );
-		//title.setRect( 0, 0, width, 0 );
-		//add( title );
 
-		info.setPos(title.left(), title.bottom() + GAP);
-		add( info );
+		if (scrollable){
+			Component content = new Component();
+			content.add(info);
+			info.setPos(0, GAP);
+			content.setSize(infoWidth(width, true), info.height() + GAP * 2);
 
-		resize( width, (int)(info.bottom() + 2) );
+			float paneTop = title.bottom() + GAP;
+			float paneHeight = Math.min(content.height(), maxHeight() - paneTop - 2);
+			if (paneHeight < 1) paneHeight = 1;
+
+			resize(width, (int)Math.min(maxHeight(), paneTop + paneHeight + 2));
+			add(infoPane = new ScrollPane(content));
+			infoPane.setRect(title.left(), paneTop, width, paneHeight);
+			bringToFront(title);
+		} else {
+			info.setPos(title.left(), title.bottom() + GAP);
+			add( info );
+
+			resize( width, (int)(info.bottom() + 2) );
+		}
+	}
+
+	private int infoWidth(int windowWidth, boolean scrollable){
+		return scrollable ? windowWidth - SCROLLBAR_GUTTER : windowWidth;
+	}
+
+	protected boolean hasScrollableInfo(){
+		return infoPane != null;
+	}
+
+	protected float fitScrollableInfoAbove(float bottomControlsHeight){
+		if (infoPane == null){
+			return height;
+		}
+
+		float paneHeight = Math.min(
+				infoPane.content().height(),
+				maxHeight() - infoPane.top() - bottomControlsHeight);
+		if (paneHeight < 1) paneHeight = 1;
+
+		infoPane.setRect(infoPane.left(), infoPane.top(), width, paneHeight);
+		resize(width, (int)Math.min(maxHeight(), infoPane.top() + paneHeight + bottomControlsHeight));
+		return infoPane.bottom();
+	}
+
+	@Override
+	public void offset(int xOffset, int yOffset) {
+		super.offset(xOffset, yOffset);
+		if (infoPane != null){
+			infoPane.setPos(infoPane.left(), infoPane.top());
+		}
 	}
 }

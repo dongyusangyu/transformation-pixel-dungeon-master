@@ -206,6 +206,9 @@ public class ChaliceOfBlood extends Artifact {
 		if (target.isStarving()) return;
 
 		float healDelay = 10f - (1.33f + level()*0.667f);
+		if(target.pointsNegative(Talent.WEAKEN_CHALICE)>0){
+			healDelay *= 1f + 0.5f*target.pointsNegative(Talent.WEAKEN_CHALICE);
+		}
 		healDelay /= amount;
 		float heal = 5f/healDelay;
 		//effectively 0.5/1/1.5/2/2.5 HP per turn at +0/+6/+8/+9/+10

@@ -591,6 +591,13 @@ public abstract class Char extends Actor {
 				}
 
 				effectiveDamage = attackProc(enemy, effectiveDamage);
+				if (hero != null && hero.hasTalent(Talent.ARMED_UPRISING)
+						&& Talent.isArmedUprisingAlly(this)) {
+					Talent.onAttackProc(hero, this, enemy, effectiveDamage);
+					if (hero.pointsInTalent(Talent.ARMED_UPRISING) >= 2) {
+						effectiveDamage = Talent.onAttackProcMult(hero, enemy, effectiveDamage)+Talent.onAttackProcBonus(hero, enemy);
+					}
+				}
 			}
 			if (visibleFight) {
 				if (effectiveDamage > 0 || !enemy.blockSound(Random.Float(0.96f, 1.05f))) {

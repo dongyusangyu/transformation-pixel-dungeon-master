@@ -93,6 +93,8 @@ public class WndGame extends Window {
 					ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
 				}
 			} );
+			curBtn.icon(Icons.get(Icons.ENTER));
+			curBtn.textColor(Window.TITLE_COLOR);
 
 			
 			addButton( curBtn = new RedButton( Messages.get(this, "rankings") ) {

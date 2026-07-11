@@ -339,12 +339,6 @@ public abstract class Mob extends Char {
 			Badges.validateGoldCollected();
 			hero.sprite.showStatusWithIcon( CharSprite.NEUTRAL, Integer.toString(quantity), FloatingText.GOLD );
 		}
-		if(hero !=null && hero.hasTalent(Talent.ARMED_UPRISING) && alignment== Alignment.ALLY){
-			Talent.onAttackProc(hero,this,enemy,damage);
-			if(hero.pointsInTalent(Talent.ARMED_UPRISING)==2){
-				damage=Talent.onAttackProcMult(hero,enemy,damage);
-			}
-		}
         if(buff(KingBlade.Disarm.class)!=null && alignment!= Alignment.ALLY && enemy.alignment==Alignment.ALLY){
             if(properties.contains(BOSS)){
                 damage*=0.5f;
@@ -608,7 +602,11 @@ public abstract class Mob extends Char {
 	}
 
 	protected boolean getCloser( int target ) {
-		
+		if (!isValidPathTarget(target, Dungeon.level.length())) {
+			path = null;
+			return false;
+		}
+
 		if (rooted || target == pos) {
 			return false;
 		}
@@ -697,8 +695,6 @@ public abstract class Mob extends Char {
 
 			//generate a new path
 			if (newPath) {
-                if(target>Dungeon.level.map.length) target = this.pos;
-
 				//If we aren't hunting, always take a full path
                 PathFinder.Path full=null;
                 full = Dungeon.findPath(this, target, Dungeon.level.passable, fieldOfView, true);
@@ -732,6 +728,10 @@ public abstract class Mob extends Char {
 		} else {
 			return false;
 		}
+	}
+
+	static boolean isValidPathTarget(int target, int levelLength) {
+		return target >= 0 && target < levelLength;
 	}
 	
 	protected boolean getFurther( int target ) {
@@ -1195,7 +1195,7 @@ public abstract class Mob extends Char {
 			}
 		}
 
-		if (buff(ChampionEnemy.RandomMiniBoss.class) != null) {
+		if (buff(ChampionEnemy.RandomMiniBoss.class) != null && canDropRandomMiniBossLoot()) {
 			Item loot;
 			switch (Random.Int(3)) {
 				case 0:
@@ -1243,6 +1243,10 @@ public abstract class Mob extends Char {
 			Talent.onFoodEaten(hero, 0, null);
 		}
 
+	}
+
+	protected boolean canDropRandomMiniBossLoot() {
+		return true;
 	}
 
 	protected Object loot = null;

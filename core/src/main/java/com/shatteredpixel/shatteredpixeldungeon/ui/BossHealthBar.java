@@ -53,8 +53,6 @@ public class BossHealthBar extends Component {
 	private Image skull;
 	private Emitter blood;
 
-	private static String asset = Assets.Interfaces.BOSSHP;
-
 	private static BossHealthBar instance;
 	private static boolean bleeding;
 
@@ -76,6 +74,7 @@ public class BossHealthBar extends Component {
 	@Override
 	protected void createChildren() {
 		this.large = SPDSettings.interfaceSize() != 0;
+		String asset = Assets.Interfaces.bossHP();
 
 		bar = large ? new Image(asset, 0, 16, 128, 30) : new Image(asset, 0, 0, 64, 16);
 		add(bar);

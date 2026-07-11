@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArtifactRecharge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -91,6 +92,9 @@ public class MagesStaff extends MeleeWeapon {
 		return  Math.round(3f*(tier+1)+1) +   //6 base damage, down from 10
 				lvl*(tier+1);               //scaling unaffected
 	}
+    public boolean canUseWeaponAbilityAction(Hero hero) {
+        return false;
+    }
 
 	public MagesStaff(Wand wand){
 		this();
@@ -220,6 +224,10 @@ public class MagesStaff extends MeleeWeapon {
 	}
 
 	public Item imbueWand(Wand wand, Char owner){
+		identifyWandTypeOnImbue(
+				wand,
+				Dungeon.hero != null && Dungeon.hero.randomMode,
+				Dungeon.hero != null && owner == Dungeon.hero);
 
 		int oldStaffcharges = this.wand != null ? this.wand.curCharges : 0;
 
@@ -277,6 +285,16 @@ public class MagesStaff extends MeleeWeapon {
 		Badges.validateItemLevelAquired(this);
 
 		return this;
+	}
+
+	static void identifyWandTypeOnImbue(Wand wand, boolean randomMode, boolean performedByHero) {
+		if (wand != null && shouldIdentifyWandTypeOnImbue(randomMode, performedByHero) && !wand.isKnown()) {
+			wand.setKnown();
+		}
+	}
+
+	static boolean shouldIdentifyWandTypeOnImbue(boolean randomMode, boolean performedByHero) {
+		return randomMode && performedByHero;
 	}
 
 	public void gainCharge( float amt ){
