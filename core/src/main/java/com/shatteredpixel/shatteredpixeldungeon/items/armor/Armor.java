@@ -609,11 +609,15 @@ public class Armor extends EquipableItem {
 				if (glyph != null && trinityGlyph != null && trinityGlyph.getClass() == glyph.getClass()){
 					trinityGlyph = null;
 				}
-			}
+            }
             Glyph ringGlyph = null;
-            RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
-            if (ring != null && ring.glyph != null && !ring.cursed && ring.isEquipped(hero)){
-                ringGlyph = ring.glyph;
+            RingOfKing ring = null;
+            if (canUseKingsRingGlyph(defender)) {
+                Hero defendingHero = (Hero) defender;
+                ring = defendingHero.belongings.getItem(RingOfKing.class);
+                if (ring != null && ring.glyph != null && !ring.cursed && ring.isEquipped(defendingHero)) {
+                    ringGlyph = ring.glyph;
+                }
             }
 
 			if (defender instanceof Hero && isEquipped((Hero) defender)
@@ -679,6 +683,10 @@ public class Armor extends EquipableItem {
 		}
 		
 		return damage;
+	}
+
+	static boolean canUseKingsRingGlyph(Char defender) {
+		return defender instanceof Hero;
 	}
 	
 	@Override

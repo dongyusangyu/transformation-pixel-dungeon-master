@@ -44,8 +44,10 @@ public enum DictionaryJournal {
         ARTIFACTS.d.put("artifact_toolkit",         ItemSpriteSheet.ARTIFACT_TOOLKIT);
         ARTIFACTS.d.put("artifact_chalice",         ItemSpriteSheet.ARTIFACT_CHALICE1);
         ARTIFACTS.d.put("artifact_cloak",           ItemSpriteSheet.ARTIFACT_CLOAK);
+        ARTIFACTS.d.put("artifact_cape",            ItemSpriteSheet.ARTIFACT_CAPE);
         ARTIFACTS.d.put("artifact_rose",            ItemSpriteSheet.ARTIFACT_ROSE1);
         ARTIFACTS.d.put("artifact_chain",           ItemSpriteSheet.ARTIFACT_CHAINS);
+        ARTIFACTS.d.put("artifact_beacon",          ItemSpriteSheet.ARTIFACT_BEACON);
         ARTIFACTS.d.put("artifact_holytome",        ItemSpriteSheet.ARTIFACT_TOME);
         ARTIFACTS.d.put("artifact_horn",            ItemSpriteSheet.ARTIFACT_HORN1);
         ARTIFACTS.d.put("artifact_sandal",          ItemSpriteSheet.ARTIFACT_SANDALS);

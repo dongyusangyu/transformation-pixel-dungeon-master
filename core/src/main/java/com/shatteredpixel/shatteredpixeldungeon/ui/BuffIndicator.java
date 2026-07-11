@@ -200,6 +200,7 @@ public class BuffIndicator extends Component {
 	private Char ch;
 
 	private boolean large = false;
+	private boolean registeredHeroInstance = false;
 
 	//in some cases we want to limit some rows but not all by just reducing width
 	public float[] rowWidthLimits = new float[9]; //0 = no limit
@@ -207,12 +208,17 @@ public class BuffIndicator extends Component {
 	public float[] rowHeightAdjusts = new float[9]; //0 = default adjust of 1
 
 	public BuffIndicator( Char ch, boolean large ) {
+		this(ch, large, true);
+	}
+
+	public BuffIndicator( Char ch, boolean large, boolean registerHeroInstance ) {
 		super();
 		
 		this.ch = ch;
 		this.large = large;
-		if (ch == Dungeon.hero) {
+		if (registerHeroInstance && ch == Dungeon.hero) {
 			heroInstance = this;
+			registeredHeroInstance = true;
 		}
 	}
 	
@@ -220,7 +226,7 @@ public class BuffIndicator extends Component {
 	public void destroy() {
 		super.destroy();
 		
-		if (this == heroInstance) {
+		if (registeredHeroInstance && this == heroInstance) {
 			heroInstance = null;
 		}
 	}

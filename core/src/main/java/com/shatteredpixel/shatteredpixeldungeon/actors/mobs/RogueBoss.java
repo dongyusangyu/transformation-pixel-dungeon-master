@@ -652,7 +652,9 @@ public class RogueBoss extends Mob {
         {
             spriteClass = ShadowClone.ShadowSprite.class;
 
-            HP = HT = 40;
+            HP = HT = 60;
+            baseSpeed = 2f;
+            maxLvl = -2;
             defenseSkill = 15;
             properties.add(Property.BOSS);
             properties.add(Property.INORGANIC);

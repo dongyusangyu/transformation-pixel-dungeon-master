@@ -128,6 +128,16 @@ public class Invisibility extends FlavourBuff {
 	}
 
 	public static void dispel(Char ch){
+		dispel(ch, false);
+	}
+
+	public static void dispelForTargeting() {
+		if (Dungeon.hero == null) return;
+
+		dispel(Dungeon.hero, true);
+	}
+
+	private static void dispel(Char ch, boolean preserveTargetingTurn){
 		boolean hasinvis = false;
 		for ( Buff invis : ch.buffs( Invisibility.class )){
 			if(hero != null && ch==hero && hero.hasTalent(Talent.CICADA_DANCE) && hero.buff(Talent.EnemyDies.class)!=null){
@@ -166,9 +176,17 @@ public class Invisibility extends FlavourBuff {
 		if (bubble != null){
 			if(hero != null && hero.pointsInTalent(Talent.SWIFT_CHURCH)>1 && ch instanceof Hero){
 				int time1 = 8 - 2 * hero.pointsInTalent(Talent.SWIFT_CHURCH);
-				bubble.processTime(time1);
+				if (preserveTargetingTurn) {
+					bubble.processTimeForTargeting(time1);
+				} else {
+					bubble.processTime(time1);
+				}
 			}else{
-				bubble.detach();
+				if (preserveTargetingTurn) {
+					bubble.detachForTargeting();
+				} else {
+					bubble.detach();
+				}
 			}
 
 		}

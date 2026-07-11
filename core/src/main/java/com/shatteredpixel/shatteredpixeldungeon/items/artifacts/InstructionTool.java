@@ -147,6 +147,9 @@ public class InstructionTool extends Artifact {
             } else if((drone != null && drone.size()+1>charge) || charge<1){
                 GLog.w( Messages.get(InstructionTool.class, "more_drone") );
                 return;
+            }else if(drone != null && drone.size()>=10){
+                GLog.w( Messages.get(InstructionTool.class, "max_drone") );
+                return;
             }else{
                 int chargeuse=1;
                 if(drone!=null){
@@ -1097,6 +1100,8 @@ public class InstructionTool extends Artifact {
                 desc += "\n\n";
                 if(drone==null){
                     desc += Messages.get(this, "usecharge2");
+                }else if(drone != null && drone.size()>=10) {
+                    desc += Messages.get(InstructionTool.class, "usecharge3");
                 }else{
                     desc += Messages.get(this, "usecharge",drone.size(),drone.size()+1);
                 }

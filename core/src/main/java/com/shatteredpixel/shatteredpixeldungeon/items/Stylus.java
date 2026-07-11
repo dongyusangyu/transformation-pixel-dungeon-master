@@ -135,7 +135,13 @@ public class Stylus extends Item {
 
 		GLog.w( Messages.get(this, "inscribed"));
 
-		weapon.enchant();
+
+        if(hero.pointsNegative(Talent.CURSEDMAN)>0){
+            weapon.enchant(Weapon.Enchantment.randomCurse());
+            weapon.cursed=true;
+        }else{
+            weapon.enchant();
+        }
 
 		curUser.sprite.operate(curUser.pos);
 		curUser.sprite.centerEmitter().start(PurpleParticle.BURST, 0.05f, 10);

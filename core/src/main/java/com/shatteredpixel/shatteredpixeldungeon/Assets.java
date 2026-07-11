@@ -44,6 +44,7 @@ public class Assets {
 		public static final String TILES_CAVES  = "environment/tiles_caves.png";
 		public static final String TILES_CITY   = "environment/tiles_city.png";
 		public static final String TILES_HALLS  = "environment/tiles_halls.png";
+		public static final String TILES_SURFACE_LUSH  = "environment/tiles_surface_lush.png";
 
 		public static final String TILES_CAVES_CRYSTAL  = "environment/tiles_caves_crystal.png";
 		public static final String TILES_CAVES_GNOLL    = "environment/tiles_caves_gnoll.png";
@@ -53,6 +54,7 @@ public class Assets {
 		public static final String WATER_CAVES  = "environment/water2.png";
 		public static final String WATER_CITY   = "environment/water3.png";
 		public static final String WATER_HALLS  = "environment/water4.png";
+		public static final String WATER_SURFACE_LUSH  = "environment/water_surface_lush.png";
 
 		public static final String WEAK_FLOOR       = "environment/custom_tiles/weak_floor.png";
 		public static final String SEWER_BOSS       = "environment/custom_tiles/sewer_boss.png";
@@ -77,14 +79,7 @@ public class Assets {
 		public static final String BADGES   = "interfaces/badges.png";
 		public static final String LOCKED   = "interfaces/locked_badge.png";
 
-		public static final String CHROME   = "interfaces/chrome.png";
-		public static final String ICONS    = "interfaces/icons.png";
-		public static final String STATUS   = "interfaces/status_pane.png";
-		public static final String MENU     = "interfaces/menu_pane.png";
-		public static final String MENU_BTN = "interfaces/menu_button.png";
-		public static final String TOOLBAR  = "interfaces/toolbar.png";
 		public static final String SHADOW   = "interfaces/shadow.png";
-		public static final String BOSSHP   = "interfaces/boss_hp.png";
 
 		public static final String SURFACE  = "interfaces/surface.png";
 
@@ -93,11 +88,25 @@ public class Assets {
 
 		//public static final String TALENT_ICONS     = "interfaces/talent_icons.png";
 		public static final String TALENT_ICONS     = "interfaces/Talent_icon.png";
-		public static final String TALENT_BUTTON    = "interfaces/talent_button.png";
 
 		public static final String HERO_ICONS       = "interfaces/hero_icons.png";
 
-		public static final String RADIAL_MENU      = "interfaces/radial_menu.png";
+
+		private static String themed(String file) {
+			return "interfaces/"
+					+ (SPDSettings.uiStyle() == SPDSettings.UIStyle.SPD ? "SPD/" : "")
+					+ file;
+		}
+
+		public static String chrome()       { return themed("chrome.png"); }
+		public static String icons()        { return themed("icons.png"); }
+		public static String status()       { return themed("status_pane.png"); }
+		public static String menu()         { return themed("menu_pane.png"); }
+		public static String menuButton()   { return themed("menu_button.png"); }
+		public static String toolbar()      { return themed("toolbar.png"); }
+		public static String bossHP()       { return themed("boss_hp.png"); }
+		public static String talentButton() { return themed("talent_button.png"); }
+		public static String radialMenu()   { return themed("radial_menu.png"); }
 
 		public static final String HUNGER_BAR      = "interfaces/hunger_bar.png";
 		public static final String CHALLENGES_ICONS      = "interfaces/Challenge_icons.png";

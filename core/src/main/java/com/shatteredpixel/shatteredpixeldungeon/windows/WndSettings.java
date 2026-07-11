@@ -445,6 +445,7 @@ public class WndSettings extends WndTabbed {
 		OptionSlider optUIMode;
 		OptionSlider optUIScale;
 		RedButton btnToolbarSettings;
+		RedButton btnUIStyle;
 		CheckBox chkFlipTags;
 		ColorBlock sep2;
 		CheckBox chkFont;
@@ -645,6 +646,41 @@ public class WndSettings extends WndTabbed {
 
 			}
 
+			btnUIStyle = new RedButton(Messages.get(this, "ui_style_settings"), 9) {
+				@Override
+				protected void onClick() {
+					SPDSettings.UIStyle current = SPDSettings.uiStyle();
+					String currentName = Messages.get(WndSettings.UITab.class,
+							current == SPDSettings.UIStyle.SPD ? "spd_style" : "transformation_style");
+					ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+							Messages.get(WndSettings.UITab.class, "ui_style_settings"),
+							Messages.get(WndSettings.UITab.class, "ui_style_prompt", currentName),
+							Messages.get(WndSettings.UITab.class, "transformation_style"),
+							Messages.get(WndSettings.UITab.class, "spd_style")) {
+						@Override
+						protected void onSelect(int index) {
+							SPDSettings.UIStyle selected = index == 1
+									? SPDSettings.UIStyle.SPD
+									: SPDSettings.UIStyle.TRANSFORMATION;
+							if (selected != SPDSettings.uiStyle()) {
+								seamlessResetScene(new Game.SceneChangeCallback() {
+									@Override
+									public void beforeCreate() {
+										SPDSettings.uiStyle(selected);
+									}
+
+									@Override
+									public void afterCreate() {
+										// The rebuilt scene has already loaded the selected UI assets.
+									}
+								});
+							}
+						}
+					});
+				}
+			};
+			add(btnUIStyle);
+
 			sep2 = new ColorBlock(1, 1, 0xFF000000);
 			add(sep2);
 
@@ -740,6 +776,8 @@ public class WndSettings extends WndTabbed {
 				chkFlipTags.setRect(0, height + GAP, width, BTN_HEIGHT);
 				height = chkFlipTags.bottom();
 			}
+			btnUIStyle.setRect(0, height + GAP, width, BTN_HEIGHT);
+			height = btnUIStyle.bottom();
 			optScreenHunger.setRect(0, height + GAP, width, BTN_HEIGHT);
 
 			sep2.size(width, 1);

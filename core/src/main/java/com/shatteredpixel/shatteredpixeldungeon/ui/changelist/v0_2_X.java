@@ -51,6 +51,18 @@ public class v0_2_X {
         ChangeInfo changes = new ChangeInfo("v0.2.9fix", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+        changes = new ChangeInfo("fix4", false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+        changes.addButton(new ChangeButton(Icons.get(Icons.CATALOG),
+                Messages.get(v0_2_X.class, "v0_2_9fix4.button_1.title"), Messages.get(v0_2_X.class, "v0_2_9fix4.button_1.text")));
+        changes.addButton(new ChangeButton(Icons.get(Icons.PREFS),
+                Messages.get(v0_2_X.class, "v0_2_9fix4.button_2.title"), Messages.get(v0_2_X.class, "v0_2_9fix4.button_2.text_1"), Messages.get(v0_2_X.class, "v0_2_9fix4.button_2.text_2")));
+        changes.addButton(new ChangeButton(new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16),
+                Messages.get(v0_2_X.class, "v0_2_9fix4.button_3.title"), Messages.get(v0_2_X.class, "v0_2_9fix4.button_3.text")));
+        changes.addButton(new ChangeButton(Icons.get(Icons.DISPLAY),
+                Messages.get(v0_2_X.class, "v0_2_9fix4.button_4.title"), Messages.get(v0_2_X.class, "v0_2_9fix4.button_4.text")));
+
         changes = new ChangeInfo("fix3", false, null);
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);

@@ -296,7 +296,7 @@ public class WndUpgrade extends Window {
 		}
 
 		//Various wand stats (varies by wand)
-		if (wand instanceof Wand){
+		if (wand instanceof Wand && !unknownRandomModeWand(wand)){
 			if (((Wand) wand).upgradeStat1(levelFrom) != null){
 				bottom = fillFields(Messages.get(wand, "upgrade_stat_name_1"),
 						((Wand) wand).upgradeStat1(levelFrom),
@@ -318,7 +318,7 @@ public class WndUpgrade extends Window {
 		}
 
 		//max charges
-		if (wand instanceof Wand){
+		if (wand instanceof Wand && !unknownRandomModeWand(wand)){
 			int chargeboost = levelFrom + (toUpgrade instanceof MagesStaff ? 1 : 0);
 			bottom = fillFields(Messages.get(this, "charges"),
 					Integer.toString(Math.min(10, ((Wand) wand).initialCharges() + chargeboost)),
@@ -369,6 +369,8 @@ public class WndUpgrade extends Window {
 		if (!toUpgrade.isIdentified()){
 			if (toUpgrade instanceof Ring && !((Ring) toUpgrade).isKnown()){
 				bottom = addMessage(Messages.get(this, "unknown_ring"), CharSprite.WARNING, bottom);
+			} else if (unknownRandomModeWand(toUpgrade)) {
+				bottom = addMessage(Messages.get(this, "unknown_wand"), CharSprite.WARNING, bottom);
 			} else {
 				bottom = addMessage(Messages.get(this, "unided"), CharSprite.WARNING, bottom);
 			}
@@ -614,6 +616,13 @@ public class WndUpgrade extends Window {
 		return Dungeon.hero.heroClass == HeroClass.DUELIST
 				|| Dungeon.hero.subClass.is(HeroSubClass.CHAMPION)
 				|| (Dungeon.hero.hasTalent(Talent.MARTIAL_TRAIN) && !(toUpgrade instanceof MagesStaff));
+	}
+
+	private boolean unknownRandomModeWand(Item item){
+		return Dungeon.hero != null
+				&& Dungeon.hero.randomMode
+				&& item instanceof Wand
+				&& !((Wand)item).isKnown();
 	}
 
 }

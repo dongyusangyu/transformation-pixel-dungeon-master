@@ -180,6 +180,11 @@ public class Ghoul extends Mob {
 	}
 
 	@Override
+	protected boolean canDropRandomMiniBossLoot() {
+		return partnerID == -1 || id() < partnerID;
+	}
+
+	@Override
 	protected synchronized void onRemove() {
 		if (beingLifeLinked) {
 			for (Buff buff : buffs()) {

@@ -57,6 +57,23 @@ public class RingOfKing extends Ring{
     public Armor.Glyph glyph;
     public Weapon weapon=new Sword();
     public Armor armor=new ClothArmor();
+
+    public void applyEnchantment(Weapon.Enchantment enchantment) {
+        this.enchantment = enchantment;
+        if (enchantment != null) {
+            Catalog.setSeen(enchantment.getClass());
+            Statistics.discoverItemType(enchantment.getClass());
+        }
+    }
+
+    public void applyGlyph(Armor.Glyph glyph) {
+        this.glyph = glyph;
+        if (glyph != null) {
+            Catalog.setSeen(glyph.getClass());
+            Statistics.discoverItemType(glyph.getClass());
+        }
+    }
+
     @Override
     public int buffedLvl() {
         int lvl = super.buffedLvl();
@@ -155,8 +172,7 @@ public class RingOfKing extends Ring{
                                 enchants[2] = Weapon.Enchantment.random( existing, enchants[0].getClass(), enchants[1].getClass());
                                 GameScene.show(new WndEnchantSelect1(RingOfKing.this, enchants[0], enchants[1], enchants[2]));
                             }else{
-                                enchantment = Weapon.Enchantment.random(existing);
-                                Catalog.setSeen(enchantment.getClass());
+                                applyEnchantment(Weapon.Enchantment.random(existing));
                                 GLog.p(Messages.get(StoneOfEnchantment.class, "ring"));
                                 curUser.sprite.emitter().start( Speck.factory( Speck.LIGHT ), 0.1f, 5 );
                                 Enchanting.show( curUser, RingOfKing.this );
@@ -172,8 +188,7 @@ public class RingOfKing extends Ring{
                                 glyphs[0] = Armor.Glyph.random( existing1, glyphs[1].getClass(), glyphs[2].getClass());
                                 GameScene.show(new WndGlyphSelect1(RingOfKing.this, glyphs[0], glyphs[1], glyphs[2]));
                             }else{
-                                glyph = Armor.Glyph.random(existing1);
-                                Catalog.setSeen(glyph.getClass());
+                                applyGlyph(Armor.Glyph.random(existing1));
                                 GLog.p(Messages.get(StoneOfEnchantment.class, "ring"));
                                 curUser.sprite.emitter().start( Speck.factory( Speck.LIGHT ), 0.1f, 5 );
                                 Enchanting.show( curUser, RingOfKing.this );
@@ -192,13 +207,13 @@ public class RingOfKing extends Ring{
             if (isEquipped(Dungeon.hero) && !cursed){
                 if(enchantment != null){
                     info += "\n\n" + Messages.get(this, "desc2", enchantment.name());
-                    if(hero.subClass!=null && hero.subClass.is(HeroSubClass.RUNEMAGE)){
+                    if(Text.shouldShowRunemarkText(hero.subClass, enchantment)){
                         info += "\n\n" + Messages.get(enchantment, "runemark");
                     }
                 }
                 if(glyph != null){
                     info += "\n\n" + Messages.get(this, "desc3", glyph.name());
-                    if(hero.subClass!=null && hero.subClass.is(HeroSubClass.COMBATMASTER)){
+                    if(Text.shouldShowCombatMasterText(hero.subClass, glyph)){
                         info += "\n\n" + Messages.get(glyph, "combat");
                     }
                 }
@@ -210,6 +225,18 @@ public class RingOfKing extends Ring{
             return Messages.get(this, "stats");
         }
     }
+
+    static class Text {
+
+        static boolean shouldShowRunemarkText(HeroSubClass subClass, Weapon.Enchantment enchantment) {
+            return subClass != null && subClass.is(HeroSubClass.RUNEMAGE) && enchantment != null && !enchantment.curse();
+        }
+
+        static boolean shouldShowCombatMasterText(HeroSubClass subClass, Armor.Glyph glyph) {
+            return subClass != null && subClass.is(HeroSubClass.COMBATMASTER) && glyph != null && !glyph.curse();
+        }
+    }
+
     private static final String GLYPH			= "glyph";
     private static final String CURSE_INFUSION_BONUS = "curse_infusion_bonus";
     private static final String ENCHANT			= "enchant";
@@ -278,8 +305,7 @@ public class RingOfKing extends Ring{
         @Override
         protected void onSelect(int index) {
             if (index < 3) {
-                ring.enchantment = enchantments[index];
-                Catalog.setSeen(ring.enchantment.getClass());
+                ring.applyEnchantment(enchantments[index]);
                 GLog.p(Messages.get(StoneOfEnchantment.class, "ring"));
                 ((ScrollOfEnchantment)curItem).readAnimation();
 
@@ -341,8 +367,7 @@ public class RingOfKing extends Ring{
         @Override
         protected void onSelect(int index) {
             if (index < 3) {
-                ring.glyph = glyphs[index];
-                Catalog.setSeen(ring.glyph.getClass());
+                ring.applyGlyph(glyphs[index]);
                 GLog.p(Messages.get(StoneOfEnchantment.class, "ring"));
                 ((ScrollOfEnchantment) curItem).readAnimation();
 
@@ -434,8 +459,7 @@ public class RingOfKing extends Ring{
         @Override
         protected void onSelect(int index) {
             if (index < 3) {
-                ring.enchantment = enchantments[index];
-                Catalog.setSeen(ring.enchantment.getClass());
+                ring.applyEnchantment(enchantments[index]);
                 GLog.p(Messages.get(StoneOfEnchantment.class, "ring"));
                 curUser.sprite.emitter().start( Speck.factory( Speck.LIGHT ), 0.1f, 5 );
                 Enchanting.show( curUser, ring );
@@ -503,8 +527,7 @@ public class RingOfKing extends Ring{
         @Override
         protected void onSelect(int index) {
             if (index < 3) {
-                ring.glyph = glyphs[index];
-                Statistics.itemTypesDiscovered.add(ring.glyph.getClass());
+                ring.applyGlyph(glyphs[index]);
                 GLog.p(Messages.get(StoneOfEnchantment.class, "ring"));
                 curUser.sprite.emitter().start( Speck.factory( Speck.LIGHT ), 0.1f, 5 );
                 Enchanting.show( curUser, ring );

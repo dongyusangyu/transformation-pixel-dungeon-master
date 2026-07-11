@@ -368,10 +368,6 @@ public class ScrollOfTransmutation extends InventoryScroll {
 		n.cursed = w.cursed;
 		n.curseInfusionBonus = w.curseInfusionBonus;
 		n.resinBonus = w.resinBonus;
-		if (Dungeon.hero != null && Dungeon.hero.randomMode && !Wand.isKnown((Class<? extends Wand>) n.getClass())) {
-			n.levelKnown = false;
-			n.curChargeKnown = false;
-		}
 
 		n.curCharges =  w.curCharges;
 		n.updateLevel();

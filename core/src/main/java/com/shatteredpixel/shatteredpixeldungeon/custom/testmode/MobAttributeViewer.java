@@ -162,7 +162,7 @@ public class MobAttributeViewer extends TestItem{
             health.level(ch);
             add(health);
 
-            buffs = new BuffIndicator(ch, false);
+            buffs = new BuffIndicator(ch, false, false);
             add(buffs);
         }
 

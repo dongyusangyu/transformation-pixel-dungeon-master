@@ -41,6 +41,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.services.cloud.CloudSyncService;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Toolbar;
 import com.shatteredpixel.shatteredpixeldungeon.utils.DungeonSeed;
@@ -82,6 +83,15 @@ public enum Rankings {
 	public Record latestDaily;
 	public Record latestDailyReplay = null; //not stored, only meant to be temp
 	public LinkedHashMap<Long, Integer> dailyScoreHistory = new LinkedHashMap<>();
+	private static final CloudSyncService.Callback SILENT_CLOUD_CALLBACK = new CloudSyncService.Callback() {
+		@Override
+		public void onSuccess() {
+		}
+
+		@Override
+		public void onFailure() {
+		}
+	};
 
 	public void submit( boolean win, Object cause ) {
 
@@ -142,6 +152,9 @@ public enum Rankings {
 				dailyScoreHistory.put(Dungeon.seed - DungeonSeed.TOTAL_SEEDS, rec.score);
 			}
 			save();
+			if (win) {
+				uploadCloudDataAfterWin();
+			}
 			return;
 		}
 
@@ -173,6 +186,13 @@ public enum Rankings {
 		Badges.validateGamesPlayed();
 		
 		save();
+		if (win) {
+			uploadCloudDataAfterWin();
+		}
+	}
+
+	private void uploadCloudDataAfterWin() {
+		CloudSyncService.uploadLocalData(SILENT_CLOUD_CALLBACK);
 	}
 
 	private int score( boolean win ) {

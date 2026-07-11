@@ -99,7 +99,7 @@ public class RingOfElements extends Ring {
 		}
 
 		//MagicFeather
-		if(hero !=null && target == hero){
+		if(hero !=null && target == hero && AntiMagic.RESISTS.contains(effect)){
 			MagicFeather feather = Dungeon.hero.belongings.getItem(MagicFeather.class);
 			if (feather != null) {
 				resist *= 1.15f + 0.15f * feather.buffedLvl();

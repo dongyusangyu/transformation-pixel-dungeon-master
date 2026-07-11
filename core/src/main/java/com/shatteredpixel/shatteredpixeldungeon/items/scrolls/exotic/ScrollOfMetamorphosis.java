@@ -292,12 +292,10 @@ public class ScrollOfMetamorphosis extends Scroll {
 			List<Talent> availableTalents = Talent.metamorphCandidatePool(tier, preferredType, curTalentsAtTier, randomMode ? 1 : beilv);
 			int cnt=4;
 
-			if(!randomMode && hero.pointsInTalent(Talent.MORE_TALENT)>Random.Int(2)){
+			if(hero.pointsInTalent(Talent.MORE_TALENT)>Random.Int(2)){
 				cnt+=1;
 			}
-			if (!randomMode){
-				cnt-=hero.pointsNegative(Talent.FATE_DECISION);
-			}
+			cnt-=hero.pointsNegative(Talent.FATE_DECISION);
 
 			List<Talent> selectedTalents = new ArrayList<>();
 			while (selectedTalents.size() < cnt && !availableTalents.isEmpty()) {

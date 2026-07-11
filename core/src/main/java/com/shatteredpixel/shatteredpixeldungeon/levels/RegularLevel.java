@@ -328,7 +328,7 @@ public abstract class RegularLevel extends Level {
 		}
 		ArrayList<Mob> candidates = new ArrayList<>();
 		for (Mob m : mobs) {
-			if (ChampionEnemy.RandomMiniBoss.validTarget(m)) {
+			if (ChampionEnemy.RandomMiniBoss.validTarget(m, this instanceof MiningLevel)) {
 				candidates.add(m);
 			}
 		}

@@ -531,6 +531,9 @@ public abstract class Wand extends Item {
 	
 	@Override
 	public boolean isIdentified() {
+		if (hero != null && hero.randomMode) {
+			return super.isIdentified() && curChargeKnown && isKnown();
+		}
 		return super.isIdentified() && curChargeKnown;
 	}
 	

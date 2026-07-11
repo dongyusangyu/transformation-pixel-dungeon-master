@@ -25,13 +25,19 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -47,6 +53,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -95,23 +102,34 @@ public class LloydsBeacon extends Artifact {
 	@Override
 	public ArrayList<String> actions( Hero hero ) {
 		ArrayList<String> actions = super.actions( hero );
-		actions.add( AC_ZAP );
-		actions.add( AC_SET );
-		if (returnDepth != -1) {
-			actions.add( AC_RETURN );
-		}
+
+		if (isEquipped(hero) && charge > 0 && !cursed && hero.buff(MagicImmune.class) == null) {
+            actions.add( AC_ZAP );
+            actions.add( AC_SET );
+            if (returnDepth != -1) {
+                actions.add( AC_RETURN );
+            }
+        }else if(isEquipped(hero) && !cursed && hero.buff(MagicImmune.class) == null){
+            actions.add( AC_SET );
+        }
 		return actions;
 	}
 	
 	@Override
 	public void execute( Hero hero, String action ) {
+        super.execute( hero, action );
 
-		super.execute( hero, action );
+		if (cursed && (AC_ZAP.equals(action) || AC_SET.equals(action) || AC_RETURN.equals(action))) {
+			GLog.w( Messages.get(this, "cursed") );
+			return;
+		}
+        if(!isEquipped( hero ) && (AC_ZAP.equals(action) || AC_SET.equals(action) || AC_RETURN.equals(action))){
+            GLog.i( Messages.get(Artifact.class, "need_to_equip") );
+        }
 
-		if (action == AC_SET || action == AC_RETURN) {
+		if (AC_SET.equals(action) || AC_RETURN.equals(action)) {
 			
 			if (Dungeon.bossLevel() || !Dungeon.interfloorTeleportAllowed()) {
-				hero.spend( LloydsBeacon.TIME_TO_USE );
 				GLog.w( Messages.get(this, "preventing") );
 				return;
 			}
@@ -125,25 +143,11 @@ public class LloydsBeacon extends Artifact {
 			}
 		}
 
-		if (action == AC_ZAP ){
+		if (AC_ZAP.equals(action)){
+            GameScene.selectCell(zapper);
 
-			curUser = hero;
-			int chargesToUse = Dungeon.depth > 20 ? 2 : 1;
-
-			if (!isEquipped( hero )) {
-				GLog.i( Messages.get(Artifact.class, "need_to_equip") );
-				QuickSlotButton.cancel();
-
-			} else if (charge < chargesToUse) {
-				GLog.i( Messages.get(this, "no_charge") );
-				QuickSlotButton.cancel();
-
-			} else {
-				GameScene.selectCell(zapper);
-			}
-
-		} else if (action == AC_SET) {
-			
+		} else if (AC_SET.equals(action)) {
+			Invisibility.dispel();
 			returnDepth = Dungeon.depth;
 			returnPos = hero.pos;
 			
@@ -154,36 +158,44 @@ public class LloydsBeacon extends Artifact {
 			Sample.INSTANCE.play( Assets.Sounds.BEACON );
 			
 			GLog.i( Messages.get(this, "return") );
-			
-		} else if (action == AC_RETURN) {
-			
-			if (returnDepth == Dungeon.depth) {
-				ScrollOfTeleportation.appear( hero, returnPos );
-				for(Mob m : Dungeon.level.mobs){
-					if (m.pos == hero.pos){
-						//displace mob
-						for(int i : PathFinder.NEIGHBOURS8){
-							if (Actor.findChar(m.pos+i) == null && Dungeon.level.passable[m.pos + i]){
-								m.pos += i;
-								m.sprite.point(m.sprite.worldToCamera(m.pos));
-								break;
-							}
-						}
-					}
-				}
-				Dungeon.level.occupyCell(hero );
-				Dungeon.observe();
-				GameScene.updateFog();
-			} else {
 
-				Level.beforeTransition();
-				InterlevelScene.mode = InterlevelScene.Mode.RETURN;
-				InterlevelScene.returnDepth = returnDepth;
-				InterlevelScene.returnPos = returnPos;
-				Game.switchScene( InterlevelScene.class );
+		} else if (AC_RETURN.equals(action)) {
+
+			if (charge < 3) {
+				GLog.w( Messages.get(this, "no_charge_return") );
+
+			}else{
+                Invisibility.dispel();
+                charge -= 3;
+                gainExp(12);
+                updateQuickslot();
+
+                if (returnDepth == Dungeon.depth) {
+                    ScrollOfTeleportation.appear( hero, returnPos );
+                    for(Mob m : Dungeon.level.mobs){
+                        if (m.pos == hero.pos){
+                            //displace mob
+                            for(int i : PathFinder.NEIGHBOURS8){
+                                if (Actor.findChar(m.pos+i) == null && Dungeon.level.passable[m.pos + i]){
+                                    m.pos += i;
+                                    m.sprite.point(m.sprite.worldToCamera(m.pos));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    Dungeon.level.occupyCell(hero );
+                    Dungeon.observe();
+                    GameScene.updateFog();
+                    hero.spendAndNext( LloydsBeacon.TIME_TO_USE );
+                }else {
+                    Level.beforeTransition();
+                    InterlevelScene.mode = InterlevelScene.Mode.RETURN;
+                    InterlevelScene.returnDepth = returnDepth;
+                    InterlevelScene.returnPos = returnPos;
+                    Game.switchScene( InterlevelScene.class );
+                }
 			}
-			
-			
 		}
 	}
 
@@ -192,10 +204,18 @@ public class LloydsBeacon extends Artifact {
 		@Override
 		public void onSelect(Integer target) {
 
-			if (target == null) return;
 
-			Invisibility.dispel();
-			charge -= Dungeon.scalingDepth() > 20 ? 2 : 1;
+			if (target == null) return;
+			if(!curItem.isEquipped(curUser)){
+                return;
+            }else if (charge < 1) {
+                GLog.w( Messages.get(LloydsBeacon.class, "no_charge_zap", 1) );
+                return;
+            }
+
+            Invisibility.dispel();
+			charge--;
+			gainExp(4);
 			updateQuickslot();
 
 			if (Actor.findChar(target) == curUser){
@@ -221,34 +241,19 @@ public class LloydsBeacon extends Artifact {
 								@Override
 								public void call() {
 									if (ch != null) {
-
-										int count = 10;
-										int pos;
-										do {
-											pos = Dungeon.level.randomRespawnCell( ch );
-											if (count-- <= 0) {
-												break;
+										if (ScrollOfTeleportation.teleportChar(ch)) {
+											if (ch.isAlive() && ch.alignment == Char.Alignment.ENEMY) {
+												artifactProc(ch, level(), 1);
 											}
-										} while (pos == -1);
-
-										if (pos == -1 || Dungeon.bossLevel()) {
-
-											GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
-
-										} else if (ch.properties().contains(Char.Property.IMMOVABLE)) {
-
-											GLog.w( Messages.get(LloydsBeacon.class, "tele_fail") );
-
-										} else  {
-
-											ch.pos = pos;
-											if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING){
-												((Mob) ch).state = ((Mob) ch).WANDERING;
+											if (ch instanceof Mob) {
+												if (((Mob) ch).state == ((Mob) ch).HUNTING) {
+													((Mob) ch).state = ((Mob) ch).WANDERING;
+												}
+												((Mob) ch).beckon(Dungeon.level.randomDestination(ch));
 											}
-											ch.sprite.place(ch.pos);
-											ch.sprite.visible = Dungeon.level.heroFOV[pos];
-
 										}
+									} else {
+										GLog.w( Messages.get(PhaseShift.class, "no_target") );
 									}
 									curUser.spendAndNext(1f);
 								}
@@ -267,6 +272,15 @@ public class LloydsBeacon extends Artifact {
 		}
 	};
 
+	public void useTrinityTeleport(ClassArmor armor) {
+		curUser = Dungeon.hero;
+		charge = Math.max(charge, 1);
+		GameScene.selectCell(zapper);
+		if (Dungeon.quickslot.contains(armor)) {
+			QuickSlotButton.useTargeting(Dungeon.quickslot.getSlot(armor));
+		}
+	}
+
 	@Override
 	protected ArtifactBuff passiveBuff() {
 		return new beaconRecharge();
@@ -274,32 +288,45 @@ public class LloydsBeacon extends Artifact {
 	
 	@Override
 	public void charge(Hero target, float amount) {
-		if (charge < chargeCap){
-			partialCharge += 0.25f*amount;
-			while (partialCharge >= 1){
-				partialCharge--;
-				charge++;
+		if (cursed || target.buff(MagicImmune.class) != null) return;
+		gainCharge(0.133f*amount, true);
+	}
 
-			}
-			if (charge >= chargeCap){
-				partialCharge = 0;
-				charge = chargeCap;
-			}
-			updateQuickslot();
+
+	@Override
+	public void onHeroGainExp( float levelPercent, Hero hero ) {
+		if (isEquipped( hero ) && !cursed) {
+			gainExpCharge(levelPercent, hero);
 		}
 	}
 
 	@Override
 	public Item upgrade() {
 		if (level() == levelCap) return this;
-		chargeCap ++;
-		GLog.p( Messages.get(this, "levelup") );
+		chargeCap = 3 + level() + 1;
 		return super.upgrade();
+	}
+
+	@Override
+	public int visiblyUpgraded() {
+		return levelKnown ? (int)(level()*3.5f): 0;
+	}
+
+	@Override
+	public int buffedVisiblyUpgraded() {
+		return visiblyUpgraded();
 	}
 
 	@Override
 	public String desc() {
 		String desc = super.desc();
+		if (isEquipped( Dungeon.hero )) {
+			if (cursed) {
+				desc += "\n\n" + Messages.get(this, "desc_cursed");
+			} else {
+				desc += "\n\n" + Messages.get(this, "desc_worn");
+			}
+		}
 		if (returnDepth != -1){
 			desc += "\n\n" + Messages.get(this, "desc_set", returnDepth);
 		}
@@ -313,25 +340,69 @@ public class LloydsBeacon extends Artifact {
 		return returnDepth != -1 ? WHITE : null;
 	}
 
+	private void gainCharge(float amount, boolean announceFull) {
+		if (charge >= chargeCap || cursed || amount <= 0) {
+			return;
+		}
+
+		boolean wasFull = charge >= chargeCap;
+		partialCharge += amount;
+		while (partialCharge >= 1){
+			partialCharge--;
+			charge++;
+			if (charge >= chargeCap){
+				partialCharge = 0;
+				charge = chargeCap;
+				break;
+			}
+		}
+
+		if (!wasFull && charge >= chargeCap && announceFull) {
+			GLog.p( Messages.get(this, "full_charge") );
+		}
+		updateQuickslot();
+	}
+
+	private void gainExp(int amount) {
+		if (amount <= 0 || level() >= levelCap) {
+			return;
+		}
+
+		exp += amount;
+		while (level() < levelCap && exp >= 15 + level()*9) {
+			exp -= 15 + level()*9;
+			upgrade();
+			chargeCap = 3 + level();
+			Catalog.countUse(LloydsBeacon.class);
+			GLog.p( Messages.get(this, "levelup") );
+		}
+	}
+
+
+	private void gainExpCharge(float levelPercent, Char target) {
+		if (cursed || target.buff(MagicImmune.class) != null) return;
+		gainCharge(chargeCap * levelPercent * RingOfEnergy.artifactChargeMultiplier(target), true);
+		//gainExp(Math.round((15 + level()*9) * levelPercent));
+	}
+
+
+
 	public class beaconRecharge extends ArtifactBuff{
 		@Override
 		public boolean act() {
-			if (charge < chargeCap && !cursed && Regeneration.regenOn()) {
-				partialCharge += 1 / (100f - (chargeCap - charge)*10f);
-
-				while (partialCharge >= 1) {
-					partialCharge --;
-					charge ++;
-
-					if (charge == chargeCap){
-						partialCharge = 0;
-					}
+			if (cursed) {
+				if (Random.Float() < 0.01f) {
+					Buff.affect(target, Vertigo.class, 10f);
 				}
 			}
 
 			updateQuickslot();
 			spend( TICK );
 			return true;
+		}
+
+		public void gainCharge(float levelPortion) {
+			gainExpCharge(levelPortion, target);
 		}
 	}
 }

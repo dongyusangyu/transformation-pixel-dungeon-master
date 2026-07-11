@@ -33,8 +33,12 @@ public class DesktopWindowListener implements Lwjgl3WindowListener {
 	
 	@Override
 	public void maximized ( boolean b ) {
+		if (SPDSettings.fullscreen()) {
+			return;
+		}
 		SPDSettings.windowMaximized( b );
-		if (b){
+		if (b && DesktopPlatformSupport.previousSizes != null
+				&& DesktopPlatformSupport.previousSizes[1] != null){
 			SPDSettings.windowResolution(DesktopPlatformSupport.previousSizes[1]);
 		}
 	}

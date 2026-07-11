@@ -86,6 +86,7 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ImmortalShieldAf
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.LevelTeleporter;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.MobAttributeViewer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.MobPlacer;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ScrollOfDebug;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.StrengthSetting;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TerrainPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag;
@@ -818,6 +819,8 @@ public enum HeroClass {
 
 			new TestBag().collect();
 			new TestBag1().collect();
+
+			new ScrollOfDebug().collect();
 
 			new MobPlacer().collect();
 

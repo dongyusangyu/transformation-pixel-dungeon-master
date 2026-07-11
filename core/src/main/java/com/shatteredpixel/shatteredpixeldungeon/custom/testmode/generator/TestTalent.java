@@ -12,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
@@ -25,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.TalentsPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
+import com.shatteredpixel.shatteredpixeldungeon.journal.TalentCatalog;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Random;
 
@@ -34,12 +36,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class TestTalent  extends TestGenerator {
+    private static final String AC_NEGATIVE = "NEGATIVE";
+
     {
         image = ItemSpriteSheet.TRANSFORMATION_ELE;
     }
     @Override
     public ArrayList<String> actions(Hero hero) {
-        return super.actions(hero);
+        ArrayList<String> actions = super.actions(hero);
+        actions.add(AC_NEGATIVE);
+        return actions;
     }
 
     @Override
@@ -47,7 +53,38 @@ public class TestTalent  extends TestGenerator {
         super.execute(hero, action);
         if (action.equals(AC_GIVE)) {
             GameScene.show(new WndMetamorphChoose());
+        } else if (action.equals(AC_NEGATIVE)) {
+            GameScene.show(new WndNegativeType());
         }
+    }
+
+    public static void addOrReplaceTestNegativeTalent(Talent talent){
+        if (hero == null || !hero.isAlive() || !isTestNegativeCandidate(talent)){
+            return;
+        }
+
+        Talent oldTalent = hero.testModeNegativeTalent;
+        if (oldTalent != null && oldTalent != talent){
+            hero.negativeTalents.remove(oldTalent);
+            if (!hero.talents.isEmpty()){
+                hero.talents.get(0).remove(oldTalent);
+            }
+        }
+
+        if (hero.talents.isEmpty()){
+            Talent.initClassTalents(hero);
+        }
+
+        hero.talents.get(0).put(talent, 0);
+        hero.negativeTalents.put(talent, 0);
+        hero.testModeNegativeTalent = talent;
+        TalentCatalog.countUse(talent);
+        Talent.onTalentUpgraded(hero, talent);
+        GameScene.updateFog();
+    }
+
+    private static boolean isTestNegativeCandidate(Talent talent){
+        return talent == hero.testModeNegativeTalent || !hero.negativeTalents.containsKey(talent);
     }
     public static class WndMetamorphChoose extends Window {
 
@@ -331,6 +368,155 @@ public class TestTalent  extends TestGenerator {
         public void onBackPressed() {
             super.onBackPressed();
         }
+    }
+
+    public static class WndNegativeType extends Window {
+
+        private static final int WIDTH		= 120;
+        private static final int BTN_HEIGHT = 16;
+        private static final int GAP        = 1;
+        protected static final int MARGIN 		= 2;
+
+        public WndNegativeType() {
+
+            super();
+
+            float pos = 0;
+
+            IconTitle tfTitle = new IconTitle(new ItemSprite(curItem), Messages.get(TestTalent.class, "negative_type_name"));
+            tfTitle.setRect(0, pos, WIDTH, 0);
+            add(tfTitle);
+
+            pos = tfTitle.bottom() + 2*MARGIN;
+
+            RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
+            tfMesage.text(Messages.get(TestTalent.class, "negative_type_desc"), WIDTH);
+            tfMesage.setPos( 0, pos );
+            add( tfMesage );
+
+            pos = tfMesage.bottom() + 2*MARGIN;
+
+            for (int group = 0; group < Talent.negativeTalent.size(); group++) {
+                if (negativeTalentsForGroup(group).isEmpty()) {
+                    continue;
+                }
+
+                final int selectedGroup = group;
+                RedButton cb = new RedButton( Messages.titleCase(Messages.get(ScrollOfMetamorphosis.class, negativeTypeMessageKey(group))) ){
+                    @Override
+                    protected void onClick() {
+                        hide();
+                        GameScene.show(new WndNegativeChoose(selectedGroup));
+                    }
+                };
+
+                cb.setRect( 0, pos, WIDTH, BTN_HEIGHT );
+                add( cb );
+                pos = cb.bottom() + GAP;
+            }
+
+            resize( WIDTH, (int)(pos - GAP) );
+        }
+
+        @Override
+        public void onBackPressed() {
+            super.onBackPressed();
+        }
+    }
+
+    public static class WndNegativeChoose extends Window{
+
+        public static WndNegativeChoose INSTANCE;
+
+        private static final int WIDTH		= 100;
+        private static final int BUTTON_HEIGHT = 26;
+        private static final int GAP        = 1;
+        protected static final int MARGIN 		= 2;
+        protected static final int BUTTON_WIDTH	= 20;
+
+        private ScrollPane pane;
+
+        public WndNegativeChoose(int group){
+            super();
+
+            INSTANCE = this;
+
+            float pos = 0;
+
+            IconTitle tfTitle = new IconTitle(new ItemSprite(curItem), Messages.get(ScrollOfMetamorphosis.class, negativeTypeMessageKey(group)));
+            tfTitle.setRect(0, pos, WIDTH, 0);
+            add(tfTitle);
+
+            pos = tfTitle.bottom() + 2*MARGIN;
+
+            RenderedTextBlock tfMesage = PixelScene.renderTextBlock( 6 );
+            tfMesage.text(Messages.get(TestTalent.class, "negative_choose_desc"), WIDTH);
+            tfMesage.setPos( 0, pos );
+            add( tfMesage );
+
+            pos = tfMesage.bottom() + 2*MARGIN;
+            resize( WIDTH, (int)pos+80);
+
+            float x = 0;
+            pane = new ScrollPane(new Component()){
+                public void onClick(float x, float y) { WndNegativeChoose.this.onClick(x, y);}
+            };
+            add(pane);
+            pane.setRect(0, pos,WIDTH,80);
+            Component content = pane.content();
+            int gridPos = 2 ;
+            for (Talent talent : negativeTalentsForGroup(group)){
+
+                TalentButton gridItem = new TalentButton(1,talent,0,TalentButton.Mode.TEST_NEGATIVE);
+                content.add(gridItem);
+                gridItem.setPos(x,gridPos);
+                x += BUTTON_WIDTH;
+                if(x >= WIDTH){
+                    x=0;
+                    gridPos+=BUTTON_HEIGHT;
+                }
+            }
+            content.setRect(0,0,WIDTH, gridPos+BUTTON_HEIGHT);
+            pane.update();
+        }
+
+        protected void onClick(float x, float y) {/* do nothing */}
+
+        @Override
+        public void hide() {
+            super.hide();
+            if (INSTANCE == this) {
+                INSTANCE = null;
+            }
+        }
+
+        @Override
+        public void offset(int xOffset, int yOffset) {
+            super.offset(xOffset, yOffset);
+            pane.setPos(pane.left(), pane.top());
+        }
+
+        @Override
+        public void onBackPressed() {
+            super.onBackPressed();
+        }
+    }
+
+    private static String negativeTypeMessageKey(int group) {
+        return group == 0 ? "negative_common" : "negative_limited_" + group;
+    }
+
+    private static List<Talent> negativeTalentsForGroup(int group) {
+        ArrayList<Talent> talents = new ArrayList<>();
+        if (group < 0 || group >= Talent.negativeTalent.size()){
+            return talents;
+        }
+        for (Talent talent : Talent.negativeTalent.get(group)) {
+            if (isTestNegativeCandidate(talent)) {
+                talents.add(talent);
+            }
+        }
+        return talents;
     }
 
     public static class WndShowTalent extends Window{

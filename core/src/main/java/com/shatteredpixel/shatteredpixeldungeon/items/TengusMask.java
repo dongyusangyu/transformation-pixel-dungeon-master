@@ -163,7 +163,7 @@ public class TengusMask extends Item {
 			//ninjaenergy.energy=5;
 		}
 		if (way.is(HeroSubClass.CHAMPION) && HeroRandomizer.active(curUser)){
-			Buff.affect(curUser, MeleeWeapon.Charger.class);
+			MeleeWeapon.syncCharger(curUser);
 		}
 		if (way.is(HeroSubClass.PIOUS) && curUser.belongings.getItem(RitualDagger.class) == null){
 			RitualDagger dagger = new RitualDagger();

@@ -85,6 +85,9 @@ public class Statue extends Mob {
 		levelGenStatue = useDecks;
 		weapon.cursed = false;
 		weapon.enchant( Enchantment.random() );
+		if (Dungeon.hero != null && Dungeon.hero.randomMode) {
+			weapon.cursedKnown = true;
+		}
 	}
 
 	public Weapon weapon(){

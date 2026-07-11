@@ -43,6 +43,7 @@ import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Objects;
 
 public class WndSkins extends Window {
@@ -87,7 +88,7 @@ public class WndSkins extends Window {
         if(GamesInProgress.skin==0){
             SkinText = PixelScene.renderTextBlock(Messages.get(this, "cur0"), 6);
         }else{
-            SkinText = PixelScene.renderTextBlock(Messages.get(this, "cur",GamesInProgress.skin), 6);
+            SkinText = PixelScene.renderTextBlock(Messages.get(this, "cur", skinName(heroClass, GamesInProgress.skin)), 6);
 
         }
 
@@ -134,7 +135,7 @@ public class WndSkins extends Window {
         if(GamesInProgress.skin==0){
             SkinText.text(Messages.get(this, "cur0"));
         }else{
-            SkinText.text(Messages.get(this, "cur",GamesInProgress.skin));
+            SkinText.text(Messages.get(this, "cur", skinName(heroClass, GamesInProgress.skin)));
         }
         PixelScene.align(SkinText);
 
@@ -207,6 +208,24 @@ public class WndSkins extends Window {
 
     public static int savedSkin(HeroClass heroClass) {
         return validSkin(heroClass, SPDSettings.Skin(heroClass));
+    }
+
+    public static String skinNameKey(HeroClass heroClass, int skin) {
+        return "skin_" + heroClass.name().toLowerCase(Locale.ENGLISH) + "_" + skin;
+    }
+
+    public static String fallbackSkinName(int skin) {
+        return "皮肤" + skin;
+    }
+
+    public static String skinName(HeroClass heroClass, int skin) {
+        if (heroClass != null && skin > 0 && Messages.canget(WndSkins.class, skinNameKey(heroClass, skin))) {
+            return Messages.get(WndSkins.class, skinNameKey(heroClass, skin));
+        }
+        if (Messages.canget(WndSkins.class, "skin_default")) {
+            return Messages.get(WndSkins.class, "skin_default", skin);
+        }
+        return fallbackSkinName(skin);
     }
 
     public static boolean isSkinUnlocked(HeroClass heroClass, int skin) {
