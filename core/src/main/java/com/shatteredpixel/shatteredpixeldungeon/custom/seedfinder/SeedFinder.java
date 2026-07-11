@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -871,7 +872,8 @@ public class SeedFinder {
             }
             if (Dungeon.hero.randomArmorAbilities != null) {
                 for (String ability : Dungeon.hero.randomArmorAbilities) {
-                    names.add(ability.substring(ability.lastIndexOf('.') + 1).toLowerCase());
+                    names.add(randomArmorAbilityName(ability).toLowerCase());
+                    names.add(simpleClassName(ability).toLowerCase());
                 }
             }
         }
@@ -916,10 +918,27 @@ public class SeedFinder {
         if (Dungeon.hero.randomArmorAbilities != null && Dungeon.hero.randomArmorAbilities.length > 0) {
             result.append(Messages.get(this, "random_armor_abilities")).append(":\n");
             for (String ability : Dungeon.hero.randomArmorAbilities) {
-                result.append(ability.substring(ability.lastIndexOf('.') + 1)).append("\n");
+                result.append(randomArmorAbilityName(ability)).append("\n");
             }
             result.append("\n");
         }
+    }
+
+    private String randomArmorAbilityName(String abilityName) {
+        try {
+            Class<?> abilityClass = Class.forName(abilityName);
+            if (ArmorAbility.class.isAssignableFrom(abilityClass)) {
+                ArmorAbility ability = (ArmorAbility) abilityClass.getDeclaredConstructor().newInstance();
+                return ability.name();
+            }
+        } catch (Exception ignored) {
+        }
+        return simpleClassName(abilityName);
+    }
+
+    private String simpleClassName(String name) {
+        int lastDot = name.lastIndexOf('.');
+        return lastDot == -1 ? name : name.substring(lastDot + 1);
     }
 
     public String logSeedItems(String seed, int floors) {

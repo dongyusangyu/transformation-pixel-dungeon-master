@@ -91,6 +91,9 @@ public class PixelScene extends Scene {
 
 	protected boolean inGameScene = false;
 
+
+
+
 	private Signal.Listener<KeyEvent> fullscreenListener;
 
 	@Override

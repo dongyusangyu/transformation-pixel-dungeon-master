@@ -54,6 +54,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.curriculum.AgentMinCurriculum;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ScrollOfDebug;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -84,6 +85,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.PrisonNewBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.SurfaceTownLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
@@ -350,7 +352,7 @@ public class Dungeon {
 		QuickSlotButton.reset();
 		Toolbar.swappedQuickslots = false;
 
-		depth = 1;
+		depth = 0;
 		branch = 0;
 		generatedLevels.clear();
 
@@ -423,6 +425,9 @@ public class Dungeon {
 					break;
 
 				 */
+				case 0:
+					level = new SurfaceTownLevel();
+					break;
 				case 1:
 					//level = new SewerBossLevel();
 					//break;
@@ -832,6 +837,7 @@ public class Dungeon {
 			Potion.save( bundle );
 			Ring.save( bundle );
 			Wand.save( bundle );
+			ScrollOfDebug.storeMacrosInBundle( bundle );
 
 			Actor.storeNextID( bundle );
 			
@@ -910,6 +916,7 @@ public class Dungeon {
 		Potion.restore( bundle );
 		Ring.restore( bundle );
 		Wand.restore( bundle );
+		ScrollOfDebug.restoreMacrosFromBundle( bundle );
 
 		quickslot.restorePlaceholders( bundle );
 		

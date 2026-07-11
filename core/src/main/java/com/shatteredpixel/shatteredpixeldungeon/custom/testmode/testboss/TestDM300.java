@@ -15,10 +15,6 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
 public class TestDM300 extends DM300 {
-    public int pylonsActivated = 0;
-    public boolean supercharged = false;
-    public boolean chargeAnnounced = false;
-
     private final int MIN_COOLDOWN = 5;
     private final int MAX_COOLDOWN = Dungeon.isChallenged(Challenges.STRONGER_BOSSES) ? 7 : 9;
 
@@ -39,6 +35,9 @@ public class TestDM300 extends DM300 {
 
     @Override
     protected Char chooseEnemy() {
+        if (supercharged && Dungeon.hero != null && Dungeon.hero.isAlive()) {
+            return Dungeon.hero;
+        }
         return TestBossUtil.visibleEnemyOrNull(this, super.chooseEnemy());
     }
     @Override
@@ -182,7 +181,8 @@ public class TestDM300 extends DM300 {
                 chargeAnnounced = true;
             }
 
-            target = enemy.pos;
+            enemy = Dungeon.hero;
+            target = Dungeon.hero.pos;
             state = HUNTING;
 
             if (fieldOfView == null || fieldOfView.length != Dungeon.level.length()){
@@ -198,12 +198,17 @@ public class TestDM300 extends DM300 {
             }
 
         }
-        if (!TestBossUtil.hasVisibleAttackableEnemy(this)) {
+        boolean hasVisibleEnemy = TestBossUtil.hasVisibleAttackableEnemy(this);
+        if (shouldClearEnemy(supercharged, hasVisibleEnemy)) {
             clearEnemy();
         }
 
 
         return super.act();
+    }
+
+    static boolean shouldClearEnemy(boolean supercharged, boolean hasVisibleEnemy) {
+        return !supercharged && !hasVisibleEnemy;
     }
 
 

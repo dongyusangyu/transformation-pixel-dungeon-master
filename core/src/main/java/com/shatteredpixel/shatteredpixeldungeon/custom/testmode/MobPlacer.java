@@ -69,6 +69,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Thief;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.TormentedSpirit;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Warlock;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.custom.dict.DictSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestDM300;
@@ -266,6 +267,8 @@ public class MobPlacer extends TestItem {
         private static final int HEIGHT = 118;
         private static final int BTN_SIZE = 18;
         private static final int GAP = 2;
+        private static final int GRID_TOP = 30;
+        private static final int GRID_ROW_GAP = 6;
 
         private RenderedTextBlock selectedPage;
         private ArrayList<IconButton> mobButtons = new ArrayList<>();
@@ -377,16 +380,23 @@ public class MobPlacer extends TestItem {
             selectedPage.maxWidth(WIDTH / 2);
             selectedPage.setPos((WIDTH - selectedPage.width())/2, 5);
             selectedMob.maxWidth(WIDTH);
-            selectedMob.setPos((WIDTH - selectedMob.width())/2, 80);
+            selectedMob.setPos((WIDTH - selectedMob.width())/2, gridBottom() + 8);
+            float pos = selectedMob.bottom() + 4;
+            for(int i=0;i<eliteOptions.size();++i){
+                CheckBox cb = eliteOptions.get(i);
+                if((i&1)==0) {
+                    cb.setRect(0, pos, WIDTH/2f -  GAP/2f, 16);
+                }else{
+                    cb.setRect(WIDTH/2f+GAP/2f, pos, WIDTH/2f -  GAP/2f, 16);
+                    pos += 16 + GAP;
+                }
+            }
             resize(WIDTH, (int)eliteOptions.get(9).bottom() + 1);
         }
 
         private void createMobImage() {
             int maxNum = maxMobIndex(mobTier) + 1;
-            //(N+1)/2
-            int firstLine = (maxNum >> 1) + (maxNum & 1);
-            float left1 = (WIDTH - (GAP + BTN_SIZE) * firstLine + GAP)/2f;
-            float left2 = (WIDTH - (GAP + BTN_SIZE) * (maxNum - firstLine) + GAP)/2f;
+            int maxPerRow = maxButtonsPerRow();
             for (int i = 0; i < maxNum; ++i) {
                 final int j = i;
                 IconButton btn = new IconButton() {
@@ -409,16 +419,27 @@ public class MobPlacer extends TestItem {
                 btn.icon(charSprite);
                 float max = Math.max(btn.icon().width(), btn.icon().height());
                 btn.icon().scale = new PointF(BTN_SIZE/max, BTN_SIZE/max);
-                if(i<firstLine){
-                    btn.setRect(left1, 30f, BTN_SIZE, BTN_SIZE );
-                    left1 += GAP + BTN_SIZE;
-                }else{
-                    btn.setRect(left2, 56f, BTN_SIZE, BTN_SIZE);
-                    left2 += GAP + BTN_SIZE;
-                }
+                int row = i / maxPerRow;
+                int col = i % maxPerRow;
+                int rowCount = Math.min(maxPerRow, maxNum - row * maxPerRow);
+                float left = (WIDTH - ((BTN_SIZE + GAP) * rowCount - GAP)) / 2f;
+                btn.setRect(left + col * (BTN_SIZE + GAP), GRID_TOP + row * (BTN_SIZE + GRID_ROW_GAP), BTN_SIZE, BTN_SIZE );
                 add(btn);
                 mobButtons.add(btn);
             }
+        }
+
+        private int maxButtonsPerRow(){
+            return Math.max(1, (WIDTH + GAP) / (BTN_SIZE + GAP));
+        }
+
+        private int gridRows(){
+            int maxNum = maxMobIndex(mobTier) + 1;
+            return (maxNum + maxButtonsPerRow() - 1) / maxButtonsPerRow();
+        }
+
+        private int gridBottom(){
+            return GRID_TOP + gridRows() * BTN_SIZE + (gridRows() - 1) * GRID_ROW_GAP;
         }
 
         private void clearImage(){
@@ -430,6 +451,7 @@ public class MobPlacer extends TestItem {
         private void refreshImage(){
             clearImage();
             createMobImage();
+            layout();
         }
 
         @Override
@@ -533,6 +555,12 @@ public class MobPlacer extends TestItem {
         TEST_DM300(TestDM300.class, DictSpriteSheet.BOSS_CHAPTER3),
         TEST_TENGU(TestTengu.class, DictSpriteSheet.GNOLL_DARTER),
         TEST_YOG_DZEWA(TestYogDzewa.class, DictSpriteSheet.EYE),
+        TEST_BURNING_FIST(YogFist.BurningFist.class, DictSpriteSheet.FIST_1),
+        TEST_SOILED_FIST(YogFist.SoiledFist.class, DictSpriteSheet.FIST_1),
+        TEST_ROTTING_FIST(YogFist.RottingFist.class, DictSpriteSheet.FIST_2),
+        TEST_RUSTED_FIST(YogFist.RustedFist.class, DictSpriteSheet.FIST_2),
+        TEST_BRIGHT_FIST(YogFist.BrightFist.class, DictSpriteSheet.FIST_3),
+        TEST_DARK_FIST(YogFist.DarkFist.class, DictSpriteSheet.FIST_3),
         TEST_DWARF_KING(TestDwarfKing.class, DictSpriteSheet.SENIOR),
         TEST_WARRIOR_BOSS(TestWarriorBoss.class, DictSpriteSheet.STATUE),
         TEST_ROGUE_BOSS(TestRogueBoss.class, DictSpriteSheet.BANDIT),

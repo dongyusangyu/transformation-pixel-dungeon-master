@@ -211,11 +211,11 @@ public class RadialMenu extends Window {
 
 	private static Image getBGTexture(int size, boolean inner){
 		if (size >= 200){
-			if (!inner)  return new Image(Assets.Interfaces.RADIAL_MENU, 0, 0, 200, 200);
-			else        return new Image(Assets.Interfaces.RADIAL_MENU, 340, 0, 120, 120);
+			if (!inner)  return new Image(Assets.Interfaces.radialMenu(), 0, 0, 200, 200);
+			else        return new Image(Assets.Interfaces.radialMenu(), 340, 0, 120, 120);
 		} else {
-			if (!inner)  return new Image(Assets.Interfaces.RADIAL_MENU, 200, 0, 140, 140);
-			else        return new Image(Assets.Interfaces.RADIAL_MENU, 340, 120, 90, 90);
+			if (!inner)  return new Image(Assets.Interfaces.radialMenu(), 200, 0, 140, 140);
+			else        return new Image(Assets.Interfaces.radialMenu(), 340, 120, 90, 90);
 		}
 	}
 

@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
+import com.shatteredpixel.shatteredpixeldungeon.ui.HorizontalScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
@@ -50,6 +51,7 @@ import com.watabou.input.PointerEvent;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
+import com.watabou.noosa.ui.Component;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.PointF;
 
@@ -60,7 +62,10 @@ public class WndClericSpells1 extends Window {
 	protected static final int WIDTH    = 120;
 
 	public static int BTN_SIZE = 20;
+	private static final int BTN_GAP = 4;
+	private static final int ROW_HEIGHT = BTN_SIZE + 3;
 	private final ArrayList<SpellButton> agentMinSpellButtons = new ArrayList<>();
+	private final ArrayList<HorizontalScrollPane> horizontalPanes = new ArrayList<>();
 
 	public WndClericSpells1(RubbingsTome tome, Hero cleric, boolean info){
 
@@ -103,37 +108,61 @@ public class WndClericSpells1 extends Window {
 			ArrayList<ClericSpell> spells = ClericSpell.getSpellList(cleric, i);
 
 			if (!spells.isEmpty() && i != 1){
-				top += BTN_SIZE + 2;
+				top += ROW_HEIGHT + 2;
 				ColorBlock sep = new ColorBlock(WIDTH, 1, 0xFF000000);
 				sep.y = top;
 				add(sep);
 				top += 3;
 			}
 
-			ArrayList<IconButton> spellBtns = new ArrayList<>();
+			ArrayList<SpellButton> spellBtns = new ArrayList<>();
 
 			for (ClericSpell spell : spells) {
-				IconButton spellBtn = new SpellButton(spell, tome, info);
-				add(spellBtn);
+				SpellButton spellBtn = new SpellButton(spell, tome, info);
 				spellBtns.add(spellBtn);
-				agentMinSpellButtons.add((SpellButton) spellBtn);
+				agentMinSpellButtons.add(spellBtn);
 			}
 
-			int left = 2 + (WIDTH - spellBtns.size() * (BTN_SIZE + 4)) / 2;
-			for (IconButton btn : spellBtns) {
-				btn.setRect(left, top, BTN_SIZE, BTN_SIZE);
-				left += btn.width() + 4;
+			int rowWidth = spellBtns.size() * BTN_SIZE + Math.max(0, spellBtns.size() - 1) * BTN_GAP;
+			if (rowWidth > WIDTH) {
+				Component row = new Component();
+				int left = 0;
+				for (SpellButton btn : spellBtns) {
+					row.add(btn);
+					btn.setRect(left, 0, BTN_SIZE, BTN_SIZE);
+					left += BTN_SIZE + BTN_GAP;
+				}
+				row.setSize(rowWidth, ROW_HEIGHT);
+				HorizontalScrollPane pane = new HorizontalScrollPane(row);
+				add(pane);
+				pane.setRect(0, top, WIDTH, ROW_HEIGHT);
+				horizontalPanes.add(pane);
+			} else {
+				int left = (WIDTH - rowWidth) / 2;
+				for (SpellButton btn : spellBtns) {
+					add(btn);
+					btn.setRect(left, top, BTN_SIZE, BTN_SIZE);
+					left += BTN_SIZE + BTN_GAP;
+				}
 			}
 
 		}
 
-		resize(WIDTH, top + BTN_SIZE);
+		resize(WIDTH, top + ROW_HEIGHT);
 
 		//if we are on mobile, offset the window down to just above the toolbar
 		if (SPDSettings.interfaceSize() != 2){
 			offset(0, (int) (GameScene.uiCamera.height/2 - 30 - height/2));
 		}
 
+	}
+
+	@Override
+	public void offset(int xOffset, int yOffset) {
+		super.offset(xOffset, yOffset);
+		for (HorizontalScrollPane pane : horizontalPanes) {
+			pane.setPos(pane.left(), pane.top());
+		}
 	}
 
 	public int agentMinOptionCount() {
@@ -247,8 +276,8 @@ public class WndClericSpells1 extends Window {
 					}
 				}
 			};
-			parent.addToFront(r);
-			r.camera = camera();
+			WndClericSpells1.this.addToFront(r);
+			r.camera = WndClericSpells1.this.camera();
 			PointF mousePos = PointerEvent.currentHoverPos();
 			mousePos = camera.screenToCamera((int)mousePos.x, (int)mousePos.y);
 			r.setPos(mousePos.x-3, mousePos.y-3);

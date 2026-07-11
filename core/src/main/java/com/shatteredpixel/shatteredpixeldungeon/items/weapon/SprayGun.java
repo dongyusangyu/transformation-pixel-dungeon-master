@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Dread;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GreaterHaste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
@@ -369,9 +370,11 @@ public class SprayGun extends Weapon {
 		if (fromEnergy > 0) {
 			Talent.onAlchemyEnergyConsumed(hero);
 		}
-		Talent.onSprayGunLoaded(hero);
+        if (hero != null && hero.pointsInTalent(Talent.FAST_RELOAD) >= 2){
+            Buff.affect(hero, GreaterHaste.class).set(1);
+        }
 		GLog.i(Messages.get(this, fromReason > 0 ? "load_reason" : "load_energy"));
-		hero.spendAndNext(Talent.sprayGunLoadTime(hero));
+		hero.spendAndNext(hero != null && hero.hasTalent(Talent.FAST_RELOAD) ? 0f : 1f);
 		hero.sprite.operate(hero.pos);
 		Sample.INSTANCE.play(Assets.Sounds.UNLOCK);
 		updateQuickslot();
@@ -582,6 +585,7 @@ public class SprayGun extends Weapon {
 
 		if (alchemist && dealsAlchemistDamage(ally, loaded)) {
 			int damage = Hero.heroDamageIntRange(min(lvl), max(lvl));
+
 			damage = Math.round(damage * Talent.alchemistCloseBlastMultiplier(hero, Dungeon.level.distance(hero.pos, ch.pos), range(hero)));
 			ch.damage(damage, new WandOfMagicMissile());
 		}

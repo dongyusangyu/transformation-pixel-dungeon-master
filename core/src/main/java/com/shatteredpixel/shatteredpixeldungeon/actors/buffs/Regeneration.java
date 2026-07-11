@@ -82,6 +82,9 @@ public class Regeneration extends Buff {
 						}else if(hero.pointsInTalent(Talent.STRENGTHEN_CHALICE)==1){
 							delay /=1.5;
 						}
+						if(hero.pointsNegative(Talent.WEAKEN_CHALICE)>0){
+							delay *= 1f + 0.5f*hero.pointsNegative(Talent.WEAKEN_CHALICE);
+						}
 
 					}
 				}
@@ -125,6 +128,9 @@ public class Regeneration extends Buff {
 							delay /=2;
 						}else if(hero.pointsInTalent(Talent.STRENGTHEN_CHALICE)==1){
 							delay /=1.5;
+						}
+						if(hero.pointsNegative(Talent.WEAKEN_CHALICE)>0){
+							delay *= 1f + 0.5f*hero.pointsNegative(Talent.WEAKEN_CHALICE);
 						}
 
 					}

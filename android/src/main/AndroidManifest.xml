@@ -26,15 +26,15 @@
 	<application
 		android:icon="@mipmap/ic_launcher"
 
-    	android:label="${appName}"
-    	android:theme="@android:style/Theme.Black.NoTitleBar"
-    	android:appCategory="game"
+		android:label="${appName}"
+		android:theme="@style/GameTheme"
+		android:appCategory="game"
 		android:isGame="true"
 		android:usesCleartextTraffic="true"
-    	android:resizeableActivity="true"
-    	android:allowBackup="true"
-    	android:fullBackupOnly="true"
-    	android:backupAgent=".AndroidBackupHandler">
+		android:resizeableActivity="true"
+		android:allowBackup="true"
+		android:fullBackupOnly="true"
+		android:backupAgent=".AndroidBackupHandler">
     <activity
         android:name=".AndroidLauncher"
         android:screenOrientation="nosensor"

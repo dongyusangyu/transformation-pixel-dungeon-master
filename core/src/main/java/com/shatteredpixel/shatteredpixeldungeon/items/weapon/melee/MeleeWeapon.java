@@ -83,6 +83,8 @@ public class MeleeWeapon extends Weapon {
 		}
 	}
 
+
+
 	@Override
 	public String defaultAction() {
 		if (canUseWeaponAbility(hero)){
@@ -138,7 +140,7 @@ public class MeleeWeapon extends Weapon {
 				} else if (hero.heroClass == HeroClass.DUELIST) {
 					GLog.w(Messages.get(this, "ability_need_equip"));
 				}
-			} else if (hero.heroClass != HeroClass.DUELIST && hero.pointsInTalent(Talent.MARTIAL_TRAIN)<1 && hero.subClass!=HeroSubClass.CHAMPION){
+			} else if (!canUseWeaponAbilityAction(hero)){
 				//do nothing
 			} else if (aEnc>0){
 				GLog.w(Messages.get(this, "ability_low_str"));
@@ -414,18 +416,33 @@ public class MeleeWeapon extends Weapon {
 		return info;
 	}
 
-	private static boolean canUseWeaponAbility(Hero hero) {
-		return hero != null
-				&& (hero.heroClass == HeroClass.DUELIST
-				|| hero.pointsInTalent(Talent.MARTIAL_TRAIN) > 0
-				|| hero.subClass.is(HeroSubClass.CHAMPION));
+	public static boolean canUseWeaponAbility(Hero hero) {
+		return Talent.canUseWeaponAbilities(hero);
 	}
 
-	private boolean canUseWeaponAbilityAction(Hero hero) {
-		return hero != null
-				&& (hero.heroClass == HeroClass.DUELIST
-				|| (hero.pointsInTalent(Talent.MARTIAL_TRAIN) > 0 && !(this instanceof MagesStaff))
-				|| hero.subClass.is(HeroSubClass.CHAMPION));
+	public boolean canUseWeaponAbilityAction(Hero hero) {
+		return canUseWeaponAbility(hero)
+				&& (
+				hero.heroClass == HeroClass.DUELIST
+				|| hero.subClass.is(HeroSubClass.CHAMPION)
+				|| hero.buff(MartialMastery.class) != null);
+	}
+
+	public static void syncCharger(Hero hero) {
+		if (hero == null) return;
+		if (canUseWeaponAbility(hero)) {
+			Charger charger = Buff.affect(hero, Charger.class);
+			if (charger.charges > charger.chargeCap()) charger.charges = charger.chargeCap();
+		} else if (hero.buff(Charger.class) != null) {
+			hero.buff(Charger.class).detach();
+		}
+	}
+
+	/** Permanent marker granted by the gentleman's briefcase. */
+	public static class MartialMastery extends Buff {
+		{
+			revivePersists = true;
+		}
 	}
 	
 	public String statsInfo(){
@@ -486,10 +503,9 @@ public class MeleeWeapon extends Weapon {
 				float speed=hero.speed();
 				if (Regeneration.regenOn()){
 					//60 to 45 turns per charge
-					float chargeToGain = Math.max(0.01f,1/(60f-1.5f*(chargeCap()-charges)));
-					if(hero.heroClass!=HeroClass.DUELIST && !hero.subClass.is(HeroSubClass.CHAMPION)){
-						chargeToGain = 1/90f;
-					}
+					float chargeToGain = hasBaseMastery(hero)
+							? masteryRechargeRate(chargeCap(), charges)
+							: 1/90f;
 
 					//40 to 30 turns per charge for champion
 					if (hero.subClass .is(HeroSubClass.CHAMPION)){
@@ -509,7 +525,7 @@ public class MeleeWeapon extends Weapon {
 				int points = ((Hero)target).pointsInTalent(Talent.WEAPON_RECHARGING);
 
 
-				if (points > 0 && target.buff(Recharging.class) != null || target.buff(ArtifactRecharge.class) != null){
+				if (points > 0 && (target.buff(Recharging.class) != null || target.buff(ArtifactRecharge.class) != null)){
 					//1 every 15 turns at +1, 10 turns at +2
 					partialCharge += 1/(20f - 5f*points)*Math.max(1,speed*0.5*cnt);
 				}
@@ -545,17 +561,34 @@ public class MeleeWeapon extends Weapon {
 		}
 
 		public int chargeCap(){
-			//caps at level 19 with 8 or 10 charges
-			if (hero.subClass .is(HeroSubClass.CHAMPION)){
-				return Math.min(10, 4 + (hero.lvl - 1) / 3)+hero.pointsInTalent(Talent.MARTIAL_TRAIN);
-			} else if(hero.heroClass==HeroClass.DUELIST){
-				return Math.min(8, 2 + (hero.lvl - 1) / 3)+hero.pointsInTalent(Talent.MARTIAL_TRAIN);
-			}else if(hero.hasTalent(Talent.MARTIAL_TRAIN)){
-				return hero.pointsInTalent(Talent.MARTIAL_TRAIN)+1;
-			}else{
-				return 0;
+			int training = hero.pointsInTalent(Talent.MARTIAL_TRAIN);
+			if (hasBaseMastery(hero)) {
+				return combinedCap(hero.lvl, training, hero.subClass.is(HeroSubClass.CHAMPION));
 			}
+			return trainingOnlyCap(training);
 
+		}
+
+		private static boolean hasBaseMastery(Hero hero) {
+			return hero.heroClass == HeroClass.DUELIST
+					|| hero.subClass.is(HeroSubClass.CHAMPION)
+					|| hero.buff(MartialMastery.class) != null;
+		}
+
+		public static int masteryBaseCap(int heroLevel) {
+			return Math.min(8, 2 + (Math.max(1, heroLevel) - 1) / 3);
+		}
+
+		public static int combinedCap(int heroLevel, int trainingPoints, boolean champion) {
+			return masteryBaseCap(heroLevel) + Math.max(0, trainingPoints) + (champion ? 2 : 0);
+		}
+
+		public static int trainingOnlyCap(int trainingPoints) {
+			return trainingPoints > 0 ? trainingPoints + 1 : 0;
+		}
+
+		public static float masteryRechargeRate(int cap, int currentCharges) {
+			return 1f / (60f - 1.5f * Math.max(0, cap - currentCharges));
 		}
 
 		public void gainCharge( float charge ){

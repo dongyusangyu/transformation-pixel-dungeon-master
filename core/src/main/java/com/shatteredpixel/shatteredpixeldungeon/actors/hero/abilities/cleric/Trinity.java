@@ -47,15 +47,19 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfKing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
@@ -144,9 +148,9 @@ public class Trinity extends ArmorAbility {
 							+ " " + trinityItemUseText(bodyForm.getClass()), 6){
 						@Override
 						protected void onClick() {
-							if (hero.belongings.weapon() != null &&
-									((Weapon) hero.belongings.weapon()).enchantment != null &&
-									((Weapon) hero.belongings.weapon()).enchantment.getClass().equals(bodyForm.getClass())){
+							RingOfKing ringOfKing = hero.belongings.getItem(RingOfKing.class);
+							if (duplicatesBodyFormEffect((Weapon) hero.belongings.weapon(), hero.belongings.armor(),
+									kingsRingEnchantment(hero, ringOfKing), kingsRingGlyph(hero, ringOfKing), bodyForm)){
 								GLog.w(Messages.get(Trinity.class, "no_duplicate"));
 								hide();
 							} else {
@@ -179,9 +183,9 @@ public class Trinity extends ArmorAbility {
 							+ " " + trinityItemUseText(bodyForm.getClass()), 6){
 						@Override
 						protected void onClick() {
-							if (Dungeon.hero.belongings.armor() != null &&
-									Dungeon.hero.belongings.armor().glyph != null &&
-									(Dungeon.hero.belongings.armor()).glyph.getClass().equals(bodyForm.getClass())){
+							RingOfKing ringOfKing = hero.belongings.getItem(RingOfKing.class);
+							if (duplicatesBodyFormEffect((Weapon) hero.belongings.weapon(), hero.belongings.armor(),
+									kingsRingEnchantment(hero, ringOfKing), kingsRingGlyph(hero, ringOfKing), bodyForm)){
 								GLog.w(Messages.get(Trinity.class, "no_duplicate"));
 								hide();
 							} else {
@@ -269,10 +273,21 @@ public class Trinity extends ArmorAbility {
 							Buff.prolong(hero, SpiritForm.SpiritFormBuff.class, SpiritForm.SpiritFormBuff.DURATION).setEffect(spiritForm);
 							hero.spendAndNext(1f);
 						} else {
+							boolean targetedEffect = SpiritForm.activeArtifactNeedsTarget(spiritForm.getClass());
+							boolean dispelBeforeEffect = spiritForm instanceof TimekeepersHourglass
+									|| spiritForm instanceof CloakOfShadows
+									|| spiritForm instanceof CapeOfThorns;
+							if (targetedEffect) {
+								Invisibility.dispelForTargeting();
+							} else if (dispelBeforeEffect) {
+								Invisibility.dispel();
+							}
 							if (!SpiritForm.applyActiveArtifactEffect(armor, (Artifact) spiritForm)){
 								return;
 							}
-							Invisibility.dispel();
+							if (!targetedEffect && !dispelBeforeEffect) {
+								Invisibility.dispel();
+							}
 							//turn spending is handled within the application of the artifact effect
 						}
 						Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
@@ -615,12 +630,39 @@ public class Trinity extends ArmorAbility {
 			if (cls.equals(DriedRose.class) || cls.equals(UnstableSpellbook.class) || cls.equals(SkeletonKey.class)){
 				return 2*chargeUse; //50 charge
 			}
+			if (cls.equals(LloydsBeacon.class)){
+				return 2*chargeUse; //50 charge
+			}
 			if (cls.equals(EtherealChains.class) || cls.equals(TalismanOfForesight.class) || cls.equals(TimekeepersHourglass.class)){
 				return 1.4f*chargeUse; //35 charge
 			}
 		}
 		//all other effects are standard charge use, 25 at base
 		return chargeUse;
+	}
+
+	static boolean duplicatesBodyFormEffect(Weapon weapon, Armor armor,
+											Weapon.Enchantment kingsRingEnchantment, Armor.Glyph kingsRingGlyph,
+											Bundlable bodyForm){
+		if (bodyForm instanceof Weapon.Enchantment){
+			Class<?> effectClass = bodyForm.getClass();
+			return weapon != null && weapon.enchantment != null && weapon.enchantment.getClass().equals(effectClass)
+					|| kingsRingEnchantment != null && kingsRingEnchantment.getClass().equals(effectClass);
+		}
+		if (bodyForm instanceof Armor.Glyph){
+			Class<?> effectClass = bodyForm.getClass();
+			return armor != null && armor.glyph != null && armor.glyph.getClass().equals(effectClass)
+					|| kingsRingGlyph != null && kingsRingGlyph.getClass().equals(effectClass);
+		}
+		return false;
+	}
+
+	private static Weapon.Enchantment kingsRingEnchantment(Hero hero, RingOfKing ring){
+		return ring != null && ring.isEquipped(hero) ? ring.enchantment : null;
+	}
+
+	private static Armor.Glyph kingsRingGlyph(Hero hero, RingOfKing ring){
+		return ring != null && ring.isEquipped(hero) ? ring.glyph : null;
 	}
 
 }

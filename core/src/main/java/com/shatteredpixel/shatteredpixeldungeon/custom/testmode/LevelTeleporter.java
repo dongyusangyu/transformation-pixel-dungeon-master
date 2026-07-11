@@ -7,6 +7,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WaterOfAwareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
@@ -17,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Tengu;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
 import com.shatteredpixel.shatteredpixeldungeon.custom.utils.Constants;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
@@ -61,6 +63,7 @@ public class LevelTeleporter extends TestItem {
     private static final String AC_TP = "teleport";
     private static final String AC_INTER_TP = "interlevel_tp";
     private static final String AC_CLEAR = "clear";
+    private static final String AC_COLLECT_ITEMS = "collect_items";
 
     @Override
     public ArrayList<String> actions(Hero hero ) {
@@ -71,6 +74,7 @@ public class LevelTeleporter extends TestItem {
         actions.add(AC_TP);
         actions.add(AC_INTER_TP);
         actions.add(AC_CLEAR);
+        actions.add(AC_COLLECT_ITEMS);
         return actions;
     }
 
@@ -115,10 +119,15 @@ public class LevelTeleporter extends TestItem {
             InterlevelScene.returnBranch = Dungeon.branch;
             Game.switchScene( InterlevelScene.class );
         } else if(action.equals(AC_VIEW)){
+            WaterOfAwareness.affectHeros(hero);
             Buff.affect( hero, MindVision.class, MindVision.DURATION );
             Dungeon.observe();
+
+
             ScrollOfMagicMapping som = new ScrollOfMagicMapping();
             som.doRead();
+
+
         } else if(action.equals(AC_TP)){
             empoweredRead();
         }else if(action.equals(AC_INTER_TP)){
@@ -131,7 +140,41 @@ public class LevelTeleporter extends TestItem {
             for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
                 mob.die(null);
             }
+        }else if(action.equals(AC_COLLECT_ITEMS)){
+            collectFloorItems(hero);
 
+        }
+    }
+
+    private void collectFloorItems(Hero hero) {
+        int collected = 0;
+        int skipped = 0;
+
+        for (Heap heap : new ArrayList<>(Dungeon.level.heaps.valueList())) {
+            if (heap == null || heap.type != Heap.Type.HEAP || heap.items.isEmpty()) {
+                continue;
+            }
+
+            int from = heap.pos;
+            for (Item item : heap.items.toArray(new Item[0])) {
+                if (item == null || !heap.items.contains(item)) {
+                    continue;
+                }
+
+                if (item.doPickUp(hero, from)) {
+                    heap.remove(item);
+                    collected++;
+                } else {
+                    skipped++;
+                }
+            }
+        }
+
+        Item.updateQuickslot();
+        if (collected + skipped > 0) {
+            GLog.i(Messages.get(this, "collected_items", collected, skipped));
+        } else {
+            GLog.i(Messages.get(this, "no_collectable_items"));
         }
     }
 

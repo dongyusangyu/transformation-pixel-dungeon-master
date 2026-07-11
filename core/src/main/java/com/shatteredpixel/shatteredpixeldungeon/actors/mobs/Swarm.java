@@ -149,6 +149,11 @@ public class Swarm extends Mob {
 		lootChance = 1f/(6 * (generation+1) );
 		return super.lootChance() * (5f - Dungeon.LimitedDrops.SWARM_HP.count) / 5f;
 	}
+
+	@Override
+	protected boolean canDropRandomMiniBossLoot() {
+		return generation == 0;
+	}
 	
 	@Override
 	public Item createLoot(){

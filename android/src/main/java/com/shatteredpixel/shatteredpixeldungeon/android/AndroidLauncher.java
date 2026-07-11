@@ -68,9 +68,9 @@ public class AndroidLauncher extends AndroidApplication {
 
 
 		// 确保 instance 已赋值（全局异常处理器中会用到）
-		if (instance == null) {
-			instance = this;
-		}
+		// Android may keep the process alive after the Activity exits, so the
+		// static reference must always point at the currently created Activity.
+		instance = this;
 
 		// 设置全局未捕获异常处理器，捕获所有 Java 层未处理异常
 
@@ -114,9 +114,7 @@ public class AndroidLauncher extends AndroidApplication {
         }
 
 		// 正常的游戏初始化（以下代码与原来相同）
-		if (instance == null) {
-			instance = this;
-		}
+		instance = this;
 
 		try {
 			Game.version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
@@ -149,7 +147,9 @@ public class AndroidLauncher extends AndroidApplication {
 		config.depth = 0;
 		config.useCompass = false;
 		config.useAccelerometer = false;
-		config.useImmersiveMode = SPDSettings.fullscreen();
+		// AndroidPlatformSupport owns fullscreen state. Letting libGDX also
+		// manage immersive mode can re-hide system bars after fullscreen is disabled.
+		config.useImmersiveMode = false;
 
 		if (support == null) support = new AndroidPlatformSupport();
 		else support.reloadGenerators();
@@ -159,6 +159,7 @@ public class AndroidLauncher extends AndroidApplication {
 		Button.longClick = ViewConfiguration.getLongPressTimeout() / 1000f;
 
 		initialize(new ShatteredPixelDungeon(support), config);
+		support.updateSystemUI();
 		
 	}
 
@@ -177,6 +178,17 @@ public class AndroidLauncher extends AndroidApplication {
 			}
 		}
 		super.onResume();
+		if (support != null) {
+			support.updateSystemUI();
+		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		if (instance == this) {
+			instance = null;
+		}
+		super.onDestroy();
 	}
 
 	@Override
@@ -187,12 +199,20 @@ public class AndroidLauncher extends AndroidApplication {
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
-		support.updateSystemUI();
+		if (support != null && shouldUpdateSystemUIOnWindowFocusChange(hasFocus)) {
+			support.updateSystemUI();
+		}
+	}
+
+	static boolean shouldUpdateSystemUIOnWindowFocusChange(boolean hasFocus) {
+		return hasFocus;
 	}
 
 	@Override
 	public void onMultiWindowModeChanged(boolean isInMultiWindowMode) {
 		super.onMultiWindowModeChanged(isInMultiWindowMode);
-		support.updateSystemUI();
+		if (support != null) {
+			support.updateSystemUI();
+		}
 	}
 }

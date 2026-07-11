@@ -41,6 +41,36 @@ import com.watabou.noosa.audio.Sample;
 
 public class WaterOfAwareness extends WellWater {
 
+    public static boolean affectHeros( Hero hero ) {
+
+        Sample.INSTANCE.play( Assets.Sounds.DRINK );
+        //emitter.parent.add( new Identification( hero.sprite.center() ) );
+
+        hero.belongings.observe();
+
+        for (int i=0; i < Dungeon.level.length(); i++) {
+
+            int terr = Dungeon.level.map[i];
+            if ((Terrain.flags[terr] & Terrain.SECRET) != 0) {
+
+                Dungeon.level.discover( i );
+
+                if (Dungeon.level.heroFOV[i]) {
+                    GameScene.discoverTile( i, terr );
+                }
+            }
+        }
+
+        Buff.affect( hero, Awareness.class, Awareness.DURATION );
+        Dungeon.observe();
+
+        Dungeon.hero.interrupt();
+
+        GLog.p( Messages.get(WaterOfAwareness.class, "procced") );
+
+        return true;
+    }
+
 	@Override
 	//public boolean affectHero( Hero hero ) {
 	protected boolean affectHero( Hero hero ) {

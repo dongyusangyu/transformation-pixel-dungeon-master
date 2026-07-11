@@ -21,10 +21,14 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.GreaterHaste;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
@@ -209,7 +213,7 @@ public class LiquidMetal extends Item {
 								m.damage(100f);
 								m.repair(quantity()*durabilityPerMetal-1);
 								GLog.i(Messages.get(LiquidMetal.class, "apply", quantity()));
-								detachAll(Dungeon.hero.belongings.backpack);
+								detachAll(hero.belongings.backpack);
 							}
 						} else {
 							GLog.w(Messages.get(LiquidMetal.class, "already_fixed"));
@@ -229,13 +233,15 @@ public class LiquidMetal extends Item {
 					Catalog.countUses(LiquidMetal.class, quantity());
 					m.repair(quantity()*durabilityPerMetal);
 					GLog.i(Messages.get(LiquidMetal.class, "apply", quantity()));
-					detachAll(Dungeon.hero.belongings.backpack);
+					detachAll(hero.belongings.backpack);
 				}
 
 				curUser.sprite.operate(curUser.pos);
 				Sample.INSTANCE.play(Assets.Sounds.DRINK);
 				updateQuickslot();
-				Talent.onLiquidMetalApplied(curUser);
+                if (hero != null && hero.hasTalent(Talent.FAST_RELOAD) && hero.heroClass != HeroClass.FRIAR){
+                    Buff.affect(hero, GreaterHaste.class).set(hero.pointsInTalent(Talent.FAST_RELOAD));
+                }
 				curUser.sprite.emitter().start(Speck.factory(Speck.LIGHT), 0.1f, 10);
 			}
 		}
@@ -265,7 +271,7 @@ public class LiquidMetal extends Item {
 			}
 
 			m.quantity(0);
-			Buff.affect(Dungeon.hero, MissileWeapon.UpgradedSetTracker.class).levelThresholds.put(m.setID, Integer.MAX_VALUE);
+			Buff.affect(hero, MissileWeapon.UpgradedSetTracker.class).levelThresholds.put(m.setID, Integer.MAX_VALUE);
 
 			return result;
 		}

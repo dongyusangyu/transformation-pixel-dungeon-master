@@ -138,10 +138,16 @@ public class Chasm implements Hero.Doom {
 		Hero hero = Dungeon.hero;
 		
 		ElixirOfFeatherFall.FeatherBuff b = hero.buff(ElixirOfFeatherFall.FeatherBuff.class);
-		
+		boolean featherFallActive = b != null;
+
 		if (b != null){
 			hero.sprite.emitter().burst( Speck.factory( Speck.JET ), 20);
 			b.processFall();
+		}
+		if (shouldApplyPotentialEnergy(featherFallActive, hero.hasTalent(Talent.POTENTIAL_ENERGY))){
+			Buff.affect(hero, Haste.class,1+2*hero.pointsInTalent(Talent.POTENTIAL_ENERGY));
+		}
+		if (featherFallActive){
 			return;
 		}
 		
@@ -151,9 +157,6 @@ public class Chasm implements Hero.Doom {
 		if(hero.pointsNegative(Talent.MAMBA_OUT)>0){
 			Viscosity.DeferedDamage deferred = Buff.affect( hero, Viscosity.DeferedDamage.class );
 			deferred.prolong( (int)(hero.HT*0.25*hero.pointsNegative(Talent.MAMBA_OUT)) );
-		}
-		if(hero.hasTalent(Talent.POTENTIAL_ENERGY)){
-			Buff.affect(hero, Haste.class,1+2*hero.pointsInTalent(Talent.POTENTIAL_ENERGY));
 		}
 		if(hero.pointsInTalent(Talent.DROP_RESISTANT)==1){
 			Buff.affect( hero, Bleeding.class).set( Math.round(hero.HT / (6f + (6f*(hero.HP/(float)hero.HT)))), Chasm.class);
@@ -170,6 +173,10 @@ public class Chasm implements Hero.Doom {
 		//Hero has a 50% chance to bleed out at 66% HP, and begins to risk instant-death at 25%
 
 		hero.damage( Math.max( hero.HP / 2, Random.NormalIntRange( hero.HP / 2, hero.HT / 4 )), new Chasm() );
+	}
+
+	static boolean shouldApplyPotentialEnergy(boolean featherFallActive, boolean hasTalent) {
+		return hasTalent;
 	}
 	/*
 	public static void mobFall( Mob mob ) {

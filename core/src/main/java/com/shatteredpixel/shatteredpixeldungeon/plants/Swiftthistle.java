@@ -116,13 +116,24 @@ public class Swiftthistle extends Plant {
 		}
 		
 		public void processTime(float time){
+			processTime(time, false);
+		}
+
+		public void processTimeForTargeting(float time){
+			processTime(time, true);
+		}
+
+		private void processTime(float time, boolean preserveTargetingTurn){
 			left -= time;
 
 			//use 1/1,000 to account for rounding errors
 			if (left < -0.001f){
-				detach();
+				if (preserveTargetingTurn) {
+					detachForTargeting();
+				} else {
+					detach();
+				}
 			}
-			
 		}
 		
 		public void setDelayedPress(int cell){
@@ -174,9 +185,19 @@ public class Swiftthistle extends Plant {
 		
 		@Override
 		public void detach(){
+			detach(true);
+		}
+
+		public void detachForTargeting(){
+			detach(false);
+		}
+
+		private void detach(boolean advanceTarget){
 			super.detach();
 			triggerPresses();
-			target.next();
+			if (advanceTarget) {
+				target.next();
+			}
 		}
 
 		@Override
