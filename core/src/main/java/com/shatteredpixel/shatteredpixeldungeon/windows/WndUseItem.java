@@ -76,7 +76,13 @@ public class WndUseItem extends WndInfoItem {
 				}
 
 			}
-			y = layoutButtons(buttons, width, y);
+			if (hasScrollableInfo()){
+				float buttonsHeight = layoutButtonsEvenly(buttons, width, 0);
+				y = fitScrollableInfoAbove(GAP + buttonsHeight) + GAP;
+				y = layoutButtonsEvenly(buttons, width, y);
+			} else {
+				y = layoutButtons(buttons, width, y);
+			}
 
 			ItemJournalButton btn = new ItemJournalButton(item, this);
 			btn.setRect(width - 16, 0, 16, 16);
@@ -84,6 +90,20 @@ public class WndUseItem extends WndInfoItem {
 		}
 
 		resize( width, (int)(y) );
+	}
+
+	private static float layoutButtonsEvenly(ArrayList<RedButton> buttons, float width, float y){
+		if (buttons.isEmpty()){
+			return y;
+		}
+
+		float buttonWidth = (width - (buttons.size() - 1)) / buttons.size();
+		float x = 0;
+		for (RedButton b : buttons){
+			b.setRect(x, y, buttonWidth, BUTTON_HEIGHT);
+			x += buttonWidth + 1;
+		}
+		return y + BUTTON_HEIGHT;
 	}
 
 	private static float layoutButtons(ArrayList<RedButton> buttons, float width, float y){

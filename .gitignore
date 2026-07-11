@@ -33,7 +33,7 @@ dist/
 release/
 debug/
 capture/
-SPD-classes/
+.codex-tmp/
 
 # Logs and temporary files
 *.log

@@ -64,17 +64,10 @@ public class ScrollOfDivination extends ExoticScroll {
 		HashSet<Class<? extends Potion>> potions = Potion.getUnknown();
 		HashSet<Class<? extends Scroll>> scrolls = Scroll.getUnknown();
 		HashSet<Class<? extends Ring>> rings = Ring.getUnknown();
-		HashSet<Class<? extends Wand>> wandTypes = hero != null && hero.randomMode ? Wand.getUnknown() : new HashSet<>();
-		ArrayList<Wand> wands = new ArrayList<>();
-		if (hero != null && !hero.randomMode) {
-			for (Item item : hero.belongings) {
-				if (item instanceof Wand && !((Wand) item).isIdentified()) {
-					wands.add((Wand) item);
-				}
-			}
-		}
+		boolean randomMode = hero != null && hero.randomMode;
+		HashSet<Class<? extends Wand>> wandTypes = randomMode ? Wand.getUnknown() : new HashSet<>();
 		
-		int total = potions.size() + scrolls.size() + rings.size() + (hero != null && hero.randomMode ? wandTypes.size() : wands.size());
+		int total = potions.size() + scrolls.size() + rings.size() + wandTypes.size();
 		
 		ArrayList<Item> IDed = new ArrayList<>();
 		int left = 4;
@@ -82,7 +75,7 @@ public class ScrollOfDivination extends ExoticScroll {
 			left += hero.pointsInTalent(Talent.PREDICTIVE_LOVER);
 		}
 		
-		float[] baseProbs = new float[]{3, 3, 3, 3};
+		float[] baseProbs = new float[]{3, 3, 3, randomMode ? 3 : 0};
 		float[] probs = baseProbs.clone();
 		
 		while (left > 0 && total > 0) {
@@ -124,28 +117,16 @@ public class ScrollOfDivination extends ExoticScroll {
 					rings.remove(r.getClass());
 					break;
 				case 3:
-					if (hero != null && hero.randomMode) {
-						if (wandTypes.isEmpty()) {
-							probs[3] = 0;
-							continue;
-						}
-						probs[3]--;
-						Class<? extends Wand> wandClass = Random.element(wandTypes);
-						Wand w = Reflection.newInstance(wandClass);
-						w.setKnown();
-						IDed.add(w);
-						wandTypes.remove(wandClass);
-						break;
-					}
-					if (wands.isEmpty()) {
+					if (wandTypes.isEmpty()) {
 						probs[3] = 0;
 						continue;
 					}
 					probs[3]--;
-					Wand w = Random.element(wands);
-					w.identify();
+					Class<? extends Wand> wandClass = Random.element(wandTypes);
+					Wand w = Reflection.newInstance(wandClass);
+					w.setKnown();
 					IDed.add(w);
-					wands.remove(w);
+					wandTypes.remove(wandClass);
 					break;
 			}
 			left --;

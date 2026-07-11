@@ -92,6 +92,9 @@ public class Hunger extends Buff implements Hero.Doom {
 
 
 				partialDamage += target.HT/1000f;
+				if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
+					partialDamage += target.HT/1000f*hero.pointsNegative(Talent.UNBEAR_HUNGER)*0.5f;
+				}
 				if(hero.pointsNegative(Talent.EATER)>0){
 					partialDamage += target.HT/1000f*hero.pointsNegative(Talent.EATER)*0.3;
 				}
@@ -159,7 +162,11 @@ public class Hunger extends Buff implements Hero.Doom {
 					if(hero.hasTalent(Talent.CHOCOLATE_COINS) && Dungeon.gold>100-25*hero.pointsInTalent(Talent.CHOCOLATE_COINS)){
 						Dungeon.gold-=49-12*hero.pointsInTalent(Talent.CHOCOLATE_COINS);
 					}else{
-						hero.damage( 1, this );
+						int hungerDamage = 1;
+						if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
+							hungerDamage += Math.round(0.5f*hero.pointsNegative(Talent.UNBEAR_HUNGER)*hungerDamage);
+						}
+						hero.damage( hungerDamage, this );
                         if(heroClassIs(HeroClass.FRIAR)){
                             Reason.loseReason(target,2);
                         }
@@ -246,6 +253,9 @@ public class Hunger extends Buff implements Hero.Doom {
 			float excess = level - STARVING;
 			level = STARVING;
 			partialDamage += excess * (target.HT/1000f);
+			if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
+				partialDamage += excess * (target.HT/1000f)*hero.pointsNegative(Talent.UNBEAR_HUNGER)*0.5f;
+			}
 			if (partialDamage > 1f){
                 if(hero.buff(Reason.class)!=null){
                     Reason.loseReason(target,2);
@@ -270,7 +280,11 @@ public class Hunger extends Buff implements Hero.Doom {
 				GLog.n( Messages.get(this, "onstarving") );
 			}
 
-			target.damage( 1, this );
+			int hungerDamage = 1;
+			if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
+				hungerDamage += Math.round(0.5f*hero.pointsNegative(Talent.UNBEAR_HUNGER)*hungerDamage);
+			}
+			target.damage( hungerDamage, this );
             if(hero.buff(Reason.class)!=null){
                 Reason.loseReason(target,2);
             }

@@ -95,9 +95,7 @@ public class AgentMinExplorationTracker {
 			}
 			lastObservedRoomId = current.heroRoomId;
 			recentRooms.addLast(current.heroRoomId);
-			while (recentRooms.size() > AgentMinRewardConfig.ROOM_STALL_WINDOW) {
-				recentRooms.removeFirst();
-			}
+			trimHistory(recentRooms, AgentMinRewardConfig.ROOM_STALL_WINDOW);
 		}
 
 		progress.frontierDistance = current.frontierDistance;
@@ -303,8 +301,13 @@ public class AgentMinExplorationTracker {
 			recentCells.addLast(fromCell);
 		}
 		recentCells.addLast(toCell);
-		while (recentCells.size() > AgentMinRewardConfig.LOOP_MEMORY_WINDOW) {
-			recentCells.removeFirst();
+		trimHistory(recentCells, AgentMinRewardConfig.LOOP_MEMORY_WINDOW);
+	}
+
+	private static void trimHistory(ArrayDeque<Integer> history, int configuredLimit) {
+		int limit = Math.max(0, configuredLimit);
+		while (history.size() > limit && history.pollFirst() != null) {
+			// Continue until the configured history limit is reached.
 		}
 	}
 

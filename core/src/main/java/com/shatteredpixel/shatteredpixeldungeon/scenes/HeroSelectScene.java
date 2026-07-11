@@ -63,6 +63,7 @@ import com.watabou.noosa.ui.Component;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.PointF;
+import com.watabou.utils.RectF;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -87,9 +88,11 @@ public class HeroSelectScene extends PixelScene {
 	private GameOptions optionsPane;
 	private IconButton btnExit;
 
+
 	@Override
 	public void create() {
 		super.create();
+        insets = getCommonInsets();
 		GamesInProgress.skin =0;
 		Dungeon.hero = null;
 
@@ -222,8 +225,10 @@ public class HeroSelectScene extends PixelScene {
 		}
 
 		if (landscape()){
-			float leftArea = Math.max(100, Camera.main.width/3f);
-			float uiHeight = Math.min(Camera.main.height-20, 300);
+			float usableWidth = usableWidth();
+			float usableHeight = usableHeight();
+			float leftArea = Math.max(100, usableWidth/3f);
+			float uiHeight = Math.min(usableHeight-20, 300);
 			float uiSpacing = (uiHeight-120)/2f;
 
 			if (uiHeight >= 160) uiSpacing -= 5;
@@ -234,7 +239,7 @@ public class HeroSelectScene extends PixelScene {
 			float fadeLeftScale = 47 * (leftArea - background.x)/leftArea;
 			fadeLeft.scale = new PointF(3 + Math.max(0, fadeLeftScale), background.height());
 
-			title.setPos( (leftArea - title.width())/2f, (Camera.main.height-uiHeight)/2f);
+			title.setPos( insetLeft() + (leftArea - title.width())/2f, insetTop() + (usableHeight-uiHeight)/2f);
 			align(title);
 
 			int btnWidth = HeroBtn.MIN_WIDTH + 10;
@@ -244,7 +249,7 @@ public class HeroSelectScene extends PixelScene {
 			}
 
 			int cols = (int)Math.ceil(heroBtns.size()/3f);
-            float curX1 = (leftArea - btnWidth * cols + (cols-1))/3f;
+            float curX1 = insetLeft() + (leftArea - btnWidth * cols + (cols-1))/3f;
 			float curX = curX1+btnWidth/2f;
 			float curY = title.bottom() + uiSpacing;
 
@@ -279,7 +284,7 @@ public class HeroSelectScene extends PixelScene {
 
 			startBtn.text(Messages.titleCase(Messages.get(this, "start")));
 			startBtn.setSize(startBtn.reqWidth()+8, 21);
-			startBtn.setPos((leftArea - startBtn.width())/2f, title.top() + uiHeight - startBtn.height());
+			startBtn.setPos(insetLeft() + (leftArea - startBtn.width())/2f, title.top() + uiHeight - startBtn.height());
 			align(startBtn);
 
 			btnFade = new IconButton(Icons.COMPASS.get()){
@@ -309,13 +314,16 @@ public class HeroSelectScene extends PixelScene {
 			background.visible = false;
 
 			int btnWidth = HeroBtn.MIN_WIDTH;
+			float width = usableWidth();
+			float left = insetLeft();
+			float bottomOffset = bottomSafeOffset();
 
-			float curX = (Camera.main.width - btnWidth * heroBtns.size() / 2f) / 2f;
-			if (curX > 0) {
-				btnWidth += Math.min(curX / (heroBtns.size() / 2f), 15);
-				curX = (Camera.main.width - btnWidth * heroBtns.size() / 2f) / 2f;
+			float curX = left + (width - btnWidth * heroBtns.size() / 2f) / 2f;
+			if (curX > left) {
+				btnWidth += Math.min((curX - left) / (heroBtns.size() / 2f), 15);
+				curX = left + (width - btnWidth * heroBtns.size() / 2f) / 2f;
 			}
-			float curY = Camera.main.height - HeroBtn.HEIGHT + 3;
+			float curY = Camera.main.height - HeroBtn.HEIGHT + 3 - bottomOffset;
 
 			//for (StyledButton button : heroBtns) {
 			//	button.setRect(curX, curY, btnWidth, HeroBtn.HEIGHT);
@@ -334,14 +342,14 @@ public class HeroSelectScene extends PixelScene {
 				}
 			}
 
-			title.setPos((Camera.main.width - title.width()) / 2f, (Camera.main.height - HeroBtn.HEIGHT*2 - title.height() - 4));
+			title.setPos(left + (width - title.width()) / 2f, (Camera.main.height - HeroBtn.HEIGHT*2 - title.height() - 4 - bottomOffset));
 
-			btnOptions.setRect(heroBtns.get(0).left() + 16, Camera.main.height-HeroBtn.HEIGHT*2-16, 20, 21);
+			btnOptions.setRect(heroBtns.get(0).left() + 16, Camera.main.height-HeroBtn.HEIGHT*2-16 - bottomOffset, 20, 21);
 			optionsPane.setPos(heroBtns.get(0).left(), 0);
 		}
 
 		btnExit = new ExitButton();
-		btnExit.setPos( Camera.main.width - btnExit.width(), 0 );
+		btnExit.setPos( Camera.main.width - insetRight() - btnExit.width(), insetTop() );
 		add( btnExit );
 		btnExit.visible = btnExit.active = !SPDSettings.intro();
 
@@ -392,6 +400,8 @@ public class HeroSelectScene extends PixelScene {
 		}
 	}
 
+
+
 	private void setSelectedHero(HeroClass cl){
 		GamesInProgress.selectedClass = cl;
 		GamesInProgress.skin = WndSkins.savedSkin(cl);
@@ -400,18 +410,18 @@ public class HeroSelectScene extends PixelScene {
 		background.visible = true;
 		background.hardlight(1.5f,1.5f,1.5f);
 
-		float leftPortion = Math.max(100, Camera.main.width/3f);
+		float leftPortion = Math.max(100, usableWidth()/3f);
 
 		if (landscape()) {
 
 			heroName.text(Messages.titleCase(cl.title()));
 			heroName.hardlight(Window.TITLE_COLOR);
-			heroName.setPos((leftPortion - heroName.width() - 20)/2f, heroName.top());
+			heroName.setPos(insetLeft() + (leftPortion - heroName.width() - 20)/2f, heroName.top());
 			align(heroName);
 
 			heroDesc.text(cl.shortDesc());
 			heroDesc.maxWidth(80);
-			heroDesc.setPos((leftPortion - heroDesc.width())/2f, heroName.bottom() + 5);
+			heroDesc.setPos(insetLeft() + (leftPortion - heroDesc.width())/2f, heroName.bottom() + 5);
 			align(heroDesc);
 
 			btnFade.visible = btnFade.active = true;
@@ -431,7 +441,8 @@ public class HeroSelectScene extends PixelScene {
 			startBtn.text(Messages.titleCase(cl.title()));
 			startBtn.setSize(startBtn.reqWidth() + 8, 21);
 
-			startBtn.setPos((Camera.main.width - startBtn.width())/2f, (Camera.main.height - HeroBtn.HEIGHT*2 + 2 - startBtn.height()));
+			float bottomOffset = bottomSafeOffset();
+			startBtn.setPos(insetLeft() + (usableWidth() - startBtn.width())/2f, (Camera.main.height - HeroBtn.HEIGHT*2 + 2 - startBtn.height() - bottomOffset));
 			PixelScene.align(startBtn);
 
 			infoButton.visible = infoButton.active = true;
@@ -449,6 +460,38 @@ public class HeroSelectScene extends PixelScene {
 
 		updateOptionsColor();
 	}
+    protected RectF insets;
+    public float insetLeft() {
+        return insets == null ? 0 : insets.left;
+    }
+
+    public float insetRight() {
+        return insets == null ? 0 : insets.right;
+    }
+
+    public float insetTop() {
+        return insets == null ? 0 : insets.top;
+    }
+
+    public float usableWidth() {
+        return Camera.main.width - insetLeft() - insetRight();
+    }
+
+    public float usableHeight() {
+        return Camera.main.height - insetTop() - bottomInset();
+    }
+
+    public float bottomInset() {
+        return insets == null ? 0 : insets.bottom;
+    }
+
+    static float bottomSafeOffset(RectF insets) {
+        return insets != null && insets.bottom > 0 ? insets.bottom + 2 : 0;
+    }
+
+    private float bottomSafeOffset() {
+        return bottomSafeOffset(insets);
+    }
 
 	private float uiAlpha;
 

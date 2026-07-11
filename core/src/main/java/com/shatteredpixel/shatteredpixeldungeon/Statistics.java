@@ -43,6 +43,10 @@ public class Statistics {
 	//tracks every item type 'seen' this run (i.e. would be added to catalogs)
 	public static HashSet<Class> itemTypesDiscovered = new HashSet<>();
 
+	public static void discoverItemType(Class<?> itemType) {
+		if (itemType != null) itemTypesDiscovered.add(itemType);
+	}
+
 	//These are used for score calculation
 	// some are built incrementally, most are assigned when full score is calculated
 	public static int progressScore;

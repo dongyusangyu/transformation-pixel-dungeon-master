@@ -24,12 +24,15 @@ package com.shatteredpixel.shatteredpixeldungeon.android;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Rect;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.provider.Settings;
+import android.view.DisplayCutout;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 
 import com.badlogic.gdx.Gdx;
@@ -38,17 +41,23 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.PackageTrie;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.noosa.Game;
 import com.watabou.utils.PlatformSupport;
+import com.watabou.utils.RectF;
 
+import java.io.IOException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import dalvik.system.DexFile;
+
 public class AndroidPlatformSupport extends PlatformSupport {
 
-	private static final int IMMERSIVE_SYSTEM_UI_FLAGS =
+	static final int IMMERSIVE_SYSTEM_UI_FLAGS =
 			View.SYSTEM_UI_FLAG_LAYOUT_STABLE
 			| View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
 			| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -56,15 +65,134 @@ public class AndroidPlatformSupport extends PlatformSupport {
 			| View.SYSTEM_UI_FLAG_FULLSCREEN
 			| View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 
-	private static final long RESTORE_SYSTEM_UI_DELAY = 300L;
+	static final int NON_IMMERSIVE_SYSTEM_UI_FLAGS =
+			View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+			| View.SYSTEM_UI_FLAG_FULLSCREEN
+			| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
 
-	private View systemUiListenerDecor;
-	private final Runnable restoreSystemUI = new Runnable() {
-		@Override
-		public void run() {
-			updateSystemUI();
+	static final int WINDOW_MODE_FLAGS_MASK =
+			WindowManager.LayoutParams.FLAG_FULLSCREEN
+			| WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
+
+	public PackageTrie findClasses(String pkgName) throws ClassNotFoundException {
+		PackageTrie trie = new PackageTrie();
+		try {
+			Enumeration<String> entries = new DexFile(AndroidLauncher.instance
+					.getContext()
+					.getPackageCodePath()
+			).entries();
+			while (entries.hasMoreElements()) {
+				String name = entries.nextElement();
+				if (name.startsWith(pkgName)) {
+					try {
+						trie.addPlatformClass(Class.forName(name), pkgName);
+					} catch (Throwable ignored) {
+						// Some generated or platform-specific classes cannot be loaded here.
+					}
+				}
+			}
+		} catch (IOException e) {
+			throw new ClassNotFoundException(pkgName, e);
 		}
-	};
+		return trie;
+	}
+
+	@Override
+	public boolean supportsFullScreen(){
+		// Match upstream behavior: the setting only matters when there is a
+		// navigation or gesture bar to hide.
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && AndroidLauncher.instance != null) {
+			WindowInsets insets = AndroidLauncher.instance.getWindow().getDecorView().getRootWindowInsets();
+			return insets != null && (insets.getStableInsetBottom() > 0
+					|| insets.getStableInsetRight() > 0
+					|| insets.getStableInsetLeft() > 0);
+		} else {
+			return true;
+		}
+	}
+
+	@Override
+	public RectF getDisplayCutout() {
+		RectF cutoutRect = new RectF();
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && AndroidLauncher.instance != null) {
+			WindowInsets rootInsets = AndroidLauncher.instance.getWindow().getDecorView().getRootWindowInsets();
+			DisplayCutout cutout = rootInsets == null ? null : rootInsets.getDisplayCutout();
+
+			Rect largest = null;
+			if (cutout != null) {
+				for (Rect r : cutout.getBoundingRects()) {
+					if (largest == null
+							|| Math.abs(r.height() * r.width()) > Math.abs(largest.height() * largest.width())) {
+						largest = r;
+					}
+				}
+			}
+
+			if (largest != null){
+				cutoutRect.left = Math.min(largest.left, largest.right);
+				cutoutRect.right = Math.max(largest.left, largest.right);
+				cutoutRect.top  = Math.min(largest.top, largest.bottom);
+				cutoutRect.bottom  = Math.max(largest.top, largest.bottom);
+			}
+		}
+
+		return cutoutRect;
+	}
+
+	@Override
+	public RectF getSafeInsets( int level ) {
+		RectF insets = new RectF();
+
+		// Android 9+ exposes stable insets for gesture/nav bars and display cutouts.
+		// Older versions are left to the system window handling, matching upstream.
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+				&& AndroidLauncher.instance != null
+				&& !AndroidLauncher.instance.isInMultiWindowMode()) {
+			WindowInsets rootInsets = AndroidLauncher.instance.getWindow().getDecorView().getRootWindowInsets();
+			if (rootInsets != null) {
+
+				// Navigation/gesture bars should be respected when the player disables hidden system bars.
+				if (supportsFullScreen() && !SPDSettings.fullscreen()) {
+					insets.left = Math.max(insets.left, rootInsets.getStableInsetLeft());
+					insets.right = Math.max(insets.right, rootInsets.getStableInsetRight());
+					insets.bottom = Math.max(insets.bottom, rootInsets.getStableInsetBottom());
+				}
+
+				if (level > INSET_BLK) {
+					DisplayCutout cutout = rootInsets.getDisplayCutout();
+
+					if (cutout != null) {
+						boolean largeCutout = false;
+						boolean cutoutsPresent = false;
+
+						int screenSize = Game.width * Game.height;
+						for (Rect r : cutout.getBoundingRects()) {
+							int cutoutSize = Math.abs(r.height() * r.width());
+							if (cutoutSize > 0){
+								cutoutsPresent = true;
+								if (cutoutSize * 133.33f >= screenSize) {
+									largeCutout = true;
+								}
+							}
+						}
+
+						if (!cutoutsPresent){
+							largeCutout = true;
+						}
+
+						if (largeCutout || level == INSET_ALL) {
+							insets.left = Math.max(insets.left, cutout.getSafeInsetLeft());
+							insets.top = Math.max(insets.top, cutout.getSafeInsetTop());
+							insets.right = Math.max(insets.right, cutout.getSafeInsetRight());
+							insets.bottom = Math.max(insets.bottom, cutout.getSafeInsetBottom());
+						}
+					}
+				}
+			}
+		}
+		return insets;
+	}
 	
 	public void updateDisplaySize(){
 		if (SPDSettings.landscape() != null) {
@@ -140,72 +268,38 @@ public class AndroidPlatformSupport extends PlatformSupport {
 				|| !AndroidLauncher.instance.isInMultiWindowMode();
 	}
 
-	private boolean shouldUseFullscreen() {
-		return canUseFullscreen() && SPDSettings.fullscreen();
+	static int windowModeFlags(boolean fullscreenAvailable) {
+		return fullscreenAvailable
+				? WindowManager.LayoutParams.FLAG_FULLSCREEN
+				: WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
 	}
 
-	private void installSystemUIRestoreListener(final View decor) {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT || systemUiListenerDecor == decor) {
-			return;
-		}
-
-		if (systemUiListenerDecor != null) {
-			systemUiListenerDecor.setOnSystemUiVisibilityChangeListener(null);
-			systemUiListenerDecor.removeCallbacks(restoreSystemUI);
-		}
-
-		systemUiListenerDecor = decor;
-		decor.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-			@Override
-			public void onSystemUiVisibilityChange(int visibility) {
-				if (!shouldUseFullscreen()) {
-					decor.removeCallbacks(restoreSystemUI);
-					return;
-				}
-
-				boolean missingFullscreen = (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
-				boolean missingNavigation = (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0;
-				if (missingFullscreen || missingNavigation) {
-					decor.removeCallbacks(restoreSystemUI);
-					decor.postDelayed(restoreSystemUI, RESTORE_SYSTEM_UI_DELAY);
-				}
-			}
-		});
-	}
-
-	@SuppressLint("InlinedApi")
-	private void applySoftInputMode(boolean fullscreen) {
-		AndroidLauncher.instance.getWindow().setSoftInputMode(fullscreen
-				? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
-				: WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED);
+	static int systemUiFlags(boolean hideSystemBars) {
+		return hideSystemBars ? IMMERSIVE_SYSTEM_UI_FLAGS : NON_IMMERSIVE_SYSTEM_UI_FLAGS;
 	}
 
 	public void updateSystemUI() {
+		if (AndroidLauncher.instance == null) {
+			return;
+		}
 		
 		AndroidLauncher.instance.runOnUiThread(new Runnable() {
 			@SuppressLint("NewApi")
 			@Override
 			public void run() {
-				boolean fullscreen = shouldUseFullscreen();
-				View decor = AndroidLauncher.instance.getWindow().getDecorView();
-				applySoftInputMode(fullscreen);
-				
-				if (fullscreen){
-					AndroidLauncher.instance.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-							WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-				} else {
-					AndroidLauncher.instance.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN,
-							WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+				if (AndroidLauncher.instance == null) {
+					return;
 				}
+				boolean fullscreenAvailable = canUseFullscreen();
+				View decor = AndroidLauncher.instance.getWindow().getDecorView();
+				
+				AndroidLauncher.instance.getWindow().setFlags(
+						windowModeFlags(fullscreenAvailable),
+						WINDOW_MODE_FLAGS_MASK);
 				
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
-					installSystemUIRestoreListener(decor);
-					if (fullscreen) {
-						decor.setSystemUiVisibility(IMMERSIVE_SYSTEM_UI_FLAGS);
-					} else {
-						decor.removeCallbacks(restoreSystemUI);
-						decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-					}
+					boolean hideSystemBars = supportsFullScreen() && SPDSettings.fullscreen();
+					decor.setSystemUiVisibility(systemUiFlags(hideSystemBars));
 				}
 			}
 		});

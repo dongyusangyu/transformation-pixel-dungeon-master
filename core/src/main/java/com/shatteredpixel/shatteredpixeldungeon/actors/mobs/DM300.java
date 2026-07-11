@@ -123,6 +123,18 @@ public class DM300 extends Mob {
 	public boolean supercharged = false;
 	public boolean chargeAnnounced = false;
 
+	public static boolean hasSuperchargedDM300() {
+		if (Dungeon.level == null) {
+			return false;
+		}
+		for (Mob mob : Dungeon.level.mobs) {
+			if (mob instanceof DM300 && ((DM300) mob).supercharged) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private final int MIN_COOLDOWN = 5;
 	private final int MAX_COOLDOWN = Dungeon.isChallenged(Challenges.STRONGER_BOSSES) ? 7 : 9;
 

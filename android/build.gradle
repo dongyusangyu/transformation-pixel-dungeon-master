@@ -60,6 +60,7 @@ configurations { natives }
 
 dependencies {
     implementation project(':core')
+    testImplementation 'junit:junit:4.13.2'
 
     // We are using the natives from 1.11.0 to maintain compatibility with Android 4.0-4.3 for now
     // The 1.12.0+ natives are compiled with a version of the NDK which drops 4.3- support

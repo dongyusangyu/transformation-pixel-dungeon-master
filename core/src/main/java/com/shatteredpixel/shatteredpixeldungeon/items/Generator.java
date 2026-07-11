@@ -44,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.SlimeGirlArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.WarriorArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
@@ -51,6 +52,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
@@ -623,9 +625,11 @@ public class Generator {
 					TimekeepersHourglass.class,
 					UnstableSpellbook.class,
 					Shuriken_Box.class,
-					InstructionTool.class
+					InstructionTool.class,
+					CapeOfThorns.class,
+					LloydsBeacon.class
 			};
-			ARTIFACT.defaultProbs = new float[]{ 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0 };
+			ARTIFACT.defaultProbs = new float[]{ 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1 };
 			ARTIFACT.probs = ARTIFACT.defaultProbs.clone();
 
 			//Trinkets are unique like artifacts, but unlike them you can only have one at once
@@ -696,6 +700,14 @@ public class Generator {
 		return result;
 	}
 
+	private static float[] randomModeEquipmentProbs(float[] probs, int firstAllowedIndex){
+		float[] result = effectiveProbs(probs);
+		for (int i = 0; i < firstAllowedIndex && i < result.length; i++){
+			result[i] = 0;
+		}
+		return result;
+	}
+
 	private static HashMap<Category,Float> effectiveProbs(HashMap<Category,Float> probs){
 		if (!randomMode()){
 			return probs;
@@ -722,6 +734,9 @@ public class Generator {
 		}
 		float[] tierProbs = new float[tiers.length];
 		for (int i = 0; i < tiers.length; i++){
+			if (i == 0) {
+				continue;
+			}
 			if (tiers[i].defaultProbs != null && hasPositiveProbs(tiers[i].defaultProbs)){
 				tierProbs[i] = 1;
 			}
@@ -887,7 +902,7 @@ public class Generator {
 
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
 		
-		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(randomMode() ? effectiveProbs(Category.ARMOR.probs) : floorSetTierProbs[floorSet])]);
+		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(randomMode() ? randomModeEquipmentProbs(Category.ARMOR.probs, 1) : floorSetTierProbs[floorSet])]);
 		a.random();
 		return a;
 	}

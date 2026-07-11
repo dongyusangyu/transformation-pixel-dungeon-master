@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.TextureFilm;
 import com.watabou.utils.Callback;
@@ -49,6 +50,11 @@ public class RogueBossSprite extends MobSprite {
 
     @Override
     public void attack( int cell ) {
+        if (!SPDSettings.charAnimations()) {
+            super.attack( cell );
+            return;
+        }
+
         if (!Dungeon.level.adjacent( cell, ch.pos )) {
 
             ((MissileSprite)parent.recycle( MissileSprite.class )).

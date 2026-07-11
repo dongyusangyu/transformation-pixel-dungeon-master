@@ -6,4 +6,5 @@ sourceCompatibility = targetCompatibility = appJavaCompatibility
 dependencies {
     api project(':SPD-classes')
     implementation project(':services')
+    testImplementation 'junit:junit:4.13.2'
 }

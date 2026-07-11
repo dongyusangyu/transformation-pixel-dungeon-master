@@ -52,7 +52,7 @@ public class DesktopPlatformSupport extends PlatformSupport {
 			previousSizes[1] = previousSizes[0];
 		}
 		previousSizes[0] = new Point(Game.width, Game.height);
-		if (!SPDSettings.fullscreen()) {
+		if (!SPDSettings.fullscreen() && !SPDSettings.windowMaximized()) {
 			SPDSettings.windowResolution( previousSizes[0] );
 		}
 	}
@@ -86,7 +86,12 @@ public class DesktopPlatformSupport extends PlatformSupport {
 					SPDSettings.fulLScreenMonitor(monitorNum);
 				} else {
 					Point p = SPDSettings.windowResolution();
-					Gdx.graphics.setWindowedMode( p.x, p.y );
+					boolean shouldUpdateWindow = Gdx.graphics.isFullscreen()
+							|| (!first && !SPDSettings.windowMaximized()
+							&& (Gdx.graphics.getWidth() != p.x || Gdx.graphics.getHeight() != p.y));
+					if (shouldUpdateWindow) {
+						Gdx.graphics.setWindowedMode( p.x, p.y );
+					}
 				}
 				first = false;
 			}

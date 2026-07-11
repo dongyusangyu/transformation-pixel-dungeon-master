@@ -93,7 +93,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-file", type=Path, default=DEFAULT_MODEL_FILE)
     parser.add_argument("--init-checkpoint", type=Path, default=None)
     parser.add_argument("--save-checkpoint", type=Path, default=None)
-    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--grad-accum-steps", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -117,6 +117,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--log-interval", type=int, default=20)
     parser.add_argument("--shuffle", action="store_true")
     parser.add_argument("--no-shuffle", action="store_true")
+    parser.add_argument("--action-oversample-ratio", type=float, default=0.5)
+    parser.add_argument("--disable-action-oversample", action="store_true")
     parser.add_argument("--use-skill-balanced-sampler", action="store_true")
     parser.add_argument("--cpu-float16", action="store_true")
     parser.add_argument("--initial-eval", action="store_true")
@@ -204,6 +206,7 @@ class IndexedJsonlDataset(Dataset):
             raise FileNotFoundError(f"No jsonl files were found under: {dataset_dir}")
         self.index: list[tuple[Path, int]] = []
         self.skill_targets: list[int] = []
+        self.action_targets: list[int] = []
         self.skipped_lines = 0
         for path in self.files:
             with path.open("r", encoding="utf-8") as handle:
@@ -220,8 +223,17 @@ class IndexedJsonlDataset(Dataset):
                     if skill_id < 0:
                         self.skipped_lines += 1
                         continue
+                    try:
+                        action_id = int(payload.get("action_id", -1))
+                    except (TypeError, ValueError):
+                        self.skipped_lines += 1
+                        continue
+                    if action_id < 0:
+                        self.skipped_lines += 1
+                        continue
                     self.index.append((path, offset))
                     self.skill_targets.append(skill_id)
+                    self.action_targets.append(action_id)
                     if max_samples > 0 and len(self.index) >= max_samples:
                         return
 
@@ -236,10 +248,60 @@ class IndexedJsonlDataset(Dataset):
         payload["_source_file"] = str(path)
         payload["_source_index"] = idx
         payload["_skill_target"] = self.skill_targets[idx]
+        payload["_action_target"] = self.action_targets[idx]
         return payload
 
     def peek(self, idx: int = 0) -> dict[str, Any]:
         return self[idx]
+
+    def oversample_action_minority(self, target_ratio: float = 0.5, seed: int = 0) -> dict[str, Any]:
+        if not 0 < target_ratio <= 1:
+            raise ValueError("--action-oversample-ratio must be in the range (0, 1].")
+        before = Counter(self.action_targets)
+        if not before:
+            return {
+                "enabled": True,
+                "target_ratio": target_ratio,
+                "target_count": 0,
+                "added": 0,
+                "before_total": 0,
+                "after_total": 0,
+                "before": before,
+                "after": before,
+            }
+
+        target_count = max(1, math.ceil(max(before.values()) * target_ratio))
+        by_action: dict[int, list[int]] = {}
+        for idx, action_id in enumerate(self.action_targets):
+            by_action.setdefault(action_id, []).append(idx)
+
+        rng = random.Random(seed)
+        additions: list[tuple[tuple[Path, int], int, int]] = []
+        for action_id, indices in sorted(by_action.items()):
+            missing = target_count - len(indices)
+            if missing <= 0:
+                continue
+            for _ in range(missing):
+                source_idx = rng.choice(indices)
+                additions.append((self.index[source_idx], self.skill_targets[source_idx], self.action_targets[source_idx]))
+        rng.shuffle(additions)
+
+        for index_entry, skill_target, action_target in additions:
+            self.index.append(index_entry)
+            self.skill_targets.append(skill_target)
+            self.action_targets.append(action_target)
+
+        after = Counter(self.action_targets)
+        return {
+            "enabled": True,
+            "target_ratio": target_ratio,
+            "target_count": target_count,
+            "added": len(additions),
+            "before_total": sum(before.values()),
+            "after_total": sum(after.values()),
+            "before": before,
+            "after": after,
+        }
 
 
 def derive_skill_target_from_payload(sample: dict[str, Any]) -> int:
@@ -664,14 +726,26 @@ def save_checkpoint(
     torch.save(payload, save_path)
 
 
-def summarize_dataset(dataset: IndexedJsonlDataset, shapes: TensorShapeSummary) -> None:
+def format_counter_summary(counter: Counter, limit: int = 24) -> str:
+    if not counter:
+        return "<empty>"
+    items = sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+    summary = ", ".join(f"{key}:{value}" for key, value in items[:limit])
+    if len(items) > limit:
+        summary += f", ...(+{len(items) - limit} classes)"
+    return summary
+
+
+def summarize_dataset(dataset: IndexedJsonlDataset, shapes: TensorShapeSummary, title: str = "Dataset Summary") -> None:
     counter = Counter(dataset.skill_targets)
     skill_summary = ", ".join(f"{skill}:{counter.get(skill, 0)}" for skill in range(shapes.skill_count))
-    print("=== Dataset Summary ===", flush=True)
+    action_counter = Counter(dataset.action_targets)
+    print(f"=== {title} ===", flush=True)
     print(f"Directory: {dataset.dataset_dir}", flush=True)
     print(f"Files: {len(dataset.files)}", flush=True)
     print(f"Samples: {len(dataset)}", flush=True)
     print(f"Skill distribution: {skill_summary}", flush=True)
+    print(f"Action distribution: {format_counter_summary(action_counter)}", flush=True)
     print(
         "Shapes: "
         f"level={shapes.level_channels}x{shapes.level_height}x{shapes.level_width}, "
@@ -734,7 +808,21 @@ def main() -> None:
     if len(dataset) == 0:
         raise RuntimeError("Dataset is empty, nothing to train.")
     shapes = infer_shapes(dataset.peek(0))
-    summarize_dataset(dataset, shapes)
+    summarize_dataset(dataset, shapes, title="Dataset Summary Before Action Oversampling")
+    if args.disable_action_oversample:
+        print("Action minority oversampling: disabled", flush=True)
+    else:
+        oversample_report = dataset.oversample_action_minority(args.action_oversample_ratio, seed=args.seed)
+        print(
+            "Action minority oversampling: "
+            f"target_ratio={oversample_report['target_ratio']:.3f} "
+            f"target_count={oversample_report['target_count']} "
+            f"added={oversample_report['added']} "
+            f"samples={oversample_report['before_total']}->{oversample_report['after_total']}",
+            flush=True,
+        )
+        if oversample_report["added"] > 0:
+            summarize_dataset(dataset, shapes, title="Dataset Summary After Action Oversampling")
 
     bad_samples: list[str] = []
     for idx in range(min(len(dataset), 256)):

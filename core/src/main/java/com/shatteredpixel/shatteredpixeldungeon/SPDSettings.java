@@ -161,6 +161,28 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_SLOTWATERSKIN= "quickslot_waterskin";
 	public static final String KEY_SYSTEMFONT	= "system_font";
 	public static final String KEY_VIBRATION    = "vibration";
+	public static final String KEY_UI_STYLE     = "ui_style";
+
+	public enum UIStyle {
+		TRANSFORMATION,
+		SPD;
+
+		public static UIStyle from(String value) {
+			try {
+				return valueOf(value);
+			} catch (IllegalArgumentException | NullPointerException ignored) {
+				return TRANSFORMATION;
+			}
+		}
+	}
+
+	public static void uiStyle(UIStyle value) {
+		put(KEY_UI_STYLE, value.name());
+	}
+
+	public static UIStyle uiStyle() {
+		return UIStyle.from(getString(KEY_UI_STYLE, UIStyle.TRANSFORMATION.name()));
+	}
 
 	//0 = mobile, 1 = mixed (large without inventory in main UI), 2 = large
 	public static void interfaceSize( int value ){

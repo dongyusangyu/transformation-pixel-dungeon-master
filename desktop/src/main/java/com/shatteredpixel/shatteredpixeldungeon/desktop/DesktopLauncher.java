@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.desktop;
 
 import com.badlogic.gdx.Files;
+import com.badlogic.gdx.Graphics.DisplayMode;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3FileHandle;
@@ -184,9 +185,13 @@ public class DesktopLauncher {
 		
 		config.setWindowSizeLimits( 720, 400, -1, -1 );
 		Point p = SPDSettings.windowResolution();
+		DisplayMode displayMode = Lwjgl3ApplicationConfiguration.getDisplayMode();
+		p.x = Math.max(720, Math.min(p.x, displayMode.width));
+		p.y = Math.max(400, Math.min(p.y, displayMode.height));
+		SPDSettings.windowResolution(p);
 		config.setWindowedMode( p.x, p.y );
 
-		config.setMaximized(SPDSettings.windowMaximized());
+		config.setMaximized(!SPDSettings.fullscreen() && SPDSettings.windowMaximized());
 
 		//going fullscreen on launch is a bit buggy
 		// so game always starts windowed and then switches in DesktopPlatformSupport.updateSystemUI

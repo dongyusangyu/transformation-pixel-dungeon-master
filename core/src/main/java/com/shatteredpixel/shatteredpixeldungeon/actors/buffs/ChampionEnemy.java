@@ -36,10 +36,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Crab;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.ArmoredStatue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Bee;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalGuardian;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalWisp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DemonSpawner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.FungalSentry;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Ghoul;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollExile;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Guard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -331,6 +333,11 @@ public abstract class ChampionEnemy extends Buff {
 					&& !(mob instanceof Mimic)
 					&& !(mob instanceof Piranha)
 					&& !(mob instanceof Bee);
+		}
+
+		public static boolean validTarget(Mob mob, boolean miningLevel) {
+			return validTarget(mob)
+					&& (!miningLevel || (!(mob instanceof GnollGuard) && !(mob instanceof CrystalWisp)));
 		}
 	}
 
