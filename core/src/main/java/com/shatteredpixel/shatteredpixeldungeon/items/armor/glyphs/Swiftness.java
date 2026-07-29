@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.Overburden;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.PathFinder;
@@ -62,7 +63,8 @@ public class Swiftness extends Armor.Glyph {
 				int particles = 1 + (int)Random.Float(1+level/5f);
 				owner.sprite.emitter().startDelayed(Speck.factory(Speck.YELLOW_LIGHT), 0.02f, particles, 0.05f);
 			}
-			return (1.2f + 0.04f * level) * genericProcChanceMultiplier(owner);
+			float multiplier = (1.2f + 0.04f * level) * genericProcChanceMultiplier(owner);
+			return Overburden.attenuateEquipmentSpeed(owner, multiplier);
 		}
 	}
 

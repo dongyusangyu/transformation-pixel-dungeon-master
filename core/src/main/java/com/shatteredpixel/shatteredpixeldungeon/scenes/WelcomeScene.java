@@ -299,7 +299,7 @@ public class WelcomeScene extends PixelScene {
 						Game.reportException( new RuntimeException("Rankings Updating Failed!",e));
 					}
 				}
-				Collections.sort(Rankings.INSTANCE.records, Rankings.scoreComparator);
+				Rankings.INSTANCE.normalizeRecords();
 				Rankings.INSTANCE.save();
 			} catch (Exception e) {
 				//if we encounter a fatal error, then just clear the rankings

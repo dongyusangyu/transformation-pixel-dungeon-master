@@ -916,7 +916,7 @@ public class AgentMinActionExecutor {
 		hero.sublimationTalents.remove(currentSlotTalent);
 		hero.sublimationTalents.put(targetSlot, talent.name());
 		TalentCatalog.countUse(talent);
-		if ("DM300".equals(type) || "YOG".equals(type)) {
+		if ("DM300".equals(type) || "HUNTRESS".equals(type) || "YOG".equals(type)) {
 			Buff.affect(hero, ScrollOfSublimation.Sublimation1.class).setBoosted(index);
 		} else {
 			Buff.affect(hero, ScrollOfSublimation.Sublimation.class).setBoosted(index);

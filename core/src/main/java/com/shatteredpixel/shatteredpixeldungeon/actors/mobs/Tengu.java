@@ -90,7 +90,7 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class Tengu extends Mob {
+public class Tengu extends Mob implements PhysicalRangedAttack {
 	
 	{
 		spriteClass = TenguSprite.class;
@@ -253,11 +253,6 @@ public class Tengu extends Mob {
 		}
 		
 		yell( Messages.get(this, "defeated") );
-	}
-	
-	@Override
-	protected boolean canAttack( Char enemy ) {
-		return new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos;
 	}
 	
 	private void jump() {

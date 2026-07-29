@@ -60,7 +60,7 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 
 
-public class GreatShoper extends Mob {
+public class GreatShoper extends Mob implements MagicalRangedAttack {
     {
         spriteClass = GreatShoperSprite.class;
 
@@ -112,29 +112,25 @@ public class GreatShoper extends Mob {
     }
 
     @Override
-    protected boolean canAttack( Char enemy ) {
-        return (super.canAttack(enemy)
-                || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos) && phase == 1;
+    public boolean canRangedAttack(Char enemy) {
+        return phase == 1 && MagicalRangedAttack.super.canRangedAttack(enemy);
     }
 
-    protected boolean doAttack( Char enemy ) {
+    @Override
+    public boolean canMeleeAttack(Char enemy) {
+        return phase == 1;
+    }
 
-        if (Dungeon.level.adjacent( pos, enemy.pos )
-                || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos != enemy.pos) {
-
-            return super.doAttack( enemy );
-
+    @Override
+    public boolean doRangedAttack(Char enemy) {
+        if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+            sprite.zap( enemy.pos );
+            level.drop( new Gold().quantity(200), enemy.pos ).sprite.drop();
+            return false;
         } else {
-
-            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                sprite.zap( enemy.pos );
-                level.drop( new Gold().quantity(200), enemy.pos ).sprite.drop();
-                return false;
-            } else {
-                zap();
-                level.drop( new Gold().quantity(200), enemy.pos );
-                return true;
-            }
+            zap();
+            level.drop( new Gold().quantity(200), enemy.pos );
+            return true;
         }
     }
 
@@ -308,7 +304,7 @@ public class GreatShoper extends Mob {
         Invisibility.dispel(this);
         Char enemy = this.enemy;
 
-        if (hit( this, enemy, true )) {
+        if (rangedHit(enemy)) {
             //TODO would be nice for this to work on ghost/statues too
             if (enemy == hero && Random.Int( 2 ) == 0) {
                 Sample.INSTANCE.play( Assets.Sounds.GOLD );
@@ -330,7 +326,7 @@ public class GreatShoper extends Mob {
                 GLog.n( Messages.get(this, "glod_kill") );
             }
         } else {
-            enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+            showRangedMiss(enemy);
         }
     }
 

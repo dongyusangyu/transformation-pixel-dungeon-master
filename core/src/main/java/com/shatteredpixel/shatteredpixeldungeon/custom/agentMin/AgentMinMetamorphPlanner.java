@@ -249,6 +249,7 @@ public class AgentMinMetamorphPlanner {
 				talents.add(Talent.PHANTOM_STEP);
 				break;
 			case "DM300":
+			case "HUNTRESS":
 				talents.add(Talent.FASTING);
 				talents.add(Talent.THUNDER_STRIKE);
 				talents.add(Talent.DIRECTIONAL_COLLAPSE);
@@ -277,6 +278,7 @@ public class AgentMinMetamorphPlanner {
 	public static int sublimationTier(String type) {
 		switch (type) {
 			case "DM300":
+			case "HUNTRESS":
 			case "DWARFKING":
 				return 2;
 			case "YOG":
@@ -295,6 +297,7 @@ public class AgentMinMetamorphPlanner {
 			case "TENGU":
 			case "ROGUE":
 			case "DM300":
+			case "HUNTRESS":
 				return 2;
 			case "DWARFKING":
 			case "YOG":

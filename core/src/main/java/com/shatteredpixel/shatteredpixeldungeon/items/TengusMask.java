@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
@@ -241,6 +242,9 @@ public class TengusMask extends Item {
 	}
 
 	private void collectOrDrop(Item item) {
+		if (item instanceof Artifact && !Generator.claimArtifact(((Artifact) item).getClass())) {
+			return;
+		}
 		item.identify();
 		if (!item.collect(curUser.belongings.backpack)){
 			Dungeon.level.drop(item, curUser.pos).sprite.drop();

@@ -85,6 +85,7 @@ public class WarriorBoss extends Mob {
     private float leapCooldown = 5;
     private int leapPos = -1;
     private int lastEnemyPos = -1;
+    private TargetedCell leapTargetMarker;
 
     private static final String LAST_ENEMY_POS = "last_enemy_pos";
     private static final String LEAP_POS = "leap_pos";
@@ -225,15 +226,16 @@ public class WarriorBoss extends Mob {
             leapCooldown++;
         }
         if(leapCooldown > 8 && enemy !=null && lastEnemyPos ==-1 && (HP<20 || level.distance(pos,enemy.pos)>1) && state!= SLEEPING){
-            lastEnemyPos = enemy.pos;
+            lastEnemyPos = currentLeapTarget(enemy);
             yell(Messages.get(this,"wantjump"));
-            markLeapTarget(enemy.pos);
+            markLeapTarget(lastEnemyPos);
             spend(TICK);
             return true;
         }
         if(leapCooldown > 9 && lastEnemyPos !=-1 && enemy!=null && state!= SLEEPING){
             //检查视野里是否有食物
-            lastEnemyPos = enemy.pos;
+            int currentTargetPos = currentLeapTarget(enemy);
+            lastEnemyPos = currentTargetPos;
             boolean food = false;
             if(fieldOfView!=null && fieldOfView.length>0){
                 for(int cell=0;cell<fieldOfView.length;cell++){
@@ -260,92 +262,39 @@ public class WarriorBoss extends Mob {
                 yell(Messages.get(this,"wantfood"));
                 markLeapTarget(leapPos);
             }else{
-                markLeapTarget(enemy.pos);
-                int leapNearTarget = chooseLeapLandingNearTarget(enemy.pos);
-                if(leapNearTarget != -1){
-                    leapPos = leapNearTarget;
-                }else{
-                    leapPos = lastEnemyPos;
-                }
+                markLeapTarget(currentTargetPos);
+                leapPos = currentTargetPos;
                 yell(Messages.get(this,"leap"));
             }
-            leap(leapPos);
+            boolean leapStarted = leap(leapPos);
             leapPos = -1;
             lastEnemyPos =-1;
             leapCooldown = 0;
-            return true;
+            return !leapStarted;
         }else if(leapCooldown > 9 && lastEnemyPos !=-1){
+            clearLeapTargetMarker();
             leapPos = -1;
             lastEnemyPos =-1;
         }
         return super.act();
     }
 
-    private int chooseLeapLandingNearTarget(int target) {
-        int width = level.width();
-        int bossX = pos % width;
-        int bossY = pos / width;
-        int targetX = target % width;
-        int targetY = target / width;
-
-        int dx = Integer.compare(bossX, targetX);
-        int dy = Integer.compare(bossY, targetY);
-        int preferred = target + dx + dy * width;
-        if (validLeapLanding(preferred)) {
-            return preferred;
-        }
-
-        int best = -1;
-        float bestDist = Float.MAX_VALUE;
-        float bestPreferredDist = Float.MAX_VALUE;
-        float targetDist = level.trueDistance(pos, target);
-
-        for (int offset : PathFinder.NEIGHBOURS8) {
-            int cell = target + offset;
-            if (!validLeapLanding(cell)) {
-                continue;
-            }
-
-            float dist = level.trueDistance(pos, cell);
-            float preferredDist = level.trueDistance(preferred, cell);
-            boolean better = best == -1
-                    || dist < bestDist
-                    || (dist == bestDist && preferredDist < bestPreferredDist);
-
-            if (dist <= targetDist && better) {
-                best = cell;
-                bestDist = dist;
-                bestPreferredDist = preferredDist;
-            }
-        }
-
-        if (best != -1) {
-            return best;
-        }
-
-        for (int offset : PathFinder.NEIGHBOURS8) {
-            int cell = target + offset;
-            if (validLeapLanding(cell)) {
-                float preferredDist = level.trueDistance(preferred, cell);
-                if (best == -1 || preferredDist < bestPreferredDist) {
-                    best = cell;
-                    bestPreferredDist = preferredDist;
-                }
-            }
-        }
-
-        return best;
-    }
-
-    private boolean validLeapLanding(int cell) {
-        return level.insideMap(cell)
-                && Actor.findChar(cell) == null
-                && level.passable[cell];
+    static int currentLeapTarget(Char enemy) {
+        return enemy.pos;
     }
 
     private void markLeapTarget(int cell) {
+        clearLeapTargetMarker();
         if (sprite != null && sprite.parent != null && cell >= 0) {
-            sprite.parent.add(new TargetedCell(cell, 0xFF0000));
+            leapTargetMarker = new TargetedCell(cell, 0xFF0000);
+            sprite.parent.add(leapTargetMarker);
+        }
+    }
+
+    private void clearLeapTargetMarker() {
+        if (leapTargetMarker != null) {
+            leapTargetMarker.killAndErase();
+            leapTargetMarker = null;
         }
     }
 
@@ -401,65 +350,120 @@ public class WarriorBoss extends Mob {
         }
     }
 
-    public void leap(Integer target ) {
+    public boolean leap(Integer target ) {
         if (target != null) {
 
             if (this.rooted){
-                return;
+                clearLeapTargetMarker();
+                return false;
             }
 
             Ballistica route = new Ballistica(this.pos, target, Ballistica.STOP_TARGET | Ballistica.STOP_SOLID);
-            int cell = route.collisionPos;
+            final int impactPos = route.collisionPos;
+            final Char leapVictim = Actor.findChar(impactPos);
+            final int dest = leapVictim == null ? impactPos : findLeapLanding(impactPos);
 
-            //can't occupy the same cell as another char, so move back one.
-            int backTrace = route.dist-1;
-            while (Actor.findChar( cell ) != null && cell != this.pos) {
-                cell = route.path.get(backTrace);
-                backTrace--;
+            if (dest == -1) {
+                clearLeapTargetMarker();
+                return false;
             }
 
-            final int dest = cell;
-            sprite.jump(pos, dest, new Callback() {
+            sprite.jump(pos, impactPos, new Callback() {
                 @Override
                 public void call() {
 
+                    if (dest != impactPos) {
+                        Actor.add(new Pushing(WarriorBoss.this, impactPos, dest));
+                    }
                     WarriorBoss.this.move(dest, false );
                     WarriorBoss.this.sprite.interruptMotion();
-                    WarriorBoss.this.sprite.place(WarriorBoss.this.pos);
+                    if (dest == impactPos) {
+                        WarriorBoss.this.sprite.place(WarriorBoss.this.pos);
+                    }
                     Dungeon.observe();
                     GameScene.updateFog();
 
-                    for (int i : PathFinder.NEIGHBOURS8) {
-                        Char mob = Actor.findChar(WarriorBoss.this.pos + i);
-                        if (mob != null && mob != WarriorBoss.this && mob.alignment != Alignment.ENEMY) {
-                            int damage = 5;
-                            damage += WarriorBoss.this.damageRoll()*2;
-                            damage -= mob.drRoll();
-                            mob.damage(damage, WarriorBoss.this);
-                            if (mob == hero && !mob.isAlive()) {
-                                Dungeon.fail( WarriorBoss.this );
-                                GLog.n( Messages.get(WarriorBoss.this, "kill") );
-                            }
-                            if(mob == hero){
-                                Statistics.bossScores[0] -= 100;
-                            }
-                            if (mob.pos == WarriorBoss.this.pos + i){
-                                Ballistica trajectory = new Ballistica(mob.pos, mob.pos + i, Ballistica.MAGIC_BOLT);
-                                int strength = 5;
-                                leapThrowChar(mob, trajectory, strength, true, true);
-                                if (mob == Dungeon.hero){
-                                    Dungeon.hero.interrupt();
-                                }
-                            }
-
-                        }
+                    if (Dungeon.hero != null) {
+                        Dungeon.hero.interrupt();
                     }
+                    WarriorBoss.this.resolveLeapImpact(dest);
                     WarriorBoss.this.onLeapImpactComplete(dest);
 
                 }
             });
 
+            return true;
         }
+
+        return false;
+    }
+
+    private void resolveLeapImpact(int landingPos) {
+        ArrayList<LeapImpactTarget> targets = new ArrayList<>();
+        for (int offset : PathFinder.NEIGHBOURS8) {
+            int cell = landingPos + offset;
+            Char target = Actor.findChar(cell);
+            if (target != null && target != this) {
+                targets.add(new LeapImpactTarget(target, cell, offset));
+            }
+        }
+
+        // Apply the whole impact before moving anyone, so knockback cannot evade damage.
+        for (LeapImpactTarget target : targets) {
+            Char mob = target.mob;
+            int damage = 5 + damageRoll() * 2 - mob.drRoll();
+            mob.damage(damage, this);
+            if (mob == hero && !mob.isAlive()) {
+                Dungeon.fail(this);
+                GLog.n(Messages.get(this, "kill"));
+            }
+            if (mob == hero) {
+                Statistics.bossScores[0] -= 100;
+            }
+        }
+
+        for (LeapImpactTarget target : targets) {
+            Char mob = target.mob;
+            if (mob.isAlive() && mob.pos == target.originalPos) {
+                Ballistica trajectory = new Ballistica(mob.pos, mob.pos + target.offset,
+                        Ballistica.MAGIC_BOLT);
+                leapThrowChar(mob, trajectory, 5, true, true);
+            }
+        }
+    }
+
+    private static class LeapImpactTarget {
+        final Char mob;
+        final int originalPos;
+        final int offset;
+
+        LeapImpactTarget(Char mob, int originalPos, int offset) {
+            this.mob = mob;
+            this.originalPos = originalPos;
+            this.offset = offset;
+        }
+    }
+
+    private int findLeapLanding(int impactPos) {
+        int landing = findLeapLanding(impactPos, true);
+        return landing != -1 ? landing : findLeapLanding(impactPos, false);
+    }
+
+    private int findLeapLanding(int impactPos, boolean requirePassable) {
+        int landing = -1;
+        for (int offset : PathFinder.NEIGHBOURS8) {
+            int cell = impactPos + offset;
+            if (!level.insideMap(cell) || Actor.findChar(cell) != null) {
+                continue;
+            }
+            if (requirePassable ? !level.passable[cell] : level.solid[cell]) {
+                continue;
+            }
+            if (landing == -1 || level.trueDistance(pos, cell) < level.trueDistance(pos, landing)) {
+                landing = cell;
+            }
+        }
+        return landing;
     }
 
     private void leapThrowChar(Char ch, Ballistica trajectory, int power, boolean closeDoors, boolean collideDmg) {
@@ -528,8 +532,6 @@ public class WarriorBoss extends Mob {
         }
 
 		if (ch == Dungeon.hero) {
-            hero.next();
-			Dungeon.hero.interrupt();
 			Dungeon.observe();
 			GameScene.updateFog();
 
@@ -551,6 +553,7 @@ public class WarriorBoss extends Mob {
 
     private void onLeapImpactComplete(int dest) {
 
+        clearLeapTargetMarker();
         sprite.idle();
         Buff.affect(this, Paralysis.class,3);
         //Dungeon.level.occupyCell(this);

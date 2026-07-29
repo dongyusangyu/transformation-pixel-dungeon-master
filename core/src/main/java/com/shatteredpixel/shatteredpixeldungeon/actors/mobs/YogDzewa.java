@@ -77,7 +77,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
-public class YogDzewa extends Mob {
+public class YogDzewa extends Mob implements MagicalRangedAttack {
 
 	{
 		spriteClass = YogSprite.class;
@@ -95,6 +95,16 @@ public class YogDzewa extends Mob {
 		properties.add(Property.IMMOVABLE);
 		properties.add(Property.DEMONIC);
 		properties.add(Property.STATIC);
+	}
+
+	@Override
+	public boolean canRangedAttack(Char target) {
+		return false;
+	}
+
+	@Override
+	public boolean doRangedAttack(Char target) {
+		return false;
 	}
 
 	private int phase = 0;
@@ -240,7 +250,7 @@ public class YogDzewa extends Mob {
 
 					}
 
-					if (hit( this, ch, true )) {
+					if (rangedHit(ch)) {
 						if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES)) {
 							ch.damage(Random.NormalIntRange(30, 50), new Eye.DeathGaze());
 						} else {

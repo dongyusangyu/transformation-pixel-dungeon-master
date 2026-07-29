@@ -45,7 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Random;
 
-public abstract class Shaman extends Mob {
+public abstract class Shaman extends Mob implements MagicalRangedAttack {
 	
 	{
 		HP = HT = 35;
@@ -74,12 +74,6 @@ public abstract class Shaman extends Mob {
 	}
 
 	@Override
-	protected boolean canAttack( Char enemy ) {
-		return super.canAttack(enemy)
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
-	}
-
-	@Override
 	public float lootChance() {
 		//each drop makes future drops 1/3 as likely
 		// so loot chance looks like: 1/33, 1/100, 1/300, 1/900, etc.
@@ -92,22 +86,13 @@ public abstract class Shaman extends Mob {
 		return super.createLoot();
 	}
 
-	protected boolean doAttack(Char enemy ) {
-
-		if (Dungeon.level.adjacent( pos, enemy.pos )
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos != enemy.pos) {
-			
-			return super.doAttack( enemy );
-			
+	public boolean doRangedAttack(Char enemy) {
+		if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+			sprite.zap( enemy.pos );
+			return false;
 		} else {
-			
-			if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-				sprite.zap( enemy.pos );
-				return false;
-			} else {
-				zap();
-				return true;
-			}
+			zap();
+			return true;
 		}
 	}
 	
@@ -119,7 +104,7 @@ public abstract class Shaman extends Mob {
 
 		Invisibility.dispel(this);
 		Char enemy = this.enemy;
-		if (hit( this, enemy, true )) {
+		if (rangedHit(enemy)) {
 			
 			if (Random.Int( 2 ) == 0) {
 				debuff( enemy );
@@ -129,19 +114,13 @@ public abstract class Shaman extends Mob {
 			int dmg = Random.NormalIntRange( 6, 15 );
 			dmg = Math.round(dmg * AscensionChallenge.statModifier(this));
 			enemy.damage( dmg, new EarthenBolt() );
-			if(hero.hasTalent(Talent.NO_VIEWRAPE)){
-				if(enemy==hero && distance(enemy)>1){
-					Buff.affect(this, Blindness.class,hero.pointsInTalent(Talent.NO_VIEWRAPE));
-				}
-			}
-			
 			if (!enemy.isAlive() && enemy == Dungeon.hero) {
 				Badges.validateDeathFromEnemyMagic();
 				Dungeon.fail( this );
 				GLog.n( Messages.get(this, "bolt_kill") );
 			}
 		} else {
-			enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+			showRangedMiss(enemy);
 		}
 	}
 	

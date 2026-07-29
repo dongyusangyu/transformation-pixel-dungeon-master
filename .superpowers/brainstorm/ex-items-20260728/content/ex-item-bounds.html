@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EXItemSpriteSheet 裁剪边界</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #191e26;
+      --line: #384252;
+      --text: #edf2f7;
+      --muted: #a7b0bf;
+      --accent: #65d6ad;
+      --crop: #ffcc4d;
+      --warn: #ff7b72;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 28px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+    }
+    main { max-width: 1280px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    h2 { margin-top: 34px; font-size: 20px; }
+    p { color: var(--muted); line-height: 1.65; }
+    code { color: #b5e8d6; }
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin: 16px 0 22px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .swatch {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      margin-right: 6px;
+      vertical-align: -2px;
+      border: 2px solid var(--crop);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .pixel-cell {
+      position: relative;
+      width: 128px;
+      height: 128px;
+      overflow: hidden;
+      background-color: #252b35;
+      background-image:
+        linear-gradient(45deg, #303743 25%, transparent 25%),
+        linear-gradient(-45deg, #303743 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #303743 75%),
+        linear-gradient(-45deg, transparent 75%, #303743 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      outline: 1px solid #5c6778;
+    }
+    .sprite {
+      position: absolute;
+      inset: 0;
+      width: 128px;
+      height: 128px;
+      background-image: url("ex_items.png");
+      background-repeat: no-repeat;
+      background-size: 2048px 4096px;
+      image-rendering: pixelated;
+    }
+    .crop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-right: 2px solid var(--crop);
+      border-bottom: 2px solid var(--crop);
+      box-shadow: inset -1px -1px 0 rgba(0,0,0,.55);
+      pointer-events: none;
+    }
+    .meta strong { display: block; font-size: 14px; line-height: 1.35; }
+    .meta span { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .meta .size { color: var(--accent); font-size: 16px; font-weight: 700; }
+    .warning {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-left: 4px solid var(--warn);
+      background: rgba(255,123,114,.09);
+      color: #ffc1bd;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .option {
+      cursor: pointer;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      transition: 120ms ease;
+    }
+    .option:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .option.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(101,214,173,.22); }
+    .letter {
+      float: left;
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #2a3440;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .option h3 { margin: 2px 0 8px; font-size: 16px; }
+    .option p { clear: both; margin: 8px 0 0; font-size: 13px; }
+    @media (max-width: 800px) {
+      .options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>EXItemSpriteSheet：真实像素边界</h1>
+  <p>
+    下列尺寸按 <code>assignItemRect</code> 的规则计算：保持格子左上角不变，
+    <code>w = 最右非透明像素 x + 1</code>，<code>h = 最下非透明像素 y + 1</code>。
+    黄线表示编码后的右、下 UV 边界，所有像素按 8×整数倍率显示。
+  </p>
+  <div class="legend">
+    <span><i class="swatch"></i>建议裁剪边界</span>
+    <span>灰色棋盘：透明区域</span>
+    <span>原始单元：16×16</span>
+  </div>
+
+  <div id="sprite-grid" class="grid"></div>
+
+  <div class="warning">
+    索引 50（<code>SEAL</code>）在当前 <code>ex_items.png</code> 中完全透明，无法识别真实尺寸。
+    建议在确认素材前保留 16×16，避免错误裁掉未来绘制内容。
+  </div>
+
+  <h2>编码实现方案</h2>
+  <p>请选择一种内部实现。三种方案都提供 <code>encode(image,w,h)</code>，差别只在尺寸元数据如何保存。</p>
+  <div class="options">
+    <div class="option" data-choice="packed-int" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <h3>单个 int 位打包（推荐）</h3>
+      <p>低 16 位保存索引，高位保存 EX 标志、w、h；常量自包含，无运行时映射，最接近现有设计。</p>
+    </div>
+    <div class="option" data-choice="maps" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <h3>静态 Map 保存尺寸</h3>
+      <p>保留现有数值格式，但增加静态注册表；更直观，却引入初始化顺序与映射同步风险。</p>
+    </div>
+    <div class="option" data-choice="frame-table" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <h3>独立 Frame 元数据表</h3>
+      <p>结构最清晰，但需要改变物品 image 仍为 int 的既有调用链，改动面最大。</p>
+    </div>
+  </div>
+</main>
+<script>
+  const frames = [
+    [0, "MUISCA_GOLDEN_RAFT", 14, 14],
+    [1, "IMPERIAL_CROWN", 12, 14],
+    [2, "PAKAL_JADE_MASK", 15, 16],
+    [3, "SUTTON_HOO_HELMET", 15, 16],
+    [4, "BOOK_OF_KELLS", 14, 16],
+    [5, "CHOLA_NATARAJA", 14, 16],
+    [6, "DOJIGIRI_YASUTSUNA", 15, 16],
+    [7, "TURQUOISE_SERPENT", 16, 12],
+    [8, "RU_WARE_BOWL", 16, 13],
+    [9, "INCA_GOLDEN_LLAMA", 14, 15],
+    [10, "LEWIS_CHESS_QUEEN", 13, 16],
+    [11, "HARBAVILLE_TRIPTYCH", 15, 16],
+    [12, "AL_MUGHIRA_PYXIS", 11, 16],
+    [13, "BLACAS_EWER", 16, 16],
+    [14, "GREAT_KHAN_PAIZA", 11, 16],
+    [15, "GORYEO_MAEBYEONG", 11, 16],
+    [16, "JAVANESE_GOLD_CUP", 15, 14],
+    [17, "ETHIOPIAN_PROCESSIONAL_CROSS", 16, 16],
+    [18, "GREAT_ZIMBABWE_BIRD", 11, 16],
+    [19, "DJENNE_TERRACOTTA_FIGURE", 11, 16],
+    [32, "SCROLL_EXTRACTION", 15, 14],
+    [48, "META_INFUSE", 10, 15]
+  ];
+  const grid = document.getElementById("sprite-grid");
+  for (const [index, name, w, h] of frames) {
+    const x = index % 16;
+    const y = Math.floor(index / 16);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="pixel-cell">
+        <div class="sprite" style="background-position:${-x * 128}px ${-y * 128}px"></div>
+        <div class="crop" style="width:${w * 8}px;height:${h * 8}px"></div>
+      </div>
+      <div class="meta">
+        <strong>${name}</strong>
+        <span>索引 ${index}</span>
+        <span class="size">${w} × ${h}</span>
+      </div>`;
+    grid.appendChild(card);
+  }
+</script>
+</body>
+</html>

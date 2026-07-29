@@ -1184,7 +1184,6 @@ public abstract class Wand extends Item {
 			if (feather != null) {
 				gainCharge*=1f+0.075f*(1+feather.buffedLvl());
 			}
-			int cnt=hero.pointsInTalent(Talent.ENERGY_CONVERSION);
 			if (Regeneration.regenOn())
 				partialCharge += (gainCharge) * RingOfEnergy.wandChargeMultiplier(target);
 			for (Recharging bonus : target.buffs(Recharging.class)){

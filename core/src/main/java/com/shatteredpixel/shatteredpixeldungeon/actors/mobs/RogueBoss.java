@@ -83,7 +83,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
-public class RogueBoss extends Mob {
+public class RogueBoss extends Mob implements PhysicalRangedAttack {
 
     {
         HP = HT = Dungeon.isChallenged(Challenges.STRONGER_BOSSES) ? 250 : 200;

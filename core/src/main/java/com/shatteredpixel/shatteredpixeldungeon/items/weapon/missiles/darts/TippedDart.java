@@ -152,6 +152,9 @@ public abstract class TippedDart extends Dart {
 
 	@Override
 	public Item merge(Item other) {
+		if (!hasSameExtractionRaidOrigin(other) || !isSimilar(other)) {
+			return this;
+		}
 		int total = quantity() + other.quantity();
 		super.merge(other);
 		int extra = total - quantity();

@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
@@ -38,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TitleBackground;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
@@ -51,6 +53,8 @@ import com.watabou.noosa.audio.Music;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.RectF;
+
+import java.util.ArrayList;
 
 public class RankingsScene extends PixelScene {
 	
@@ -86,6 +90,13 @@ public class RankingsScene extends PixelScene {
 		h -= insets.top + insets.bottom;
 
 		Rankings.INSTANCE.load();
+		ArrayList<Rankings.Record> visibleRecords =
+				Rankings.INSTANCE.recordsForCycle(showsNewCycleRecords());
+		Rankings.Record latestRecord = null;
+		if (Rankings.INSTANCE.lastRecord >= 0
+				&& Rankings.INSTANCE.lastRecord < Rankings.INSTANCE.records.size()) {
+			latestRecord = Rankings.INSTANCE.records.get(Rankings.INSTANCE.lastRecord);
+		}
 
 		IconTitle title = new IconTitle( Icons.RANKINGS.get(), Messages.get(this, "title"));
 		title.setSize(200, 0);
@@ -95,19 +106,39 @@ public class RankingsScene extends PixelScene {
 		);
 		align(title);
 		add(title);
+
+		StyledButton btnCycleRankings = new StyledButton(
+				Chrome.Type.TOAST_TR, Messages.get(this, "cycle_rankings"), 6) {
+			@Override
+			protected void onClick() {
+				super.onClick();
+				ShatteredPixelDungeon.switchNoFade(cycleRankingsScene());
+			}
+		};
+		btnCycleRankings.icon(Icons.get(
+				showsNewCycleRecords() ? Icons.RANKINGS : Icons.STAIRS));
+		float cycleButtonWidth = btnCycleRankings.reqWidth() + 6;
+		float cycleButtonHeight = btnCycleRankings.reqHeight();
+		float cycleButtonTop = insets.top + h - cycleButtonHeight - 2;
+		btnCycleRankings.setRect(
+				insets.left + w - cycleButtonWidth,
+				cycleButtonTop,
+				cycleButtonWidth,
+				cycleButtonHeight);
 		
-		if (Rankings.INSTANCE.records.size() > 0) {
+		if (!visibleRecords.isEmpty()) {
 
 			//attempts to give each record as much space as possible, ideally as much space as portrait mode
-			float rowHeight = GameMath.gate(ROW_HEIGHT_MIN, (h - 26)/Rankings.INSTANCE.records.size(), ROW_HEIGHT_MAX);
+			float rowHeight = GameMath.gate(
+					ROW_HEIGHT_MIN, (h - 26)/visibleRecords.size(), ROW_HEIGHT_MAX);
 
 			float left = (w - Math.min( MAX_ROW_WIDTH, w )) / 2 + GAP;
-			float top = (h - rowHeight  * Rankings.INSTANCE.records.size()) / 2;
+			float top = (h - rowHeight * visibleRecords.size()) / 2;
 			
 			int pos = 0;
 			
-			for (Rankings.Record rec : Rankings.INSTANCE.records) {
-				Record row = new Record( pos, pos == Rankings.INSTANCE.lastRecord, rec );
+			for (Rankings.Record rec : visibleRecords) {
+				Record row = new Record(pos, rec == latestRecord, rec);
 				float offset = 0;
 				if (rowHeight <= 14){
 					offset = (pos % 2 == 1) ? 5 : -5;
@@ -118,17 +149,20 @@ public class RankingsScene extends PixelScene {
 				pos++;
 			}
 			
-			if (Rankings.INSTANCE.totalNumber >= Rankings.TABLE_SIZE) {
+			int totalNumber = Rankings.INSTANCE.totalNumber(showsNewCycleRecords());
+			int wonNumber = Rankings.INSTANCE.wonNumber(showsNewCycleRecords());
+			if (totalNumber >= Rankings.TABLE_SIZE) {
 				
 				RenderedTextBlock label = PixelScene.renderTextBlock( 8 );
 				label.hardlight( 0xCCCCCC );
 				label.setHightlighting(true, Window.SHPX_COLOR);
-				label.text( Messages.get(this, "total") + " _" + Rankings.INSTANCE.wonNumber + "_/" + Rankings.INSTANCE.totalNumber );
+				label.text(Messages.get(RankingsScene.class, "total")
+						+ " _" + wonNumber + "_/" + totalNumber);
 				add( label );
 				
 				label.setPos(
 						insets.left + (w - label.width()) / 2,
-						insets.top + h - label.height() - 2*GAP
+						cycleButtonTop - label.height() - 2
 				);
 				align(label);
 
@@ -153,7 +187,7 @@ public class RankingsScene extends PixelScene {
 
 		float left = insets.left + (PixelScene.landscape() && !DeviceCompat.isDesktop() ? 10 : 0);
 
-		if (Rankings.INSTANCE.latestDaily != null) {
+		if (!showsNewCycleRecords() && Rankings.INSTANCE.latestDaily != null) {
 			IconButton btnDailies = new IconButton(Icons.CALENDAR.get()) {
 				@Override
 				protected void onClick() {
@@ -171,12 +205,16 @@ public class RankingsScene extends PixelScene {
 			add(btnDailies);
 		}
 
-		if (Dungeon.daily){
+		if (!showsNewCycleRecords() && Dungeon.daily){
 			addToFront(new WndDailies());
-		} else if (Badges.isUnlocked(Badges.Badge.VICTORY) && !SPDSettings.victoryNagged()) {
+		} else if (!showsNewCycleRecords()
+				&& Badges.isUnlocked(Badges.Badge.VICTORY)
+				&& !SPDSettings.victoryNagged()) {
 			SPDSettings.victoryNagged(true);
 			add(new WndVictoryCongrats());
 		}
+
+		add(btnCycleRankings);
 
 		fadeIn();
 	}
@@ -191,6 +229,14 @@ public class RankingsScene extends PixelScene {
 	@Override
 	protected void onBackPressed() {
 		ShatteredPixelDungeon.switchNoFade(TitleScene.class);
+	}
+
+	protected boolean showsNewCycleRecords() {
+		return false;
+	}
+
+	protected Class<? extends PixelScene> cycleRankingsScene() {
+		return NewCycleRankingsScene.class;
 	}
 	
 	public static class Record extends Button {

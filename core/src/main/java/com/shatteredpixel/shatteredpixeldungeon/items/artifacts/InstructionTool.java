@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Deco
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhysicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -632,7 +633,7 @@ public class InstructionTool extends Artifact {
 
     private static final String CUR_SEED_EFFECT = "cur_seed_effect";
 
-    public static class Drone extends DirectableAlly {
+    public static class Drone extends DirectableAlly implements PhysicalRangedAttack {
 
         {
             spriteClass = DronesSprite.DroneSprite.class;
@@ -647,11 +648,6 @@ public class InstructionTool extends Artifact {
         }
 
         private float partHP;
-
-        public void onZapComplete() {
-            zap();
-            next();
-        }
 
         @Override
         public int attackSkill(Char target) {
@@ -676,37 +672,14 @@ public class InstructionTool extends Artifact {
 
         }
 
-        protected void zap() {
-            spend( attackDelay() );
-
-            Invisibility.dispel(this);
-            Char enemy = this.enemy;
-            if (hit( this, enemy, true )) {
-
-                attack( enemy );
-
-            } else {
-                enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
-            }
+        @Override
+        public boolean doRangedAttack(Char enemy) {
+            return doPhysicalRangedAttack(enemy, true);
         }
 
-        protected boolean doAttack( Char enemy ) {
-
-            if (Dungeon.level.adjacent( pos, enemy.pos )
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos != enemy.pos) {
-
-                return super.doAttack( enemy );
-
-            } else {
-
-                if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                    sprite.zap( enemy.pos );
-                    return false;
-                } else {
-                    zap();
-                    return true;
-                }
-            }
+        @Override
+        public int rangedAttackBallisticaMode() {
+            return Ballistica.MAGIC_BOLT;
         }
 
         public Drone(){

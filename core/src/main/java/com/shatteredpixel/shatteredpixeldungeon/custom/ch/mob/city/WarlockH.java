@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Warlock;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -33,7 +34,7 @@ import com.watabou.utils.Random;
 
 import static com.shatteredpixel.shatteredpixeldungeon.items.Item.updateQuickslot;
 
-public class WarlockH extends MobHard implements Callback {
+public class WarlockH extends MobHard implements Callback, MagicalRangedAttack {
     {
         spriteClass = WarlockHSprite.class;
 
@@ -56,28 +57,20 @@ public class WarlockH extends MobHard implements Callback {
     }
 
     @Override
-    protected boolean doAttack( Char enemy ) {
-
-        if (Dungeon.level.adjacent( pos, enemy.pos )) {
-
-            return super.doAttack( enemy );
-
+    public boolean doRangedAttack( Char enemy ) {
+        if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+            sprite.zap( enemy.pos );
+            return false;
         } else {
-
-            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                sprite.zap( enemy.pos );
-                return false;
-            } else {
-                zapThis();
-                return true;
-            }
+            zapThis();
+            return true;
         }
     }
 
     private void zapThis() {
         spend( TIME_TO_ZAP );
 
-        if (hit( this, enemy, true )) {
+        if (rangedHit(enemy)) {
             //TODO would be nice for this to work on ghost/statues too
             if (enemy == Dungeon.hero && Random.Int( 2 ) == 0) {
                 Buff.prolong(enemy, Degrade.class, Degrade.DURATION);

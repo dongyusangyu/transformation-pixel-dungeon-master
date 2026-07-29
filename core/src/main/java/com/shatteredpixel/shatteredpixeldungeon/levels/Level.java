@@ -59,6 +59,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.DivineSense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Stasis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.HuntressBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MobSpawner;
@@ -233,7 +234,7 @@ public abstract class Level implements Bundlable {
 
 	public void create() {
 
-		Random.pushGenerator( Dungeon.seedCurDepth() );
+		Random.pushGenerator(levelSeed());
 
 		//TODO maybe just make this part of RegularLevel?
 		if (!Dungeon.bossLevel() && Dungeon.branch == 0) {
@@ -338,6 +339,10 @@ public abstract class Level implements Bundlable {
 		createItems();
 
 		Random.popGenerator();
+	}
+
+	protected long levelSeed() {
+		return Dungeon.seedCurDepth();
 	}
 	
 	public void setSize(int w, int h){
@@ -1372,7 +1377,8 @@ public abstract class Level implements Bundlable {
 			//grass is see-through by some specific entities, but not during the fungi quest
 			if (!(Dungeon.level instanceof  MiningLevel) || Blacksmith.Quest.Type() != Blacksmith.Quest.FUNGI){
 				if ((c instanceof Hero && ((Hero) c).subClass.is(HeroSubClass.WARDEN))
-						|| c instanceof YogFist.SoiledFist || c instanceof GnollGeomancer) {
+						|| c instanceof YogFist.SoiledFist || c instanceof GnollGeomancer
+						|| c instanceof HuntressBoss) {
 					if (blocking == null) {
 						System.arraycopy(Dungeon.level.losBlocking, 0, modifiableBlocking, 0, modifiableBlocking.length);
 						blocking = modifiableBlocking;

@@ -143,16 +143,8 @@ public class GuardH extends MobHard {
             chance = Math.min(0.04f, chance);
 
             if(Random.Float()<chance) {
-                int index = 0;
-                for (int i = Generator.Category.ARTIFACT.classes.length - 1; i >= 0; --i) {
-                    if (Generator.Category.ARTIFACT.classes[i] == EtherealChains.class) {
-                        index = i;
-                        break;
-                    }
-                }
-                if (Generator.Category.ARTIFACT.probs[index] > 0.01f) {
+				if (Generator.claimArtifact(EtherealChains.class)) {
                     Dungeon.level.drop(new EtherealChains(), pos).sprite.drop();
-                    Generator.removeArtifact(EtherealChains.class);
                 }
             }
         }

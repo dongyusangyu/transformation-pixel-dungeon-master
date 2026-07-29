@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Lightning;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -43,7 +44,7 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
-public abstract class ShamanH extends MobHard {
+public abstract class ShamanH extends MobHard implements MagicalRangedAttack {
 
     {
         HP = HT = 35;
@@ -92,23 +93,17 @@ public abstract class ShamanH extends MobHard {
         return super.createLoot();
     }
 
-    protected boolean doAttack(Char enemy ) {
+    public boolean doRangedAttack(Char enemy ) {
 
-        if (Dungeon.level.adjacent( pos, enemy.pos )) {
+        zapCate = decideWhichToZap();
 
-            return super.doAttack( enemy );
-
+        if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+            sprite.zap( enemy.pos );
+            executeFx();
+            return false;
         } else {
-            zapCate = decideWhichToZap();
-
-            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                sprite.zap( enemy.pos );
-                executeFx();
-                return false;
-            } else {
-                zap();
-                return true;
-            }
+            zap();
+            return true;
         }
     }
 
@@ -117,7 +112,7 @@ public abstract class ShamanH extends MobHard {
     protected void zap() {
         spend(1f);
 
-        if (hit(this, enemy, true)) {
+        if (rangedHit(enemy)) {
 
             int dmg = executeProc();
             enemy.damage(dmg, new ShamanMagic());

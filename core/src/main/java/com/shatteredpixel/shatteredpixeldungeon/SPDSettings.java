@@ -47,6 +47,47 @@ public class SPDSettings extends GameSettings {
 	public static int version() {
 		return getInt( KEY_VERSION, 0 );
 	}
+
+	//Dungeon Doctor quiz statistics. These are global settings, not save data.
+
+	public static final String KEY_QUIZ_ANSWERS_TOTAL = "quiz_answers_total";
+	public static final String KEY_QUIZ_ANSWERS_CORRECT = "quiz_answers_correct";
+
+	public static int quizAnswersTotal() {
+		return getInt(KEY_QUIZ_ANSWERS_TOTAL, 0, 0, Integer.MAX_VALUE);
+	}
+
+	public static int quizAnswersCorrect() {
+		int total = quizAnswersTotal();
+		int correct = getInt(KEY_QUIZ_ANSWERS_CORRECT, 0, 0, Integer.MAX_VALUE);
+		if (correct > total) {
+			correct = total;
+			put(KEY_QUIZ_ANSWERS_CORRECT, correct);
+		}
+		return correct;
+	}
+
+	public static void recordQuizAnswer(boolean correct) {
+		int total = quizAnswersTotal();
+		if (total == Integer.MAX_VALUE) {
+			return;
+		}
+		int correctAnswers = quizAnswersCorrect();
+		put(KEY_QUIZ_ANSWERS_TOTAL, total + 1);
+		if (correct) {
+			put(KEY_QUIZ_ANSWERS_CORRECT, correctAnswers + 1);
+		}
+	}
+
+	public static double quizAccuracyPercent() {
+		int total = quizAnswersTotal();
+		return total == 0 ? 0d : quizAnswersCorrect() * 100d / total;
+	}
+
+	public static void resetQuizStatistics() {
+		put(KEY_QUIZ_ANSWERS_TOTAL, 0);
+		put(KEY_QUIZ_ANSWERS_CORRECT, 0);
+	}
 	
 	//Display
 	

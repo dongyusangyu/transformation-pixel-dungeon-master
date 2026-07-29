@@ -58,7 +58,7 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 	private static final float LEVEL_RECOVER_START = 4f;
 	private float levelRecovery;
 
-	private static final int TURN_RECOVERY_START = 100;
+	public static final int BASE_TURN_RECOVERY = 30;
 	private int turnRecovery;
 
 	public int powerLossBuffer = 0;
@@ -150,7 +150,7 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 		} else if (state == State.NORMAL) {
 			if (powerLossBuffer > 0){
 				powerLossBuffer--;
-			} else {
+			} else if (power > rageRetentionThreshold(((Hero) target).pointsInTalent(Talent.CEASELESS_RAGE))) {
 				power -= GameMath.gate(0.1f, power, 1f) * 0.067f * Math.pow((target.HP / (float) target.HT), 2);
 
 				if (power < 1f){
@@ -201,6 +201,14 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 		return state == State.BERSERK && target.shielding() > 0;
 	}
 
+	public boolean isBerserking() {
+		return state == State.BERSERK && target.shielding() > 0;
+	}
+
+	public float ragePower() {
+		return power;
+	}
+
 	private void startBerserking(){
 		state = State.BERSERK;
 		SpellSprite.show(target, SpellSprite.BERSERK);
@@ -208,7 +216,7 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 		GameScene.flash(0xFF0000);
 
 		if (target.HP > 0) {
-			turnRecovery = TURN_RECOVERY_START;
+			turnRecovery = BASE_TURN_RECOVERY;
 			levelRecovery = 0;
 		} else {
 			levelRecovery = LEVEL_RECOVER_START - ((Hero)target).pointsInTalent(Talent.DEATHLESS_FURY);
@@ -235,13 +243,45 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 	
 	public void damage(int damage){
 		if (state != State.NORMAL) return;
+		addRage((damage/(float)target.HT)/3f);
+	}
+
+	public void addRage(float amount) {
+		if (state != State.NORMAL || amount <= 0) return;
 		float maxPower = 1f + 0.1667f*((Hero)target).pointsInTalent(Talent.ENDLESS_RAGE);
-		power = Math.min(maxPower, power + (damage/(float)target.HT)/3f );
+		power = Math.min(maxPower, power + amount);
 		BuffIndicator.refreshHero(); //show new power immediately
 		powerLossBuffer = 3; //2 turns until rage starts dropping
 		if (power >= 1f){
 			updateActionIndicator();
 		}
+	}
+
+	public void onPhysicalDamageDealt(int damage, boolean melee) {
+		if (damage <= 0) return;
+		Hero hero = (Hero) target;
+		int points = hero.pointsInTalent(Talent.BLOODTHIRSTY_BERSERK);
+		if (points <= 0) return;
+		if (isBerserking()) {
+			if (melee) {
+				float ratio = points == 1 ? 0.25f : points == 2 ? 0.37f : 0.5f;
+				hero.heal(Math.round(damage * ratio));
+			}
+		} else {
+			addRage(damage * points * 0.0005f);
+		}
+	}
+
+	public static float rageRetentionThreshold(int talentPoints) {
+		return talentPoints <= 0 ? -1f : 0.2f + 0.1f * talentPoints;
+	}
+
+	public static float actionSpeedMultiplier(float ragePower, int talentPoints) {
+		return talentPoints > 0 ? 1f + Math.max(0f, ragePower) : 1f;
+	}
+
+	public float actionSpeedMultiplier() {
+		return actionSpeedMultiplier(power, ((Hero) target).pointsInTalent(Talent.CEASELESS_RAGE));
 	}
 
 	public void recover(float percent){
@@ -324,7 +364,7 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 				if (levelRecovery > 0) {
 					return 1f - levelRecovery/(LEVEL_RECOVER_START-Dungeon.hero.pointsInTalent(Talent.DEATHLESS_FURY));
 				} else {
-					return 1f - turnRecovery/(float)TURN_RECOVERY_START;
+					return 1f - turnRecovery/(float)BASE_TURN_RECOVERY;
 				}
 		}
 	}
@@ -359,7 +399,11 @@ public class Berserk extends Buff implements ActionIndicator.Action {
 		float dispDamage = ((int)damageFactor(10000) / 100f) - 100f;
 		switch (state){
 			case NORMAL: default:
-				return Messages.get(this, "angered_desc", Math.floor(power * 100f), dispDamage);
+				String desc = Messages.get(this, "angered_desc", Math.floor(power * 100f), dispDamage);
+				if (((Hero) target).hasTalent(Talent.CEASELESS_RAGE)) {
+					desc += "\n\n" + Messages.get(this, "action_speed", Math.floor(power * 100f));
+				}
+				return desc;
 			case BERSERK:
 				return Messages.get(this, "berserk_desc");
 			case RECOVERING:

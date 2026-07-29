@@ -119,6 +119,10 @@ public class Swiftthistle extends Plant {
 			processTime(time, false);
 		}
 
+		public float remainingTurns() {
+			return Math.max(0, left);
+		}
+
 		public void processTimeForTargeting(float time){
 			processTime(time, true);
 		}

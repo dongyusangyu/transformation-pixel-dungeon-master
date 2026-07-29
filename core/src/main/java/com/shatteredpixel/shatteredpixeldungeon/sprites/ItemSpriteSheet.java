@@ -145,7 +145,7 @@ public class ItemSpriteSheet {
 	private static final int MISC_CONSUMABLE =                              xy(1, 4);   //32 slots
 	public static final int ANKH            = MISC_CONSUMABLE +0;
 	public static final int STYLUS          = MISC_CONSUMABLE +1;
-	public static final int SEAL            = MISC_CONSUMABLE +2;
+	public static final int SEAL            = 50; //MISC_CONSUMABLE +2
 	public static final int TORCH           = MISC_CONSUMABLE +3;
 	public static final int BEACON          = MISC_CONSUMABLE +4;
 	public static final int HONEYPOT        = MISC_CONSUMABLE +5;

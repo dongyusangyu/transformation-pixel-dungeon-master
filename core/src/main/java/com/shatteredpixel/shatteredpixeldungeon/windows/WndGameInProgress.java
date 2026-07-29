@@ -49,8 +49,14 @@ public class WndGameInProgress extends Window {
 	private int GAP	  = 6;
 	
 	private float pos;
-	
+	private final Class<? extends PixelScene> returnScene;
+
 	public WndGameInProgress(final int slot){
+		this(slot, StartScene.class);
+	}
+
+	public WndGameInProgress(final int slot, Class<? extends PixelScene> returnScene){
+		this.returnScene = returnScene;
 		
 		final GamesInProgress.Info info = GamesInProgress.check(slot);
 		
@@ -144,7 +150,7 @@ public class WndGameInProgress extends Window {
 					protected void onSelect( int index ) {
 						if (index == 0) {
 							Dungeon.deleteGame(slot, true);
-							ShatteredPixelDungeon.switchNoFade(StartScene.class);
+							ShatteredPixelDungeon.switchNoFade(returnScene);
 						}
 					}
 				} );
@@ -165,7 +171,7 @@ public class WndGameInProgress extends Window {
 					protected void onSelect( int index ) {
 						if (index == 0) {
 							Dungeon.copyGame(slot);
-							ShatteredPixelDungeon.switchNoFade(StartScene.class);
+							ShatteredPixelDungeon.switchNoFade(returnScene);
 						}
 					}
 				} );

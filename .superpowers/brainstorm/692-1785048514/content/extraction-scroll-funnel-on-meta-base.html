@@ -1,0 +1,104 @@
+<h2>方案 B 修订：沿用蜕变卷轴模板</h2>
+<p class="subtitle">左侧直接截取 <code>items.png</code> 中 <code>SCROLL_META</code> 的 16×16 帧；右侧正式制作时会逐像素复制纸张、卷边和阴影，只重绘中心区域为“漏斗萃取”。</p>
+
+<style>
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+  .pane {
+    padding: 20px;
+    border-radius: 6px;
+    text-align: center;
+    background:
+      linear-gradient(45deg, #1c1e1e 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #1c1e1e 75%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #1c1e1e 75%) 8px -8px/16px 16px,
+      linear-gradient(45deg, #1c1e1e 25%, #121414 25%) 8px -8px/16px 16px;
+  }
+  .sprite {
+    position: relative;
+    width: 128px;
+    height: 128px;
+    margin: 12px auto 18px;
+    background-image: url("items-reference.png");
+    background-size: 2048px 4096px;
+    background-position: 0 -2560px;
+    image-rendering: pixelated;
+    filter: drop-shadow(8px 8px 0 rgba(0,0,0,.3));
+  }
+  .planned .erase {
+    position: absolute;
+    left: 40px;
+    top: 40px;
+    width: 48px;
+    height: 48px;
+    background: #c99b57;
+    box-shadow: inset 8px 0 #e8c279, inset -8px -8px #9a6735;
+  }
+  .planned .funnel-dark {
+    position: absolute;
+    left: 40px;
+    top: 40px;
+    width: 48px;
+    height: 16px;
+    background: #3a5360;
+    box-shadow:
+      8px 16px #3a5360,
+      16px 24px #3a5360,
+      16px 32px #3a5360;
+  }
+  .planned .funnel-light {
+    position: absolute;
+    left: 48px;
+    top: 40px;
+    width: 32px;
+    height: 8px;
+    background: #67cad3;
+    box-shadow:
+      8px 16px #67cad3,
+      16px 40px #d8ffff;
+  }
+  .one-x {
+    width: 16px;
+    height: 16px;
+    margin: 8px auto;
+    background-image: url("items-reference.png");
+    background-size: 256px 512px;
+    background-position: 0 -320px;
+    image-rendering: pixelated;
+  }
+  .note {
+    margin-top: 22px;
+    padding: 14px 16px;
+    border-left: 3px solid #67cad3;
+    background: rgba(103,202,211,.08);
+  }
+  @media (max-width: 720px) {
+    .comparison { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="comparison">
+  <div class="pane">
+    <h3>原始基底</h3>
+    <div class="sprite"></div>
+    <div class="one-x"></div>
+    <p><code>items.png / SCROLL_META</code></p>
+  </div>
+  <div class="pane">
+    <h3>提取卷轴</h3>
+    <div class="sprite planned">
+      <div class="erase"></div>
+      <div class="funnel-dark"></div>
+      <div class="funnel-light"></div>
+    </div>
+    <p>纸张像素完全保留，仅替换中心符号</p>
+  </div>
+</div>
+
+<div class="note">
+  <strong>正式落点：</strong><code>ex_items.png</code> 第 3 行第 1 格（帧索引 32）。该位置按 16×16 整格写入，不缩放、不抗锯齿、不改变整张精灵表的 256×512 尺寸。
+</div>

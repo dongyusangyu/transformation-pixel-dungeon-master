@@ -27,17 +27,24 @@ import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.ColorBlock;
+import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Sample;
 
 public class InventorySlot extends ItemSlot {
 
 	private static final int NORMAL		= 0x9953564D;
 	private static final int EQUIPPED	= 0x9991938C;
+	private static final int TREASURE_RARE	= 0x99426D3B;
+	private static final int TREASURE_EPIC	= 0x999E762C;
+	private static final int TREASURE_LEGENDARY = 0x99FFFFFF;
 
 	private ColorBlock bg;
+	private boolean legendaryTreasure;
+	private boolean pressed;
 
 	public InventorySlot( Item item ) {
 
@@ -71,6 +78,8 @@ public class InventorySlot extends ItemSlot {
 	public void item( Item item ) {
 
 		super.item( item );
+		legendaryTreasure = false;
+		pressed = false;
 
 		bg.visible = !(item instanceof Gold || item instanceof Bag);
 
@@ -84,7 +93,8 @@ public class InventorySlot extends ItemSlot {
 					item == Dungeon.hero.belongings.ring ||
 					item == Dungeon.hero.belongings.secondWep;
 
-			bg.texture( TextureCache.createSolid( equipped ? EQUIPPED : NORMAL ) );
+			int background = equipped ? EQUIPPED : treasureBackground(item);
+			bg.texture( TextureCache.createSolid( background ) );
 			bg.resetColor();
 			if (item.cursed && item.cursedKnown) {
 				bg.ra = +0.3f;
@@ -112,17 +122,55 @@ public class InventorySlot extends ItemSlot {
 		}
 	}
 
+	private int treasureBackground(Item item) {
+		if (item instanceof Treasures) {
+			switch (((Treasures) item).rarity()) {
+				case LEGENDARY:
+					legendaryTreasure = true;
+					return TREASURE_LEGENDARY;
+				case EPIC:
+					return TREASURE_EPIC;
+				case RARE:
+					return TREASURE_RARE;
+				case COMMON:
+				default:
+					break;
+			}
+		}
+		return NORMAL;
+	}
+
+	@Override
+	public void update() {
+		super.update();
+		if (legendaryTreasure) {
+			float phase = Game.timeTotal * 1.15f;
+			float rainbowR = 0.5f + 0.5f * (float) Math.sin(phase);
+			float rainbowG = 0.5f + 0.5f * (float) Math.sin(phase + 2.094f);
+			float rainbowB = 0.5f + 0.5f * (float) Math.sin(phase + 4.189f);
+			float brightness = pressed ? 1.5f : 1f;
+
+			// Keep gold dominant; the rainbow component is deliberately restrained.
+			bg.hardlight(
+					brightness * (0.82f + 0.18f * rainbowR),
+					brightness * (0.62f + 0.18f * rainbowG),
+					brightness * (0.19f + 0.18f * rainbowB));
+		}
+	}
+
 	public Item item(){
 		return item;
 	}
 
 	@Override
 	protected void onPointerDown() {
+		pressed = true;
 		bg.brightness( 1.5f );
 		Sample.INSTANCE.play( Assets.Sounds.CLICK, 0.7f, 0.7f, 1.2f );
 	}
 
 	protected void onPointerUp() {
+		pressed = false;
 		bg.brightness( 1.0f );
 	}
 

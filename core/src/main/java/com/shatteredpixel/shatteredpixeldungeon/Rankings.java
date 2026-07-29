@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -75,6 +76,8 @@ public enum Rankings {
 	public int lastRecord;
 	public int totalNumber;
 	public int wonNumber;
+	public int newCycleTotalNumber;
+	public int newCycleWonNumber;
 
 	//The number of runs which are only present locally, not in the cloud
 	public int localTotal;
@@ -128,6 +131,7 @@ public enum Rankings {
 		rec.customSeed  = Dungeon.customSeedText;
 		rec.daily       = Dungeon.daily;
 		rec.randomMode  = hero.randomMode;
+		rec.newCycle    = Dungeon.newCycle;
 		rec.randomTalents = hero.randomClassTalents == null ? new String[0] : hero.randomClassTalents.clone();
 		rec.selectedTalents = talentSummary(hero);
 		rec.subClass = hero.subClass == null ? "" : hero.subClass.name();
@@ -159,27 +163,19 @@ public enum Rankings {
 		}
 
 		records.add( rec );
-		
-		Collections.sort( records, scoreComparator );
-		
-		lastRecord = records.indexOf( rec );
-		int size = records.size();
-		while (size > TABLE_SIZE) {
-
-			if (lastRecord == size - 1) {
-				records.remove( size - 2 );
-				lastRecord--;
-			} else {
-				records.remove( size - 1 );
-			}
-
-			size = records.size();
-		}
+		lastRecord = normalizeRecords(records, rec);
 
 		if (rec.customSeed.isEmpty()) {
-			totalNumber++;
-			if (win) {
-				wonNumber++;
+			if (rec.newCycle) {
+				newCycleTotalNumber++;
+				if (win) {
+					newCycleWonNumber++;
+				}
+			} else {
+				totalNumber++;
+				if (win) {
+					wonNumber++;
+				}
 			}
 		}
 
@@ -295,6 +291,7 @@ public enum Rankings {
 	public static final String CUSTOM_SEED	= "custom_seed";
 	public static final String DAILY	    = "daily";
 	public static final String DAILY_REPLAY	= "daily_replay";
+	public static final String GOLD         = "gold";
 
 	public void saveGameData(Record rec){
 		if (hero == null){
@@ -369,6 +366,7 @@ public enum Rankings {
 		rec.gameData.put( CUSTOM_SEED, Dungeon.customSeedText );
 		rec.gameData.put( DAILY, Dungeon.daily );
 		rec.gameData.put( DAILY_REPLAY, Dungeon.dailyReplay );
+		rec.gameData.put( GOLD, Dungeon.gold );
 	}
 
 	public void loadGameData(Record rec){
@@ -386,6 +384,7 @@ public enum Rankings {
 		if (data == null) return;
 
 		Dungeon.skin = rec.skin;
+		Dungeon.newCycle = rec.newCycle;
 
 		Bundle handler = data.getBundle(HANDLERS);
 		Scroll.restore(handler);
@@ -420,23 +419,32 @@ public enum Rankings {
 			Dungeon.customSeedText = "";
 			Dungeon.daily = Dungeon.dailyReplay = false;
 		}
+		Dungeon.gold = rec.gameData.contains(GOLD) ? rec.gameData.getInt(GOLD) : 0;
 	}
 	
 	private static final String RECORDS	= "records";
 	private static final String LATEST	= "latest";
 	private static final String TOTAL	= "total";
 	private static final String WON     = "won";
+	private static final String NEW_CYCLE_TOTAL = "new_cycle_total";
+	private static final String NEW_CYCLE_WON   = "new_cycle_won";
 
 	public static final String LATEST_DAILY	        = "latest_daily";
 	public static final String DAILY_HISTORY_DATES  = "daily_history_dates";
 	public static final String DAILY_HISTORY_SCORES = "daily_history_scores";
 
 	public void save() {
+		saveWithResult();
+	}
+
+	public boolean saveWithResult() {
 		Bundle bundle = new Bundle();
 		bundle.put( RECORDS, records );
 		bundle.put( LATEST, lastRecord );
 		bundle.put( TOTAL, totalNumber );
 		bundle.put( WON, wonNumber );
+		bundle.put( NEW_CYCLE_TOTAL, newCycleTotalNumber );
+		bundle.put( NEW_CYCLE_WON, newCycleWonNumber );
 
 		bundle.put(LATEST_DAILY, latestDaily);
 
@@ -453,8 +461,10 @@ public enum Rankings {
 
 		try {
 			FileUtils.bundleToFile( RANKINGS_FILE, bundle);
+			return true;
 		} catch (IOException e) {
 			ShatteredPixelDungeon.reportException(e);
+			return false;
 		}
 
 	}
@@ -474,17 +484,45 @@ public enum Rankings {
 				records.add( (Record)record );
 			}
 			lastRecord = bundle.getInt( LATEST );
+			ArrayList<Record> originalOrder = new ArrayList<>(records);
+			int originalLastRecord = lastRecord;
+			normalizeRecords();
+			boolean needsSave = originalLastRecord != lastRecord
+					|| !originalOrder.equals(records);
 			
 			totalNumber = bundle.getInt( TOTAL );
 			if (totalNumber == 0) {
-				totalNumber = records.size();
+				for (Record rec : records) {
+					if (!rec.newCycle && rec.customSeed.isEmpty()) {
+						totalNumber++;
+					}
+				}
 			}
 
 			wonNumber = bundle.getInt( WON );
 			if (wonNumber == 0) {
 				for (Record rec : records) {
-					if (rec.win) {
+					if (!rec.newCycle && rec.customSeed.isEmpty() && rec.win) {
 						wonNumber++;
+					}
+				}
+			}
+
+			newCycleTotalNumber = bundle.getInt(NEW_CYCLE_TOTAL);
+			newCycleWonNumber = bundle.getInt(NEW_CYCLE_WON);
+			if (!bundle.contains(NEW_CYCLE_TOTAL)) {
+				needsSave = true;
+				for (Record rec : records) {
+					if (rec.newCycle && rec.customSeed.isEmpty()) {
+						newCycleTotalNumber++;
+					}
+				}
+			}
+			if (!bundle.contains(NEW_CYCLE_WON)) {
+				needsSave = true;
+				for (Record rec : records) {
+					if (rec.newCycle && rec.customSeed.isEmpty() && rec.win) {
+						newCycleWonNumber++;
 					}
 				}
 			}
@@ -504,6 +542,10 @@ public enum Rankings {
 				if (latestDate > SPDSettings.lastDaily()){
 					SPDSettings.lastDaily(latestDate);
 				}
+			}
+
+			if (needsSave) {
+				save();
 			}
 
 		} catch (IOException e) {
@@ -543,6 +585,8 @@ public enum Rankings {
 		private static final String SELECTED_TALENTS = "selected_talents";
 		private static final String SUBCLASS = "subclass";
 		private static final String ARMOR_ABILITY = "armor_ability";
+		private static final String RESTARTED = "restarted";
+		private static final String NEW_CYCLE = "new_cycle";
 
 		private static final String DATE    = "date";
 		private static final String VERSION = "version";
@@ -570,6 +614,8 @@ public enum Rankings {
 		public String[] selectedTalents = new String[0];
 		public String subClass = "";
 		public String armorAbility = "";
+		public boolean restarted;
+		public boolean newCycle;
 
 		public String date;
 		public String version;
@@ -618,6 +664,8 @@ public enum Rankings {
 			selectedTalents = bundle.contains( SELECTED_TALENTS ) ? bundle.getStringArray( SELECTED_TALENTS ) : new String[0];
 			subClass = bundle.contains( SUBCLASS ) ? bundle.getString( SUBCLASS ) : "";
 			armorAbility = bundle.contains( ARMOR_ABILITY ) ? bundle.getString( ARMOR_ABILITY ) : "";
+			restarted = bundle.contains(RESTARTED) && bundle.getBoolean(RESTARTED);
+			newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
 			if (randomTalents == null) randomTalents = new String[0];
 			if (selectedTalents == null) selectedTalents = new String[0];
 			if (subClass == null) subClass = "";
@@ -658,6 +706,8 @@ public enum Rankings {
 			bundle.put( SELECTED_TALENTS, selectedTalents );
 			bundle.put( SUBCLASS, subClass );
 			bundle.put( ARMOR_ABILITY, armorAbility );
+			bundle.put( RESTARTED, restarted );
+			bundle.put( NEW_CYCLE, newCycle );
 
 			bundle.put( CLASS, heroClass );
 			bundle.put( TIER, armorTier );
@@ -692,4 +742,62 @@ public enum Rankings {
 			}
 		}
 	};
+
+	public ArrayList<Record> recordsForCycle(boolean newCycle) {
+		load();
+		return filterByCycle(records, newCycle);
+	}
+
+	public int totalNumber(boolean newCycle) {
+		return newCycle ? newCycleTotalNumber : totalNumber;
+	}
+
+	public int wonNumber(boolean newCycle) {
+		return newCycle ? newCycleWonNumber : wonNumber;
+	}
+
+	public void normalizeRecords() {
+		Record latestRecord = lastRecord >= 0 && lastRecord < records.size()
+				? records.get(lastRecord)
+				: null;
+		lastRecord = normalizeRecords(records, latestRecord);
+	}
+
+	static ArrayList<Record> filterByCycle(List<Record> records, boolean newCycle) {
+		ArrayList<Record> result = new ArrayList<>();
+		for (Record record : records) {
+			if (record.newCycle == newCycle) {
+				result.add(record);
+			}
+		}
+		return result;
+	}
+
+	static int normalizeRecords(ArrayList<Record> records, Record latestRecord) {
+		Collections.sort(records, scoreComparator);
+		trimCycleRecords(records, false, latestRecord);
+		trimCycleRecords(records, true, latestRecord);
+		return latestRecord == null ? -1 : records.indexOf(latestRecord);
+	}
+
+	static void trimCycleRecords(
+			ArrayList<Record> records, boolean newCycle, Record latestRecord) {
+		while (filterByCycle(records, newCycle).size() > TABLE_SIZE) {
+			Record worst = null;
+			Record secondWorst = null;
+			for (int i = records.size() - 1; i >= 0; i--) {
+				Record record = records.get(i);
+				if (record.newCycle != newCycle) {
+					continue;
+				}
+				if (worst == null) {
+					worst = record;
+				} else {
+					secondWorst = record;
+					break;
+				}
+			}
+			records.remove(worst == latestRecord ? secondWorst : worst);
+		}
+	}
 }

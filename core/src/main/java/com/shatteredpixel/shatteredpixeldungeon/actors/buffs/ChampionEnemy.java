@@ -110,7 +110,7 @@ public abstract class ChampionEnemy extends Buff {
 
 	}
 
-	public boolean canAttackWithExtraReach( Char enemy ){
+	public boolean canAttackWithExtraReach( Char enemy, int extraReach ){
 		return false;
 	}
 
@@ -354,8 +354,9 @@ public abstract class ChampionEnemy extends Buff {
 		}
 
 		@Override
-		public boolean canAttackWithExtraReach(Char enemy) {
-			if (Dungeon.level.distance( target.pos, enemy.pos ) > 4){
+		public boolean canAttackWithExtraReach(Char enemy, int extraReach) {
+			int reach = 4 + extraReach;
+			if (Dungeon.level.distance( target.pos, enemy.pos ) > reach){
 				return false;
 			} else {
 				boolean[] passable = BArray.not(Dungeon.level.solid, null);
@@ -364,9 +365,9 @@ public abstract class ChampionEnemy extends Buff {
 					passable[ch.pos] = ch == target;
 				}
 
-				PathFinder.buildDistanceMap(enemy.pos, passable, 4);
+				PathFinder.buildDistanceMap(enemy.pos, passable, reach);
 
-				return PathFinder.distance[target.pos] <= 4;
+				return PathFinder.distance[target.pos] <= reach;
 			}
 		}
 	}
@@ -403,8 +404,9 @@ public abstract class ChampionEnemy extends Buff {
 		}
 
 		@Override
-		public boolean canAttackWithExtraReach(Char enemy) {
-			if (Dungeon.level.distance( target.pos, enemy.pos ) > 2){
+		public boolean canAttackWithExtraReach(Char enemy, int extraReach) {
+			int reach = 2 + extraReach;
+			if (Dungeon.level.distance( target.pos, enemy.pos ) > reach){
 				return false;
 			} else {
 				boolean[] passable = BArray.not(Dungeon.level.solid, null);
@@ -413,9 +415,9 @@ public abstract class ChampionEnemy extends Buff {
 					passable[ch.pos] = ch == target;
 				}
 
-				PathFinder.buildDistanceMap(enemy.pos, passable, 2);
+				PathFinder.buildDistanceMap(enemy.pos, passable, reach);
 
-				return PathFinder.distance[target.pos] <= 2;
+				return PathFinder.distance[target.pos] <= reach;
 			}
 		}
 	}

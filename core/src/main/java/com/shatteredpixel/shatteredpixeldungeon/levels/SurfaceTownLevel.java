@@ -26,7 +26,31 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Dongyusangyu;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DungeonDoctor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SurfaceShopkeeper;
+import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
+import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
+import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
@@ -35,8 +59,32 @@ import java.util.HashSet;
 
 public class SurfaceTownLevel extends Level {
 
-	private static final int WIDTH = 48;
-	private static final int HEIGHT = 32;
+	private static final int WIDTH = 46;
+	private static final int HEIGHT = 34;
+
+	private static final int MANOR_LEFT = 16;
+	private static final int MANOR_TOP = 11;
+	private static final int MANOR_WIDTH = 14;
+	private static final int MANOR_HEIGHT = 10;
+	private static final int MANOR_DOOR_X = 22;
+	private static final int MANOR_DOOR_Y = 20;
+	private static final int MANOR_STAIR_X = 22;
+	private static final int MANOR_STAIR_Y = 14;
+
+	private static final int DONGYUSANGYU_X = 7;
+	private static final int DONGYUSANGYU_Y = 26;
+
+	private static final int DUNGEON_DOCTOR_X = 22;
+	private static final int DUNGEON_DOCTOR_Y = 4;
+
+	private static final int SHOP_LEFT = 33;
+	private static final int SHOP_TOP = 3;
+	private static final int SHOP_RIGHT = 43;
+	private static final int SHOP_BOTTOM = 10;
+	private static final int SHOP_DOOR_X = 38;
+	private static final int SHOPKEEPER_X = 38;
+	private static final int SHOPKEEPER_Y = 7;
+	private static final int SHOP_SALE_DEPTH = 20;
 
 	{
 		color1 = 0x2f6d36;
@@ -82,17 +130,32 @@ public class SurfaceTownLevel extends Level {
 		paintForest();
 		paintLake();
 		paintVillagePaths();
-		paintHouse(6, 5, 10, 8, 10, 12);
-		paintHouse(19, 4, 12, 9, 24, 12);
-		paintHouse(9, 19, 12, 8, 15, 19);
+		paintHouse(4, 4, 8, 6, 8, 9,true);
+		paintHouse(18, 2, 10, 6, 22, 7,true);
+		paintHouse(SHOP_LEFT, SHOP_TOP,
+				SHOP_RIGHT - SHOP_LEFT + 1, SHOP_BOTTOM - SHOP_TOP + 1,
+				SHOP_DOOR_X, SHOP_BOTTOM,false);
+		paintHouse(4, 23, 8, 7, 8, 29,true);
+		paintHouse(35, 24, 7, 6, 38, 29,true);
+		for (int x = 32; x <= SHOP_DOOR_X; x++) {
+			paintPath(x, SHOP_BOTTOM + 1);
+		}
+		paintLockedManor();
+		paintDongyusangyuHouseBookshelves();
 		paintTownDetails();
 
-		entrance = cell(24, 28);
-		exit = cell(24, 15);
-		map[entrance] = Terrain.ENTRANCE;
-		map[exit] = Terrain.EXIT;
+		entrance = cell(23, 32);
+		exit = cell(MANOR_STAIR_X, MANOR_STAIR_Y);
+		map[entrance] = Terrain.EXIT;
+		map[exit] = Terrain.ENTRANCE;
 		transitions.add(new LevelTransition(this, entrance, LevelTransition.Type.REGULAR_ENTRANCE));
-		transitions.add(new LevelTransition(this, exit, LevelTransition.Type.REGULAR_EXIT));
+		transitions.add(new LevelTransition(
+				this,
+				exit,
+				LevelTransition.Type.REGULAR_EXIT,
+				1,
+				TowerLevel.BRANCH,
+				LevelTransition.Type.REGULAR_ENTRANCE));
 
 		return true;
 	}
@@ -111,78 +174,64 @@ public class SurfaceTownLevel extends Level {
 		for (int y = 0; y < height(); y++) {
 			for (int x = 0; x < width(); x++) {
 				boolean border = x == 0 || y == 0 || x == width() - 1 || y == height() - 1;
-				boolean northWoods = y < 4 && (x < 18 || x > 29);
-				boolean westWoods = x < 5 && y < 25;
-				boolean eastWoods = x > 39 && y < 26;
-				boolean southWoods = y > 28 && (x < 18 || x > 30);
-				boolean grove = (x > 31 && x < 40 && y > 17 && y < 25)
-						|| (x > 27 && x < 34 && y > 22 && y < 29)
-						|| (x > 4 && x < 10 && y > 12 && y < 18);
-				if (border) {
-					map[cell(x, y)] = ((x * 13 + y * 7) % 5 == 0) ? Terrain.WALL_DECO : Terrain.WALL;
-				} else if (northWoods || westWoods || eastWoods || southWoods || grove) {
+				boolean southApproach = y >= height() - 4 && x >= 21 && x <= 24;
+				boolean forestBand = x <= 2 || x >= width() - 3 || y <= 2 || y >= height() - 3;
+				boolean grove = (x >= 2 && x <= 5 && y >= 10 && y <= 14)
+						|| (x >= 42 && x <= 44 && y >= 3 && y <= 9)
+						|| (x >= 42 && x <= 44 && y >= 24 && y <= 30);
+				if (border && !southApproach) {
+					map[cell(x, y)] = ((x * 13 + y * 7) % 4 == 0)
+							? Terrain.REGION_DECO_ALT
+							: Terrain.REGION_DECO;
+				} else if ((forestBand || grove) && !southApproach) {
 					paintForestTile(x, y);
-				} else if ((x * 17 + y * 11) % 13 == 0) {
-					map[cell(x, y)] = Terrain.HIGH_GRASS;
-				} else if ((x * 5 + y * 19) % 23 == 0) {
-					map[cell(x, y)] = Terrain.EMPTY_DECO;
 				}
 			}
 		}
 	}
 
 	private void paintForestTile(int x, int y) {
-		int roll = Math.abs(x * 31 + y * 17) % 11;
-		if (roll == 0) {
+		int roll = Math.abs(x * 31 + y * 17) % 5;
+		if (roll <= 2) {
 			map[cell(x, y)] = Terrain.REGION_DECO;
-		} else if (roll == 1) {
-			map[cell(x, y)] = Terrain.REGION_DECO_ALT;
-		} else if (roll <= 7) {
-			map[cell(x, y)] = Terrain.HIGH_GRASS;
 		} else {
-			map[cell(x, y)] = Terrain.GRASS;
+			map[cell(x, y)] = Terrain.REGION_DECO_ALT;
 		}
 	}
 
 	private void paintLake() {
-		int cx = 33;
-		int cy = 14;
-		for (int y = 7; y <= 20; y++) {
-			for (int x = 25; x <= 42; x++) {
+		int cx = 39;
+		int cy = 17;
+		for (int y = 11; y <= 23; y++) {
+			for (int x = 34; x <= 44; x++) {
 				int dx = x - cx;
 				int dy = y - cy;
-				if (dx * dx * 36 + dy * dy * 64 <= 36 * 64) {
+				boolean ellipse = dx * dx * 36 + dy * dy * 25 <= 25 * 36;
+				boolean westInlet = x == 34 && y >= 16 && y <= 19;
+				if (ellipse || westInlet) {
 					map[cell(x, y)] = Terrain.WATER;
 				}
 			}
 		}
-		for (int x = 25; x <= 30; x++) {
-			map[cell(x, 14)] = Terrain.EMPTY;
-			map[cell(x, 15)] = Terrain.EMPTY;
-		}
-		for (int y = 12; y <= 17; y++) {
-			map[cell(30, y)] = Terrain.EMPTY;
-		}
 	}
 
 	private void paintVillagePaths() {
-		for (int y = 6; y <= 28; y++) {
-			paintPath(24, y);
+		for (int x = 8; x <= 38; x++) {
+			paintPath(x, 10);
 		}
-		for (int x = 9; x <= 31; x++) {
-			paintPath(x, 15);
+		for (int x = 8; x <= 38; x++) {
+			paintPath(x, 30);
 		}
-		for (int x = 14; x <= 24; x++) {
-			paintPath(x, 23);
+		for (int y = 10; y <= 30; y++) {
+			paintPath(13, y);
+			paintPath(32, y);
 		}
-		for (int y = 15; y <= 23; y++) {
-			paintPath(15, y);
+		for (int y = 8; y <= 10; y++) {
+			paintPath(22, y);
 		}
-		for (int y = 12; y <= 15; y++) {
-			paintPath(10, y);
-		}
-		for (int x = 10; x <= 24; x++) {
-			paintPath(x, 12);
+		for (int y = 21; y <= 32; y++) {
+			paintPath(22, y);
+			paintPath(23, y);
 		}
 	}
 
@@ -192,11 +241,11 @@ public class SurfaceTownLevel extends Level {
 		}
 		int pos = cell(x, y);
 		if (map[pos] != Terrain.WATER) {
-			map[pos] = Terrain.EMPTY;
+			map[pos] = Terrain.EMPTY_DECO;
 		}
 	}
 
-	private void paintHouse(int left, int top, int w, int h, int doorX, int doorY) {
+	private void paintHouse(int left, int top, int w, int h, int doorX, int doorY,boolean statue) {
 		for (int y = top; y < top + h; y++) {
 			for (int x = left; x < left + w; x++) {
 				boolean edge = x == left || y == top || x == left + w - 1 || y == top + h - 1;
@@ -204,33 +253,55 @@ public class SurfaceTownLevel extends Level {
 			}
 		}
 		map[cell(doorX, doorY)] = Terrain.DOOR;
-		map[cell(doorX, doorY + 1)] = Terrain.EMPTY;
-		if (doorX - 1 > left) {
-			map[cell(doorX - 2, doorY - 1)] = Terrain.BOOKSHELF;
+		map[cell(doorX, doorY + 1)] = Terrain.EMPTY_DECO;
+		if (doorX + 1 < left + w - 1 && statue) {
+			map[cell(doorX + 2, doorY - 1)] = Terrain.STATUE_SP;
 		}
-		if (doorX + 1 < left + w - 1) {
-			map[cell(doorX + 2, doorY - 1)] = Terrain.STATUE;
+	}
+
+	private void paintLockedManor() {
+		int right = MANOR_LEFT + MANOR_WIDTH - 1;
+		int bottom = MANOR_TOP + MANOR_HEIGHT - 1;
+		for (int y = MANOR_TOP; y <= bottom; y++) {
+			for (int x = MANOR_LEFT; x <= right; x++) {
+				boolean edge = x == MANOR_LEFT || x == right || y == MANOR_TOP || y == bottom;
+				map[cell(x, y)] = edge ? Terrain.WALL_DECO : Terrain.EMPTY_SP;
+			}
+		}
+
+		map[cell(MANOR_DOOR_X, MANOR_DOOR_Y)] = Terrain.LOCKED_DOOR;
+		// A non-wall tile behind the door is required for the front-facing locked-door visual.
+		map[cell(MANOR_DOOR_X, MANOR_DOOR_Y - 1)] = Terrain.EMPTY_SP;
+		map[cell(MANOR_STAIR_X, MANOR_STAIR_Y)] = Terrain.ENTRANCE;
+
+		map[cell(MANOR_LEFT + 3, bottom - 2)] = Terrain.STATUE_SP;
+		map[cell(right - 3, bottom - 2)] = Terrain.STATUE_SP;
+		map[cell(MANOR_STAIR_X + 2, MANOR_STAIR_Y + 2)] = Terrain.PEDESTAL;
+	}
+
+	private void paintDongyusangyuHouseBookshelves() {
+		for (int x = 5; x <= 10; x++) {
+			map[cell(x, 24)] = Terrain.BOOKSHELF;
 		}
 	}
 
 	private void paintTownDetails() {
-		for (int x = 17; x <= 20; x++) {
-			for (int y = 13; y <= 16; y++) {
-				if ((x + y) % 2 == 0) {
-					map[cell(x, y)] = Terrain.HIGH_GRASS;
-				}
+		map[cell(10, 17)] = Terrain.WELL;
+		map[cell(27, 25)] = Terrain.STATUE;
+
+		int[][] decorativeGrass = {
+				{6, 13}, {7, 13},
+				{13, 5}, {14, 5},
+				{10, 15}, {11, 15},
+				{30, 12}, {31, 12},
+				{14, 24}, {14, 25},
+				{30, 26}, {31, 26}
+		};
+		for (int[] point : decorativeGrass) {
+			int pos = cell(point[0], point[1]);
+			if (map[pos] == Terrain.GRASS) {
+				map[pos] = Terrain.HIGH_GRASS;
 			}
-		}
-		map[cell(21, 17)] = Terrain.WELL;
-		map[cell(18, 18)] = Terrain.PEDESTAL;
-		map[cell(28, 23)] = Terrain.STATUE_SP;
-		map[cell(35, 22)] = Terrain.REGION_DECO;
-		map[cell(36, 22)] = Terrain.REGION_DECO_ALT;
-		for (int x = 6; x <= 13; x++) {
-			map[cell(x, 17)] = Terrain.HIGH_GRASS;
-		}
-		for (int x = 34; x <= 38; x++) {
-			map[cell(x, 26)] = Terrain.HIGH_GRASS;
 		}
 	}
 
@@ -243,13 +314,143 @@ public class SurfaceTownLevel extends Level {
 	}
 
 	@Override
+	public void buildFlagMaps() {
+		super.buildFlagMaps();
+		int manorDoorInterior = cell(MANOR_DOOR_X, MANOR_DOOR_Y - 1);
+		passable[manorDoorInterior] = false;
+		avoid[manorDoorInterior] = false;
+		solid[manorDoorInterior] = true;
+		losBlocking[manorDoorInterior] = true;
+		openSpace[manorDoorInterior] = false;
+	}
+
+	@Override
 	protected void createMobs() {
-		// The surface town is intentionally peaceful.
+		boolean hasDongyusangyu = false;
+		boolean hasDungeonDoctor = false;
+		boolean hasShopkeeper = false;
+		for (Mob mob : mobs) {
+			if (mob instanceof Dongyusangyu) {
+				hasDongyusangyu = true;
+			}
+			if (mob instanceof SurfaceShopkeeper) {
+				hasShopkeeper = true;
+			}
+			if (mob instanceof DungeonDoctor) {
+				hasDungeonDoctor = true;
+			}
+		}
+		if (!hasDongyusangyu) {
+			Dongyusangyu dongyusangyu = new Dongyusangyu();
+			dongyusangyu.pos = cell(DONGYUSANGYU_X, DONGYUSANGYU_Y);
+			mobs.add(dongyusangyu);
+		}
+		if (!hasShopkeeper) {
+			SurfaceShopkeeper shopkeeper = new SurfaceShopkeeper();
+			shopkeeper.pos = cell(SHOPKEEPER_X, SHOPKEEPER_Y);
+			mobs.add(shopkeeper);
+		}
+		if (!hasDungeonDoctor) {
+			DungeonDoctor dungeonDoctor = new DungeonDoctor();
+			dungeonDoctor.pos = cell(DUNGEON_DOCTOR_X, DUNGEON_DOCTOR_Y);
+			mobs.add(dungeonDoctor);
+		}
 	}
 
 	@Override
 	protected void createItems() {
-		// Keep this opening floor decorative and deterministic.
+		ArrayList<Item> stock = generateSurfaceShopItems();
+		ArrayList<Integer> shelfCells = surfaceShopShelfCells();
+		for (int i = 0; i < stock.size() && i < shelfCells.size(); i++) {
+			Heap heap = drop(stock.get(i), shelfCells.get(i));
+			heap.type = Heap.Type.FOR_SALE;
+			heap.saleDepth(SHOP_SALE_DEPTH);
+		}
+	}
+
+	private ArrayList<Integer> surfaceShopShelfCells() {
+		ArrayList<Integer> result = new ArrayList<>();
+		int left = SHOP_LEFT + 1;
+		int top = SHOP_TOP + 1;
+		int right = SHOP_RIGHT - 1;
+		int bottom = SHOP_BOTTOM - 1;
+
+		for (int x = left; x <= right; x++) {
+			result.add(cell(x, top));
+		}
+		for (int y = top + 1; y <= bottom; y++) {
+			result.add(cell(right, y));
+		}
+		for (int x = right - 1; x >= left; x--) {
+			if (x != SHOP_DOOR_X) {
+				result.add(cell(x, bottom));
+			}
+		}
+		for (int y = bottom - 1; y > top; y--) {
+			result.add(cell(left, y));
+		}
+		return result;
+	}
+
+	static ArrayList<Item> generateSurfaceShopItems() {
+		ArrayList<Item> items = new ArrayList<>();
+
+		MeleeWeapon weapon = Generator.randomWeapon(4);
+		weapon.enchant(null);
+		weapon.cursed = false;
+		weapon.level(0);
+		weapon.identify(false);
+		items.add(weapon);
+
+		Armor armor = Generator.randomArmor(4);
+		armor.cursed = false;
+		armor.level(0);
+		armor.identify(false);
+		items.add(armor);
+
+		MissileWeapon missile = Generator.randomMissile(4);
+		missile.enchant(null);
+		missile.cursed = false;
+		missile.level(0);
+		missile.identify(false);
+		items.add(missile);
+
+		items.add(TippedDart.randomTipped(2));
+		items.add(new Alchemize().quantity(Random.IntRange(2, 3)));
+		items.add(new PotionOfHealing());
+		items.add(Generator.randomUsingDefaults(Generator.Category.POTION));
+		items.add(Generator.randomUsingDefaults(Generator.Category.POTION));
+		items.add(new ScrollOfIdentify());
+		items.add(new ScrollOfRemoveCurse());
+		items.add(new ScrollOfMagicMapping());
+		for (int i = 0; i < 2; i++) {
+			items.add(Random.Int(2) == 0
+					? Generator.randomUsingDefaults(Generator.Category.POTION)
+					: Generator.randomUsingDefaults(Generator.Category.SCROLL));
+		}
+		items.add(new SmallRation());
+		items.add(new SmallRation());
+		switch (Random.Int(4)) {
+			case 0:
+				items.add(new Bomb());
+				break;
+			case 1:
+			case 2:
+				items.add(new Bomb.DoubleBomb());
+				break;
+			default:
+				items.add(new Honeypot());
+				break;
+		}
+		items.add(new Ankh());
+		items.add(new StoneOfAugmentation());
+		items.add(new Torch());
+		items.add(new Torch());
+		items.add(new Torch());
+		items.add(new Stylus());
+
+		Random.shuffle(items);
+		return items;
 	}
 
 	@Override

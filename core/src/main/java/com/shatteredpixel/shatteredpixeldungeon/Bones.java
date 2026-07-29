@@ -67,7 +67,7 @@ public class Bones {
 			return;
 		}
 
-		item = pickItem(Dungeon.hero);
+		item = leavesTransferableItem() ? pickItem(Dungeon.hero) : null;
 		heroClass = Dungeon.hero.heroClass;
 
 		Bundle bundle = new Bundle();
@@ -81,6 +81,11 @@ public class Bones {
 		} catch (IOException e) {
 			ShatteredPixelDungeon.reportException(e);
 		}
+	}
+
+	static boolean leavesTransferableItem() {
+		return !Dungeon.isChallenged(Challenges.TEST_MODE)
+				&& !Dungeon.isChallenged(Challenges.RED_ENVELOPE);
 	}
 
 	private static Item pickItem(Hero hero){

@@ -17,6 +17,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.buffs.AbsoluteBlindness;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
@@ -55,7 +56,7 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
-public abstract class ElementalH extends MobHard {
+public abstract class ElementalH extends MobHard implements MagicalRangedAttack {
 
     {
         HP = HT = 66;
@@ -94,29 +95,17 @@ public abstract class ElementalH extends MobHard {
     }
 
     @Override
-    protected boolean canAttack( Char enemy ) {
-        if (skillCD <= 0) {
-            return new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos == enemy.pos;
-        } else {
-            return super.canAttack( enemy );
-        }
+    public boolean canRangedAttack( Char enemy ) {
+        return skillCD <= 0 && MagicalRangedAttack.super.canRangedAttack(enemy);
     }
 
-    protected boolean doAttack( Char enemy ) {
-
-        if (Dungeon.level.adjacent( pos, enemy.pos ) || skillCD > 0) {
-
-            return super.doAttack( enemy );
-
+    public boolean doRangedAttack( Char enemy ) {
+        if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+            sprite.zap( enemy.pos );
+            return false;
         } else {
-
-            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                sprite.zap( enemy.pos );
-                return false;
-            } else {
-                zap();
-                return true;
-            }
+            zap();
+            return true;
         }
     }
 
@@ -133,7 +122,7 @@ public abstract class ElementalH extends MobHard {
 
         skillCD = setCD();
 
-        if (hit( this, enemy, true )) {
+        if (rangedHit(enemy)) {
 
             rangedProc( enemy );
 

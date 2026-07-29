@@ -131,7 +131,7 @@ public abstract class ChaosDisciples extends Mob{
 
 
 
-    public  static class EyeBoss extends ChaosDisciples {
+    public  static class EyeBoss extends ChaosDisciples implements MagicalRangedAttack {
         private static final float TIME_TO_ZAP	= 1f;
 
         {
@@ -166,27 +166,13 @@ public abstract class ChaosDisciples extends Mob{
             }
             super.damage(dmg, src);
         }
-        @Override
-        protected boolean canAttack( Char enemy ) {
-            return super.canAttack(enemy)
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
-        }
-        protected boolean doAttack( Char enemy ) {
-
-
-            if (Dungeon.level.adjacent( pos, enemy.pos )
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos != enemy.pos) {
-
-                return super.doAttack( enemy );
-
+        public boolean doRangedAttack(Char enemy) {
+            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+                sprite.zap( enemy.pos );
+                return false;
             } else {
-                if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                    sprite.zap( enemy.pos );
-                    return false;
-                } else {
-                    zap();
-                    return true;
-                }
+                zap();
+                return true;
             }
         }
         public static class DarkBolt{}
@@ -199,7 +185,7 @@ public abstract class ChaosDisciples extends Mob{
 
             Invisibility.dispel(this);
             Char enemy = this.enemy;
-            if (hit( this, enemy, true )) {
+            if (rangedHit(enemy)) {
                 Buff c= enemy.buff(PotionOfCleansing.Cleanse.class);
                 if(c!=null){
                     c.detach();
@@ -236,15 +222,10 @@ public abstract class ChaosDisciples extends Mob{
                         && (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
                     dmg *= 0.5f;
                 }
-                if(hero.hasTalent(Talent.NO_VIEWRAPE)) {
-                    if (enemy == hero && distance(enemy) > 1) {
-                        Buff.affect(this, Blindness.class, hero.pointsInTalent(Talent.NO_VIEWRAPE));
-                    }
-                }
                 enemy.damage( dmg, new Warlock.DarkBolt() );
 
             } else {
-                enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+                showRangedMiss(enemy);
             }
         }
         public void onZapComplete() {
@@ -280,7 +261,7 @@ public abstract class ChaosDisciples extends Mob{
                 }
                 Invisibility.dispel(this);
                 for (Char ch : affected) {
-                    if (hit( this, ch, true )) {
+                    if (rangedHit(ch)) {
                         ch.damage(Random.NormalIntRange(40, 50), new Eye.DeathGaze());
                         if (Dungeon.level.heroFOV[pos]) {
                             ch.sprite.flash();
@@ -436,7 +417,7 @@ public abstract class ChaosDisciples extends Mob{
     }
 
 
-    public  static class ScorpioBoss extends ChaosDisciples {
+    public  static class ScorpioBoss extends ChaosDisciples implements PhysicalRangedAttack {
 
         {
             spriteClass = ScorpioBossSprite.class;
@@ -468,9 +449,8 @@ public abstract class ChaosDisciples extends Mob{
 
 
         @Override
-        protected boolean canAttack( Char enemy ) {
-            return  super.canAttack(enemy)
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
+        public int rangedAttackBallisticaMode() {
+            return Ballistica.MAGIC_BOLT;
         }
         @Override
         public int attackProc( Char enemy, int damage ) {

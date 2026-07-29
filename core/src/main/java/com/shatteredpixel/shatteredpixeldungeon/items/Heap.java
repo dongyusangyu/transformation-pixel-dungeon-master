@@ -79,6 +79,7 @@ public class Heap implements Bundlable {
 	public boolean haunted = false;
 	public boolean autoExplored = false; //used to determine if this heap should count for exploration bonus
 	public boolean hidden = false; //sets alpha to 15%
+	private int saleDepth = -1;
 	
 	public LinkedList<Item> items = new LinkedList<>();
 	
@@ -149,6 +150,21 @@ public class Heap implements Bundlable {
 	
 	public Item peek() {
 		return items.peek();
+	}
+
+	public Heap saleDepth(int depth) {
+		saleDepth = depth;
+		return this;
+	}
+
+	public int saleDepth() {
+		return saleDepth;
+	}
+
+	public int salePrice() {
+		return saleDepth >= 0
+				? Shopkeeper.sellPrice(peek(), saleDepth)
+				: Shopkeeper.sellPrice(peek());
 	}
 	
 	public void drop( Item item ) {
@@ -371,7 +387,7 @@ public class Heap implements Bundlable {
 			case FOR_SALE:
 				Item i = peek();
 				if (size() == 1) {
-					return Messages.get(this, "for_sale", Shopkeeper.sellPrice(i), i.title());
+					return Messages.get(this, "for_sale", salePrice(), i.title());
 				} else {
 					return i.title();
 				}
@@ -423,6 +439,7 @@ public class Heap implements Bundlable {
 	private static final String HAUNTED	= "haunted";
 	private static final String AUTO_EXPLORED	= "auto_explored";
 	private static final String HIDDEN	= "hidden";
+	private static final String SALE_DEPTH = "sale_depth";
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -449,6 +466,7 @@ public class Heap implements Bundlable {
 		haunted = bundle.getBoolean( HAUNTED );
 		autoExplored = bundle.getBoolean( AUTO_EXPLORED );
 		hidden = bundle.getBoolean( HIDDEN );
+		saleDepth = bundle.contains(SALE_DEPTH) ? bundle.getInt(SALE_DEPTH) : -1;
 	}
 
 	@Override
@@ -460,6 +478,7 @@ public class Heap implements Bundlable {
 		bundle.put( HAUNTED, haunted );
 		bundle.put( AUTO_EXPLORED, autoExplored );
 		bundle.put( HIDDEN, hidden );
+		bundle.put( SALE_DEPTH, saleDepth );
 	}
 	
 }

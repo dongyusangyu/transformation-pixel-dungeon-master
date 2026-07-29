@@ -1,11 +1,20 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.levels.TestArenaLevel;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.OptionSlider;
@@ -13,8 +22,14 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Game;
+import com.watabou.utils.Bundle;
+
+import java.util.ArrayList;
 
 public class TestAlignment extends TestGenerator {
+
+    private static final String AC_ARENA = "arena";
 
     {
         image = ItemSpriteSheet.SCROLL_GYFU;
@@ -33,10 +48,122 @@ public class TestAlignment extends TestGenerator {
     };
 
     @Override
+    public ArrayList<String> actions(Hero hero) {
+        ArrayList<String> actions = super.actions(hero);
+        actions.add(AC_ARENA);
+        return actions;
+    }
+
+    @Override
+    public String actionName(String action, Hero hero) {
+        if (action.equals(AC_ARENA)) {
+            return Messages.get(this,
+                    TestArenaLevel.isCurrentLevel() ? "ac_leave_arena" : "ac_enter_arena");
+        }
+        return super.actionName(action, hero);
+    }
+
+    @Override
     public void execute(Hero hero, String action) {
         super.execute(hero, action);
         if (action.equals(AC_GIVE)) {
             GameScene.show(new SettingsWindow());
+        } else if (action.equals(AC_ARENA)) {
+            useTestArena(hero);
+        }
+    }
+
+    private void useTestArena(Hero hero) {
+        if (TestArenaLevel.isCurrentLevel()) {
+            ArenaReturnTracker tracker = hero.buff(ArenaReturnTracker.class);
+            if (tracker == null || !tracker.hasReturnPoint()) {
+                GLog.w(Messages.get(this, "arena_no_return"));
+                return;
+            }
+            switchLevel(tracker.returnDepth(), tracker.returnBranch(), tracker.returnPos());
+        } else {
+            if (!Dungeon.isChallenged(Challenges.TEST_MODE)
+                    || Dungeon.level.locked
+                    || hero.buff(LockedFloor.class) != null) {
+                GLog.w(Messages.get(this, "arena_locked"));
+                return;
+            }
+            Buff.affect(hero, ArenaReturnTracker.class)
+                    .setReturnPoint(Dungeon.depth, Dungeon.branch, hero.pos);
+            switchLevel(TestArenaLevel.DEPTH, TestArenaLevel.BRANCH,
+                    TestArenaLevel.centerCell());
+        }
+    }
+
+    private void switchLevel(int depth, int branch, int pos) {
+        TimekeepersHourglass.timeFreeze timeFreeze =
+                Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class);
+        if (timeFreeze != null) {
+            timeFreeze.disarmPresses();
+        }
+        Swiftthistle.TimeBubble timeBubble =
+                Dungeon.hero.buff(Swiftthistle.TimeBubble.class);
+        if (timeBubble != null) {
+            timeBubble.disarmPresses();
+        }
+        Level.beforeTransition();
+        InterlevelScene.mode = InterlevelScene.Mode.TEST_ARENA;
+        InterlevelScene.returnDepth = depth;
+        InterlevelScene.returnBranch = branch;
+        InterlevelScene.returnPos = pos;
+        Game.switchScene(InterlevelScene.class);
+    }
+
+    public static class ArenaReturnTracker extends Buff {
+
+        private static final String RETURN_DEPTH = "return_depth";
+        private static final String RETURN_BRANCH = "return_branch";
+        private static final String RETURN_POS = "return_pos";
+
+        {
+            revivePersists = true;
+        }
+
+        private int returnDepth = -1;
+        private int returnBranch = -1;
+        private int returnPos = -1;
+
+        public void setReturnPoint(int depth, int branch, int pos) {
+            returnDepth = depth;
+            returnBranch = branch;
+            returnPos = pos;
+        }
+
+        public boolean hasReturnPoint() {
+            return returnDepth > 0 && returnBranch >= 0 && returnPos >= 0;
+        }
+
+        public int returnDepth() {
+            return returnDepth;
+        }
+
+        public int returnBranch() {
+            return returnBranch;
+        }
+
+        public int returnPos() {
+            return returnPos;
+        }
+
+        @Override
+        public void storeInBundle(Bundle bundle) {
+            super.storeInBundle(bundle);
+            bundle.put(RETURN_DEPTH, returnDepth);
+            bundle.put(RETURN_BRANCH, returnBranch);
+            bundle.put(RETURN_POS, returnPos);
+        }
+
+        @Override
+        public void restoreFromBundle(Bundle bundle) {
+            super.restoreFromBundle(bundle);
+            returnDepth = bundle.contains(RETURN_DEPTH) ? bundle.getInt(RETURN_DEPTH) : -1;
+            returnBranch = bundle.contains(RETURN_BRANCH) ? bundle.getInt(RETURN_BRANCH) : -1;
+            returnPos = bundle.contains(RETURN_POS) ? bundle.getInt(RETURN_POS) : -1;
         }
     }
 

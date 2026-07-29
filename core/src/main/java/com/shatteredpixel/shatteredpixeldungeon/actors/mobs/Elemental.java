@@ -71,7 +71,7 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
-public abstract class Elemental extends Mob {
+public abstract class Elemental extends Mob implements MagicalRangedAttack {
 
 	{
 		HP = HT = 60;
@@ -136,31 +136,18 @@ public abstract class Elemental extends Mob {
 	}
 	
 	@Override
-	protected boolean canAttack( Char enemy ) {
-		if (super.canAttack(enemy)){
-			return true;
-		} else {
-			return rangedCooldown < 0 && new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos == enemy.pos;
-		}
+	public boolean canRangedAttack(Char enemy) {
+		return rangedCooldown < 0 && MagicalRangedAttack.super.canRangedAttack(enemy);
 	}
 	
-	protected boolean doAttack( Char enemy ) {
-		
-		if (Dungeon.level.adjacent( pos, enemy.pos )
-				|| rangedCooldown > 0
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos != enemy.pos) {
-			
-			return super.doAttack( enemy );
-			
+	@Override
+	public boolean doRangedAttack(Char enemy) {
+		if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+			sprite.zap( enemy.pos );
+			return false;
 		} else {
-			
-			if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-				sprite.zap( enemy.pos );
-				return false;
-			} else {
-				zap();
-				return true;
-			}
+			zap();
+			return true;
 		}
 	}
 	
@@ -177,12 +164,12 @@ public abstract class Elemental extends Mob {
 
 		Invisibility.dispel(this);
 		Char enemy = this.enemy;
-		if (hit( this, enemy, true )) {
+		if (rangedHit(enemy)) {
 			
 			rangedProc( enemy );
 			
 		} else {
-			enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+			showRangedMiss(enemy);
 		}
 
 		rangedCooldown = Random.NormalIntRange( 3, 5 );
@@ -374,6 +361,7 @@ public abstract class Elemental extends Mob {
 
 						Char target = Actor.findChar(targetingPos + i);
 						if (target != null && target != this) {
+							onRangedAttackHit(target);
 							Buff.affect(target, Burning.class).reignite(target);
 						}
 					}
@@ -587,6 +575,7 @@ public abstract class Elemental extends Mob {
 			Invisibility.dispel(this);
 			Char enemy = this.enemy;
 			//skips accuracy check, always hits
+			onRangedAttackHit(enemy);
 			rangedProc( enemy );
 
 			rangedCooldown = Random.NormalIntRange( 3, 5 );

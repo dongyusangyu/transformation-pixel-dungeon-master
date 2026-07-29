@@ -27,6 +27,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
@@ -72,6 +74,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatDemon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatShoper;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Guard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.HermitCrab;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.HuntressBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.LandPiranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Monk;
@@ -187,7 +190,9 @@ public enum Bestiary {
 	NEUTRAL,
 	ALLY,
 	TRAP,
-	PLANT;
+	PLANT,
+	TOWER_MOBS,
+	TOWER_BOSSES;
 
 	//tracks whether an entity has been encountered
 	private final LinkedHashMap<Class<?>, Boolean> seen = new LinkedHashMap<>();
@@ -233,6 +238,7 @@ public enum Bestiary {
 		BOSSES.addEntities(Goo.class, WarriorBoss.class,
 				Tengu.class,RogueBoss.ShadowRogue.class, RogueBoss.class,
 				Pylon.class, DM300.class,
+				HuntressBoss.class, HuntressBoss.DistractingHawk.class, HuntressBoss.HuntressTentacle.class,
 				DwarfKing.class,
 				YogDzewa.Larva.class, YogFist.BurningFist.class, YogFist.SoiledFist.class, YogFist.RottingFist.class, YogFist.RustedFist.class,YogFist.BrightFist.class, YogFist.DarkFist.class, YogDzewa.class,
 				ChaosDisciples.ScorpioBoss.class,ChaosDisciples.EyeBoss.class,ChaosDisciples.RipperBoss.class,ChaosDisciples.SuccBoss.class, GreatDemon.class,
@@ -276,6 +282,8 @@ public enum Bestiary {
 				Stormvine.class, Earthroot.class, Mageroyal.class, Starflower.class,
 				BlandfruitBush.class,
 				WandOfRegrowth.Dewcatcher.class, WandOfRegrowth.Seedpod.class, WandOfRegrowth.Lotus.class);
+
+		TOWER_MOBS.addEntities(CamouflageGnoll.class, CorrosiveSwarm.class);
 
 	}
 

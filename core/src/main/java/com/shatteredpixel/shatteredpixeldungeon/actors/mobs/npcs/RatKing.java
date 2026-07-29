@@ -25,6 +25,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.Ratmogrify;
 import com.shatteredpixel.shatteredpixeldungeon.items.KingsCrown;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
@@ -36,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndInfoArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Callback;
+import com.watabou.utils.Random;
 
 public class RatKing extends NPC {
 
@@ -129,7 +132,14 @@ public class RatKing extends NPC {
 			if (Dungeon.hero.belongings.armor() == null){
 				yell( Messages.get(RatKing.class, "crown_clothes") );
 			} else {
-				Badges.validateRatmogrify();
+				ArmorAbility ability = new Ratmogrify();
+				if (Dungeon.hero.randomMode) {
+					ability = randomCrownArmorAbility();
+				}
+				final ArmorAbility selectedAbility = ability;
+				if (selectedAbility instanceof Ratmogrify) {
+					Badges.validateRatmogrify();
+				}
 				Game.runOnRenderThread(new Callback() {
 					@Override
 					public void call() {
@@ -144,11 +154,11 @@ public class RatKing extends NPC {
 							@Override
 							protected void onSelect(int index) {
 								if (index == 0){
-									crown.upgradeArmor(Dungeon.hero, Dungeon.hero.belongings.armor(), new Ratmogrify());
+									crown.upgradeArmor(Dungeon.hero, Dungeon.hero.belongings.armor(), selectedAbility);
 									((RatKingSprite)sprite).resetAnims();
 									yell(Messages.get(RatKing.class, "crown_thankyou"));
 								} else if (index == 1) {
-									GameScene.show(new WndInfoArmorAbility(Dungeon.hero.heroClass, new Ratmogrify()));
+									GameScene.show(new WndInfoArmorAbility(Dungeon.hero.heroClass, selectedAbility));
 								} else {
 									yell(Messages.get(RatKing.class, "crown_fine"));
 								}
@@ -163,6 +173,28 @@ public class RatKing extends NPC {
 			yell( Messages.get(this, "what_is_it") );
 		}
 		return true;
+	}
+
+	private static ArmorAbility randomCrownArmorAbility() {
+		HeroClass[] classes = HeroClass.values();
+		int classCount = Math.min(12, classes.length);
+		int abilityCount = 0;
+		for (int i = 0; i < classCount; i++) {
+			abilityCount += classes[i].armorAbilities().length;
+		}
+		if (abilityCount == 0) {
+			return new Ratmogrify();
+		}
+
+		int selected = Random.Int(abilityCount);
+		for (int i = 0; i < classCount; i++) {
+			for (ArmorAbility ability : classes[i].armorAbilities()) {
+				if (selected-- == 0) {
+					return ability;
+				}
+			}
+		}
+		return new Ratmogrify();
 	}
 	
 	@Override

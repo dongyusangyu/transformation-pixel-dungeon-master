@@ -34,7 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
-public class CrystalWisp extends Mob{
+public class CrystalWisp extends Mob implements MagicalRangedAttack {
 
 	{
 		spriteClass = CrystalWispSprite.class;
@@ -88,28 +88,13 @@ public class CrystalWisp extends Mob{
 		return super.drRoll() + Random.NormalIntRange(0, 5);
 	}
 
-	@Override
-	protected boolean canAttack( Char enemy ) {
-		return super.canAttack(enemy)
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
-	}
-
-	protected boolean doAttack(Char enemy ) {
-
-		if (Dungeon.level.adjacent( pos, enemy.pos )
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos != enemy.pos) {
-
-			return super.doAttack( enemy );
-
+	public boolean doRangedAttack(Char enemy) {
+		if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+			sprite.zap( enemy.pos );
+			return false;
 		} else {
-
-			if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-				sprite.zap( enemy.pos );
-				return false;
-			} else {
-				zap();
-				return true;
-			}
+			zap();
+			return true;
 		}
 	}
 
@@ -127,7 +112,7 @@ public class CrystalWisp extends Mob{
 
 		Invisibility.dispel(this);
 		Char enemy = this.enemy;
-		if (hit( this, enemy, true )) {
+		if (rangedHit(enemy)) {
 
 			int dmg = Random.NormalIntRange( 5, 10 );
 			enemy.damage( dmg, new LightBeam() );
@@ -138,7 +123,7 @@ public class CrystalWisp extends Mob{
 				GLog.n( Messages.get(this, "beam_kill") );
 			}
 		} else {
-			enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+			showRangedMiss(enemy);
 		}
 	}
 

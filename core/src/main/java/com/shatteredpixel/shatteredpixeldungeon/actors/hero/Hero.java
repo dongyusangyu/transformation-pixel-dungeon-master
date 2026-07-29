@@ -132,6 +132,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
+import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Ankh;
 import com.shatteredpixel.shatteredpixeldungeon.items.Dewdrop;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
@@ -219,6 +220,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs.DeferredScorpio;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.WeakFloorRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
@@ -723,10 +725,10 @@ public class Hero extends Char {
 		belongings.thrownWeapon = null;
 
 		if (hit && subClass.is(HeroSubClass.GLADIATOR) && wasEnemy){
-			Buff.affect( this, Combo.class ).hit( enemy );
+			Buff.affect(this, Combo.class).hit(enemy, sealComboBonus());
 		}
 
-		if (hit && Talent.canUseWeaponAbilities(this) && wasEnemy){
+		if (hit && MeleeWeapon.canUseWeaponAbility(this) && wasEnemy){
 			Buff.affect( this, Sai.ComboStrikeTracker.class).addHit();
 		}
 
@@ -772,6 +774,11 @@ public class Hero extends Char {
 			accuracy*=1+(attackDelay()-1)*0.5*pointsInTalent(Talent.OVERWHELMING);
 		}
 		accuracy *= RingOfAccuracy.accuracyMultiplier( this );
+		Combo combo = buff(Combo.class);
+		if (combo != null) {
+			accuracy *= Combo.focusAccuracyMultiplier(combo.combatCount(),
+					pointsInTalent(Talent.COMBO_FOCUS));
+		}
 		if(pointsInTalent(Talent.AMAZING_EYESIGHT)>0 && belongings.attackingWeapon() instanceof MeleeWeapon && Dungeon.level.distance(this.pos,target.pos)>=4-pointsInTalent(Talent.AMAZING_EYESIGHT)){
 			accuracy *=1.35;
 		}
@@ -808,7 +815,7 @@ public class Hero extends Char {
 					&& belongings.abilityWeapon != wep && buff(MonkEnergy.MonkAbility.UnarmedAbilityTracker.class) == null){
 
 				//non-duelist benefit for precise assault, can stack with liquid agility
-				if (!Talent.canUseWeaponAbilities(this)) {
+				if (!MeleeWeapon.canUseWeaponAbility(this)) {
 					//persistent +10%/20%/30% ACC for other heroes
 					accuracy *= 1f + 0.1f * pointsInTalent(Talent.PRECISE_ASSAULT);
 				}
@@ -1020,7 +1027,7 @@ public class Hero extends Char {
 		Combo.ParryTracker parry = buff(Combo.ParryTracker.class);
 		if (parry != null){
 			parry.parried = true;
-			if (buff(Combo.class).getComboCount() < 9 || pointsInTalent(Talent.ENHANCED_COMBO) < 2){
+			if (!buff(Combo.class).parryEmpowered()){
 				parry.detach();
 			}
 			return Messages.get(Monk.class, "parried");
@@ -1225,7 +1232,7 @@ public class Hero extends Char {
 			Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG, 0.75f, 1.2f);
 		}
 
-		if (!Talent.canUseWeaponAbilities(this)
+		if (!MeleeWeapon.canUseWeaponAbility(this)
 				&& hasTalent(Talent.WEAPON_RECHARGING)
 				&& (buff(Recharging.class) != null || buff(ArtifactRecharge.class) != null)){
 			dmg = Math.round(dmg * (1.025f + 0.025f*pointsInTalent(Talent.WEAPON_RECHARGING)));
@@ -1250,6 +1257,8 @@ public class Hero extends Char {
 		float speed = super.speed();
 
 		speed *= RingOfHaste.speedMultiplier(this);
+		Berserk berserk = buff(Berserk.class);
+		if (berserk != null) speed *= berserk.actionSpeedMultiplier();
 
 		if (belongings.armor() != null) {
 			speed = belongings.armor().speedFactor(this, speed);
@@ -1346,9 +1355,14 @@ public class Hero extends Char {
         if(hero.pointsInTalent(Talent.ACCUMULATE_STEADILY)==3){
             reach+=1;
         }
-        if (buff(AscendedForm.AscendBuff.class) != null) {
-            reach += 2;
-        }
+		if (buff(AscendedForm.AscendBuff.class) != null) {
+			reach += 2;
+		}
+		Berserk berserk = buff(Berserk.class);
+		boolean bloodthirstyReach = berserk != null
+				&& berserk.isBerserking()
+				&& hasTalent(Talent.BLOODTHIRSTY_BERSERK);
+		if (bloodthirstyReach) reach++;
         if(belongings.getItem(RingOfKing.class)!=null && belongings.getItem(RingOfKing.class).isEquipped(this) && belongings.getItem(RingOfKing.class).enchantment!=null && belongings.getItem(RingOfKing.class).enchantment.getClass()== Projecting.class){
             reach+=(int)(1*belongings.getItem(RingOfKing.class).enchantment.genericProcChanceMultiplier(this));
         }
@@ -1356,7 +1370,8 @@ public class Hero extends Char {
 		KindOfWeapon wep = Dungeon.hero.belongings.attackingWeapon();
 
 		if (wep != null){
-			return wep.canReach(this, enemy.pos);
+			int extraReach = bloodthirstyReach && !(wep instanceof MissileWeapon) ? 1 : 0;
+			return wep.canReach(this, enemy.pos, extraReach);
 		} else{
 			boolean[] passable = BArray.not(Dungeon.level.solid, null);
 			for (Char ch : Actor.chars()) {
@@ -1379,6 +1394,13 @@ public class Hero extends Char {
         }
 
 		float delay = 1f;
+		Berserk berserk = buff(Berserk.class);
+		if (berserk != null) delay /= berserk.actionSpeedMultiplier();
+		Combo combo = buff(Combo.class);
+		if (combo != null) {
+			delay /= Combo.relentlessAttackSpeedMultiplier(combo.combatCount(),
+					pointsInTalent(Talent.RELENTLESS_COMBAT));
+		}
 		if(buff(OneSword.OKU_OneSword.class)!=null  && belongings.attackingWeapon() instanceof MeleeWeapon){
 			float spd=1.5f;
 			if(hasTalent(Talent.OFFENSIVE)){
@@ -2099,7 +2121,7 @@ public class Hero extends Char {
 
 		if (enemy.isAlive() && canAttack( enemy ) && enemy.invisible == 0) {
 
-			if (!Talent.canUseWeaponAbilities(this)
+			if (!MeleeWeapon.canUseWeaponAbility(this)
 					&& hasTalent(Talent.AGGRESSIVE_BARRIER)
 					&& buff(Talent.AggressiveBarrierCooldown.class) == null
 					&& (HP / (float)HT) < 0.50f){
@@ -2291,6 +2313,11 @@ public class Hero extends Char {
 			Berserk berserk = Buff.affect(this, Berserk.class);
 			berserk.damage(damage);
 		}
+		if (enemy != null && enemy.alignment == Alignment.ENEMY
+				&& hasTalent(Talent.MIRRORED_REVENGE)) {
+			BrokenSeal.WarriorShield shield = buff(BrokenSeal.WarriorShield.class);
+			if (shield != null) shield.accelerateRecovery(Random.IntRange(5, 10));
+		}
 
 		CapeOfThorns.Thorns thorns = buff( CapeOfThorns.Thorns.class );
 		if (thorns != null) {
@@ -2371,6 +2398,9 @@ public class Hero extends Char {
 		if(!unavoidable && !buffs(GreatShoper.GoldCurse.class).isEmpty() && !(src instanceof Viscosity.DeferedDamage)){
 			src = new Viscosity.DeferedDamage();
 		}
+        if(src instanceof DeferredScorpio){
+            src = new Viscosity.DeferedDamage();
+        }
 
 
 		//regular damage interrupt, triggers on any damage except specific mild DOT effects
@@ -2411,6 +2441,7 @@ public class Hero extends Char {
 		dmg=Talent.onDamage(  dmg, src );
 		if(!unavoidable && hasTalent(Talent.KING_PROTECT) && pointsInTalent(Talent.KING_PROTECT)+1>=Random.Int(4) &&
 				!(src instanceof Viscosity.DeferedDamage) && !(src instanceof Hunger)){
+			processFriarReasonLoss(dmg, src, unavoidable);
 			if (dmg >= 0) {
 				Viscosity.DeferedDamage deferred = Buff.affect( this, Viscosity.DeferedDamage.class );
 				deferred.prolong( (int)(dmg) );
@@ -2996,6 +3027,10 @@ public class Hero extends Char {
 	public void die( Object cause ) {
 		
 		curAction = null;
+		if (com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction
+				.ExtractionRaidRun.handleHeroDeath(this, cause)) {
+			return;
+		}
 		if(!this.buffs(Resurrection.REsurrection.class).isEmpty()){
 			Buff b=this.buff(Resurrection.REsurrection.class);
 			b.detach();
@@ -3242,10 +3277,10 @@ public class Hero extends Char {
         spend( attackDelay() );
 
 		if (hit && subClass.is(HeroSubClass.GLADIATOR) && wasEnemy){
-			Buff.affect( this, Combo.class ).hit( enemy );
+			Buff.affect(this, Combo.class).hit(enemy, sealComboBonus());
 		}
 
-		if (hit && Talent.canUseWeaponAbilities(this) && wasEnemy){
+		if (hit && MeleeWeapon.canUseWeaponAbility(this) && wasEnemy){
 			Buff.affect( this, Sai.ComboStrikeTracker.class).addHit();
 		}
 
@@ -3260,6 +3295,15 @@ public class Hero extends Char {
                 hero.attack(enemy, 1.0f, 0, 1f);
             }
         }
+	}
+
+	private int sealComboBonus() {
+		BrokenSeal.SealComboTracker tracker = buff(BrokenSeal.SealComboTracker.class);
+		if (tracker == null && subClass.is(HeroSubClass.GLADIATOR)
+				&& belongings.armor() != null && belongings.armor().checkSeal() != null) {
+			tracker = Buff.affect(this, BrokenSeal.SealComboTracker.class);
+		}
+		return tracker == null ? 0 : tracker.consumeBonus();
 	}
 	@Override
 	protected synchronized void onRemove() {

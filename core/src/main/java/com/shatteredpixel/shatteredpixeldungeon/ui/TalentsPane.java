@@ -58,8 +58,11 @@ public class TalentsPane extends ScrollPane {
 		Ratmogrify.useRatroicEnergy = Dungeon.hero != null && Dungeon.hero.armorAbility instanceof Ratmogrify;
 
 		int tiersAvailable = 1;
+		boolean showAllOwnedTiers = mode == TalentButton.Mode.BOSS_METAMORPH_CHOOSE;
 
-		if (mode == TalentButton.Mode.INFO){
+		if (showAllOwnedTiers) {
+			tiersAvailable = talents.size();
+		} else if (mode == TalentButton.Mode.INFO){
 
 			if (!Badges.isUnlocked(Badges.Badge.LEVEL_REACHED_1)){
 				tiersAvailable = 1;
@@ -110,7 +113,9 @@ public class TalentsPane extends ScrollPane {
 		blocker = new ColorBlock(0, 0, 0xFF222222);
 		content.add(blocker);
 
-		if (tiersAvailable == 1) {
+		if (showAllOwnedTiers) {
+			blockText = null;
+		} else if (tiersAvailable == 1) {
 			blockText = PixelScene.renderTextBlock(Messages.get(this, "unlock_tier2"), 6);
 			content.add(blockText);
 		} else if (tiersAvailable == 2) {

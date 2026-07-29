@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Brute;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhysicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.utils.HitBack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.visuals.MissileSpriteCustom;
@@ -38,7 +39,7 @@ import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 //should make a template for ai like this, or a ranged attack action class.
-public class BruteH extends MobHard {
+public class BruteH extends MobHard implements PhysicalRangedAttack {
     {
         spriteClass = BruteSprite.class;
 
@@ -141,25 +142,24 @@ public class BruteH extends MobHard {
     }
 
     @Override
-    protected boolean canAttack(Char enemy){
+    public boolean canRangedAttack(Char enemy){
         if(thrownLeft>0 && revived>0){
-            Ballistica attack = new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE);
-            if(!Dungeon.level.adjacent( pos, enemy.pos ) && attack.collisionPos == enemy.pos){
+            if(PhysicalRangedAttack.super.canRangedAttack(enemy)){
                 rangedAttack = true;
                 return true;
             }
         }
         rangedAttack  = false;
-        return super.canAttack(enemy);
+        return false;
     }
 
     @Override
-    protected boolean doAttack(Char enemy){
-        if(rangedAttack && thrownLeft>0){
-            thrownLeft--;
-            spend( attackDelay() );
+    public boolean doRangedAttack(Char enemy){
+        thrownLeft--;
+        spend( attackDelay() );
+        beginPhysicalRangedAttack();
 
-            Actor.addDelayed(new Actor() {
+        Actor.addDelayed(new Actor() {
                                  @Override
                                  public boolean act(){
                                      final Actor toRemove = this;
@@ -178,10 +178,8 @@ public class BruteH extends MobHard {
                                  }
                              },
                     -1);
-            next();
-            return true;
-        }
-        return super.doAttack(enemy);
+        next();
+        return true;
     }
 
     @Override

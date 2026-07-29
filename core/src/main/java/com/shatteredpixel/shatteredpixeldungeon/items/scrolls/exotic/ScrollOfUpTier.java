@@ -189,6 +189,9 @@ public class ScrollOfUpTier extends ExoticScroll {
     protected void onItemSelected(Item item) {
 
         Item result = changeItem(item);
+        if (result != null) {
+            result.upgradeScrollUses = item.upgradeScrollUses;
+        }
 
         if (result == null){
             //This shouldn't ever trigger

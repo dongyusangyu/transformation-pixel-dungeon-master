@@ -115,11 +115,6 @@ public class Sungrass extends Plant {
 
 					target.heal(healThisTurn);
 
-                    if (target instanceof Hero && target.HP >= target.HT) {
-                        ((Hero) target).resting = true;
-                    }
-
-
 				}
 
 			}

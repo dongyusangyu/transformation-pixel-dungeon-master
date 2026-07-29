@@ -7,6 +7,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhysicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.visuals.MissileSpriteCustom;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
@@ -18,7 +19,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
-public class GnollH extends MobHard {
+public class GnollH extends MobHard implements PhysicalRangedAttack {
     {
         EXP = 3;
         lootChance = 1f;
@@ -33,25 +34,24 @@ public class GnollH extends MobHard {
     private boolean rangedAttack = false;
 
     @Override
-    protected boolean canAttack(Char enemy){
+    public boolean canRangedAttack(Char enemy){
         if(dartLeft>0){
-            Ballistica attack = new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE);
-            if(!Dungeon.level.adjacent( pos, enemy.pos ) && attack.collisionPos == enemy.pos){
+            if(PhysicalRangedAttack.super.canRangedAttack(enemy)){
                 rangedAttack = true;
                 return true;
             }
         }
         rangedAttack  = false;
-        return super.canAttack(enemy);
+        return false;
     }
 
     @Override
-    protected boolean doAttack(Char enemy){
-        if(rangedAttack){
-            dartLeft--;
-            spend( attackDelay() );
+    public boolean doRangedAttack(Char enemy){
+        dartLeft--;
+        spend( attackDelay() );
+        beginPhysicalRangedAttack();
 
-            Actor.addDelayed(new Actor() {
+        Actor.addDelayed(new Actor() {
                 @Override
                 public boolean act(){
                     final Actor toRemove = this;
@@ -70,10 +70,8 @@ public class GnollH extends MobHard {
                 }
             },
                     -1);
-            next();
-            return true;
-        }
-        return super.doAttack(enemy);
+        next();
+        return true;
     }
 
     @Override

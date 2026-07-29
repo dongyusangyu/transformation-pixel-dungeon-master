@@ -213,7 +213,7 @@ public class MeleeWeapon extends Weapon {
 			charger.partialCharge++;
 		}
 
-		if (Talent.canUseWeaponAbility(hero, this)
+		if (canUseWeaponAbilityAction(hero)
 				&& hero.hasTalent(Talent.AGGRESSIVE_BARRIER)
 				&& (hero.HP / (float)hero.HT) <= 0.5f){
 			int shieldAmt = 1 + 2*hero.pointsInTalent(Talent.AGGRESSIVE_BARRIER);
@@ -417,15 +417,15 @@ public class MeleeWeapon extends Weapon {
 	}
 
 	public static boolean canUseWeaponAbility(Hero hero) {
-		return Talent.canUseWeaponAbilities(hero);
+		return hero != null
+				&& (hero.heroClass == HeroClass.DUELIST
+				|| hero.subClass.is(HeroSubClass.CHAMPION)
+				|| hero.buff(MartialMastery.class) != null
+				|| hero.hasTalent(Talent.MARTIAL_TRAIN));
 	}
 
 	public boolean canUseWeaponAbilityAction(Hero hero) {
-		return canUseWeaponAbility(hero)
-				&& (
-				hero.heroClass == HeroClass.DUELIST
-				|| hero.subClass.is(HeroSubClass.CHAMPION)
-				|| hero.buff(MartialMastery.class) != null);
+		return canUseWeaponAbility(hero);
 	}
 
 	public static void syncCharger(Hero hero) {

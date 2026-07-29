@@ -346,6 +346,10 @@ public class Armor extends EquipableItem {
 		return seal;
 	}
 
+	public Item upgradeScrollCreditTarget() {
+		return seal != null && seal.level() == 0 ? seal : this;
+	}
+
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
 		if(hero.heroClass == HeroClass.SLIMEGIRL && !((this instanceof SlimeArmor ) || (this instanceof  SlimeGirlArmor))){
@@ -766,6 +770,7 @@ public class Armor extends EquipableItem {
 
 		if (seal != null) {
 			info += "\n\n" + Messages.get(Armor.class, "seal_attached", seal.maxShield(tier, level()));
+			info += BrokenSeal.subclassEffectDescription();
 		}
 		
 		return info;

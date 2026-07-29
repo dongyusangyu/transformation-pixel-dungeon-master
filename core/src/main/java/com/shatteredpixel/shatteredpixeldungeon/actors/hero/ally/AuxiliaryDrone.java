@@ -88,6 +88,11 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
     }
 
     @Override
+    public boolean canRangedAttack(Char enemy) {
+        return false;
+    }
+
+    @Override
     protected boolean act() {
         if(buff(DroneFast.class)==null){
             Buff.affect(this, DroneShield.class);
@@ -328,6 +333,11 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
 
         @Override
         protected boolean canAttack( Char enemy ) {
+            return false;
+        }
+
+        @Override
+        public boolean canRangedAttack(Char enemy) {
             return false;
         }
         public ChaosDrone(){

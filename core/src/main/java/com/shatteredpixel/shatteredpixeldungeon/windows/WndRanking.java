@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.QuickSlot;
+import com.shatteredpixel.shatteredpixeldungeon.RankingRestart;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -617,6 +618,41 @@ public class WndRanking extends WndTabbed {
 			scoreInfo.setSize(16, 16);
 			scoreInfo.setPos(WIDTH - scoreInfo.width(), 10);
 			add(scoreInfo);
+
+			if (RankingRestart.isEligible(record) && GamesInProgress.firstEmpty() != -1) {
+				RedButton restart = new RedButton(Messages.get(this, "restart")) {
+					@Override
+					protected void onClick() {
+						super.onClick();
+						ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+								Icons.get(Icons.STAIRS),
+								Messages.get(ChallengesTab.this, "restart_title"),
+								Messages.get(ChallengesTab.this, "restart_desc"),
+								Messages.get(ChallengesTab.this, "restart_confirm"),
+								Messages.get(ChallengesTab.this, "restart_cancel")) {
+							@Override
+							protected void onSelect(int index) {
+								super.onSelect(index);
+								if (index != 0) {
+									return;
+								}
+								int slot = GamesInProgress.firstEmpty();
+								if (slot == -1) {
+									ShatteredPixelDungeon.scene().addToFront(
+											new WndMessage(Messages.get(ChallengesTab.this, "no_slots")));
+								} else if (RankingRestart.begin(record)) {
+									GamesInProgress.curSlot = slot;
+									InterlevelScene.mode = InterlevelScene.Mode.RESTART;
+									Game.switchScene(InterlevelScene.class);
+								}
+							}
+						});
+					}
+				};
+				restart.icon(Icons.get(Icons.STAIRS));
+				restart.setRect(0, title.bottom() + 12, WIDTH, 18);
+				add(restart);
+			}
 
 			/*
 			IconButton game = new IconButton(Icons.get(Icons.INFO)) {

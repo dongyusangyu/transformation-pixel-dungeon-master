@@ -48,7 +48,7 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
-public class GreatDemon extends Mob{
+public class GreatDemon extends Mob implements PhysicalRangedAttack {
 
     {
         spriteClass = GreatDemonSprite.class;
@@ -109,9 +109,14 @@ public class GreatDemon extends Mob{
         return damage;
     }
     @Override
-    protected boolean canAttack( Char enemy ) {
-        return  super.canAttack(enemy)
-                || (new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos && buffs(ThrowCooldown.class).isEmpty());
+    public boolean canRangedAttack(Char enemy) {
+        return buffs(ThrowCooldown.class).isEmpty()
+                && PhysicalRangedAttack.super.canRangedAttack(enemy);
+    }
+
+    @Override
+    public int rangedAttackBallisticaMode() {
+        return Ballistica.MAGIC_BOLT;
     }
 
 

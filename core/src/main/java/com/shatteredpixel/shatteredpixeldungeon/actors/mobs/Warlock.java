@@ -48,7 +48,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
-public class Warlock extends Mob implements Callback {
+public class Warlock extends Mob implements Callback, MagicalRangedAttack {
 	
 	private static final float TIME_TO_ZAP	= 1f;
 	
@@ -82,28 +82,13 @@ public class Warlock extends Mob implements Callback {
 		return super.drRoll() + Random.NormalIntRange(0, 8);
 	}
 	
-	@Override
-	protected boolean canAttack( Char enemy ) {
-		return super.canAttack(enemy)
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
-	}
-	
-	protected boolean doAttack( Char enemy ) {
-
-		if (Dungeon.level.adjacent( pos, enemy.pos )
-				|| new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos != enemy.pos) {
-			
-			return super.doAttack( enemy );
-			
+	public boolean doRangedAttack(Char enemy) {
+		if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+			sprite.zap( enemy.pos );
+			return false;
 		} else {
-			
-			if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-				sprite.zap( enemy.pos );
-				return false;
-			} else {
-				zap();
-				return true;
-			}
+			zap();
+			return true;
 		}
 	}
 	
@@ -115,7 +100,7 @@ public class Warlock extends Mob implements Callback {
 
 		Invisibility.dispel(this);
 		Char enemy = this.enemy;
-		if (hit( this, enemy, true )) {
+		if (rangedHit(enemy)) {
 			//TODO would be nice for this to work on ghost/statues too
 			if (enemy == hero && Random.Int( 2 ) == 0) {
 				Buff.prolong( enemy, Degrade.class, Degrade.DURATION );
@@ -131,12 +116,6 @@ public class Warlock extends Mob implements Callback {
 					&& (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
 				dmg *= 0.5f;
 			}
-			if(hero.hasTalent(Talent.NO_VIEWRAPE)){
-				if(enemy==hero && distance(enemy)>1){
-					Buff.affect(this, Blindness.class,hero.pointsInTalent(Talent.NO_VIEWRAPE));
-				}
-			}
-
 			enemy.damage( dmg, new DarkBolt() );
 			
 			if (enemy == hero && !enemy.isAlive()) {
@@ -145,7 +124,7 @@ public class Warlock extends Mob implements Callback {
 				GLog.n( Messages.get(this, "bolt_kill") );
 			}
 		} else {
-			enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+			showRangedMiss(enemy);
 		}
 	}
 	
