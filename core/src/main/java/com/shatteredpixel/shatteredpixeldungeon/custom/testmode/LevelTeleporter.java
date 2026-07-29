@@ -16,6 +16,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Tengu;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestAlignment;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.levels.TestArenaLevel;
 import com.shatteredpixel.shatteredpixeldungeon.custom.utils.Constants;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -86,6 +88,13 @@ public class LevelTeleporter extends TestItem {
     @Override
     public void execute( Hero hero, String action ) {
         super.execute( hero, action );
+        if (TestArenaLevel.isCurrentLevel()
+                && (action.equals(AC_ASCEND)
+                || action.equals(AC_DESCEND)
+                || action.equals(AC_INTER_TP))) {
+            GLog.w(Messages.get(TestAlignment.class, "arena_only"));
+            return;
+        }
         if(action.equals(AC_DESCEND)) {
             if(Dungeon.hero.buff(LockedFloor.class) != null || Dungeon.depth>= Constants.MAX_DEPTH || (Dungeon.branch == 1 && Dungeon.depth >= 14)) {
                 GLog.w(Messages.get(this,"cannot_send"));

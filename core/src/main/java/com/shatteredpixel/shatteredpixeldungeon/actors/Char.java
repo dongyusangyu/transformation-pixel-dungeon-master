@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barkskin;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Berserk;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Combo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -181,6 +182,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Earthroot;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs.ChronoSuccubus;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
@@ -446,6 +448,7 @@ public abstract class Char extends Actor {
 		} else if (hit( this, enemy, accMulti, false )) {
 			
 			int dr = Math.round(enemy.drRoll() * AscensionChallenge.statModifier(enemy));
+			dr = modifyEnemyArmor(enemy, dr);
 			
 			if (this instanceof Hero){
 				Hero h = (Hero)this;
@@ -598,6 +601,13 @@ public abstract class Char extends Actor {
 						effectiveDamage = Talent.onAttackProcMult(hero, enemy, effectiveDamage)+Talent.onAttackProcBonus(hero, enemy);
 					}
 				}
+				if (this instanceof Hero) {
+					Combo combo = buff(Combo.class);
+					if (combo != null) {
+						effectiveDamage += Combo.focusDamageBonus(combo.combatCount(),
+								((Hero) this).pointsInTalent(Talent.COMBO_FOCUS));
+					}
+				}
 			}
 			if (visibleFight) {
 				if (effectiveDamage > 0 || !enemy.blockSound(Random.Float(0.96f, 1.05f))) {
@@ -611,7 +621,17 @@ public abstract class Char extends Actor {
 				return true;
 			}
 
+			int enemyHealthBefore = enemy.HP + enemy.shielding();
+			boolean hostilePhysicalAttack = this instanceof Hero && enemy.alignment == Alignment.ENEMY;
 			enemy.damage( effectiveDamage, this );
+			if (hostilePhysicalAttack) {
+				int damageDealt = Math.max(0, enemyHealthBefore - enemy.HP - enemy.shielding());
+				Berserk attackBerserk = buff(Berserk.class);
+				if (attackBerserk != null) {
+					boolean melee = !(((Hero) this).belongings.attackingWeapon() instanceof MissileWeapon);
+					attackBerserk.onPhysicalDamageDealt(damageDealt, melee);
+				}
+			}
 			if (this == Dungeon.hero) {
 				AgentMinRewardTracker.onHeroAttackEnemy(enemy, effectiveDamage);
 			}
@@ -880,6 +900,14 @@ public abstract class Char extends Actor {
 	public int damageRoll() {
 		return 1;
 	}
+
+	/**
+	 * Allows an attack to alter the physical armor value while retaining the
+	 * normal hit, defence-proc, viscosity and shielding pipeline.
+	 */
+	protected int modifyEnemyArmor(Char enemy, int armor) {
+		return armor;
+	}
 	
 	//TODO it would be nice to have a pre-armor and post-armor proc.
 	// atm attack is always post-armor and defence is already pre-armor
@@ -890,6 +918,7 @@ public abstract class Char extends Actor {
 		}
 		return damage;
 	}
+
 	
 	public int defenseProc( Char enemy, int damage ) {
 
@@ -985,6 +1014,41 @@ public abstract class Char extends Actor {
 		}
 		needsShieldUpdate = false;
 		return cachedShield;
+	}
+
+	static boolean isFriarReasonAttack(HeroClass heroClass, Object src, boolean unavoidable) {
+		return !unavoidable && heroClass == HeroClass.FRIAR && src instanceof Mob;
+	}
+
+	protected void processFriarReasonLoss(int dmg, Object src, boolean unavoidable) {
+		if (this != hero || !isFriarReasonAttack(hero.heroClass, src, unavoidable)) {
+			return;
+		}
+		if(src instanceof Wraith){
+			Reason.loseReason(hero,5);
+			if(Random.Int(3)==0){
+				Buff.extend(this, Panic.class,10);
+				Sample.INSTANCE.play( Assets.Sounds.PANIC, 1, 1, Random.Float( 0.9f, 1.1f ) );
+			}
+		}else if(((Mob) src).properties().contains(Property.UNDEAD) || ((Mob) src).properties().contains(Property.DEMONIC)){
+			if(hero.HP<hero.HT/2){
+				Reason.loseReason(hero,Math.min(dmg+Random.Int(2,6),30));
+				if((src instanceof YogDzewa || src instanceof YogFist) && Random.Int(2)==0){
+					Buff.extend(this, Panic.class,10);
+					Sample.INSTANCE.play( Assets.Sounds.PANIC, 1, 1, Random.Float( 0.9f, 1.1f ) );
+				}else if(Random.Int(5)==0){
+					Buff.extend(this, Panic.class,10);
+					Sample.INSTANCE.play( Assets.Sounds.PANIC, 1, 1, Random.Float( 0.9f, 1.1f ) );
+				}
+			}else{
+				Reason.loseReason(hero,Math.min(dmg+Random.Int(1,3),30));
+			}
+		}else if(hero.HP<hero.HT/2){
+			Reason.loseReason(hero,Math.min(dmg+Random.Int(2,6),30));
+		}
+		if(this.buff(Suffering.Fear.class)!=null && Random.Int(10)<3){
+			Reason.sufferingReason(hero,5);
+		}
 	}
 
 	public void damage( int dmg, Object src ) {
@@ -1136,33 +1200,7 @@ public abstract class Char extends Actor {
                     }
                 }
             }
-            if(hero.heroClass==HeroClass.FRIAR && src instanceof Mob ){
-                if(src instanceof Wraith){
-                    Reason.loseReason(hero,5);
-                    if(Random.Int(3)==0){
-                        Buff.extend(this, Panic.class,10);
-                        Sample.INSTANCE.play( Assets.Sounds.PANIC, 1, 1, Random.Float( 0.9f, 1.1f ) );
-                    }
-                }else if(((Mob) src).properties().contains(Property.UNDEAD) || ((Mob) src).properties().contains(Property.DEMONIC)){
-                    if(hero.HP<hero.HT/2){
-                        Reason.loseReason(hero,Math.min(dmg+Random.Int(2,6),30));
-                        if((src instanceof YogDzewa || src instanceof YogFist) && Random.Int(2)==0){
-                            Buff.extend(this, Panic.class,10);
-                            Sample.INSTANCE.play( Assets.Sounds.PANIC, 1, 1, Random.Float( 0.9f, 1.1f ) );
-                        }else if(Random.Int(5)==0){
-                            Buff.extend(this, Panic.class,10);
-                            Sample.INSTANCE.play( Assets.Sounds.PANIC, 1, 1, Random.Float( 0.9f, 1.1f ) );
-                        }
-                    }else{
-                        Reason.loseReason(hero,Math.min(dmg+Random.Int(1,3),30));
-                    }
-                }else if(hero.HP<hero.HT/2){
-                    Reason.loseReason(hero,Math.min(dmg+Random.Int(2,6),30));
-                }
-                if(this.buff(Suffering.Fear.class)!=null && Random.Int(10)<3){
-                    Reason.sufferingReason(hero,5);
-                }
-            }
+            processFriarReasonLoss(dmg, src, unavoidable);
         }
 
 		if (!unavoidable && buff( Paralysis.class ) != null && !(src instanceof Hero && hero.belongings.attackingWeapon() instanceof Shuriken_Box.SmallShuriken)) {
@@ -1170,11 +1208,29 @@ public abstract class Char extends Actor {
 		}
 
 		int shielded = dmg;
+		BrokenSeal.WarriorShield warriorShield = buff(BrokenSeal.WarriorShield.class);
+		int warriorShieldBefore = warriorShield == null ? 0 : warriorShield.shielding();
 		//FIXME: when I add proper damage properties, should add an IGNORES_SHIELDS property to use here.
 		if (!unavoidable && !(src instanceof Hunger)){
 			for (ShieldBuff s : buffs(ShieldBuff.class)){
 				dmg = s.absorbDamage(dmg);
 				if (dmg == 0) break;
+			}
+		}
+		int absorbed = shielded - dmg;
+		if (this instanceof Hero && absorbed > 0) {
+			Hero shieldedHero = (Hero) this;
+			int sealAbsorbed = warriorShield == null ? 0
+					: Math.max(0, warriorShieldBefore - warriorShield.shielding());
+			if (sealAbsorbed > 0 && shieldedHero.subClass.is(HeroSubClass.BERSERKER)) {
+				Buff.affect(shieldedHero, Berserk.class).addRage(sealAbsorbed * 0.05f);
+			}
+			if (src instanceof Char
+					&& ((Char) src).alignment == Alignment.ENEMY
+					&& shieldedHero.hasTalent(Talent.MIRRORED_REVENGE)) {
+				int reflected = Math.round(absorbed
+						* (0.5f + 0.5f * shieldedHero.pointsInTalent(Talent.MIRRORED_REVENGE)));
+				if (reflected > 0) ((Char) src).damage(reflected, Talent.MIRRORED_REVENGE);
 			}
 		}
 		if(hero!=null && hero.hasTalent(Talent.STATIC_LIGHT) && (src instanceof Wand || src instanceof WandOfWarding.Ward) && dmg>0){
@@ -1362,12 +1418,20 @@ public abstract class Char extends Actor {
 	protected void spendConstant(float time) {
 		TimekeepersHourglass.timeFreeze freeze = buff(TimekeepersHourglass.timeFreeze.class);
 		if (freeze != null) {
+			if (ChronoSuccubus.tryBreakTimeStop(this, freeze.remainingTurns())) {
+				freeze.detach();
+				return;
+			}
 			freeze.processTime(time);
 			return;
 		}
 
 		Swiftthistle.TimeBubble bubble = buff(Swiftthistle.TimeBubble.class);
 		if (bubble != null){
+			if (ChronoSuccubus.tryBreakTimeStop(this, bubble.remainingTurns())) {
+				bubble.detach();
+				return;
+			}
 			bubble.processTime(time);
 			return;
 

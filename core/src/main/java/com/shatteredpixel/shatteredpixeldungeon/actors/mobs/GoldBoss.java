@@ -177,45 +177,29 @@ public abstract class GoldBoss extends Mob {
         }
     }
 
-    public  static class GoldElemental extends GoldBoss {
+    public  static class GoldElemental extends GoldBoss implements MagicalRangedAttack {
         {
             spriteClass = GoldElementalSprite.class;
             flying = true;
         }
 
-        @Override
-        protected boolean canAttack( Char enemy ) {
-            if (super.canAttack(enemy)){
+        public boolean doRangedAttack(Char enemy) {
+            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+                sprite.zap( enemy.pos );
+                return false;
+            } else {
+                zap();
                 return true;
-            } else {
-                return new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos == enemy.pos;
-            }
-        }
-        protected boolean doAttack( Char enemy ) {
-
-            if (Dungeon.level.adjacent( pos, enemy.pos )
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT ).collisionPos != enemy.pos) {
-                return super.doAttack( enemy );
-
-            } else {
-
-                if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                    sprite.zap( enemy.pos );
-                    return false;
-                } else {
-                    zap();
-                    return true;
-                }
             }
         }
         protected void zap() {
             spend( 1f );
             Invisibility.dispel(this);
             Char enemy = this.enemy;
-            if (hit( this, enemy, true )) {
+            if (rangedHit(enemy)) {
                 attackProc( enemy ,damageRoll());
             } else {
-                enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+                showRangedMiss(enemy);
             }
 
         }
@@ -332,7 +316,7 @@ public abstract class GoldBoss extends Mob {
         }
     }
 
-    public  static class Thymor extends GoldBoss {
+    public  static class Thymor extends GoldBoss implements MagicalRangedAttack {
         {
             spriteClass = ThymorSprite.class;
             properties.add(Property.UNDEAD);
@@ -341,29 +325,14 @@ public abstract class GoldBoss extends Mob {
 
         private int curseUp = 0;
 
-        protected boolean doAttack( Char enemy ) {
-
-            if (Dungeon.level.adjacent( pos, enemy.pos )
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos != enemy.pos) {
-
-                return super.doAttack( enemy );
-
+        public boolean doRangedAttack(Char enemy) {
+            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+                sprite.zap( enemy.pos );
+                return false;
             } else {
-
-                if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                    sprite.zap( enemy.pos );
-                    return false;
-                } else {
-                    zap();
-                    return true;
-                }
+                zap();
+                return true;
             }
-        }
-
-        @Override
-        protected boolean canAttack( Char enemy ) {
-            return super.canAttack(enemy)
-                    || new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
         }
 
         protected void zap() {
@@ -371,7 +340,7 @@ public abstract class GoldBoss extends Mob {
 
             Invisibility.dispel(this);
             Char enemy = this.enemy;
-            if (hit( this, enemy, true )) {
+            if (rangedHit(enemy)) {
                 //TODO would be nice for this to work on ghost/statues too
                 if (enemy == hero){
                     Buff.affect(enemy, MostDegrade.class,10 );
@@ -387,11 +356,6 @@ public abstract class GoldBoss extends Mob {
                         && (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
                     dmg *= 0.5f;
                 }
-                if(hero.hasTalent(Talent.NO_VIEWRAPE)){
-                    if(enemy==hero && distance(enemy)>1){
-                        Buff.affect(this, Blindness.class,hero.pointsInTalent(Talent.NO_VIEWRAPE));
-                    }
-                }
                 enemy.damage( dmg, new Warlock.DarkBolt() );
 
                 if (enemy == hero && !enemy.isAlive()) {
@@ -400,7 +364,7 @@ public abstract class GoldBoss extends Mob {
                     GLog.n( Messages.get(this, "bolt_kill") );
                 }
             } else {
-                enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+                showRangedMiss(enemy);
             }
         }
 

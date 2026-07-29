@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -99,6 +100,7 @@ public class CapeOfThorns extends Artifact {
 			super.execute( hero, action );
 			Invisibility.dispel();
 			releaseEnergy(hero);
+			Talent.onArtifactUsed(hero);
 			Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
 			hero.sprite.operate(hero.pos);
 			hero.spendAndNext( Actor.TICK );

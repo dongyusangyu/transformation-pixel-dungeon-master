@@ -51,7 +51,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
-public class Eye extends Mob {
+public class Eye extends Mob implements MagicalRangedAttack {
 	
 	{
 		spriteClass = EyeSprite.class;
@@ -88,8 +88,8 @@ public class Eye extends Mob {
 		return super.drRoll() + Random.NormalIntRange(0, 10);
 	}
 	
-	private Ballistica beam;
-	private int beamTarget = -1;
+	protected Ballistica beam;
+	protected int beamTarget = -1;
 	private int beamCooldown;
 	public boolean beamCharged;
 
@@ -140,19 +140,23 @@ public class Eye extends Mob {
 			beamCharged = true;
 			return true;
 		} else {
-
-			spend( attackDelay() );
-			
-			if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[beam.collisionPos] ) {
-				sprite.zap( beam.collisionPos );
-				return false;
-			} else {
-				sprite.idle();
-				deathGaze();
-				return true;
-			}
+			return doRangedAttack(enemy);
 		}
 
+	}
+
+	@Override
+	public boolean doRangedAttack(Char enemy) {
+		spend( attackDelay() );
+
+		if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[beam.collisionPos] ) {
+			sprite.zap( beam.collisionPos );
+			return false;
+		} else {
+			sprite.idle();
+			deathGaze();
+			return true;
+		}
 	}
 
 	@Override
@@ -180,7 +184,7 @@ public class Eye extends Mob {
 		boolean terrainAffected = false;
 
 		Invisibility.dispel(this);
-		for (int pos : beam.subPath(1, beam.dist)) {
+		for (int pos : deathGazeCells()) {
 
 			if (Dungeon.level.flamable[pos]) {
 
@@ -195,7 +199,7 @@ public class Eye extends Mob {
 				continue;
 			}
 
-			if (hit( this, ch, true )) {
+			if (rangedHit(ch)) {
 				int dmg = Random.NormalIntRange( 30, 50 );
 				dmg = Math.round(dmg * AscensionChallenge.statModifier(this));
 
@@ -210,12 +214,6 @@ public class Eye extends Mob {
 				}
 
 				ch.damage( dmg, new DeathGaze() );
-				if(hero.hasTalent(Talent.NO_VIEWRAPE)){
-					if(ch==hero && distance(ch)>1){
-						Buff.affect(this, Blindness.class,hero.pointsInTalent(Talent.NO_VIEWRAPE));
-					}
-				}
-
 				if (Dungeon.level.heroFOV[pos]) {
 					ch.sprite.flash();
 					CellEmitter.center( pos ).burst( PurpleParticle.BURST, Random.IntRange( 1, 2 ) );
@@ -227,7 +225,7 @@ public class Eye extends Mob {
 					GLog.n( Messages.get(this, "deathgaze_kill") );
 				}
 			} else {
-				ch.sprite.showStatus( CharSprite.NEUTRAL,  ch.defenseVerb() );
+				showRangedMiss(ch);
 			}
 		}
 
@@ -237,6 +235,14 @@ public class Eye extends Mob {
 
 		beam = null;
 		beamTarget = -1;
+	}
+
+	/**
+	 * Cells struck when this eye releases its charged gaze. Specialized eyes may
+	 * replace the line with another shape while retaining the shared damage rules.
+	 */
+	protected Iterable<Integer> deathGazeCells() {
+		return beam.subPath(1, beam.dist);
 	}
 
 	//generates an average of 1 dew, 0.25 seeds, and 0.25 stones

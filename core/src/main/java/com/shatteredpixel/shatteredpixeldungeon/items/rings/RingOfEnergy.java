@@ -64,8 +64,13 @@ public class RingOfEnergy extends Ring {
 	public static float wandChargeMultiplier( Char target ){
 		float bonus = (float)Math.pow(1.175, getBuffedBonus(target, Energy.class));
 
-		if (target instanceof Hero && ((Hero) target).heroClass != HeroClass.CLERIC && ((Hero) target).hasTalent(Talent.LIGHT_READING)){
-			bonus *= 1f + (0.2f * ((Hero) target).pointsInTalent(Talent.LIGHT_READING)/3f);
+		if (target instanceof Hero){
+			Hero hero = (Hero) target;
+			bonus *= EnergyConversion.multiplier(
+					hero.speed(), hero.pointsInTalent(Talent.ENERGY_CONVERSION));
+			if (hero.heroClass != HeroClass.CLERIC && hero.hasTalent(Talent.LIGHT_READING)){
+				bonus *= 1f + (0.2f * hero.pointsInTalent(Talent.LIGHT_READING)/3f);
+			}
 		}
 
 		return bonus;
@@ -75,11 +80,20 @@ public class RingOfEnergy extends Ring {
 		float bonus = (float)Math.pow(1.175, getBuffedBonus(target, Energy.class));
 
 		if (target instanceof Hero){
-            bonus *= Math.max(1,((Hero) target).speed()*0.5*((Hero) target).pointsInTalent(Talent.ENERGY_CONVERSION));
-            if(((Hero) target).heroClass != HeroClass.ROGUE && ((Hero) target).hasTalent(Talent.LIGHT_CLOAK))
-                bonus *= 1f + (0.2f * ((Hero) target).pointsInTalent(Talent.LIGHT_CLOAK)/3f);
+			Hero hero = (Hero) target;
+			bonus *= EnergyConversion.multiplier(
+					hero.speed(), hero.pointsInTalent(Talent.ENERGY_CONVERSION));
+			if(hero.heroClass != HeroClass.ROGUE && hero.hasTalent(Talent.LIGHT_CLOAK))
+				bonus *= 1f + (0.2f * hero.pointsInTalent(Talent.LIGHT_CLOAK)/3f);
 		}
 		return bonus;
+	}
+
+	static final class EnergyConversion {
+
+		static float multiplier(float speed, int points) {
+			return Math.max(1f, speed * 0.5f * points);
+		}
 	}
 
 	public static float armorChargeMultiplier( Char target ){

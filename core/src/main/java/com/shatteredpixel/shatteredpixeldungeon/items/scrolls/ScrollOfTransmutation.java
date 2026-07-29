@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfKing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
@@ -75,6 +76,10 @@ public class ScrollOfTransmutation extends InventoryScroll {
 
 	@Override
 	protected boolean usableOnItem(Item item) {
+		if (item instanceof Treasures) {
+			return false;
+		}
+
 		//all melee weapons, except pickaxe when in a mining level
 		if (item instanceof MeleeWeapon){
 			return !(item instanceof Pickaxe && Dungeon.level instanceof MiningLevel) && !(item instanceof RitualDagger);
@@ -106,6 +111,9 @@ public class ScrollOfTransmutation extends InventoryScroll {
 	protected void onItemSelected(Item item) {
 		
 		Item result = changeItem(item);
+		if (result != null) {
+			result.upgradeScrollUses = item.upgradeScrollUses;
+		}
 		
 		if (result == null){
 			//This shouldn't ever trigger

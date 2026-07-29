@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidRun;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -224,7 +225,8 @@ public class ActionIndicator extends Tag {
 			Ninja_Energy.class,
 			FightStance.class,
 			Reason.class,
-			InstructionTool.toolRecharge.class
+			InstructionTool.toolRecharge.class,
+			ExtractionRaidRun.RaidSession.class
 
 	};
 

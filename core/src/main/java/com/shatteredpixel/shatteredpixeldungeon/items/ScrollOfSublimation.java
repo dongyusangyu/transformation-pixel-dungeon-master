@@ -101,8 +101,12 @@ public class ScrollOfSublimation extends Item{
         return Messages.get(this, "desc","_"+getBoss(this.type)+"_");
     }
     public String getBoss(String type){
+        return bossNameFor(type);
+    }
+
+    static String bossNameFor(String type) {
         String name ="";
-        switch(this.type){
+        switch(type){
             case "GOO" : default:
                 name="粘咕";
                 break;
@@ -117,6 +121,9 @@ public class ScrollOfSublimation extends Item{
                 break;
             case "DM300":
                 name="DM-300";
+                break;
+            case "HUNTRESS":
+                name="女猎手？";
                 break;
             case "DWARFKING":
                 name="矮人国王";
@@ -228,6 +235,7 @@ public class ScrollOfSublimation extends Item{
                     Collections.addAll(availableTalents, Talent.SHADOW_KILLER, Talent.KILL_SPREE,Talent.SEAOFPEOPLE,Talent.PHANTOM_STEP);
                     break;
                 case "DM300":
+                case "HUNTRESS":
                     tier=2;
                     this.index=2;
                     Collections.addAll(availableTalents, Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE);
@@ -341,7 +349,7 @@ public class ScrollOfSublimation extends Item{
         onSublimation(talent);
     }
 
-    private static List<Talent> sublimationTalentPool(String type) {
+    static List<Talent> sublimationTalentPool(String type) {
         List<Talent> availableTalents = new ArrayList<>();
         switch(type){
             case "GOO" : default:
@@ -357,6 +365,7 @@ public class ScrollOfSublimation extends Item{
                 Collections.addAll(availableTalents, Talent.SHADOW_KILLER, Talent.KILL_SPREE,Talent.SEAOFPEOPLE,Talent.PHANTOM_STEP);
                 break;
             case "DM300":
+            case "HUNTRESS":
                 Collections.addAll(availableTalents, Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE);
                 break;
             case "DWARFKING":
@@ -369,9 +378,10 @@ public class ScrollOfSublimation extends Item{
         return availableTalents;
     }
 
-    private static int[] tierAndIndex(String type) {
+    static int[] tierAndIndex(String type) {
         switch(type){
             case "DM300":
+            case "HUNTRESS":
                 return new int[]{2, 2};
             case "DWARFKING":
                 return new int[]{2, 3};
@@ -414,6 +424,7 @@ public class ScrollOfSublimation extends Item{
                 Dungeon.hero.sublimationTalents.put(targetSlot, talent.name());
                 ArrayList<String> S= new ArrayList<String>();
                 S.add("DM300");
+                S.add("HUNTRESS");
                 S.add("YOG");
                 if(S.contains(type)){
                     Buff.affect(hero, ScrollOfSublimation.Sublimation1.class).setBoosted(index);

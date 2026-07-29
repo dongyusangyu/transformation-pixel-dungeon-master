@@ -253,7 +253,14 @@ public abstract class Mob extends Char {
 
 	//mobs need to remember their targets after every actor is added
 	public void restoreEnemy(){
-		if (enemyID != -1 && enemy == null) enemy = (Char)Actor.findById(enemyID);
+		if (enemyID != -1 && enemy == null) {
+			Actor restoredEnemy = Actor.findById(enemyID);
+			if (restoredEnemy instanceof Char) {
+				enemy = (Char)restoredEnemy;
+			} else {
+				enemyID = -1;
+			}
+		}
 	}
 
 	public CharSprite sprite() {
@@ -567,18 +574,33 @@ public abstract class Mob extends Char {
 	}
 	
 	protected boolean canAttack( Char enemy ) {
+		if (this instanceof RangedAttack) {
+			RangedAttack rangedAttack = (RangedAttack) this;
+			if (rangedAttack.canRangedAttack(enemy)) {
+				return true;
+			}
+			if (!rangedAttack.canMeleeAttack(enemy)) {
+				return false;
+			}
+		}
 		if (Dungeon.level.adjacent( pos, enemy.pos )){
 			return true;
 		}
+		int phaseClawReach = phaseClawReachBonus();
 		for (ChampionEnemy buff : buffs(ChampionEnemy.class)){
-			if (buff.canAttackWithExtraReach( enemy )){
+			if (buff.canAttackWithExtraReach( enemy, phaseClawReach )){
 				return true;
 			}
 		}
-		if(hero.pointsNegative(Talent.PHASECLAW)>0 && Dungeon.level.distance(enemy.pos,pos)<=2){
+		if (Dungeon.level.distance(enemy.pos, pos) <= 1 + phaseClawReach){
 			return true;
 		}
 		return false;
+	}
+
+	protected int phaseClawReachBonus() {
+		return alignment == Alignment.ENEMY && hero != null
+				&& hero.pointsNegative(Talent.PHASECLAW) > 0 ? 1 : 0;
 	}
 
 	private boolean cellIsPathable( int cell ){
@@ -765,23 +787,67 @@ public abstract class Mob extends Char {
 		return delay;
 	}
 	
+	private RangedAttack.Type pendingAttackType = RangedAttack.Type.MELEE;
+
 	protected boolean doAttack( Char enemy ) {
-		
+		if (this instanceof RangedAttack) {
+			RangedAttack rangedAttack = (RangedAttack) this;
+			if (rangedAttack.canRangedAttack(enemy)) {
+				return rangedAttack.doRangedAttack(enemy);
+			}
+		}
+		return doPhysicalAttack(enemy, RangedAttack.Type.MELEE);
+	}
+
+	protected boolean doPhysicalRangedAttack(Char enemy) {
+		return doPhysicalRangedAttack(enemy, false);
+	}
+
+	protected boolean doPhysicalRangedAttack(Char enemy, boolean zapAnimation) {
+		return doPhysicalAttack(enemy, RangedAttack.Type.RANGED_PHYSICAL, zapAnimation);
+	}
+
+	private boolean doPhysicalAttack(Char enemy, RangedAttack.Type attackType) {
+		return doPhysicalAttack(enemy, attackType, false);
+	}
+
+	private boolean doPhysicalAttack(Char enemy, RangedAttack.Type attackType,
+									 boolean zapAnimation) {
+		pendingAttackType = attackType;
 		if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-			sprite.attack( enemy.pos );
+			if (zapAnimation) {
+				sprite.zap(enemy.pos);
+			} else {
+				sprite.attack(enemy.pos);
+			}
 			return false;
 			
 		} else {
-			attack( enemy );
+			boolean hit = attack( enemy );
+			completePhysicalAttack(enemy, hit);
 			Invisibility.dispel(this);
 			spend( attackDelay() );
 			return true;
 		}
 	}
+
+	protected void beginPhysicalRangedAttack() {
+		pendingAttackType = RangedAttack.Type.RANGED_PHYSICAL;
+	}
+
+	protected void completePhysicalAttack(Char target, boolean hit) {
+		RangedAttack.Type completedType = pendingAttackType;
+		pendingAttackType = RangedAttack.Type.MELEE;
+		if (hit && completedType == RangedAttack.Type.RANGED_PHYSICAL
+				&& this instanceof RangedAttack) {
+			((RangedAttack) this).onRangedAttackHit(target);
+		}
+	}
 	
 	@Override
 	public void onAttackComplete() {
-		attack( enemy );
+		boolean hit = attack( enemy );
+		completePhysicalAttack(enemy, hit);
 		Invisibility.dispel(this);
 		spend( attackDelay() );
 		super.onAttackComplete();

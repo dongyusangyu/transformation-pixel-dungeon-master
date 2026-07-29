@@ -23,11 +23,14 @@ package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Combo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
@@ -35,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
@@ -88,7 +92,11 @@ public class BrokenSeal extends Item {
 	}
 
 	public int maxShield( int armTier, int armLvl ){
-		return armTier + armLvl + Dungeon.hero.pointsInTalent(Talent.IRON_WILL);
+		return shieldCap(armTier, armLvl, Dungeon.hero.pointsInTalent(Talent.IRON_WILL));
+	}
+
+	public static int shieldCap(int armTier, int armLvl, int ironWillPoints) {
+		return 5 + armTier + armLvl + ironWillPoints;
 	}
 
 	@Override
@@ -128,7 +136,19 @@ public class BrokenSeal extends Item {
 			info += "\n\n" + Messages.get(this, "inscribed", glyph.name());
 			info += " " + glyph.desc();
 		}
+		info += subclassEffectDescription();
 		return info;
+	}
+
+	public static String subclassEffectDescription() {
+		if (Dungeon.hero == null) return "";
+		if (Dungeon.hero.subClass.is(HeroSubClass.BERSERKER)) {
+			return "\n\n" + Messages.get(BrokenSeal.class, "berserker_desc");
+		}
+		if (Dungeon.hero.subClass.is(HeroSubClass.GLADIATOR)) {
+			return "\n\n" + Messages.get(BrokenSeal.class, "gladiator_desc");
+		}
+		return "";
 	}
 
 	@Override
@@ -286,7 +306,11 @@ public class BrokenSeal extends Item {
 		@Override
 		public synchronized boolean act() {
 			if (Regeneration.regenOn() && shielding() < maxShield()) {
-				partialShield += 1/30f;
+				partialShield += 1f / recoveryInterval();
+			}
+
+			if (target instanceof Hero && ((Hero) target).subClass.is(HeroSubClass.GLADIATOR)) {
+				Buff.affect(target, SealComboTracker.class);
 			}
 			
 			while (partialShield >= 1){
@@ -310,6 +334,20 @@ public class BrokenSeal extends Item {
 
 		public synchronized void setArmor(Armor arm){
 			armor = arm;
+			if (target instanceof Hero && ((Hero) target).subClass.is(HeroSubClass.GLADIATOR)) {
+				Buff.affect(target, SealComboTracker.class);
+			}
+		}
+
+		private int recoveryInterval() {
+			return target instanceof Hero && ((Hero) target).subClass.is(HeroSubClass.BERSERKER)
+					? 15 : 30;
+		}
+
+		public synchronized void accelerateRecovery(int turns) {
+			if (shielding() < maxShield()) {
+				partialShield += turns / (float) recoveryInterval();
+			}
 		}
 
 		public synchronized int maxShield() {
@@ -345,6 +383,82 @@ public class BrokenSeal extends Item {
 				decShield(shielding());
 			}
 			return dmg;
+		}
+	}
+
+	public static class SealComboTracker extends Buff {
+
+		private int cooldown;
+
+		private static final String COOLDOWN = "cooldown";
+
+		@Override
+		public boolean act() {
+			if (sealEquipped() && cooldown > 0) {
+				cooldown--;
+				BuffIndicator.refreshHero();
+			}
+			spend(TICK);
+			return true;
+		}
+
+		private boolean sealEquipped() {
+			if (!(target instanceof Hero) || !((Hero) target).subClass.is(HeroSubClass.GLADIATOR)) {
+				return false;
+			}
+			Armor armor = ((Hero) target).belongings.armor();
+			return armor != null && armor.checkSeal() != null;
+		}
+
+		public int consumeBonus() {
+			if (!sealEquipped() || cooldown > 0 || target.shielding() <= 0) {
+				return 0;
+			}
+			Hero hero = (Hero) target;
+			int bonus = Math.min(target.shielding(),
+					Combo.sealComboCap(hero.pointsInTalent(Talent.COMBO_MASTERY)));
+			if (bonus > 0) {
+				cooldown = Combo.sealComboCooldown(hero.pointsInTalent(Talent.COMBO_MASTERY));
+				BuffIndicator.refreshHero();
+			}
+			return bonus;
+		}
+
+		@Override
+		public int icon() {
+			return sealEquipped() ? BuffIndicator.COMBO : BuffIndicator.NONE;
+		}
+
+		@Override
+		public String iconTextDisplay() {
+			return cooldown > 0 ? Integer.toString(cooldown) : "";
+		}
+
+		@Override
+		public String name() {
+			return Messages.get(this, cooldown > 0 ? "cooldown_name" : "name");
+		}
+
+		@Override
+		public String desc() {
+			if (cooldown > 0) {
+				return Messages.get(this, "cooldown_desc", cooldown);
+			}
+			int bonus = target == null ? 0 : Math.min(target.shielding(),
+					Combo.sealComboCap(((Hero) target).pointsInTalent(Talent.COMBO_MASTERY)));
+			return Messages.get(this, "desc", bonus);
+		}
+
+		@Override
+		public void storeInBundle(Bundle bundle) {
+			super.storeInBundle(bundle);
+			bundle.put(COOLDOWN, cooldown);
+		}
+
+		@Override
+		public void restoreFromBundle(Bundle bundle) {
+			super.restoreFromBundle(bundle);
+			cooldown = bundle.getInt(COOLDOWN);
 		}
 	}
 }

@@ -1,0 +1,456 @@
+{
+  "format": "RGBA PNG, native square pixels, no resampling",
+  "frame_size": {
+    "width": 12,
+    "height": 15
+  },
+  "scroll": {
+    "consensus_sources": [
+      "warrior.png",
+      "mage.png",
+      "rogue.png",
+      "huntress.png",
+      "duelist.png",
+      "cleric.png",
+      "freeman.png",
+      "ninja.png",
+      "princess.png",
+      "friar.png"
+    ],
+    "tiers_sampled": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "sheet_file": "parchment_scroll_read_frames.png",
+    "sheet_frame_order": [
+      19,
+      20
+    ],
+    "palette": [
+      "#988B63FF",
+      "#C5BC9FFF"
+    ],
+    "frames": {
+      "19": {
+        "bbox_in_12x15_frame": [
+          5,
+          9,
+          9,
+          12
+        ],
+        "pixels_in_12x15_frame": [
+          {
+            "x": 5,
+            "y": 9,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 6,
+            "y": 9,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 7,
+            "y": 9,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 6,
+            "y": 10,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 7,
+            "y": 10,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 6,
+            "y": 11,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 7,
+            "y": 11,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 8,
+            "y": 11,
+            "rgba": "#988B63FF"
+          }
+        ]
+      },
+      "20": {
+        "bbox_in_12x15_frame": [
+          5,
+          7,
+          9,
+          12
+        ],
+        "pixels_in_12x15_frame": [
+          {
+            "x": 5,
+            "y": 7,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 5,
+            "y": 8,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 6,
+            "y": 8,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 7,
+            "y": 8,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 8,
+            "y": 8,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 5,
+            "y": 9,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 6,
+            "y": 9,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 7,
+            "y": 9,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 8,
+            "y": 9,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 6,
+            "y": 10,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 7,
+            "y": 10,
+            "rgba": "#C5BC9FFF"
+          },
+          {
+            "x": 8,
+            "y": 10,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 6,
+            "y": 11,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 7,
+            "y": 11,
+            "rgba": "#988B63FF"
+          },
+          {
+            "x": 8,
+            "y": 11,
+            "rgba": "#988B63FF"
+          }
+        ]
+      }
+    }
+  },
+  "human_death_skull": {
+    "source": "warrior.png",
+    "source_tier": 0,
+    "sheet_file": "human_death_skull_frames.png",
+    "sheet_frame_order": [
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "runtime_sequence": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      11
+    ],
+    "canonical_tight_file": "human_death_skull.png",
+    "canonical_bbox_in_frame_8": [
+      3,
+      1,
+      11,
+      8
+    ],
+    "palette": [
+      "#000000FF",
+      "#7E7E7EFF",
+      "#A3A3A3FF",
+      "#B3B3B3FF",
+      "#CCCCCCFF",
+      "#CECECEFF",
+      "#E5E5E5FF"
+    ],
+    "canonical_pixels": [
+      {
+        "x": 1,
+        "y": 0,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 5,
+        "y": 1,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 6,
+        "y": 1,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 7,
+        "y": 1,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "rgba": "#A3A3A3FF"
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "rgba": "#B3B3B3FF"
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "rgba": "#B3B3B3FF"
+      },
+      {
+        "x": 4,
+        "y": 2,
+        "rgba": "#B3B3B3FF"
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "rgba": "#B3B3B3FF"
+      },
+      {
+        "x": 6,
+        "y": 2,
+        "rgba": "#B3B3B3FF"
+      },
+      {
+        "x": 7,
+        "y": 2,
+        "rgba": "#7E7E7EFF"
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "rgba": "#A3A3A3FF"
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "rgba": "#000000FF"
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 5,
+        "y": 3,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 6,
+        "y": 3,
+        "rgba": "#000000FF"
+      },
+      {
+        "x": 7,
+        "y": 3,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "rgba": "#7E7E7EFF"
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 4,
+        "y": 4,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "rgba": "#B3B3B3FF"
+      },
+      {
+        "x": 6,
+        "y": 4,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 7,
+        "y": 4,
+        "rgba": "#CECECEFF"
+      },
+      {
+        "x": 2,
+        "y": 5,
+        "rgba": "#7E7E7EFF"
+      },
+      {
+        "x": 3,
+        "y": 5,
+        "rgba": "#CCCCCCFF"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "rgba": "#E5E5E5FF"
+      },
+      {
+        "x": 6,
+        "y": 5,
+        "rgba": "#A3A3A3FF"
+      },
+      {
+        "x": 2,
+        "y": 6,
+        "rgba": "#7E7E7EFF"
+      },
+      {
+        "x": 3,
+        "y": 6,
+        "rgba": "#7E7E7EFF"
+      },
+      {
+        "x": 4,
+        "y": 6,
+        "rgba": "#A3A3A3FF"
+      },
+      {
+        "x": 5,
+        "y": 6,
+        "rgba": "#A3A3A3FF"
+      },
+      {
+        "x": 6,
+        "y": 6,
+        "rgba": "#7E7E7EFF"
+      }
+    ],
+    "source_frame_pixel_hashes": {
+      "8": "580135b8c6a69b4e903bfa2b2ca43f0f380ee8ad85aea7c540b97a2b3779c081",
+      "9": "3490279ef2b8f660b1a547a2b764e6020a67fafd6715597a34676797a5880f52",
+      "10": "c8f4e0e5c81d524094cce9a1403d36eeda4e63e4aa7699a3100e20145ef9266d",
+      "11": "3f56f151490630e60346af78b9e1ed76f059459397b3e931b83322b5e20bc2fd",
+      "12": "6fa1293b13a8f4655d4b3e095d0189b86a77e454a9ee39c898102f7baf136326"
+    }
+  }
+}

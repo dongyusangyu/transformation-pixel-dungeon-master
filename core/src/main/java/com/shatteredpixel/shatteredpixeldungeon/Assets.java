@@ -45,6 +45,8 @@ public class Assets {
 		public static final String TILES_CITY   = "environment/tiles_city.png";
 		public static final String TILES_HALLS  = "environment/tiles_halls.png";
 		public static final String TILES_SURFACE_LUSH  = "environment/tiles_surface_lush.png";
+		public static final String TILES_CHINESE_HALL  = "environment/tiles_chinese_hall.png";
+		public static final String TILES_GOTHIC_CASTLE = "environment/tiles_gothic_castle.png";
 
 		public static final String TILES_CAVES_CRYSTAL  = "environment/tiles_caves_crystal.png";
 		public static final String TILES_CAVES_GNOLL    = "environment/tiles_caves_gnoll.png";
@@ -55,6 +57,8 @@ public class Assets {
 		public static final String WATER_CITY   = "environment/water3.png";
 		public static final String WATER_HALLS  = "environment/water4.png";
 		public static final String WATER_SURFACE_LUSH  = "environment/water_surface_lush.png";
+		public static final String WATER_CHINESE_HALL  = "environment/water_chinese_hall.png";
+		public static final String WATER_GOTHIC_CASTLE = "environment/water_gothic_castle.png";
 
 		public static final String WEAK_FLOOR       = "environment/custom_tiles/weak_floor.png";
 		public static final String SEWER_BOSS       = "environment/custom_tiles/sewer_boss.png";
@@ -315,6 +319,7 @@ public class Assets {
 
 	public static class Sprites {
 		public static final String ITEMS        = "sprites/items.png";
+		public static final String EX_ITEMS     = "sprites/ex_items.png";
 		public static final String ITEM_ICONS   = "sprites/item_icons.png";
 
 		public static final String WARRIOR      = "sprites/warrior.png";
@@ -345,9 +350,11 @@ public class Assets {
 		public static final String PIRANHA  = "sprites/piranha.png";
 		public static final String EYE      = "sprites/eye.png";
 		public static final String GNOLL    = "sprites/gnoll.png";
+		public static final String CAMOUFLAGE_GNOLL = "sprites/camouflage_gnoll.png";
 		public static final String CRAB     = "sprites/crab.png";
 		public static final String GOO      = "sprites/goo.png";
 		public static final String SWARM    = "sprites/swarm.png";
+		public static final String CORROSIVE_SWARM = "sprites/corrosive_swarm.png";
 		public static final String SKELETON = "sprites/skeleton.png";
 		public static final String SHAMAN   = "sprites/shaman.png";
 		public static final String THIEF    = "sprites/thief.png";
@@ -371,6 +378,7 @@ public class Assets {
 		public static final String TROLL    = "sprites/blacksmith.png";
 		public static final String IMP      = "sprites/demon.png";
 		public static final String RATKING  = "sprites/ratking.png";
+		public static final String DONGYUSANGYU = "sprites/dongyusangyu.png";
 		public static final String BEE      = "sprites/bee.png";
 		public static final String MIMIC    = "sprites/mimic.png";
 		public static final String ROT_LASH = "sprites/rot_lasher.png";
@@ -416,6 +424,7 @@ public class Assets {
 		public static final String WARRIORBOSS = "sprites/warriorboss.png";
 		//rogueboss
 		public static final String ROGUEBOSS = "sprites/rogueboss.png";
+        public static final String HUNTRESSBOSS = "sprites/huntressboss.png";
 
 		public static final String SLIMEMUCUS    = "sprites/slimemucus.png";
 		public static final String SLIMEMUCUS1    = "sprites/slimemucus1.png";

@@ -1,0 +1,13 @@
+allprojects {
+	afterEvaluate { project ->
+		if (project.path == ":core" && project.plugins.hasPlugin("java")) {
+			project.sourceSets.test.java.setIncludes([
+					"**/CorrosiveSwarmTest.java",
+					"**/SwarmSplitFactoryTest.java",
+					"**/TowerLevelCamouflageGnollTest.java",
+					"**/TowerBestiaryCategoriesTest.java",
+					"**/CorrosiveSwarmSpriteAssetTest.java"
+			])
+		}
+	}
+}

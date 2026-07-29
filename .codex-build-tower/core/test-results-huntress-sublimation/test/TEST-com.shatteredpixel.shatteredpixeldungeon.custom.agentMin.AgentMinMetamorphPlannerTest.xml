@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinMetamorphPlannerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-07-28T10:38:06.947Z" hostname="PC" time="0.002">
+  <properties/>
+  <testcase name="huntressSublimationTierAndIndexMatchDm300" classname="com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinMetamorphPlannerTest" time="0.002"/>
+  <testcase name="huntressSublimationTargetsMatchDm300" classname="com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinMetamorphPlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

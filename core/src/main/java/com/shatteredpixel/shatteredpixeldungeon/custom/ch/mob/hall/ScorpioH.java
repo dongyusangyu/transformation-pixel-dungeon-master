@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhysicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Wound;
@@ -29,7 +30,7 @@ import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
 //yeah it's already annoying enough
-public class ScorpioH extends MobHard {
+public class ScorpioH extends MobHard implements PhysicalRangedAttack {
     {
         viewDistance = 99;
 
@@ -138,9 +139,13 @@ public class ScorpioH extends MobHard {
     }
 
     @Override
-    protected boolean canAttack( Char enemy ) {
-        Ballistica attack = new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE);
-        return !Dungeon.level.adjacent( pos, enemy.pos ) && attack.collisionPos == enemy.pos;
+    public boolean canRangedAttack( Char enemy ) {
+        return PhysicalRangedAttack.super.canRangedAttack(enemy);
+    }
+
+    @Override
+    public boolean canMeleeAttack(Char enemy) {
+        return false;
     }
 
     @Override

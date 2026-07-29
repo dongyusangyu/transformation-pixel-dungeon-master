@@ -179,6 +179,7 @@ abstract public class MissileWeapon extends Weapon {
 		if (wasCursed && hasCurseEnchant()){
 			cursed = wasCursed;
 		}
+		sanitizeAfterUpgrade();
 		return this;
 	}
 
@@ -215,13 +216,12 @@ abstract public class MissileWeapon extends Weapon {
 		return collected;
 	}
 
+	@Override
 	public boolean isSimilar( Item item ) {
-		if (!(item instanceof MissileWeapon)) return false;
+		if (!hasSameExtractionRaidOrigin(item) || !(item instanceof MissileWeapon)) return false;
 		MissileWeapon other = (MissileWeapon) item;
-		if (trueLevel() != other.trueLevel() || getClass() != other.getClass()) return false;
-
-		if (!usesIndependentSetID()){
-			return true;
+		if (!usesIndependentSetID() || !other.usesIndependentSetID()){
+			return getClass() == other.getClass() && trueLevel() == other.trueLevel();
 		}
 
 		boolean thisAssigned = hasAssignedSetID();
@@ -229,7 +229,9 @@ abstract public class MissileWeapon extends Weapon {
 		if (thisAssigned && otherAssigned){
 			return setID == other.setID;
 		}
-		return !thisAssigned && !otherAssigned;
+		return !thisAssigned && !otherAssigned
+				&& getClass() == other.getClass()
+				&& trueLevel() == other.trueLevel();
 	}
 	
 	@Override
@@ -619,7 +621,7 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public Item merge(Item other) {
 		super.merge(other);
-		if (isSimilar(other)) {
+		if (hasSameExtractionRaidOrigin(other) && isSimilar(other)) {
 			extraThrownLeft = false;
 
 			durability += ((MissileWeapon)other).durability;
@@ -661,6 +663,33 @@ abstract public class MissileWeapon extends Weapon {
 				&& enchantment instanceof Explosive){
 				((Explosive) enchantment).merge((Explosive) ((MissileWeapon) other).enchantment);
 			}
+
+			//merge level to the lower level (backpack's level standard)
+			if (other.level() < level()){
+				level(other.level());
+			}
+		} else if (hasAssignedSetID() && other instanceof MissileWeapon
+				&& ((MissileWeapon) other).hasAssignedSetID()
+				&& setID == ((MissileWeapon) other).setID){
+			//different class but same setID: merge quantities and use backpack level
+			extraThrownLeft = false;
+			durability += ((MissileWeapon)other).durability;
+			durability -= MAX_DURABILITY;
+			while (durability <= 0){
+				quantity -= 1;
+				durability += MAX_DURABILITY;
+			}
+			if (quantity > defaultQuantity() && hasAssignedSetID()){
+				quantity = defaultQuantity();
+				durability = MAX_DURABILITY;
+			}
+			levelKnown = levelKnown || other.levelKnown;
+			cursedKnown = cursedKnown || other.cursedKnown;
+			if (other.level() < level()){
+				level(other.level());
+			}
+			enchantHardened = enchantHardened || ((MissileWeapon) other).enchantHardened;
+			masteryPotionBonus = masteryPotionBonus || ((MissileWeapon) other).masteryPotionBonus;
 		}
 		return this;
 	}
@@ -845,7 +874,9 @@ abstract public class MissileWeapon extends Weapon {
 		@Override
 		public boolean isSimilar(Item item) {
 			//yes, even though it uses a dart outline
-			return item instanceof MissileWeapon && !(item instanceof Dart);
+			return hasSameExtractionRaidOrigin(item)
+					&& item instanceof MissileWeapon
+					&& !(item instanceof Dart);
 		}
 
 		@Override
@@ -923,9 +954,12 @@ abstract public class MissileWeapon extends Weapon {
 		if (hero == null || hero.belongings == null || hero.belongings.backpack == null){
 			return;
 		}
+		sanitizeInventorySets(hero.belongings.backpack, preferredSource, true);
+	}
 
+	static void sanitizeInventorySets(Bag inventory, Item preferredSource, boolean showWarning){
 		HashMap<Long, ArrayList<MissileSetEntry>> grouped = new HashMap<>();
-		collectMissileEntries(hero.belongings.backpack, preferredSource, grouped);
+		collectMissileEntries(inventory, preferredSource, grouped);
 
 		for (ArrayList<MissileSetEntry> entries : grouped.values()){
 			if (entries.isEmpty()) continue;
@@ -949,7 +983,7 @@ abstract public class MissileWeapon extends Weapon {
 				MissileWeapon weapon = entry.weapon;
 				if (weapon.quantity() <= 0) continue;
 
-				if (!warned){
+				if (showWarning && !warned){
 					GLog.w(Messages.get(weapon, "duplicate_dust"));
 					warned = true;
 				}
@@ -958,6 +992,18 @@ abstract public class MissileWeapon extends Weapon {
 				weapon.quantity(0);
 			}
 		}
+	}
+
+	private void sanitizeAfterUpgrade(){
+		Hero hero = Dungeon.hero;
+		if (!bundleRestoring && hero != null && hero.belongings != null
+				&& hero.belongings.backpack != null && hero.belongings.backpack.contains(this)){
+			sanitizeAfterUpgrade(hero.belongings.backpack, true);
+		}
+	}
+
+	void sanitizeAfterUpgrade(Bag inventory, boolean showWarning){
+		sanitizeInventorySets(inventory, this, showWarning);
 	}
 
 	private static void collectMissileEntries(Bag bag, Item preferredSource,

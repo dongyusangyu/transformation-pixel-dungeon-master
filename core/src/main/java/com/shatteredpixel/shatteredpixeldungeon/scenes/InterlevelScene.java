@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.RankingRestart;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -32,6 +33,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.curriculum.AgentMinCurriculum;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestAlignment;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.levels.TestArenaLevel;
 import com.shatteredpixel.shatteredpixeldungeon.effects.ShadowBox;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.LostBackpack;
@@ -40,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportat
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidRun;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
@@ -80,7 +84,7 @@ public class InterlevelScene extends PixelScene {
 	private static float fadeTime;
 	
 	public enum Mode {
-		DESCEND, ASCEND, CONTINUE, RESURRECT, RETURN, FALL, RESET, NONE,RESTART
+		DESCEND, ASCEND, CONTINUE, RESURRECT, RETURN, TEST_ARENA, FALL, RESET, NONE,RESTART
 	}
 	public static Mode mode;
 
@@ -157,6 +161,7 @@ public class InterlevelScene extends PixelScene {
 				else                        loadingDepth = Dungeon.depth-1;
 				break;
 			case RETURN:
+			case TEST_ARENA:
 				loadingDepth = returnDepth;
 				break;
 			case RESTART:
@@ -431,6 +436,9 @@ public class InterlevelScene extends PixelScene {
 							case RETURN:
 								returnTo();
 								break;
+							case TEST_ARENA:
+								testArenaTransition();
+								break;
 							case FALL:
 								fall();
 								break;
@@ -615,12 +623,30 @@ public class InterlevelScene extends PixelScene {
 
 	}
 	private void restart() throws IOException {
-		Mob.clearHeldAllies();
-		Dungeon.reinit();
-		GameLog.wipe();
-		Level level = Dungeon.newLevel();
+		boolean rankingRestart = RankingRestart.hasPendingRestart();
+		try {
+			Mob.clearHeldAllies();
+			if (rankingRestart) {
+				RankingRestart.prepareDungeon();
+			} else {
+				Dungeon.reinit();
+			}
+			GameLog.wipe();
+			Level level = Dungeon.newLevel();
 
-		Dungeon.switchLevel( level, -1 );
+			Dungeon.switchLevel( level, -1 );
+			if (rankingRestart) {
+				if (!GamesInProgress.gameExists(GamesInProgress.curSlot)) {
+					throw new IOException("Ranking restart save was not created");
+				}
+				RankingRestart.complete();
+			}
+		} catch (IOException | RuntimeException e) {
+			if (rankingRestart) {
+				RankingRestart.cancel();
+			}
+			throw e;
+		}
 
 	}
 
@@ -713,19 +739,54 @@ public class InterlevelScene extends PixelScene {
 	}
 	
 	private void returnTo() throws IOException {
+		if (TestArenaLevel.isCurrentLevel()
+				|| TestArenaLevel.isLocation(returnDepth, returnBranch)) {
+			GLog.w(Messages.get(TestAlignment.class, "arena_only"));
+			return;
+		}
 		Mob.holdAllies( Dungeon.level );
-		Dungeon.saveAll();
+		boolean pendingRaidEntry = ExtractionRaidRun.isPendingEntryDestination(
+				returnDepth, returnBranch);
+		if (ExtractionRaidRun.hasPendingEntry() && !pendingRaidEntry) {
+			ExtractionRaidRun.cancelPendingEntry();
+		}
+		try {
+			Dungeon.saveAll();
+		} catch (IOException exception) {
+			if (pendingRaidEntry) ExtractionRaidRun.cancelPendingEntry();
+			throw exception;
+		}
+		if (pendingRaidEntry
+				&& !ExtractionRaidRun.commitPendingEntry(returnDepth, returnBranch)) {
+			Mob.restoreAllies(Dungeon.level, Dungeon.hero.pos);
+			Game.switchScene(GameScene.class);
+			return;
+		}
 
-		Level level;
+		Dungeon.switchLevel(loadReturnLevel(), returnPos);
+	}
+
+	private void testArenaTransition() throws IOException {
+		boolean sourceIsArena = TestArenaLevel.isCurrentLevel();
+		boolean destinationIsArena = TestArenaLevel.isLocation(returnDepth, returnBranch);
+		if (sourceIsArena == destinationIsArena) {
+			GLog.w(Messages.get(TestAlignment.class, "arena_only"));
+			return;
+		}
+
+		Mob.clearHeldAllies();
+		Dungeon.saveAll();
+		Dungeon.switchLevel(loadReturnLevel(), returnPos);
+	}
+
+	private Level loadReturnLevel() throws IOException {
 		Dungeon.depth = returnDepth;
 		Dungeon.branch = returnBranch;
 		if (Dungeon.levelHasBeenGenerated(Dungeon.depth, Dungeon.branch)) {
-			level = Dungeon.loadLevel( GamesInProgress.curSlot );
+			return Dungeon.loadLevel( GamesInProgress.curSlot );
 		} else {
-			level = Dungeon.newLevel();
+			return Dungeon.newLevel();
 		}
-
-		Dungeon.switchLevel( level, returnPos );
 	}
 	
 	private void restore() throws IOException {

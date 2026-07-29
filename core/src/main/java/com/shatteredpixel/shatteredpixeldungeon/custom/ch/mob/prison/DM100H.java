@@ -12,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CounterBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DM100;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
 import com.shatteredpixel.shatteredpixeldungeon.custom.utils.timing.VirtualActor;
@@ -42,7 +43,7 @@ import com.watabou.utils.GameMath;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
-public class DM100H extends MobHard implements Callback {
+public class DM100H extends MobHard implements Callback, MagicalRangedAttack {
     private static final float TIME_TO_ZAP	= 1f;
     {
         EXP = 7;
@@ -102,8 +103,8 @@ public class DM100H extends MobHard implements Callback {
     }
 
     @Override
-    protected boolean canAttack(Char enemy){
-        boolean can = new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
+    public boolean canRangedAttack(Char enemy){
+        boolean can = MagicalRangedAttack.super.canRangedAttack(enemy);
         if(!can && buff(LightningPrediction.class)==null){
             cd -= 1f;
         }
@@ -256,17 +257,10 @@ public class DM100H extends MobHard implements Callback {
     public static class LightningBolt{}
 
     @Override
-    protected boolean doAttack( Char enemy ) {
+    public boolean doRangedAttack( Char enemy ) {
+        spend( TIME_TO_ZAP );
 
-        if (Dungeon.level.distance( pos, enemy.pos ) <= 1) {
-
-            return super.doAttack( enemy );
-
-        } else {
-
-            spend( TIME_TO_ZAP );
-
-            if (hit( this, enemy, true )) {
+            if (rangedHit(enemy)) {
                 int dmg = Random.NormalIntRange(3, 10);
                 dmg = Math.round(dmg * AscensionChallenge.statModifier(this));
                 enemy.damage( dmg, new DM100H.LightningBolt() );
@@ -290,12 +284,11 @@ public class DM100H extends MobHard implements Callback {
                 enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
             }
 
-            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-                sprite.zap( enemy.pos );
-                return false;
-            } else {
-                return true;
-            }
+        if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+            sprite.zap( enemy.pos );
+            return false;
+        } else {
+            return true;
         }
     }
 

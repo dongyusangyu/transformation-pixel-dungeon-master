@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
@@ -98,8 +99,11 @@ public class Item implements Bundlable {
 	public boolean stackable = false;
 	protected int quantity = 1;
 	public boolean dropsDownHeap = false;
+
+	private long extractionRaidId = 0L;
 	
 	private int level = 0;
+	public int upgradeScrollUses = 0;
 
 	public boolean levelKnown = false;
 	
@@ -249,7 +253,7 @@ public class Item implements Bundlable {
 	
 	//takes two items and merges them (if possible)
 	public Item merge( Item other ){
-		if (isSimilar( other )){
+		if (hasSameExtractionRaidOrigin(other) && isSimilar( other )){
 			quantity += other.quantity;
 			other.quantity = 0;
 		}
@@ -282,7 +286,7 @@ public class Item implements Bundlable {
 		
 		if (stackable) {
 			for (Item item:items) {
-				if (isSimilar( item )) {
+				if (hasSameExtractionRaidOrigin(item) && isSimilar( item )) {
 					item.merge( this );
 					item.updateQuickslot();
 					if (hero != null && hero.isAlive()) {
@@ -297,7 +301,11 @@ public class Item implements Bundlable {
 						Dart d = new Dart();
 						d.quantity(TippedDart.lostDarts);
 						TippedDart.lostDarts = 0;
-						if (!d.collect()){
+					if (!d.collect(container)){
+						if (container.isLoading()) {
+							// Rankings restore a hero before assigning it to Dungeon.hero.
+							container.items.add(d);
+						} else {
 							//have to handle this in an actor as we can't manipulate the heap during pickup
 							Actor.add(new Actor() {
 								{ actPriority = VFX_PRIO; }
@@ -310,6 +318,7 @@ public class Item implements Bundlable {
 							});
 						}
 					}
+					}
 					return true;
 				}
 			}
@@ -321,6 +330,9 @@ public class Item implements Bundlable {
 			if (isIdentified()){
 				Catalog.setSeen(getClass());
 				Statistics.itemTypesDiscovered.add(getClass());
+			}
+			if (this instanceof Treasures) {
+				Catalog.countUse(getClass());
 			}
 		}
 
@@ -418,7 +430,34 @@ public class Item implements Bundlable {
 	}
 	
 	public boolean isSimilar( Item item ) {
-		return getClass() == item.getClass();
+		return item != null
+				&& hasSameExtractionRaidOrigin(item)
+				&& getClass() == item.getClass();
+	}
+
+	public Item markForExtractionRaid(long raidId) {
+		extractionRaidId = Math.max(0L, raidId);
+		return this;
+	}
+
+	public void clearExtractionRaidMark() {
+		extractionRaidId = 0L;
+	}
+
+	public long extractionRaidId() {
+		return extractionRaidId;
+	}
+
+	public boolean isExtractionRaidLoot() {
+		return extractionRaidId > 0L;
+	}
+
+	public boolean isExtractionRaidLoot(long raidId) {
+		return raidId > 0L && extractionRaidId == raidId;
+	}
+
+	public boolean hasSameExtractionRaidOrigin(Item other) {
+		return other != null && extractionRaidId == other.extractionRaidId;
 	}
 
 	protected void onDetach(){}
@@ -624,6 +663,7 @@ public class Item implements Bundlable {
 		
 		item.quantity = 0;
 		item.level = level;
+		item.extractionRaidId = extractionRaidId;
 		return item;
 	}
 	
@@ -647,11 +687,15 @@ public class Item implements Bundlable {
 	private static final String QUICKSLOT		= "quickslotpos";
 	private static final String KEPT_LOST       = "kept_lost";
 	private static final String CUSTOM_NOTE_ID = "custom_note_id";
+	private static final String UPGRADE_SCROLL_USES = "upgrade_scroll_uses";
+	private static final String EXTRACTION_RAID_ID = "extraction_raid_id";
 
 	@Override
 	public void storeInBundle( Bundle bundle ) {
 		bundle.put( QUANTITY, quantity );
 		bundle.put( LEVEL, level );
+		bundle.put( UPGRADE_SCROLL_USES, upgradeScrollUses );
+		if (extractionRaidId != 0L) bundle.put(EXTRACTION_RAID_ID, extractionRaidId);
 		bundle.put( LEVEL_KNOWN, levelKnown );
 		bundle.put( CURSED, cursed );
 		bundle.put( CURSED_KNOWN, cursedKnown );
@@ -667,6 +711,12 @@ public class Item implements Bundlable {
 		quantity	= bundle.getInt( QUANTITY );
 		levelKnown	= bundle.getBoolean( LEVEL_KNOWN );
 		cursedKnown	= bundle.getBoolean( CURSED_KNOWN );
+		upgradeScrollUses = bundle.contains(UPGRADE_SCROLL_USES)
+				? bundle.getInt(UPGRADE_SCROLL_USES)
+				: 0;
+		extractionRaidId = bundle.contains(EXTRACTION_RAID_ID)
+				? bundle.getLong(EXTRACTION_RAID_ID)
+				: 0L;
 		
 		int level = bundle.getInt( LEVEL );
 		if (level > 0) {

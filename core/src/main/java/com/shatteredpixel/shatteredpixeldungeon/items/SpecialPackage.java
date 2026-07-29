@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
@@ -116,6 +117,9 @@ public class SpecialPackage extends Item {
                         item=new HolyTome();
                     }
                     if(item!=null){
+						if (item instanceof Artifact && !Generator.claimArtifact(((Artifact) item).getClass())) {
+							item = new Gold(100);
+						}
                         item.identify();
                         Dungeon.level.drop(item,hero.pos).sprite.drop(hero.pos);
                         curUser = hero;

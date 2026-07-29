@@ -147,7 +147,7 @@ public class WndTradeItem extends WndInfoItem {
 
 		float pos = height;
 
-		final int price = Shopkeeper.sellPrice( item );
+		final int price = heap.salePrice();
 
 		RedButton btnBuy = new RedButton( Messages.get(this, "buy", price) ) {
 			@Override
@@ -295,11 +295,10 @@ public class WndTradeItem extends WndInfoItem {
 	}
 	
 	private void buy( Heap heap ) {
-		
+		int price = heap.salePrice();
 		Item item = heap.pickUp();
 		if (item == null) return;
-		
-		int price = Shopkeeper.sellPrice( item );
+
 		if(hero.pointsNegative(Talent.COWBOY)*3> Random.Int(20) && hero.pointsNegative(Talent.COWBOY)>0){
 			item.detach(hero.belongings.backpack);
 			item =new ThrowingStone();

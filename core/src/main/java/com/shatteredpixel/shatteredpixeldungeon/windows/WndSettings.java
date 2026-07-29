@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.SaveManager;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.services.cloud.CloudRestoreIdentity;
 import com.shatteredpixel.shatteredpixeldungeon.services.cloud.CloudSyncService;
 import com.shatteredpixel.shatteredpixeldungeon.services.news.News;
 import com.shatteredpixel.shatteredpixeldungeon.services.updates.Updates;
@@ -1025,28 +1026,11 @@ public class WndSettings extends WndTabbed {
 				@Override
 				protected void onClick() {
 					super.onClick();
-					enable(false);
-					text(Messages.get(DataTab.class, "cloud_working"));
-					CloudSyncService.syncServerData(new CloudSyncService.Callback() {
-						@Override
-						public void onSuccess() {
-							enable(true);
-							text(Messages.get(DataTab.class, "sync_data"));
-							updateCloudUUIDText();
-							parent.add(new WndMessage(Messages.get(DataTab.class, "sync_success")));
-						}
-
-						@Override
-						public void onFailure() {
-							enable(true);
-							text(Messages.get(DataTab.class, "sync_data"));
-							parent.add(new WndMessage(Messages.get(DataTab.class, "sync_failed")));
-						}
-					});
+					showRestoreInput();
 				}
 			};
 			btnSyncData.icon(Icons.get(Icons.PASTE));
-			//add(btnSyncData);
+			add(btnSyncData);
 
 			sep2 = new ColorBlock(1, 1, 0xFF000000);
 			add(sep2);
@@ -1136,6 +1120,12 @@ public class WndSettings extends WndTabbed {
 			};
 			btnImportData.icon(Icons.get(Icons.PASTE));
 			//add(btnImportData);
+
+			if (CloudSyncService.hasPendingRestore()) {
+				btnSyncData.enable(false);
+				btnSyncData.text(Messages.get(DataTab.class, "cloud_working"));
+				CloudSyncService.resumePendingRestore(createRestoreCallback());
+			}
 		}
 
 		@Override
@@ -1165,8 +1155,8 @@ public class WndSettings extends WndTabbed {
 				pos = chkBetas.bottom();
 			}
 
-			//btnSyncData.setRect(0, pos + GAP, width, BTN_HEIGHT);
-			//pos = btnSyncData.bottom();
+			btnSyncData.setRect(0, pos + GAP, width, BTN_HEIGHT);
+			pos = btnSyncData.bottom();
 
 			sep2.size(width, 1);
 			sep2.y = pos + GAP;
@@ -1236,6 +1226,95 @@ public class WndSettings extends WndTabbed {
 			if (txtSeedTime != null) {
 				txtSeedTime.text(Messages.get(this, "seed_selected_time") + SEED_TIME_NAMES[seedTimeIndex()]);
 			}
+		}
+
+		private void showRestoreInput() {
+			String currentUUID = CloudSyncService.currentPlayerUUID();
+			ShatteredPixelDungeon.scene().addToFront(new WndTextInput(
+					Messages.get(DataTab.class, "sync_uuid_title"),
+					Messages.get(DataTab.class, "sync_uuid_body"),
+					currentUUID == null ? "" : currentUUID,
+					36,
+					false,
+					Messages.get(DataTab.class, "sync_uuid_continue"),
+					Messages.get(DataTab.class, "sync_cancel")
+			) {
+				@Override
+				public void onSelect(boolean positive, String text) {
+					if (!positive) {
+						return;
+					}
+					String requestedUUID = CloudRestoreIdentity.normalize(text);
+					if (requestedUUID == null) {
+						parent.add(new WndMessage(Messages.get(DataTab.class, "sync_invalid_uuid")));
+						return;
+					}
+					showRestoreConfirmation(requestedUUID);
+				}
+			});
+		}
+
+		private void showRestoreConfirmation(String requestedUUID) {
+			ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+					Icons.get(Icons.WARNING),
+					Messages.get(DataTab.class, "sync_confirm_title"),
+					Messages.get(DataTab.class, "sync_confirm_body"),
+					Messages.get(DataTab.class, "sync_confirm"),
+					Messages.get(DataTab.class, "sync_cancel")
+			) {
+				@Override
+				protected void onSelect(int index) {
+					if (index == 0) {
+						restoreServerData(requestedUUID);
+					}
+				}
+			});
+		}
+
+		private void restoreServerData(String requestedUUID) {
+			btnSyncData.enable(false);
+			btnSyncData.text(Messages.get(DataTab.class, "cloud_working"));
+			CloudSyncService.syncServerData(requestedUUID, createRestoreCallback());
+		}
+
+		private CloudSyncService.RestoreCallback createRestoreCallback() {
+			return new CloudSyncService.RestoreCallback() {
+				@Override
+				public void onSuccess() {
+					resetRestoreButton();
+					updateCloudUUIDText();
+					parent.add(new WndMessage(Messages.get(DataTab.class, "sync_success")));
+				}
+
+				@Override
+				public void onFailure(CloudSyncService.RestoreFailure failure) {
+					resetRestoreButton();
+					String message;
+					switch (failure) {
+						case INVALID_UUID:
+							message = Messages.get(DataTab.class, "sync_invalid_uuid");
+							break;
+						case NOT_FOUND:
+							message = Messages.get(DataTab.class, "sync_not_found");
+							break;
+						case NOT_ALLOWED:
+							message = Messages.get(DataTab.class, "sync_not_allowed");
+							break;
+						case NETWORK:
+							message = Messages.get(DataTab.class, "sync_network_failed");
+							break;
+						default:
+							message = Messages.get(DataTab.class, "sync_invalid_response");
+							break;
+					}
+					parent.add(new WndMessage(message));
+				}
+			};
+		}
+
+		private void resetRestoreButton() {
+			btnSyncData.enable(true);
+			btnSyncData.text(Messages.get(DataTab.class, "sync_data"));
 		}
 
 		private void updateCloudUUIDText() {

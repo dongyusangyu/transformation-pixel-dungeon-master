@@ -79,6 +79,7 @@ public abstract class ConnectionRoom extends Room {
 	}
 	
 	public static ConnectionRoom createRoom(){
-		return Reflection.newInstance(rooms.get(Random.chances(chances[Dungeon.depth])));
+		int depth = Math.max(1, Math.min(Dungeon.depth, chances.length - 1));
+		return Reflection.newInstance(rooms.get(Random.chances(chances[depth])));
 	}
 }

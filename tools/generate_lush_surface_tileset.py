@@ -10,8 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 ENV = ROOT / "core" / "src" / "main" / "assets" / "environment"
 OUT = ENV / "tiles_surface_lush.png"
 WATER_OUT = ENV / "water_surface_lush.png"
-PREVIEW = ROOT / "tiles_surface_lush_preview.png"
-SCENE_PREVIEW = ROOT / "tiles_surface_lush_scene_preview.png"
 
 T = 16
 W = 16
@@ -25,6 +23,40 @@ def tile_rect(index: int) -> tuple[int, int, int, int]:
 
 def paste_tile(dst: Image.Image, src: Image.Image, src_index: int, dst_index: int) -> None:
     dst.paste(src.crop(tile_rect(src_index)), tile_rect(dst_index))
+
+
+def composite_reference_object(
+        dst: Image.Image,
+        reference: Image.Image,
+        object_index: int,
+        reference_floor_index: int,
+        dst_index: int) -> None:
+    """Transfer an object and its shadow without carrying over its source floor."""
+    obj = reference.crop(tile_rect(object_index)).convert("RGBA")
+    source_floor = reference.crop(tile_rect(reference_floor_index)).convert("RGBA")
+    target = dst.crop(tile_rect(dst_index)).convert("RGBA")
+    overlay = Image.new("RGBA", (T, T), (0, 0, 0, 0))
+
+    for y in range(T):
+        for x in range(T):
+            pixel = obj.getpixel((x, y))
+            if pixel != source_floor.getpixel((x, y)):
+                overlay.putpixel((x, y), pixel)
+
+    dst.paste(Image.alpha_composite(target, overlay), tile_rect(dst_index))
+
+
+def composite_reference_inset(
+        dst: Image.Image,
+        reference: Image.Image,
+        object_index: int,
+        dst_index: int,
+        margin: int = 2) -> None:
+    """Keep a reference object's central silhouette while exposing the new floor at its edge."""
+    src = reference.crop(tile_rect(object_index)).convert("RGBA")
+    target = dst.crop(tile_rect(dst_index)).convert("RGBA")
+    target.paste(src.crop((margin, margin, T - margin, T - margin)), (margin, margin))
+    dst.paste(target, tile_rect(dst_index))
 
 
 def draw_grass(draw: ImageDraw.ImageDraw, index: int, seed: int, dense: bool = False, flowers: bool = False) -> None:
@@ -58,6 +90,15 @@ def draw_grass(draw: ImageDraw.ImageDraw, index: int, seed: int, dense: bool = F
         if rng.random() < 0.4:
             draw.point((x + 1, y), fill=petal)
 
+    # Sparse, directional grass tufts create larger shapes than single-pixel noise.
+    # They remain away from tile borders, so neighboring tiles do not gain a grid seam.
+    for _ in range(3 if dense else 1):
+        x = x0 + rng.randrange(3, 13)
+        y = y0 + rng.randrange(7, 14)
+        shade = rng.choice([(45, 101, 41, 255), (82, 151, 57, 255), (107, 169, 67, 255)])
+        draw.line((x, y, x - 1, y - 2), fill=shade)
+        draw.line((x + 1, y, x + 1, y - 3), fill=shade)
+
     # Lightly normalize the border pixels to reduce both vertical and horizontal seams.
     edge = (66, 126, 52, 255)
     draw.line((x0, y0, x1 - 1, y0), fill=edge)
@@ -80,6 +121,46 @@ def draw_wood_floor(draw: ImageDraw.ImageDraw, index: int, seed: int) -> None:
         x = x0 + rng.randrange(16)
         y = y0 + rng.randrange(16)
         draw.point((x, y), fill=rng.choice([(151, 103, 58, 255), (86, 59, 39, 255)]))
+
+
+def draw_village_path(draw: ImageDraw.ImageDraw, index: int, seed: int) -> None:
+    """Draw seamless packed earth with sparse stones and grass encroachment."""
+    rng = random.Random(seed)
+    x0, y0, x1, y1 = tile_rect(index)
+    earth = (119, 102, 70, 255)
+    earth_dark = (91, 80, 59, 255)
+    earth_light = (151, 130, 85, 255)
+    draw.rectangle((x0, y0, x1 - 1, y1 - 1), fill=earth)
+
+    for _ in range(30):
+        x = x0 + rng.randrange(T)
+        y = y0 + rng.randrange(T)
+        draw.point((x, y), fill=rng.choice([earth_dark, earth, earth_light]))
+
+    stones = [
+        (rng.randrange(2, 7), rng.randrange(2, 7)),
+        (rng.randrange(9, 14), rng.randrange(4, 10)),
+        (rng.randrange(3, 12), rng.randrange(11, 15)),
+    ]
+    for x, y in stones:
+        px, py = x0 + x, y0 + y
+        draw.point((px, py), fill=(185, 177, 143, 255))
+        draw.point((min(px + 1, x1 - 1), py), fill=(128, 125, 103, 255))
+        if rng.random() < 0.5:
+            draw.point((px, min(py + 1, y1 - 1)), fill=(78, 76, 66, 255))
+
+    # Broken edge tufts suggest that the meadow is reclaiming the path without creating tile seams.
+    grass_dark = (48, 99, 43, 255)
+    grass_mid = (75, 140, 55, 255)
+    for _ in range(5):
+        side = rng.randrange(4)
+        if side < 2:
+            x = x0 + rng.randrange(1, 15)
+            y = y0 + (rng.randrange(3) if side == 0 else 13 + rng.randrange(3))
+        else:
+            x = x0 + (rng.randrange(3) if side == 2 else 13 + rng.randrange(3))
+            y = y0 + rng.randrange(1, 15)
+        draw.point((x, y), fill=rng.choice([grass_dark, grass_mid]))
 
 
 def draw_wooden_upstairs(draw: ImageDraw.ImageDraw, index: int, seed: int) -> None:
@@ -129,12 +210,8 @@ def draw_mossy_downstairs(draw: ImageDraw.ImageDraw, index: int, seed: int) -> N
 
 def draw_meadow_object(draw: ImageDraw.ImageDraw, index: int, seed: int, kind: str) -> None:
     draw_grass(draw, index, seed, dense=True, flowers=True)
-    rng = random.Random(seed + 73)
     x0, y0, _, _ = tile_rect(index)
-    if kind == "well":
-        draw.ellipse((x0 + 3, y0 + 5, x0 + 12, y0 + 13), fill=(42, 79, 78, 255), outline=(185, 192, 154, 255))
-        draw.ellipse((x0 + 5, y0 + 7, x0 + 10, y0 + 11), fill=(24, 54, 62, 255))
-    elif kind == "pedestal":
+    if kind == "pedestal":
         draw.rectangle((x0 + 5, y0 + 6, x0 + 10, y0 + 12), fill=(180, 184, 148, 255))
         draw.rectangle((x0 + 4, y0 + 11, x0 + 11, y0 + 13), fill=(126, 134, 104, 255))
         draw.point((x0 + 7, y0 + 5), fill=(255, 237, 113, 255))
@@ -165,8 +242,6 @@ def draw_water_stitch_from_template(
         seed: int) -> None:
     rng = random.Random(seed)
     tile = Image.new("RGBA", (T, T), (0, 0, 0, 0))
-    local = ImageDraw.Draw(tile)
-    draw_grass(local, 0, seed + 4100, dense=False, flowers=False)
     src = template.crop(tile_rect(index)).convert("RGBA")
     water_colors = [
         water_texture.getpixel((x, y))
@@ -176,6 +251,7 @@ def draw_water_stitch_from_template(
     avg_water = tuple(sum(c[i] for c in water_colors) // len(water_colors) for i in range(3))
 
     water_mask = [[False for _ in range(T)] for _ in range(T)]
+    edge_mask = [[False for _ in range(T)] for _ in range(T)]
     for y in range(T):
         for x in range(T):
             r, g, b, a = src.getpixel((x, y))
@@ -186,17 +262,22 @@ def draw_water_stitch_from_template(
             saturation = mx - mn
             water_mask[y][x] = (g > r + 8 and g >= b - 12 and mx > 38) or (
                     g >= r and g >= b - 18 and mx <= 70 and saturation > 10)
+            edge_mask[y][x] = water_mask[y][x] or mx < 35
 
     for y in range(T):
         for x in range(T):
             r, g, b, a = src.getpixel((x, y))
             if a == 0:
+                # Transparent template pixels are the animated-water window.
                 continue
 
-            mx = max(r, g, b)
-            if water_mask[y][x] or mx < 35:
-                # Water-side pixels must be transparent; the animated water layer is underneath.
-                tile.putpixel((x, y), (0, 0, 0, 0))
+            if edge_mask[y][x]:
+                wr, wg, wb, _ = water_texture.getpixel(
+                    (x % water_texture.width, y % water_texture.height)
+                )
+                if not water_mask[y][x]:
+                    wr, wg, wb = max(0, wr - 24), max(0, wg - 24), max(0, wb - 18)
+                tile.putpixel((x, y), (wr, wg, wb, a))
             else:
                 # Sewer stone/floor pixels become grass while preserving the original transition shape.
                 shade = (r + g + b) // 3
@@ -204,7 +285,7 @@ def draw_water_stitch_from_template(
                 water_dist = 99
                 for yy in range(max(0, y - 4), min(T, y + 5)):
                     for xx in range(max(0, x - 4), min(T, x + 5)):
-                        if water_mask[yy][xx]:
+                        if edge_mask[yy][xx] or src.getpixel((xx, yy))[3] == 0:
                             water_dist = min(water_dist, abs(yy - y) + abs(xx - x))
                 near_water = water_dist <= 3
                 blend = max(0, 4 - water_dist) if near_water else 0
@@ -242,7 +323,8 @@ def draw_water_stitch_from_template(
                         touches_land = True
                         break
             if touches_land:
-                tile.putpixel((x, y), shore)
+                _, _, _, a = src.getpixel((x, y))
+                tile.putpixel((x, y), (shore[0], shore[1], shore[2], a))
 
     # A few tiny bright grass/flower specks on the land side make the transition match the meadow.
     candidates = []
@@ -259,7 +341,7 @@ def draw_water_stitch_from_template(
         candidates.remove((x, y))
         r, g, b, a = tile.getpixel((x, y))
         if rng.random() < 0.35:
-            tile.putpixel((x, y), foam)
+            tile.putpixel((x, y), (foam[0], foam[1], foam[2], a))
         else:
             tile.putpixel((x, y), rng.choice([
                 (242, 226, 94, a),
@@ -272,58 +354,146 @@ def draw_water_stitch_from_template(
     out.paste(tile, tile_rect(index))
 
 
-def draw_stone_base(draw: ImageDraw.ImageDraw, index: int, seed: int, moss: bool = False) -> None:
+def draw_tree_root_base(draw: ImageDraw.ImageDraw, index: int, seed: int, old_tree: bool = False) -> None:
     rng = random.Random(seed)
     x0, y0, x1, y1 = tile_rect(index)
-    draw_grass(draw, index, seed + 2000, dense=False, flowers=False)
-    pts = [
-        (x0 + 2, y0 + 5),
-        (x0 + 8, y0 + 2),
-        (x0 + 14, y0 + 5),
-        (x0 + 15, y0 + 11),
-        (x0 + 11, y0 + 15),
-        (x0 + 4, y0 + 15),
-        (x0 + 1, y0 + 11),
+    draw_grass(draw, index, seed + 2000, dense=True, flowers=old_tree)
+    bark_dark = (55, 43, 31, 255)
+    bark_mid = (95, 65, 38, 255)
+    bark_light = (143, 96, 51, 255)
+    # Roots are a separate, walkable visual base; the collision trunk is in the raised slot.
+    root_lines = [
+        (x0 + 7, y0 + 9, x0 + 3, y1 - 2),
+        (x0 + 8, y0 + 10, x0 + 12, y1 - 2),
+        (x0 + 7, y0 + 12, x0 + 1, y1 - 1),
     ]
-    draw.polygon(pts, fill=(142, 151, 132, 255), outline=(70, 79, 71, 255))
-    draw.line((x0 + 4, y0 + 6, x0 + 10, y0 + 4), fill=(206, 214, 190, 255))
-    draw.line((x0 + 5, y0 + 13, x0 + 12, y0 + 13), fill=(95, 105, 93, 255))
-    draw.point((x0 + 8, y0 + 9), fill=(94, 104, 92, 255))
-    draw.point((x0 + 12, y0 + 10), fill=(94, 104, 92, 255))
-    if moss:
-        for _ in range(12):
-            x = x0 + rng.randrange(3, 14)
-            y = y0 + rng.randrange(5, 14)
-            draw.point((x, y), fill=rng.choice([(72, 129, 57, 255), (94, 151, 65, 255)]))
+    if old_tree:
+        root_lines.extend([(x0 + 9, y0 + 9, x1 - 1, y0 + 13), (x0 + 6, y0 + 10, x0 + 4, y1 - 1)])
+    for x1r, y1r, x2r, y2r in root_lines:
+        draw.line((x1r, y1r, x2r, y2r), fill=bark_dark, width=2)
+        draw.line((x1r, y1r, x2r, y2r - 1), fill=bark_mid)
+    draw.line((x0 + 7, y0 + 10, x0 + 8, y1 - 2), fill=bark_light)
+    for _ in range(5 if old_tree else 3):
+        draw.point((x0 + rng.randrange(2, 14), y0 + rng.randrange(11, 16)), fill=(75, 133, 53, 255))
 
 
-def draw_stone_lower(draw: ImageDraw.ImageDraw, index: int, seed: int, moss: bool = False) -> None:
+def draw_tree_trunk(draw: ImageDraw.ImageDraw, index: int, seed: int, old_tree: bool = False) -> None:
     rng = random.Random(seed)
     x0, y0, x1, y1 = tile_rect(index)
     draw_grass(draw, index, seed + 2100, dense=False, flowers=False)
-    if moss:
-        rocks = [
-            [(x0 + 1, y0 + 1), (x0 + 8, y0), (x0 + 15, y0 + 2), (x0 + 15, y0 + 12), (x0 + 11, y0 + 15), (x0 + 3, y0 + 15), (x0, y0 + 8)],
-            [(x0 + 4, y0 + 7), (x0 + 10, y0 + 5), (x0 + 15, y0 + 8), (x0 + 14, y0 + 15), (x0 + 6, y0 + 15), (x0 + 2, y0 + 12)],
-        ]
-    else:
-        rocks = [
-            [(x0, y0 + 1), (x0 + 7, y0), (x0 + 15, y0 + 2), (x0 + 15, y0 + 13), (x0 + 10, y0 + 15), (x0 + 2, y0 + 15), (x0, y0 + 8)],
-        ]
-    for pts in rocks:
-        draw.polygon(pts, fill=(138, 147, 130, 255), outline=(66, 74, 68, 255))
-    draw.line((x0 + 4, y0 + 4, x0 + 11, y0 + 2), fill=(207, 213, 191, 255))
-    draw.line((x0 + 4, y0 + 13, x0 + 12, y0 + 14), fill=(88, 97, 88, 255))
-    if moss:
-        for _ in range(18):
-            x = x0 + rng.randrange(2, 15)
-            y = y0 + rng.randrange(2, 15)
-            draw.point((x, y), fill=rng.choice([(67, 125, 54, 255), (95, 155, 66, 255), (47, 94, 44, 255)]))
+    bark_dark = (48, 39, 29, 255)
+    bark_mid = (93, 63, 37, 255)
+    bark_light = (151, 101, 54, 255)
+    trunk_width = 6 if old_tree else 4
+    trunk_left = x0 + (T - trunk_width) // 2
+    trunk_right = trunk_left + trunk_width - 1
+    trunk_start = y0 + (6 if old_tree else 5)
+    # The exposed trunk begins below the upper leaf mass; only its lower half remains fully visible.
+    draw.rectangle((trunk_left, trunk_start, trunk_right, y1 - 1), fill=bark_dark)
+    draw.rectangle((trunk_left + 1, trunk_start + 1, trunk_right - 1, y1 - 2), fill=bark_mid)
+    draw.line((trunk_left + 1, trunk_start + 2, trunk_left + 1, y1 - 3), fill=bark_light)
+    draw.line((trunk_right, trunk_start + 3, trunk_right, y1 - 2), fill=(63, 44, 31, 255))
+    for _ in range(5 if old_tree else 3):
+        x = rng.randrange(trunk_left + 1, trunk_right - 1)
+        y = rng.randrange(trunk_start + 1, y1 - 2)
+        draw.line((x, y, x - 1, min(y + 2, y1 - 2)), fill=(56, 43, 31, 255))
+
+    leaf_dark = (27, 72, 35, 255)
+    leaf_mid = (48, 111, 44, 255)
+    leaf_light = (88, 151, 57, 255)
+    # Upper foliage overlaps the trunk and extends toward both tile edges, allowing forest clusters to join.
+    leaf_shapes = [
+        [(x0 + 2, y0 + 5), (x0 + 3, y0 + 2), (x0 + 7, y0), (x0 + 12, y0 + 2), (x0 + 13, y0 + 5), (x0 + 11, y0 + 8), (x0 + 4, y0 + 8)],
+        [(x0 + 1, y0 + 7), (x0 + 4, y0 + 4), (x0 + 10, y0 + 4), (x0 + 14, y0 + 7), (x0 + 12, y0 + 9), (x0 + 3, y0 + 9)],
+    ]
+    if old_tree:
+        leaf_shapes.append([(x0 + 1, y0 + 4), (x0 + 4, y0 + 1), (x0 + 12, y0 + 1), (x0 + 14, y0 + 5), (x0 + 14, y0 + 9), (x0 + 1, y0 + 9)])
+    for shape in leaf_shapes:
+        draw.polygon(shape, fill=leaf_dark)
+    for _ in range(48 if old_tree else 36):
+        x = x0 + rng.randrange(1, 15)
+        y = y0 + rng.randrange(1, 9)
+        if rng.random() < 0.7:
+            draw.point((x, y), fill=rng.choice([leaf_mid, leaf_mid, leaf_light, leaf_dark]))
+    if old_tree:
+        for _ in range(12):
+            x = rng.randrange(trunk_left, trunk_right)
+            y = rng.randrange(y0 + 3, y1 - 1)
+            draw.point((x, y), fill=rng.choice([(63, 117, 49, 255), (91, 151, 62, 255)]))
 
 
-def draw_stone_overhang(draw: ImageDraw.ImageDraw, index: int, seed: int, moss: bool = False) -> None:
+def draw_tree_canopy(draw: ImageDraw.ImageDraw, index: int, seed: int, old_tree: bool = False) -> None:
+    rng = random.Random(seed)
     x0, y0, x1, y1 = tile_rect(index)
     draw.rectangle((x0, y0, x1 - 1, y1 - 1), fill=(0, 0, 0, 0))
+
+    dark = (25, 65, 33, 255)
+    mid = (47, 108, 45, 255)
+    light = (85, 151, 58, 255)
+    sun = (122, 178, 69, 255)
+    # Broad leaf masses overlap at both side edges, so adjacent trees visually join into forest canopy.
+    clusters = [(0, 6, 8, 15), (2, 2, 14, 12), (8, 5, 16, 15), (5, 0, 12, 9)]
+    if old_tree:
+        clusters.extend([(0, 2, 9, 14), (7, 1, 16, 14), (2, 0, 14, 9)])
+    for left, top, right, bottom in clusters:
+        for y in range(y0 + top, y0 + bottom):
+            for x in range(x0 + left, x0 + right):
+                if rng.random() < 0.06:
+                    continue
+                colour = dark if y > y0 + 9 else rng.choice([mid, light, sun])
+                draw.point((x, y), fill=colour)
+    # The connector is exactly the raised-trunk width, so the two layers read as a single tree.
+    trunk_width = 6 if old_tree else 4
+    trunk_left = x0 + (T - trunk_width) // 2
+    trunk_right = trunk_left + trunk_width - 1
+    draw.rectangle((trunk_left, y0 + 10, trunk_right, y1 - 1), fill=(63, 45, 31, 255))
+    draw.line((trunk_left + 1, y0 + 10, trunk_left + 1, y1 - 1), fill=(114, 75, 42, 255))
+    draw.line((trunk_left + 1, y0 + 10, x0 + 3, y0 + 7), fill=(70, 49, 32, 255))
+    if old_tree:
+        draw.line((trunk_right - 1, y0 + 11, x0 + 13, y0 + 8), fill=(70, 49, 32, 255))
+    # Lower leaf fringe breaks the straight connector and visually merges into the upper trunk foliage.
+    for x in range(x0 + 1, x1 - 1):
+        if rng.random() < (0.7 if old_tree else 0.55):
+            draw.point((x, y0 + rng.choice([12, 13, 14])), fill=rng.choice([dark, mid, light]))
+    for _ in range(5 if old_tree else 3):
+        x = x0 + rng.randrange(2, 14)
+        y = y0 + rng.randrange(3, 12)
+        if draw._image.getpixel((x, y))[3] > 0:
+            draw.point((x, y), fill=(239, 214, 91, 255))
+    # Keep deliberately stepped transparent corners: dense foliage still needs a readable pixel-art silhouette.
+    for left, top, right, bottom in ((0, 0, 2, 2), (13, 0, 15, 2), (0, 13, 2, 15), (13, 13, 15, 15)):
+        draw.rectangle((x0 + left, y0 + top, x0 + right, y0 + bottom), fill=(0, 0, 0, 0))
+
+
+def decorate_living_masonry(draw: ImageDraw.ImageDraw, index: int, seed: int, vine: bool = False) -> None:
+    rng = random.Random(seed)
+    x0, y0, x1, y1 = tile_rect(index)
+    # Touch only a corner and the lower mortar line; the prison silhouette remains readable as a house wall.
+    for _ in range(8):
+        x = x0 + rng.randrange(1, 15)
+        y = y0 + rng.choice([rng.randrange(1, 4), rng.randrange(12, 15)])
+        draw.point((x, y), fill=rng.choice([(99, 136, 74, 255), (74, 113, 61, 255), (165, 169, 137, 255)]))
+    if vine:
+        x = x0 + rng.choice([2, 13])
+        draw.line((x, y0 + 1, x - 1, y0 + 9), fill=(45, 94, 43, 255))
+        for y in range(y0 + 3, y0 + 10, 3):
+            draw.point((x + rng.choice([-1, 1]), y), fill=(91, 151, 61, 255))
+
+
+def decorate_locked_door(draw: ImageDraw.ImageDraw, index: int, raised: bool) -> None:
+    """Add a compact bar and padlock while retaining the prison door silhouette."""
+    x0, y0, _, _ = tile_rect(index)
+    bar_y = y0 + (8 if raised else 9)
+    draw.rectangle((x0 + 3, bar_y - 1, x0 + 12, bar_y + 1), fill=(45, 43, 39, 255))
+    draw.line((x0 + 4, bar_y - 1, x0 + 11, bar_y - 1), fill=(154, 151, 132, 255))
+    draw.line((x0 + 4, bar_y, x0 + 11, bar_y), fill=(91, 92, 84, 255))
+
+    lock_x = x0 + 7
+    draw.rectangle((lock_x - 2, bar_y, lock_x + 2, bar_y + 4), fill=(55, 45, 25, 255))
+    draw.rectangle((lock_x - 1, bar_y + 1, lock_x + 1, bar_y + 3), fill=(205, 166, 62, 255))
+    draw.line((lock_x - 1, bar_y - 2, lock_x + 1, bar_y - 2), fill=(229, 197, 91, 255))
+    draw.point((lock_x - 2, bar_y - 1), fill=(229, 197, 91, 255))
+    draw.point((lock_x + 2, bar_y - 1), fill=(229, 197, 91, 255))
 
 
 def draw_water_texture(size: int = 32) -> Image.Image:
@@ -392,19 +562,26 @@ def main() -> None:
     prison = Image.open(ENV / "tiles_prison.png").convert("RGBA")
     sewers = Image.open(ENV / "tiles_sewers.png").convert("RGBA")
     caves = Image.open(ENV / "tiles_caves.png").convert("RGBA")
+    crystal_caves = Image.open(ENV / "tiles_caves_crystal.png").convert("RGBA")
     out = prison.copy()
     draw = ImageDraw.Draw(out)
     water = draw_water_texture()
 
     # Ground row: outdoor floor slots become grass; special floor slots become indoor wood.
-    for idx, seed in [(0, 1), (1, 2), (2, 3), (3, 4), (6, 6), (7, 7), (8, 8), (9, 9), (12, 12)]:
+    for idx, seed in [(0, 1), (2, 3), (3, 4), (6, 6), (8, 8), (9, 9), (12, 12)]:
         draw_grass(draw, idx, seed, dense=idx in {2, 8}, flowers=idx in {1, 4, 7, 10, 12})
+    draw_village_path(draw, 1, 201)
+    draw_village_path(draw, 7, 207)
     for idx, seed in [(4, 104), (10, 110)]:
         draw_wood_floor(draw, idx, seed)
-    paste_tile(out, sewers, 16, 16)
-    paste_tile(out, sewers, 17, 17)
-    draw_meadow_object(draw, 18, 18, "well")
-    draw_meadow_object(draw, 19, 19, "well")
+    # Floor 0 reverses the usual travel direction: the manor's up-stair exit is indoors,
+    # while the non-interactive down-stair arrival marker sits on the village grass.
+    paste_tile(out, out, 4, 16)
+    composite_reference_object(out, sewers, 16, 0, 16)
+    paste_tile(out, out, 0, 17)
+    composite_reference_inset(out, sewers, 17, 17, margin=2)
+    paste_tile(out, sewers, 18, 18)
+    paste_tile(out, sewers, 19, 19)
     draw_meadow_object(draw, 20, 20, "pedestal")
     paste_tile(out, sewers, 22, 22)
 
@@ -418,26 +595,41 @@ def main() -> None:
     # Wall and door slots intentionally stay prison-stone, so houses read as buildings.
     for idx in range(48, 64):
         paste_tile(out, prison, idx, idx)
+    for idx in (48, 49, 50, 52, 53, 54, 56, 57):
+        decorate_living_masonry(draw, idx, 900 + idx, vine=idx in {49, 53, 57})
+    decorate_locked_door(draw, 58, raised=False)
 
     # Other flat objects.
-    draw_meadow_object(draw, 64, 64, "well")
+    paste_tile(out, sewers, 64, 64)
     paste_tile(out, sewers, 65, 65)
     for idx in [66, 67, 69, 70]:
         draw_grass(draw, idx, 400 + idx, dense=True, flowers=idx in {66, 69})
-    for idx in [72, 73]:
-        paste_tile(out, prison, idx, idx)
-    draw_stone_base(draw, 74, 474, moss=False)
-    draw_stone_base(draw, 75, 475, moss=True)
+    # Rat-statue flat visuals: normal terrain uses meadow, special terrain uses indoor wood.
+    paste_tile(out, out, 0, 72)
+    paste_tile(out, out, 4, 73)
+    composite_reference_object(out, crystal_caves, 72, 0, 72)
+    composite_reference_object(out, crystal_caves, 73, 4, 73)
+    # Flat decoration variants are plain meadow; tree roots are intentionally not drawn.
+    draw_grass(draw, 74, 474, dense=True, flowers=False)
+    draw_grass(draw, 75, 475, dense=True, flowers=True)
     for idx in [76, 77, 78]:
         paste_tile(out, prison, idx, idx)
 
     # Raised walls, doors, and wall overhangs stay compatible prison masonry.
     for idx in range(80, 144):
         paste_tile(out, prison, idx, idx)
+    for idx in (80, 81, 82, 84, 85, 86, 96, 97, 98):
+        decorate_living_masonry(draw, idx, 1000 + idx, vine=idx in {81, 85, 97})
+    decorate_locked_door(draw, 114, raised=True)
     for idx in [120, 121, 122, 123, 125, 126]:
         draw_grass(draw, idx, 540 + idx, dense=True, flowers=True)
-    draw_stone_lower(draw, 130, 690, moss=False)
-    draw_stone_lower(draw, 131, 691, moss=True)
+    # Raised statue bodies use the same backgrounds as their flat counterparts.
+    paste_tile(out, out, 0, 128)
+    paste_tile(out, out, 4, 129)
+    composite_reference_object(out, crystal_caves, 128, 0, 128)
+    composite_reference_object(out, crystal_caves, 129, 4, 129)
+    draw_tree_trunk(draw, 130, 690, old_tree=False)
+    draw_tree_trunk(draw, 131, 691, old_tree=True)
     for idx in [132, 133, 134]:
         paste_tile(out, caves, idx, idx)
 
@@ -448,49 +640,17 @@ def main() -> None:
 
     for idx in range(224, 256):
         paste_tile(out, prison, idx, idx)
-    draw_stone_overhang(draw, 242, 1142, moss=False)
-    draw_stone_overhang(draw, 243, 1143, moss=True)
+    paste_tile(out, crystal_caves, 240, 240)
+    paste_tile(out, crystal_caves, 241, 241)
+    draw_tree_canopy(draw, 242, 1142, old_tree=False)
+    draw_tree_canopy(draw, 243, 1143, old_tree=True)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out.save(OUT)
-
-    # Preview: 3x nearest-neighbor scale with a simple grid.
-    scale = 3
-    preview = out.resize((out.width * scale, out.height * scale), Image.Resampling.NEAREST)
-    pdraw = ImageDraw.Draw(preview)
-    grid = (255, 255, 255, 38)
-    for x in range(0, preview.width + 1, T * scale):
-        pdraw.line((x, 0, x, preview.height), fill=grid)
-    for y in range(0, preview.height + 1, T * scale):
-        pdraw.line((0, y, preview.width, y), fill=grid)
-    preview.save(PREVIEW)
-
     water.save(WATER_OUT)
-
-    # A small semantic preview: not used by the game, only for judging the tiles together.
-    scene_tiles = [
-        [48, 48, 52, 48, 48, 48, 52, 48, 48, 48, 48, 48],
-        [48, 0, 1, 2, 0, 33, 34, 0, 1, 2, 20, 48],
-        [52, 1, 2, 0, 32, 33, 34, 35, 0, 1, 17, 48],
-        [48, 2, 0, 64, 36, 37, 38, 39, 1, 2, 0, 52],
-        [48, 1, 2, 0, 40, 41, 42, 43, 0, 1, 2, 48],
-        [48, 0, 1, 66, 0, 74, 75, 0, 67, 2, 0, 48],
-        [52, 48, 56, 48, 48, 48, 52, 48, 48, 56, 48, 52],
-    ]
-    scene = Image.new("RGBA", (len(scene_tiles[0]) * T, len(scene_tiles) * T), (0, 0, 0, 0))
-    for y, row in enumerate(scene_tiles):
-        for x, tile in enumerate(row):
-            if 32 <= tile < 48:
-                scene.paste(water.crop((0, 0, T, T)), (x * T, y * T))
-            else:
-                scene.paste(out.crop(tile_rect(tile)), (x * T, y * T))
-    scene = scene.resize((scene.width * 4, scene.height * 4), Image.Resampling.NEAREST)
-    scene.save(SCENE_PREVIEW)
 
     print(OUT)
     print(WATER_OUT)
-    print(PREVIEW)
-    print(SCENE_PREVIEW)
 
 
 if __name__ == "__main__":

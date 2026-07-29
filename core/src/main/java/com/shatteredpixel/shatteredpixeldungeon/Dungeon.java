@@ -34,10 +34,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Light;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.NewCycleHungerProtection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
@@ -55,6 +57,8 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeCo
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.curriculum.AgentMinCurriculum;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.ScrollOfDebug;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.levels.TestArenaLevel;
+import com.shatteredpixel.shatteredpixeldungeon.custom.treasurehunt.TreasureHuntRecords;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -76,6 +80,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.CityLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.DeadEndLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HallsLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.HuntressBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
@@ -87,6 +92,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.SewerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SurfaceTownLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -243,6 +250,7 @@ public class Dungeon {
 	public static long seed;
 	public static long lastPlayed;
     public static boolean droneVison;
+	public static boolean newCycle;
 
 	//we initialize the seed separately so that things like interlevelscene can access it early
 	public static void initSeed(){
@@ -264,6 +272,7 @@ public class Dungeon {
 	public static void init() {
 
 		initialVersion = version = Game.versionCode;
+		newCycle = false;
 		challenges = SPDSettings.challenges();
 		mobsToChampion = -1;
 
@@ -286,6 +295,7 @@ public class Dungeon {
 		Random.resetGenerators();
 		
 		Statistics.reset();
+		TreasureHuntRecords.reset();
 		Notes.reset();
 
 		quickslot.reset();
@@ -346,6 +356,8 @@ public class Dungeon {
 		Random.resetGenerators();
 
 		Statistics.reset();
+		TreasureHuntRecords.reset();
+
 		Notes.reset();
 
 		quickslot.reset();
@@ -379,6 +391,7 @@ public class Dungeon {
 		for(Item item:allItems){
 			item.collect();
 		}
+        HeroClass.doChallengeSpawn(hero);
 
 		Badges.reset();
 
@@ -390,7 +403,14 @@ public class Dungeon {
 	}
 
 	public static boolean levelHasBeenGenerated(int depth, int branch){
-		return generatedLevels.contains(depth + 1000*branch);
+		return generatedLevels.contains(generatedLevelKey(depth, branch));
+	}
+
+	static int generatedLevelKey(int depth, int branch) {
+		if (branch == TowerLevel.BRANCH) {
+			return Integer.MIN_VALUE + depth;
+		}
+		return depth + 1000 * branch;
 	}
 	
 	public static Level newLevel() {
@@ -399,8 +419,14 @@ public class Dungeon {
 		Actor.clear();
 		
 		Level level;
-		Level curriculumLevel = AgentMinCurriculum.createLevel(depth, branch);
-		if (curriculumLevel != null) {
+		Level curriculumLevel;
+		Class<? extends Level> towerLevelClass = towerLevelClassForLocation(depth, branch);
+		if (towerLevelClass != null) {
+			level = new TowerLevel();
+		} else if (TestArenaLevel.isLocation(depth, branch)
+				&& Dungeon.isChallenged(Challenges.TEST_MODE)) {
+			level = new TestArenaLevel();
+		} else if ((curriculumLevel = AgentMinCurriculum.createLevel(depth, branch)) != null) {
 			level = curriculumLevel;
 		} else if (branch == 0) {
 			switch (depth) {
@@ -463,7 +489,9 @@ public class Dungeon {
 					level = new CavesLevel();
 					break;
 				case 15:
-					level = new CavesBossLevel();
+					level = huntressBossForSeed(seed)
+							? new HuntressBossLevel()
+							: new CavesBossLevel();
 					break;
 				case 16:
 				case 17:
@@ -491,6 +519,9 @@ public class Dungeon {
 			}
 		} else if (branch == 1) {
 			switch (depth) {
+				case ExtractionRaidLevel.DEPTH:
+					level = new ExtractionRaidLevel();
+					break;
 				case 11:
 				case 12:
 				case 13:
@@ -510,8 +541,9 @@ public class Dungeon {
 		if (!(level instanceof DeadEndLevel)) {
 			//this assumes that we will never have a depth value outside the range 0 to 999
 			// or -500 to 499, etc.
-			if (!generatedLevels.contains(depth + 1000 * branch)) {
-				generatedLevels.add(depth + 1000 * branch);
+			int generatedLevelKey = generatedLevelKey(depth, branch);
+			if (!generatedLevels.contains(generatedLevelKey)) {
+				generatedLevels.add(generatedLevelKey);
 			}
 
 			if (depth > Statistics.deepestFloor && branch == 0) {
@@ -542,6 +574,21 @@ public class Dungeon {
 		Statistics.qualifiedForBossChallengeBadge = false;
 		
 		return level;
+	}
+
+	static Class<? extends Level> towerLevelClassForLocation(int depth, int branch) {
+		return branch == TowerLevel.BRANCH && depth >= 1 ? TowerLevel.class : null;
+	}
+
+	public static int displayDepthForLocation(int depth, int branch) {
+		return branch == TowerLevel.BRANCH ? -depth : depth;
+	}
+
+	static boolean huntressBossForSeed(long runSeed) {
+		Random.pushGenerator(runSeed + 1500000L);
+		boolean huntress = Random.Int(2) == 1;
+		Random.popGenerator();
+		return huntress;
 	}
 	
 	public static void resetLevel() {
@@ -576,7 +623,7 @@ public class Dungeon {
 	}
 	
 	public static boolean bossLevel() {
-		return bossLevel( depth );
+		return branch == 0 && bossLevel( depth );
 	}
 	
 	public static boolean bossLevel( int depth ) {
@@ -588,6 +635,8 @@ public class Dungeon {
 	public static int scalingDepth(){
 		if (Dungeon.hero != null && Dungeon.hero.buff(AscensionChallenge.class) != null){
 			return 26;
+		} else if (branch == TowerLevel.BRANCH) {
+			return Math.min(25, 15 + Math.max(1, depth));
 		} else {
 			return depth;
 		}
@@ -596,6 +645,8 @@ public class Dungeon {
 	public static boolean interfloorTeleportAllowed(){
 		if (Dungeon.level.locked
 				|| Dungeon.level instanceof MiningLevel
+				|| Dungeon.level instanceof ExtractionRaidLevel
+				|| Dungeon.level instanceof TestArenaLevel
 				|| (Dungeon.hero != null && Dungeon.hero.belongings.getItem(Amulet.class) != null)){
 			return false;
 		}
@@ -619,6 +670,7 @@ public class Dungeon {
 		
 		Dungeon.level = level;
 		hero.pos = pos;
+		NewCycleHungerProtection.updateForCurrentFloor(hero);
 
 		if (hero.buff(AscensionChallenge.class) != null){
 			hero.buff(AscensionChallenge.class).onLevelSwitch();
@@ -768,6 +820,7 @@ public class Dungeon {
 	private static final String LAST_PLAYED = "last_played";
 	private static final String SKIN = "skin";
     private static final String DRONEVISON = "dronevison";
+	private static final String NEW_CYCLE = "new_cycle";
 	
 	public static void saveGame( int save ) {
 		try {
@@ -795,6 +848,7 @@ public class Dungeon {
 			bundle.put(EAT_ITEM,eat_item);
 			bundle.put( LAST_PLAYED, lastPlayed = Game.realTime);
             bundle.put( DRONEVISON, droneVison);
+			bundle.put( NEW_CYCLE, newCycle );
 
 			for (int d : droppedItems.keyArray()) {
 				bundle.put(Messages.format(DROPPED, d), droppedItems.get(d));
@@ -824,6 +878,7 @@ public class Dungeon {
 			SecretRoom.storeRoomsInBundle( bundle );
 			
 			Statistics.storeInBundle( bundle );
+			TreasureHuntRecords.storeInBundle( bundle );
 			Notes.storeInBundle( bundle );
 			Generator.storeInBundle( bundle );
 
@@ -973,6 +1028,7 @@ public class Dungeon {
 			eat_item = 10;
 		}
 		Statistics.restoreFromBundle( bundle );
+		TreasureHuntRecords.restoreFromBundle( bundle );
 		Generator.restoreFromBundle( bundle );
 
 		generatedLevels.clear();
@@ -996,6 +1052,7 @@ public class Dungeon {
         }else{
             droneVison = true;
         }
+		newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
 
 		droppedItems = new SparseArray<>();
 		for (int i=1; i <= 26; i++) {
@@ -1052,12 +1109,14 @@ public class Dungeon {
 	
 	public static void preview( GamesInProgress.Info info, Bundle bundle ) {
 		info.depth = bundle.getInt( DEPTH );
+		info.branch = bundle.getInt( BRANCH );
 		info.version = bundle.getInt( VERSION );
 		info.challenges = bundle.getInt( CHALLENGES );
 		info.seed = bundle.getLong( SEED );
 		info.customSeed = bundle.getString( CUSTOM_SEED );
 		info.daily = bundle.getBoolean( DAILY );
 		info.dailyReplay = bundle.getBoolean( DAILY_REPLAY );
+		info.newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
 
 		Hero.preview( info, bundle.getBundle( HERO ) );
 		Statistics.preview( info, bundle );

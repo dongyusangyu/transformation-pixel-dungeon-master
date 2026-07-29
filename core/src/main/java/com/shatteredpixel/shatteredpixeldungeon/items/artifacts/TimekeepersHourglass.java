@@ -407,6 +407,11 @@ public class TimekeepersHourglass extends Artifact {
 
 		}
 
+		public float remainingTurns() {
+			float turnsPerCharge = BronzeWatch.adjustDuration(target, turnsPerCharge());
+			return Math.max(0, turnsToCost + Math.max(0, charge) * turnsPerCharge);
+		}
+
 		public void setDelayedPress(int cell){
 			if (!presses.contains(cell))
 				presses.add(cell);

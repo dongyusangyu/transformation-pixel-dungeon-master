@@ -25,4 +25,5 @@ public class MeleeWeaponChargerTest {
 		assertEquals(1f / 60f, MeleeWeapon.Charger.masteryRechargeRate(6, 6), 0.000001f);
 		assertEquals(1f / 54f, MeleeWeapon.Charger.masteryRechargeRate(6, 2), 0.000001f);
 	}
+
 }

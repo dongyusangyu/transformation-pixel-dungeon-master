@@ -2,7 +2,7 @@
 
 > **面向 AI 代理的工作者：** 必需子技能：使用 superpowers:executing-plans 逐任务实现此计划。步骤使用复选框（`- [ ]`）语法跟踪进度。
 
-**目标：** 在 `D:/STUDY/Dungeon/skin/roxy_migurdia_mage_fresh_skin` 中从零生成可用于法师 `mage2.png` 槽位的洛琪希皮肤，七个护甲层外观完全相同，并通过专用单元测试和 `audit_skin.py`。
+**目标：** 在 `D:/STUDY/Dungeon/skin/roxy_migurdia_mage_fresh_skin` 中从零生成可用于法师 `mage2.png` 槽位的洛琪希皮肤，七个护甲层的活体外观完全相同，并通过专用单元测试和 `audit_skin.py`。
 
 **架构：** 使用技能脚手架创建隔离目录；生成器将 12×15 帧拆分为帽子、头发/脸、披风/躯干、肢体、动态附件和项目模板复制六类职责。测试先锁定项目协议、身份锚点、单一护甲策略和动作逻辑，再以 Pillow 硬像素生成最终表、验证蒙太奇及 56 个 GIF。
 
@@ -47,11 +47,11 @@ class RoxyGeneratorTests(unittest.TestCase):
         self.assertEqual(image.crop((252, 0, 256, 128)).getbbox(), None)
         self.assertEqual(image.crop((0, 105, 256, 128)).getbbox(), None)
 
-    def test_all_armor_rows_are_identical(self):
+    def test_all_live_armor_frames_are_identical(self):
         image = Image.open(FINAL)
-        row0 = image.crop((0, 0, 252, 15)).tobytes()
         for tier in range(1, 7):
-            self.assertEqual(row0, image.crop((0, tier * 15, 252, tier * 15 + 15)).tobytes())
+            for col in tuple(range(0, 8)) + tuple(range(13, 21)):
+                self.assertEqual(frame(image, col, 0).tobytes(), frame(image, col, tier).tobytes())
 ```
 
 - [ ] **步骤 3：运行测试确认红灯**
@@ -103,17 +103,18 @@ def paste_frame(sheet, frame, col, tier):
 - [ ] **步骤 2：实现单层后复制七层**
 
 ```python
-def build_sheet(frames):
+def build_sheet(frames, source):
     sheet = Image.new("RGBA", (SHEET_W, SHEET_H), (0, 0, 0, 0))
     for tier in range(TIERS):
         for col, frame in enumerate(frames):
-            paste_frame(sheet, frame, col, tier)
+            selected = crop_frame(source, col, tier) if 8 <= col <= 12 else frame
+            paste_frame(sheet, selected, col, tier)
     return sheet
 ```
 
 - [ ] **步骤 3：生成占位协议表并运行测试**
 
-预期：尺寸、模式、留白、七层一致性通过；身份与动作测试仍失败。
+预期：尺寸、模式、留白、七层活体外观一致性通过；身份与动作测试仍失败。
 
 ### 任务 4：身份锚点与静态视图
 
@@ -176,7 +177,7 @@ RUN_PHASES = (
 
 - [ ] **步骤 4：逐像素复制法师死亡帧和卷轴模板**
 
-从 `mage.png` 的第 0 层复制 8–12 帧；Read 19–20 只复制卷轴规定坐标与颜色，不复制原法师身体。
+从 `mage.png` 逐层复制同层 8–12 帧；Read 19–20 只复制卷轴规定坐标与颜色，不复制原法师身体。
 
 - [ ] **步骤 5：运行完整单元测试**
 
@@ -248,4 +249,3 @@ python D:/STUDY/Dungeon/skin/skills/pixel-dungeon-hero-skin/scripts/audit_skin.p
 - [ ] **步骤 3：核对最终交付计数与哈希**
 
 确认两个 PNG 字节一致、验证图不少于 5 张、参考图和提示词存在、所有开发文件均位于 `D:/STUDY/Dungeon/skin/roxy_migurdia_mage_fresh_skin`，且未把 `mage2.png` 安装进游戏工程。
-

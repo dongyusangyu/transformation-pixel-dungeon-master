@@ -163,6 +163,10 @@ public class Bag extends Item implements Iterable<Item> {
 	//temp variable so that bags can load contents even with lost inventory debuff
 	private boolean loading;
 
+	public boolean isLoading() {
+		return loading;
+	}
+
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
@@ -200,7 +204,7 @@ public class Bag extends Item implements Iterable<Item> {
 			return true;
 		} else if (item.stackable) {
 			for (Item i : items) {
-				if (item.isSimilar( i )) {
+				if (item.hasSameExtractionRaidOrigin(i) && item.isSimilar( i )) {
 					return true;
 				}
 			}

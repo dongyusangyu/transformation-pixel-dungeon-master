@@ -91,8 +91,11 @@ public class Combo extends Buff implements ActionIndicator.Action {
 	}
 	
 	public void hit( Char enemy ) {
+		hit(enemy, 0);
+	}
 
-		count++;
+	public void hit(Char enemy, int bonusCombo) {
+		count += 1 + Math.max(0, bonusCombo);
 		comboTime = Math.max(comboTime, 5f);
 
 		if (!enemy.isAlive() || (enemy.buff(Corruption.class) != null && enemy.HP == enemy.HT)){
@@ -121,6 +124,8 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 	@Override
 	public void detach() {
+		movePrepared = false;
+		movePowerCount = 0;
 		super.detach();
 		ActionIndicator.clearAction(this);
 	}
@@ -137,7 +142,19 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 	@Override
 	public String desc() {
-		return Messages.get(this, "desc", count, dispTurns(comboTime));
+		String desc = Messages.get(this, "desc", count, dispTurns(comboTime));
+		Hero hero = (Hero) target;
+		int points = hero.pointsInTalent(Talent.COMBO_FOCUS);
+		if (points > 0) {
+			desc += "\n" + Messages.get(this, "focus_desc",
+					focusDamageBonus(count, points),
+					Messages.decimalFormat("#.##",
+							(focusAccuracyMultiplier(count, points) - 1f) * 100f));
+		}
+		if (hasComboMastery()) {
+			desc += "\n\n" + Messages.get(this, "mastery_desc");
+		}
+		return desc;
 	}
 
 	private static final String COUNT = "count";
@@ -146,6 +163,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 	private static final String CLOBBER_USED = "clobber_used";
 	private static final String PARRY_USED   = "parry_used";
+	private static final String MOVE_BEING_USED = "move_being_used";
+	private static final String MOVE_POWER_COUNT = "move_power_count";
+	private static final String MOVE_PREPARED = "move_prepared";
 
 	@Override
 	public void storeInBundle(Bundle bundle) {
@@ -156,6 +176,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 		bundle.put(CLOBBER_USED, clobberUsed);
 		bundle.put(PARRY_USED, parryUsed);
+		if (moveBeingUsed != null) bundle.put(MOVE_BEING_USED, moveBeingUsed);
+		bundle.put(MOVE_POWER_COUNT, movePowerCount);
+		bundle.put(MOVE_PREPARED, movePrepared);
 	}
 
 	@Override
@@ -168,6 +191,10 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 		clobberUsed = bundle.getBoolean(CLOBBER_USED);
 		parryUsed = bundle.getBoolean(PARRY_USED);
+		moveBeingUsed = bundle.contains(MOVE_BEING_USED)
+				? bundle.getEnum(MOVE_BEING_USED, ComboMove.class) : null;
+		movePowerCount = bundle.getInt(MOVE_POWER_COUNT);
+		movePrepared = bundle.getBoolean(MOVE_PREPARED);
 
 		if (getHighestMove() != null) ActionIndicator.setAction(this);
 	}
@@ -229,6 +256,22 @@ public class Combo extends Buff implements ActionIndicator.Action {
 		}
 
 		public String desc(int count){
+			int mastery = Dungeon.hero.pointsInTalent(Talent.COMBO_MASTERY);
+			if (mastery > 0) {
+				boolean empowered;
+				switch (this) {
+					case CLOBBER:
+						empowered = count >= 7 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 1;
+						break;
+					case PARRY:
+						empowered = count >= 9 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 2;
+						break;
+					default:
+						empowered = count >= 3 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 3;
+						break;
+				}
+				return masteryDesc(count, empowered);
+			}
 			switch (this){
 				case CLOBBER: default:
 					if (count >= 7 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 1){
@@ -263,6 +306,26 @@ public class Combo extends Buff implements ActionIndicator.Action {
 			}
 		}
 
+		private String masteryDesc(int count, boolean empowered) {
+			String suffix = empowered ? ".mastery_empower_desc" : ".mastery_desc";
+			switch (this) {
+				case SLAM:
+					return Messages.get(this, name() + suffix,
+							empowered ? count / 3 : count * 20,
+							count * 20);
+				case CRUSH:
+					return Messages.get(this, name() + suffix,
+							empowered ? count / 3 : count * 25,
+							count * 25);
+				case FURY:
+					return empowered
+							? Messages.get(this, name() + suffix, count / 3)
+							: Messages.get(this, name() + suffix);
+				default:
+					return Messages.get(this, name() + suffix);
+			}
+		}
+
 	}
 
 	private boolean clobberUsed = false;
@@ -271,7 +334,7 @@ public class Combo extends Buff implements ActionIndicator.Action {
 	public ComboMove getHighestMove(){
 		ComboMove best = null;
 		for (ComboMove move : ComboMove.values()){
-			if (count >= move.comboReq){
+			if (count >= requirement(move)){
 				best = move;
 			}
 		}
@@ -282,22 +345,63 @@ public class Combo extends Buff implements ActionIndicator.Action {
 		return count;
 	}
 
+	public int combatCount() {
+		return hasComboMastery() && movePrepared ? movePowerCount : count;
+	}
+
+	public static int sealComboCap(int masteryPoints) {
+		return masteryPoints >= 1 ? 8 : 5;
+	}
+
+	public static int sealComboCooldown(int masteryPoints) {
+		return masteryPoints >= 3 ? 10 : 20;
+	}
+
+	public static int moveRequirement(int baseRequirement, int masteryPoints) {
+		return Math.max(1, baseRequirement - (masteryPoints >= 2 ? 1 : 0));
+	}
+
+	public static int focusDamageBonus(int comboCount, int talentPoints) {
+		if (talentPoints <= 0) return 0;
+		int comboPerDamage = 5 - talentPoints;
+		return Math.min(20, comboCount / comboPerDamage);
+	}
+
+	public static float focusAccuracyMultiplier(int comboCount, int talentPoints) {
+		if (talentPoints <= 0) return 1f;
+		float accuracyPerStep = 0.025f + 0.025f * talentPoints;
+		float cap = 0.5f + 0.5f * talentPoints;
+		int comboPerStep = 5 - talentPoints;
+		return 1f + Math.min(cap, comboCount / comboPerStep * accuracyPerStep);
+	}
+
+	public static float relentlessAttackSpeedMultiplier(int comboCount, int talentPoints) {
+		return talentPoints > 0 && comboCount >= 8 ? 1f + 0.5f * talentPoints : 1f;
+	}
+
+	public int requirement(ComboMove move) {
+		return moveRequirement(move.comboReq, ((Hero) target).pointsInTalent(Talent.COMBO_MASTERY));
+	}
+
 	public boolean canUseMove(ComboMove move){
-		if (move == ComboMove.CLOBBER && clobberUsed)   return false;
-		if (move == ComboMove.PARRY && parryUsed)       return false;
-		return move.comboReq <= count;
+		boolean mastery = ((Hero) target).hasTalent(Talent.COMBO_MASTERY);
+		if (!mastery && move == ComboMove.CLOBBER && clobberUsed) return false;
+		if (!mastery && move == ComboMove.PARRY && parryUsed) return false;
+		return requirement(move) <= count;
 	}
 
 	public void useMove(ComboMove move){
+		moveBeingUsed = move;
+		movePrepared = false;
 		if (move == ComboMove.PARRY){
-			parryUsed = true;
+			prepareMove();
+			if (!hasComboMastery()) parryUsed = true;
 			comboTime = 5f;
 			Invisibility.dispel();
 			Buff.affect(target, ParryTracker.class, Actor.TICK);
 			((Hero)target).spendAndNext(Actor.TICK);
 			Dungeon.hero.busy();
 		} else {
-			moveBeingUsed = move;
 			GameScene.selectCell(listener);
 		}
 	}
@@ -309,7 +413,10 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 		@Override
 		public void detach() {
-			if (!parried && target.buff(Combo.class) != null) target.buff(Combo.class).detach();
+			Combo combo = target.buff(Combo.class);
+			if (combo != null && (!parried || target.buff(RiposteTracker.class) == null)) {
+				combo.finishParry(parried);
+			}
 			super.detach();
 		}
 	}
@@ -329,7 +436,11 @@ public class Combo extends Buff implements ActionIndicator.Action {
 				target.sprite.attack(enemy.pos, new Callback() {
 					@Override
 					public void call() {
-						target.buff(Combo.class).doAttack(enemy);
+						Combo combo = target.buff(Combo.class);
+						if (combo != null) {
+							combo.doAttack(enemy);
+							combo.finishRiposteIfParryEnded();
+						}
 						next();
 					}
 				});
@@ -344,13 +455,53 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 	private static ComboMove moveBeingUsed;
 	private static int furyHitsLeft = 0;
+	private static int movePowerCount;
+	private static boolean movePrepared;
+
+	private boolean hasComboMastery() {
+		return ((Hero) target).hasTalent(Talent.COMBO_MASTERY);
+	}
+
+	private void prepareMove() {
+		if (movePrepared) return;
+		movePowerCount = count;
+		if (hasComboMastery()) {
+			count = Math.max(0, count - requirement(moveBeingUsed));
+			BuffIndicator.refreshHero();
+		}
+		movePrepared = true;
+	}
+
+	public boolean parryEmpowered() {
+		int effectiveCount = moveBeingUsed == ComboMove.PARRY && movePrepared
+				? movePowerCount : count;
+		return effectiveCount >= 9
+				&& ((Hero) target).pointsInTalent(Talent.ENHANCED_COMBO) >= 2;
+	}
+
+	private void finishParry(boolean parried) {
+		if (!parried && !hasComboMastery()) {
+			detach();
+		} else {
+			movePrepared = false;
+			if (hasComboMastery()) updateAfterMasteredMove();
+		}
+	}
+
+	private void finishRiposteIfParryEnded() {
+		if (target.buff(ParryTracker.class) == null) {
+			finishParry(true);
+		}
+	}
 
 	private void doAttack(final Char enemy) {
 
 		AttackIndicator.target(enemy);
+		prepareMove();
 
 		boolean wasAlly = enemy.alignment == target.alignment;
 		Hero hero = (Hero) target;
+		int effectiveCount = hasComboMastery() ? movePowerCount : count;
 
 		float dmgMulti = 1f;
 		int dmgBonus = 0;
@@ -361,10 +512,10 @@ public class Combo extends Buff implements ActionIndicator.Action {
 				dmgMulti = 0;
 				break;
 			case SLAM:
-				dmgBonus = Math.round(target.drRoll() * count / 5f);
+				dmgBonus = Math.round(target.drRoll() * effectiveCount / 5f);
 				break;
 			case CRUSH:
-				dmgMulti = 0.25f * count;
+				dmgMulti = 0.25f * effectiveCount;
 				break;
 			case FURY:
 				dmgMulti = 0.6f;
@@ -383,7 +534,7 @@ public class Combo extends Buff implements ActionIndicator.Action {
 					trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
 					//knock them back along that ballistica, ensuring they don't fall into a pit
 					int dist = 2;
-					if (enemy.isAlive() && count >= 7 && hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 1) {
+					if (enemy.isAlive() && effectiveCount >= 7 && hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 1) {
 						dist++;
 						Buff.prolong(enemy, Vertigo.class, 3);
 					} else if (!enemy.flying) {
@@ -405,7 +556,7 @@ public class Combo extends Buff implements ActionIndicator.Action {
 					for (Char ch : Actor.chars()) {
 						if (ch != enemy && ch.alignment == Char.Alignment.ENEMY
 								&& PathFinder.distance[ch.pos] < Integer.MAX_VALUE) {
-							int aoeHit = Math.round(target.damageRoll() * 0.25f * count);
+							int aoeHit = Math.round(target.damageRoll() * 0.25f * effectiveCount);
 							aoeHit /= 2;
 							aoeHit -= ch.drRoll();
 							if (ch.buff(Vulnerable.class) != null) aoeHit *= 1.33f;
@@ -440,7 +591,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 		//Post-attack behaviour
 		switch(moveBeingUsed){
 			case CLOBBER:
-				clobberUsed = true;
+				if (!hasComboMastery()) clobberUsed = true;
+				movePrepared = false;
+				if (hasComboMastery()) updateAfterMasteredMove();
 				if (getHighestMove() == null) ActionIndicator.clearAction(Combo.this);
 				hero.spendAndNext(hero.attackDelay());
 				break;
@@ -450,9 +603,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 				break;
 
 			case FURY:
-				if (count > 0){
-					furyHitsLeft = count;
-					count = 0;
+				if (furyHitsLeft == 0 && effectiveCount > 0){
+					furyHitsLeft = effectiveCount;
+					if (!hasComboMastery()) count = 0;
 					hero.spend(hero.attackDelay());
 				}
 				furyHitsLeft--;
@@ -467,16 +620,18 @@ public class Combo extends Buff implements ActionIndicator.Action {
 					});
 				} else {
 					furyHitsLeft = 0;
-					detach();
+					movePrepared = false;
+					if (!hasComboMastery() || count <= 0) detach();
+					else updateAfterMasteredMove();
 					Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG);
-					ActionIndicator.clearAction(Combo.this);
 					hero.next();
 				}
 				break;
 
 			default:
-				detach();
-				ActionIndicator.clearAction(Combo.this);
+				movePrepared = false;
+				if (!hasComboMastery() || count <= 0) detach();
+				else updateAfterMasteredMove();
 				hero.spendAndNext(hero.attackDelay());
 				break;
 		}
@@ -490,6 +645,12 @@ public class Combo extends Buff implements ActionIndicator.Action {
 			}
 		}
 
+	}
+
+	private void updateAfterMasteredMove() {
+		if (getHighestMove() != null) ActionIndicator.setAction(this);
+		else ActionIndicator.clearAction(this);
+		BuffIndicator.refreshHero();
 	}
 
 	private CellSelector.Listener listener = new CellSelector.Listener() {

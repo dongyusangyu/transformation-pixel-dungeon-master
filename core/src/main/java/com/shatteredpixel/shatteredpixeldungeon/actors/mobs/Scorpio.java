@@ -36,7 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ScorpioSprite;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
-public class Scorpio extends Mob {
+public class Scorpio extends Mob implements PhysicalRangedAttack {
 	
 	{
 		spriteClass = ScorpioSprite.class;
@@ -70,9 +70,8 @@ public class Scorpio extends Mob {
 	}
 	
 	@Override
-	protected boolean canAttack( Char enemy ) {
-		return !Dungeon.level.adjacent( pos, enemy.pos )
-				&& (super.canAttack(enemy) || new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos);
+	public boolean canMeleeAttack(Char target) {
+		return false;
 	}
 	
 	@Override

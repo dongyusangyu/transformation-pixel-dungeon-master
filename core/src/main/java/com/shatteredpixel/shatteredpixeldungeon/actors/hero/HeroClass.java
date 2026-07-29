@@ -92,6 +92,7 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TerrainPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag1;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TimeReverser;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TowerMobPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TrapPlacer;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.LazyTest;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestAlignment;
@@ -102,7 +103,9 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMi
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestPotion;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestRing;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestSublimation;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestSpecialization;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestTalent;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -149,6 +152,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnc
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.AlMughiraPyxis;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.BlacasEwer;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.BookOfKells;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.CholaNataraja;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SprayGun;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
@@ -213,7 +221,14 @@ public enum HeroClass {
 		if (!Challenges.isItemBlocked(i)) i.collect();
 		new VelvetPouch().collect();
 		Dungeon.LimitedDrops.VELVET_POUCH.drop();
-		doChallengeSpawn(hero);
+        if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
+		    doChallengeSpawn(hero);
+        }
+        new Amulet().collect();
+        new BlacasEwer().setRarity(Treasures.Rarity.LEGENDARY).collect();
+        new AlMughiraPyxis().setRarity(Treasures.Rarity.EPIC).collect();
+        new BookOfKells().setRarity(Treasures.Rarity.RARE).collect();
+        new CholaNataraja().setRarity(Treasures.Rarity.COMMON).collect();
         /*
 		if (AgentMinBridgeConfig.ENABLED) {
 			Item stylus = new Stylus();
@@ -342,6 +357,7 @@ public enum HeroClass {
 		(hero.belongings.weapon = new Dagger()).identify();
 
 		CloakOfShadows cloak = new CloakOfShadows();
+		Generator.claimArtifact(CloakOfShadows.class);
 		(hero.belongings.artifact = cloak).identify();
 		hero.belongings.artifact.activate( hero );
 
@@ -388,6 +404,7 @@ public enum HeroClass {
 		hero.belongings.weapon.activate(hero);
 
 		HolyTome tome = new HolyTome();
+		Generator.claimArtifact(HolyTome.class);
 		(hero.belongings.artifact = tome).identify();
 		hero.belongings.artifact.activate( hero );
 
@@ -422,6 +439,7 @@ public enum HeroClass {
 		hero.belongings.weapon.activate(hero);
 		hero.updateHT(true);
 		Shuriken_Box box = new Shuriken_Box();
+		Generator.claimArtifact(Shuriken_Box.class);
 		(hero.belongings.artifact = box).identify();
 		hero.belongings.artifact.activate( hero );
 		Dungeon.quickslot.setSlot(0, box);
@@ -432,6 +450,7 @@ public enum HeroClass {
 
 		hero.updateHT(true);
 		InstructionTool tool = new InstructionTool();
+		Generator.claimArtifact(InstructionTool.class);
 		(hero.belongings.artifact =tool).identify();
 		hero.belongings.artifact.activate( hero );
 		DamageGear g = new DamageGear();
@@ -478,6 +497,7 @@ public enum HeroClass {
 		hero.belongings.weapon.activate(hero);
 		// rogue
 		CloakOfShadows cloak = new CloakOfShadows();
+		Generator.claimArtifact(CloakOfShadows.class);
 		(hero.belongings.artifact = cloak).identify();
 		hero.belongings.artifact.activate( hero );
 		// huntress
@@ -800,14 +820,8 @@ public enum HeroClass {
                 return Badges.isUnlocked(Badges.Badge.UNLOCK_FRIAR);
 		}
 	}
-	private static void doChallengeSpawn(Hero hero) {
-
-
-
-		if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
-			//new ChallengeBag().collect();
-			new RubbingsTome().identify().collect();
-			//new DictBook().collect();
+	public static void doChallengeSpawn(Hero hero) {new RubbingsTome().identify().collect();
+        //new DictBook().collect();
 			/*
 			Mana mana = new Mana();
 			mana.maxMana = 200;
@@ -815,81 +829,76 @@ public enum HeroClass {
 			mana.manaRegen = 0.514f;
 			mana.attachTo(hero);
 			 */
-			//new WandOfScanningBeam().identify().collect();
+        //new WandOfScanningBeam().identify().collect();
 
-			new TestBag().collect();
-			new TestBag1().collect();
+        new TestBag().collect();
+        new TestBag1().collect();
 
-			new ScrollOfDebug().collect();
+        new ScrollOfDebug().collect();
 
-			new MobPlacer().collect();
+        new MobPlacer().collect();
+        if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
+            new TowerMobPlacer().collect();
+        }
 
-			CustomWeapon customWeapon = new CustomWeapon();
-			customWeapon.adjustStatus();
-			customWeapon.identify().collect();
+        CustomWeapon customWeapon = new CustomWeapon();
+        customWeapon.adjustStatus();
+        customWeapon.identify().collect();
 
-			CustomWand customWand = new CustomWand();
-			customWand.identify().collect();
+        CustomWand customWand = new CustomWand();
+        customWand.identify().collect();
 
-			new TrapPlacer().collect();
+        new TrapPlacer().collect();
 
-			new TimeReverser().collect();
+        new TimeReverser().collect();
 
-			new ImmortalShieldAffecter().collect();
+        new ImmortalShieldAffecter().collect();
 
-			new BackpackCleaner().collect();
+        new BackpackCleaner().collect();
 
-			new LevelTeleporter().collect();
+        new LevelTeleporter().collect();
 
-			new LazyTest().collect();
+        new LazyTest().collect();
 
-			new TestArmor().collect();
-			new TestArtifact().collect();
-			new TestMelee().collect();
-			new TestMissile().collect();
-			new TestRing().collect();
-			new TestPotion().collect();
-			new TestAlignment().collect();
+        new TestArmor().collect();
+        new TestArtifact().collect();
+        new TestMelee().collect();
+        new TestMissile().collect();
+        new TestRing().collect();
+        new TestPotion().collect();
+        new TestAlignment().collect();
 
-			//new PotionBag().collect();
+        //new PotionBag().collect();
 
-			new ScrollHolder().collect();
-			Dungeon.LimitedDrops.SCROLL_HOLDER.drop();
+        new ScrollHolder().collect();
+        Dungeon.LimitedDrops.SCROLL_HOLDER.drop();
 
-			new PotionBandolier().collect();
-			Dungeon.LimitedDrops.POTION_BANDOLIER.drop();
+        new PotionBandolier().collect();
+        Dungeon.LimitedDrops.POTION_BANDOLIER.drop();
 
-			if (!Dungeon.LimitedDrops.VELVET_POUCH.dropped()) {
-				new VelvetPouch().collect();
-				Dungeon.LimitedDrops.VELVET_POUCH.drop();
-			}
+        if (!Dungeon.LimitedDrops.VELVET_POUCH.dropped()) {
+            new VelvetPouch().collect();
+            Dungeon.LimitedDrops.VELVET_POUCH.drop();
+        }
 
-			new MagicalHolster().collect();
-			Dungeon.LimitedDrops.MAGICAL_HOLSTER.drop();
+        new MagicalHolster().collect();
+        Dungeon.LimitedDrops.MAGICAL_HOLSTER.drop();
 
-			//	new WandOfReflectDisintegration().identify().collect();
-			new ScrollOfSublimation().type("TENGU").collect();
-			//new EnemyAttributeModifier().collect();
+        //	new WandOfReflectDisintegration().identify().collect();
+        new ScrollOfSublimation().type("TENGU").collect();
+        //new EnemyAttributeModifier().collect();
 
-			new MobAttributeViewer().collect();
+        new MobAttributeViewer().collect();
 
-			new TerrainPlacer().collect();
+        new TerrainPlacer().collect();
 
-			new BlobsEmitter().collect();
+        new BlobsEmitter().collect();
 
-			new StrengthSetting().collect();
-			new TestTalent().collect();
-			new TestSublimation().collect();
-			//Buff.affect(hero, GravityChaosTracker.class);
-/*
-			HDKItem.KingAmulet ka = new HDKItem.KingAmulet();
-			ka.setUses(999);
-			ka.collect();
+        new StrengthSetting().collect();
+        new TestTalent().collect();
+        new TestSpecialization().collect();
+        new TestSublimation().collect();
 
- */
-
-
-		}
 	}
 
 	public int getSkinNums(){
@@ -915,7 +924,7 @@ public enum HeroClass {
 			case DM400:
 				return 3;
 			case PRINCESS:
-				return 2;
+				return 3;
             case FRIAR:
                 return 2;
 			default:

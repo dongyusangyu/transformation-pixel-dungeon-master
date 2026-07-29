@@ -829,6 +829,11 @@ public class AlchemyScene extends PixelScene {
 					Item item = inputs[i].item();
 					if (item.quantity() <= 0) {
 						inputs[i].item(null);
+					} else if (returnsRemainderAfterCraft(item.getClass())) {
+						if (!item.collect()) {
+							Dungeon.level.drop(item, hero.pos);
+						}
+						inputs[i].item(null);
 					} else {
 						inputs[i].slot.updateText();
 					}
@@ -845,6 +850,10 @@ public class AlchemyScene extends PixelScene {
 			//Game.instance.bombExplodePos=Dungeon.hero.pos;
 
 		}
+	}
+
+	static boolean returnsRemainderAfterCraft(Class<? extends Item> itemClass) {
+		return ScrollOfMetamorphosis.class.isAssignableFrom(itemClass);
 	}
 	
 	public void populate(ArrayList<Item> toFind, Belongings inventory){

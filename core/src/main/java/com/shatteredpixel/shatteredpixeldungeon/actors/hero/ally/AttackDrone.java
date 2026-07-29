@@ -90,9 +90,9 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        protected boolean canAttack( Char enemy ) {
+        public boolean canRangedAttack(Char enemy) {
             return Dungeon.level.distance( pos, enemy.pos )<4
-                    && (super.canAttack(enemy) || new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos);
+                    && super.canRangedAttack(enemy);
         }
         @Override
         public int damageRoll() {
@@ -146,8 +146,8 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        protected boolean canAttack( Char enemy ) {
-            return (super.canAttack(enemy) || new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos);
+        public boolean canRangedAttack(Char enemy) {
+            return super.canRangedAttack(enemy);
         }
         @Override
         public int damageRoll() {
@@ -251,9 +251,9 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        protected boolean canAttack( Char enemy ) {
+        public boolean canRangedAttack(Char enemy) {
             return Dungeon.level.distance( pos, enemy.pos )<4
-                    && (super.canAttack(enemy) || new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos);
+                    && super.canRangedAttack(enemy);
         }
 
         @Override
@@ -298,8 +298,8 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        protected boolean canAttack( Char enemy ) {
-            return (super.canAttack(enemy) || new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos);
+        public boolean canRangedAttack(Char enemy) {
+            return super.canRangedAttack(enemy);
         }
 
         @Override

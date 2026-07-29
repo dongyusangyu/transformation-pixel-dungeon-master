@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Light;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
@@ -40,7 +41,7 @@ import com.watabou.utils.Random;
 import java.util.Collections;
 import java.util.List;
 
-public class  EyeH extends MobHard {
+public class  EyeH extends MobHard implements MagicalRangedAttack {
 
     {
         spriteClass = EyeHSprite.class;
@@ -142,6 +143,11 @@ public class  EyeH extends MobHard {
     }
 
     @Override
+    public boolean doRangedAttack(Char enemy) {
+        return doAttack(enemy);
+    }
+
+    @Override
     public void damage(int dmg, Object src) {
         if (beamCharged) dmg /= 4;
         super.damage(dmg, src);
@@ -174,7 +180,7 @@ public class  EyeH extends MobHard {
                 continue;
             }
 
-            if (hit( this, ch, true )) {
+            if (rangedHit(ch)) {
 
                 if (ch == Dungeon.hero){
                     disintergrate((Hero) ch);

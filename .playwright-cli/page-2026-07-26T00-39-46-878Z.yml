@@ -1,0 +1,7 @@
+- generic [active] [ref=f1e1]:
+  - link "Prime Radiant Superpowers vunknown" [ref=f1e3] [cursor=pointer]:
+    - /url: https://github.com/obra/superpowers
+    - img "Prime Radiant"
+    - generic [ref=f1e4]: Superpowers vunknown
+  - heading "Brainstorm Companion" [level=1] [ref=f1e5]
+  - paragraph [ref=f1e6]: Waiting for the agent to push a screen...

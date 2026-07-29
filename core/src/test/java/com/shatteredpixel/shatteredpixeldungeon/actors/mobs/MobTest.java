@@ -1,11 +1,16 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class MobTest {
@@ -42,5 +47,28 @@ public class MobTest {
 		};
 		nonMobAlly.alignment = Char.Alignment.ALLY;
 		assertFalse(Talent.isArmedUprisingAlly(nonMobAlly));
+	}
+
+	@Test
+	public void restoreEnemyIgnoresActorIdOwnedByBuff() {
+		Actor.clear();
+		try {
+			Regeneration regeneration = new Regeneration();
+			Bundle bundle = new Bundle();
+			bundle.put("time", 0f);
+			bundle.put("id", 42);
+			regeneration.restoreFromBundle(bundle);
+			Actor.add(regeneration);
+
+			Mob mob = new Rat();
+			mob.enemyID = regeneration.id();
+
+			mob.restoreEnemy();
+
+			assertNull(mob.enemy());
+			assertEquals(-1, mob.enemyID);
+		} finally {
+			Actor.clear();
+		}
 	}
 }

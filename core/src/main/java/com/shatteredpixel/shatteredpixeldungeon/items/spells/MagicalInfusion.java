@@ -92,6 +92,10 @@ public class MagicalInfusion extends InventorySpell {
 		ScrollOfUpgrade.upgrade(curUser);
 
 		Degrade.detach( curUser, Degrade.class );
+		Item originalItem = item;
+		Item upgradeScrollCreditTarget = item instanceof Armor
+				? ((Armor) item).upgradeScrollCreditTarget()
+				: item;
 
 		if (item instanceof Weapon && ((Weapon) item).enchantment != null) {
 			item = ((Weapon) item).upgrade(true);
@@ -105,6 +109,10 @@ public class MagicalInfusion extends InventorySpell {
 			if (wasCurseInfused) ((Wand) item).curseInfusionBonus = true;
 		}
 
+		if (upgradeScrollCreditTarget == originalItem) {
+			upgradeScrollCreditTarget = item;
+		}
+		upgradeScrollCreditTarget.upgradeScrollUses++;
 		GLog.p( Messages.get(this, "infuse") );
 		Badges.validateItemLevelAquired(item);
 

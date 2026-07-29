@@ -78,6 +78,7 @@ public class Hunger extends Buff implements Hero.Doom {
 
 		if (Dungeon.level.locked
 				|| target.buff(WellFed.class) != null
+				|| target.buff(NewCycleHungerProtection.class) != null
 				|| SPDSettings.intro()
 				|| target.buff(ScrollOfChallenge.ChallengeArena.class) != null){
 			spend(TICK);
@@ -237,6 +238,10 @@ public class Hunger extends Buff implements Hero.Doom {
 	}
 
 	public void affectHunger(float energy, boolean overrideLimits ) {
+
+		if (energy < 0 && target.buff(NewCycleHungerProtection.class) != null) {
+			return;
+		}
 
 		if (energy < 0 && target.buff(WellFed.class) != null){
 			target.buff(WellFed.class).left += energy;

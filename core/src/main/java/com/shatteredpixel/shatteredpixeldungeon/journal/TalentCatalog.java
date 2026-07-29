@@ -171,12 +171,7 @@ public enum  TalentCatalog {
     private void addSubclassEntities() {
         for (HeroClass heroClass : catalogHeroClasses()) {
             for (HeroSubClass subClass : heroClass.subClasses()) {
-                ArrayList<LinkedHashMap<Talent, Integer>> subclassTalents = new ArrayList<>();
-                Talent.initSubclassTalents(subClass, subclassTalents);
-                if (subclassTalents.size() <= 2) {
-                    continue;
-                }
-                for (Talent talent : subclassTalents.get(2).keySet()) {
+                for (Talent talent : Talent.subclassTalentPool(subClass)) {
                     registerTalent(talent);
                 }
             }
@@ -290,6 +285,10 @@ public enum  TalentCatalog {
         if (!canRecordMetamorphStats()){
             return;
         }
+        countTrackedUses(cls, uses);
+    }
+
+    static void countTrackedUses(Talent cls, int uses){
         TalentCatalog cat = catalogFor(cls);
         if (cat != null && cat.talents.get(cls) != Integer.MAX_VALUE) {
             cat.talents.put(cls, cat.talents.get(cls)+uses);
@@ -306,6 +305,10 @@ public enum  TalentCatalog {
         if (!canRecordMetamorphStats()){
             return;
         }
+        countTrackedAppearances(cls, appearances);
+    }
+
+    static void countTrackedAppearances(Talent cls, int appearances){
         TalentCatalog cat = catalogFor(cls);
         if (cat != null && cat.metamorphAppearances.get(cls) != Integer.MAX_VALUE) {
             cat.metamorphAppearances.put(cls, cat.metamorphAppearances.get(cls)+appearances);

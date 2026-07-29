@@ -1,0 +1,46 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - link "Prime Radiant Superpowers vunknown" [ref=f1e4] [cursor=pointer]:
+      - /url: https://github.com/obra/superpowers
+      - img "Prime Radiant"
+      - generic [ref=f1e5]: Superpowers vunknown
+    - generic [ref=f1e6]: Connected
+  - generic [ref=f1e8]:
+    - heading "方案 A · 橙色哈尼：请选择动画节奏" [level=2] [ref=f1e9]
+    - paragraph [ref=f1e10]: 造型固定为 16×16、3/4 侧向、空手。转向沿用项目机制：同一套帧水平镜像，不产生位移。
+    - generic [ref=f1e11]:
+      - generic [ref=f1e12]: 已锁定的橙色材质与转向
+      - generic [ref=f1e13]:
+        - generic [ref=f1e14]: 朝右
+        - generic [ref=f1e47]: ⇄
+        - generic [ref=f1e48]: 朝左（镜像）
+        - generic [ref=f1e81]:
+          - generic [ref=f1e82]:
+            - generic "深棕轮廓" [ref=f1e83]
+            - generic "陶器暗橙" [ref=f1e84]
+            - generic "陶器主橙" [ref=f1e85]
+            - generic "高光浅橙" [ref=f1e86]
+            - generic "五官" [ref=f1e87]
+          - paragraph [ref=f1e88]: 轮廓不采用纯黑，避免橙色身体在暗色地牢中过硬；眼、口使用近黑色保持识别度。
+    - generic [ref=f1e89]:
+      - generic [ref=f1e90] [cursor=pointer]:
+        - generic [ref=f1e92]:
+          - generic [ref=f1e93]: 站稳
+          - generic [ref=f1e118]: →
+          - generic [ref=f1e119]: 轻摆臂
+          - generic [ref=f1e144]: →
+          - generic [ref=f1e145]: 眨眼
+        - generic [ref=f1e170]:
+          - heading "A · 克制陶偶感（推荐）" [level=3] [ref=f1e171]
+          - paragraph [ref=f1e172]: 4 个 idle 帧：站稳、轻微摆臂、眨眼、回稳。身体不弹跳；死亡为“裂纹 → 崩裂 → 陶片落地”6 帧。
+      - generic [ref=f1e173] [cursor=pointer]:
+        - generic [ref=f1e174]: ↗︎ ◉_◉ ↘︎
+        - generic [ref=f1e176]:
+          - heading "B · 活泼哈尼感" [level=3] [ref=f1e177]
+          - paragraph [ref=f1e178]: 6 个 idle 帧，手臂摆幅更大并带 1 像素上下起伏；更有喜剧感，但会显得没那么像安静 NPC。
+      - generic [ref=f1e179] [cursor=pointer]:
+        - generic [ref=f1e180]: ◉_◉
+        - generic [ref=f1e182]:
+          - heading "C · 极简 NPC 感" [level=3] [ref=f1e183]
+          - paragraph [ref=f1e184]: 2 个 idle 帧，仅眨眼；最稳定，但角色生命力较弱，转向之外几乎没有动作表现。
+    - paragraph [ref=f1e185]: 三版的 run、attack、zap 都不会产生脚步或位置变化：对该角色统一复用 idle；die 单次播放，结束后停留在陶片帧。

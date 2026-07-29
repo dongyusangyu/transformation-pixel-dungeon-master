@@ -86,6 +86,10 @@ public class ScrollOfUpgrade extends InventoryScroll {
 		upgrade( curUser );
 
 		Degrade.detach( curUser, Degrade.class );
+		Item originalItem = item;
+		Item upgradeScrollCreditTarget = item instanceof Armor
+				? ((Armor) item).upgradeScrollCreditTarget()
+				: item;
 
 		//logic for telling the user when item properties change from upgrades
 		//...yes this is rather messy
@@ -142,6 +146,10 @@ public class ScrollOfUpgrade extends InventoryScroll {
 			item = item.upgrade();
 		}
 
+		if (upgradeScrollCreditTarget == originalItem) {
+			upgradeScrollCreditTarget = item;
+		}
+		upgradeScrollCreditTarget.upgradeScrollUses++;
 		Badges.validateItemLevelAquired( item );
 		Statistics.upgradesUsed++;
 		Badges.validateMageUnlock();
@@ -159,7 +167,7 @@ public class ScrollOfUpgrade extends InventoryScroll {
 		}
 		return item;
 	}
-	
+
 	public static void upgrade( Hero hero ) {
 		hero.sprite.emitter().start( Speck.factory( Speck.UP ), 0.2f, 3 );
 	}

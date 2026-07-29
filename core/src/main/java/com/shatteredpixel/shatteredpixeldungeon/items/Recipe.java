@@ -51,6 +51,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.CurseInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
@@ -153,7 +154,7 @@ public abstract class Recipe {
 			
 			//sample output and real output are identical in this case.
 			Item result = sampleOutput(null);
-			if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !((result instanceof MagicalInfusion) || (result instanceof ElixirOfMight) || (result instanceof TransformSpell))){
+			if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !((result instanceof MagicalInfusion) || (result instanceof ElixirOfMight) || (result instanceof TransformSpell) || (result instanceof MetamorphosisPrism))){
 				result.quantity(outQuantity+1);
 			}else{
 				result.quantity(outQuantity);
@@ -206,7 +207,8 @@ public abstract class Recipe {
 		new StewedMeat.oneMeat(),
 		new TrinketCatalyst.Recipe(),
 		new Trinket.UpgradeTrinket(),
-			new TransformSpell.Recipe()
+		new TransformSpell.Recipe(),
+		new MetamorphosisPrism.Recipe()
 
 	};
 	

@@ -295,11 +295,13 @@ import com.watabou.utils.Reflection;
 import java.sql.Wrapper;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public enum Talent {
 
@@ -311,8 +313,10 @@ public enum Talent {
 	HOLD_FAST(9, 3, 3, TalentType.ASSIST), STRONGMAN(10, 3, 3, TalentType.ASSIST),
 	//Berserker T3
 	ENDLESS_RAGE(11, 3, 3, TalentType.SUBCLASS), DEATHLESS_FURY(12, 3, 3, TalentType.SUBCLASS), ENRAGED_CATALYST(13, 3, 3, TalentType.SUBCLASS),
+	CEASELESS_RAGE(672, 3, 3, TalentType.SUBCLASS), MIRRORED_REVENGE(673, 3, 3, TalentType.SUBCLASS), BLOODTHIRSTY_BERSERK(674, 3, 3, TalentType.SUBCLASS),
 	//Gladiator T3
 	CLEAVE(14, 3, 3, TalentType.SUBCLASS), LETHAL_DEFENSE(15, 3, 3, TalentType.SUBCLASS), ENHANCED_COMBO(16, 3, 3, TalentType.SUBCLASS),
+	COMBO_FOCUS(675, 3, 3, TalentType.SUBCLASS), RELENTLESS_COMBAT(676, 3, 3, TalentType.SUBCLASS), COMBO_MASTERY(677, 3, 3, TalentType.SUBCLASS),
 	//Heroic Leap T4
 	BODY_SLAM(17, 4, 4, TalentType.ARMOR), IMPACT_WAVE(18, 4, 4, TalentType.ARMOR), DOUBLE_JUMP(19, 4, 4, TalentType.ARMOR),
 	//Shockwave T4
@@ -1646,7 +1650,7 @@ public enum Talent {
 				return BOSS_TALENT_SLOT_1;
 			case "TENGU": case "ROGUE":
 				return BOSS_TALENT_SLOT_2;
-			case "DM300":
+			case "DM300": case "HUNTRESS":
 				return BOSS_TALENT_SLOT_3;
 			case "DWARFKING":
 				return BOSS_TALENT_SLOT_4;
@@ -2091,7 +2095,7 @@ public enum Talent {
 		private static final float DURATION = 5f;
 
 		private float foodVal;
-		private boolean hornOfPlenty;
+		public boolean hornOfPlenty;
 
 		{
 			type = buffType.POSITIVE;
@@ -2122,7 +2126,12 @@ public enum Talent {
 		@Override
 		public void detach() {
 
-            onFoodEaten((Hero)target, foodVal, null);
+            if(hornOfPlenty){
+                onFoodEaten((Hero)target, foodVal, new HornOfPlenty());
+            }else{
+                onFoodEaten((Hero)target, foodVal, null);
+            }
+
             super.detach();
 
 		}
@@ -2149,7 +2158,7 @@ public enum Talent {
 		if (hero.buff(DelayedSatisfaction.class)==null
 				&& foodSource instanceof HornOfPlenty
 				&& hero.hasTalent(BOUNTIFUL_ENHANCEMENT)) {
-			Buff.affect(hero, DelayedSatisfaction.class,5);
+            Buff.affect(hero, DelayedSatisfaction.class,5).hornOfPlenty=true;
 		}
 		int maxeat = 100;
 		int oldeat = Dungeon.eat_item;
@@ -2225,7 +2234,7 @@ public enum Talent {
 			Buff.affect( hero, PhysicalEmpower.class).set(3, 1 + hero.pointsInTalent(STRENGTHENING_MEAL));
 		}
 		if (hero.hasTalent(FOCUSED_MEAL)){
-			if (canUseWeaponAbilities(hero)){
+			if (MeleeWeapon.canUseWeaponAbility(hero)){
 				//0.67/1 charge for heroes who can use weapon abilities
 				Buff.affect( hero, MeleeWeapon.Charger.class ).gainCharge((hero.pointsInTalent(FOCUSED_MEAL)+1)/3f);
 				ScrollOfRecharging.charge( hero );
@@ -3371,6 +3380,13 @@ public enum Talent {
 		}
 	}
 
+	public static void onRangedAttackHit(Char attacker, Char target) {
+		if (hero != null && target == hero && attacker != hero
+				&& hero.hasTalent(NO_VIEWRAPE) && hero.distance(attacker) > 1) {
+			Buff.affect(attacker, Blindness.class, hero.pointsInTalent(NO_VIEWRAPE));
+		}
+	}
+
 	public static int onDefenseProc( Char enemy, int damage ) {
         if(hero.hasTalent(ARCANE_SHIELD)){
             Armor a = hero.belongings.armor();
@@ -3440,11 +3456,6 @@ public enum Talent {
 			Buff.affect(enemy, Bleeding.class).set(1);
 			if(hero.pointsInTalent(THORNY_ROSE)==2){
 				enemy.damage(1,new LifeLink());
-			}
-		}
-		if(hero.hasTalent(NO_VIEWRAPE)){
-			if(hero.distance(enemy)>1){
-				Buff.affect(enemy, Blindness.class,hero.pointsInTalent(NO_VIEWRAPE));
 			}
 		}
 		//史莱姆娘
@@ -3547,7 +3558,8 @@ public enum Talent {
 		if(hero.hasTalent(Talent.WELLFED_MEAL) && !hero.buffs(WellFed.class).isEmpty()){
 			dmg*=1-hero.pointsInTalent(Talent.WELLFED_MEAL)*0.10f;
 		}
-		if(hero.hasTalent(BODY_REINFORCE) && hero.heroClass!=HeroClass.DM400 && dmg>=20){
+		if(hero.hasTalent(BODY_REINFORCE) && hero.heroClass!=HeroClass.DM400
+				&& bodyReinforceApplies(hero.pointsInTalent(BODY_REINFORCE), dmg)){
 			dmg*=1f-0.05f*hero.pointsInTalent(BODY_REINFORCE);
 		}
 		if(!hero.buffs(Talent.NoSleep.class).isEmpty() &&  hero.hasTalent(Talent.GET_UP)){
@@ -3661,6 +3673,10 @@ public enum Talent {
         }
 
 		return Math.round(dmg);
+	}
+
+	static boolean bodyReinforceApplies(int points, int dmg) {
+		return dmg >= (points >= 2 ? 10 : 20);
 	}
 
 	public static boolean isUnavoidableDamage(Object src){
@@ -4414,37 +4430,20 @@ public enum Talent {
 		}
 	}
 
-	public static boolean canUseWeaponAbilities(Hero hero) {
-		return hero != null
-				&& (hero.heroClass == HeroClass.DUELIST
-				|| hero.subClass.is(HeroSubClass.CHAMPION)
-				|| hero.buff(MeleeWeapon.MartialMastery.class) != null
-				|| hero.hasTalent(Talent.MARTIAL_TRAIN));
-	}
-
-	public static boolean canUseWeaponAbility(Hero hero, KindOfWeapon weapon) {
-		if (!(weapon instanceof MeleeWeapon) || !weapon.isEquipped(hero)) {
-			return false;
-		}
-		return canUseWeaponAbilities(hero)
-				&& (!(weapon instanceof MagesStaff)
-				|| hero.heroClass == HeroClass.DUELIST
-				|| hero.subClass.is(HeroSubClass.CHAMPION)
-				|| hero.buff(MeleeWeapon.MartialMastery.class) != null);
-	}
-
 	private static boolean canTriggerLethalHasteWithWeaponAbility(Hero hero) {
 		if (hero == null) {
 			return false;
 		}
-		if (canUseWeaponAbility(hero, hero.belongings.weapon())
-				|| canUseWeaponAbility(hero, hero.belongings.secondWep())) {
+		if ((hero.belongings.weapon() instanceof MeleeWeapon
+				&& ((MeleeWeapon) hero.belongings.weapon()).canUseWeaponAbilityAction(hero))
+				|| (hero.belongings.secondWep() instanceof MeleeWeapon
+				&& ((MeleeWeapon) hero.belongings.secondWep()).canUseWeaponAbilityAction(hero))) {
 			return true;
 		}
 		RingOfForce force = hero.belongings.getItem(RingOfForce.class);
 		return force != null
 				&& force.isEquipped(hero)
-				&& canUseWeaponAbilities(hero);
+				&& MeleeWeapon.canUseWeaponAbility(hero);
 	}
 
 	public static final int MAX_TALENT_TIERS = 4;
@@ -4801,102 +4800,124 @@ public enum Talent {
 		//TBD
 	}
 
-	public static void initSubclassTalents( Hero hero ){
-		initSubclassTalents( hero.subClass, hero.talents );
+	private static final EnumMap<HeroSubClass, List<Talent>> nativeSubclassTalents =
+			new EnumMap<>(HeroSubClass.class);
+	public static final Map<HeroSubClass, List<Talent>> subclassTalentPools;
+
+	static {
+		registerSubclassTalents(HeroSubClass.BERSERKER, ENDLESS_RAGE, DEATHLESS_FURY, ENRAGED_CATALYST);
+		registerSubclassTalents(HeroSubClass.GLADIATOR, CLEAVE, LETHAL_DEFENSE, ENHANCED_COMBO);
+		registerSubclassTalents(HeroSubClass.BATTLEMAGE, EMPOWERED_STRIKE, MYSTICAL_CHARGE, EXCESS_CHARGE);
+		registerSubclassTalents(HeroSubClass.WARLOCK, SOUL_EATER, SOUL_SIPHON, NECROMANCERS_MINIONS);
+		registerSubclassTalents(HeroSubClass.ASSASSIN, ENHANCED_LETHALITY, ASSASSINS_REACH, BOUNTY_HUNTER);
+		registerSubclassTalents(HeroSubClass.FREERUNNER, EVASIVE_ARMOR, PROJECTILE_MOMENTUM, SPEEDY_STEALTH);
+		registerSubclassTalents(HeroSubClass.SNIPER, FARSIGHT, SHARED_ENCHANTMENT, SHARED_UPGRADES);
+		registerSubclassTalents(HeroSubClass.WARDEN, DURABLE_TIPS, BARKSKIN, SHIELDING_DEW);
+		registerSubclassTalents(HeroSubClass.CHAMPION, VARIED_CHARGE, TWIN_UPGRADES, COMBINED_LETHALITY);
+		registerSubclassTalents(HeroSubClass.MONK, UNENCUMBERED_SPIRIT, MONASTIC_VIGOR, COMBINED_ENERGY);
+		registerSubclassTalents(HeroSubClass.PRIEST, HOLY_LANCE, HALLOWED_GROUND, MNEMONIC_PRAYER);
+		registerSubclassTalents(HeroSubClass.PALADIN, LAY_ON_HANDS, AURA_OF_PROTECTION, WALL_OF_LIGHT);
+		registerSubclassTalents(HeroSubClass.WATERSLIME, WATER_BODY, WATER_REVIVAL, WATER_REGENERATION);
+		registerSubclassTalents(HeroSubClass.DARKSLIME, POTENT_OOZE, DARK_GAS, DARK_LIQUID);
+		registerSubclassTalents(HeroSubClass.TATTEKI_NINJA, SOKO, KONO_FUKUSA, KUNIKUCHI);
+		registerSubclassTalents(HeroSubClass.NINJA_MASTER, SOUL_HUNTING, USE_ENVIRONMENT, MIND_WATER);
+		registerSubclassTalents(HeroSubClass.AT400, SUSTAIN_MARK, BATTLE_UPGRADE, FLY_DRONE);
+		registerSubclassTalents(HeroSubClass.AU400, SPECIAL_MARK, ASSIST_UPGRADE, FAST_CRUISE);
+		registerSubclassTalents(HeroSubClass.RUNEMAGE, DARKMARK, RUNE_BLAST, RUNE_SURGE);
+		registerSubclassTalents(HeroSubClass.COMBATMASTER, FLUENT, STANCE_MASTERY, INELEMENT);
+		registerSubclassTalents(HeroSubClass.ALCHEMIST, ALCHEMY_SHIELD, CLOSE_BLAST, CONSERVATION);
+		registerSubclassTalents(HeroSubClass.PIOUS, NEVER_COMPROMISE, REWIND_TIME, BRIGHT_WARRIOR);
+
+		EnumMap<HeroSubClass, List<Talent>> pools = new EnumMap<>(HeroSubClass.class);
+		registerSubclassPool(pools, HeroSubClass.BERSERKER,
+				CEASELESS_RAGE, MIRRORED_REVENGE, BLOODTHIRSTY_BERSERK);
+		registerSubclassPool(pools, HeroSubClass.GLADIATOR,
+				COMBO_FOCUS, RELENTLESS_COMBAT, COMBO_MASTERY);
+		registerSubclassPool(pools, HeroSubClass.BATTLEMAGE);
+		registerSubclassPool(pools, HeroSubClass.WARLOCK);
+		registerSubclassPool(pools, HeroSubClass.ASSASSIN);
+		registerSubclassPool(pools, HeroSubClass.FREERUNNER);
+		registerSubclassPool(pools, HeroSubClass.SNIPER);
+		registerSubclassPool(pools, HeroSubClass.WARDEN);
+		registerSubclassPool(pools, HeroSubClass.CHAMPION);
+		registerSubclassPool(pools, HeroSubClass.MONK);
+		registerSubclassPool(pools, HeroSubClass.PRIEST);
+		registerSubclassPool(pools, HeroSubClass.PALADIN);
+		registerSubclassPool(pools, HeroSubClass.WATERSLIME);
+		registerSubclassPool(pools, HeroSubClass.DARKSLIME);
+		registerSubclassPool(pools, HeroSubClass.TATTEKI_NINJA);
+		registerSubclassPool(pools, HeroSubClass.NINJA_MASTER);
+		registerSubclassPool(pools, HeroSubClass.AT400);
+		registerSubclassPool(pools, HeroSubClass.AU400);
+		registerSubclassPool(pools, HeroSubClass.RUNEMAGE);
+		registerSubclassPool(pools, HeroSubClass.COMBATMASTER);
+		registerSubclassPool(pools, HeroSubClass.ALCHEMIST);
+		registerSubclassPool(pools, HeroSubClass.PIOUS);
+		subclassTalentPools = Collections.unmodifiableMap(pools);
 	}
 
-	public static void initSubclassTalents( HeroSubClass cls, ArrayList<LinkedHashMap<Talent, Integer>> talents ){
-		if (cls.is(HeroSubClass.NONE)) return;
+	private static void registerSubclassTalents(HeroSubClass subClass, Talent... talents) {
+		ArrayList<Talent> registered = new ArrayList<>();
+		Collections.addAll(registered, talents);
+		nativeSubclassTalents.put(subClass, Collections.unmodifiableList(registered));
+	}
+
+	private static void registerSubclassPool(
+			EnumMap<HeroSubClass, List<Talent>> pools,
+			HeroSubClass subClass, Talent... additionalTalents) {
+		ArrayList<Talent> pool = new ArrayList<>(nativeSubclassTalents.get(subClass));
+		Collections.addAll(pool, additionalTalents);
+		pools.put(subClass, Collections.unmodifiableList(pool));
+	}
+
+	public static List<Talent> subclassTalentPool(HeroSubClass subClass) {
+		List<Talent> pool = subclassTalentPools.get(subClass);
+		return pool == null ? Collections.emptyList() : pool;
+	}
+
+	public static List<Talent> subclassTalentPool(Talent talent) {
+		for (Map.Entry<HeroSubClass, List<Talent>> entry : subclassTalentPools.entrySet()) {
+			if (entry.getValue().contains(talent)) {
+				return entry.getValue();
+			}
+		}
+		return Collections.emptyList();
+	}
+
+	public static void initSubclassTalents( Hero hero ){
+		initSubclassTalents(hero.subClass, hero.talents, hero.metamorphedTalents);
+	}
+
+	public static void initSubclassTalents(
+			HeroSubClass cls, ArrayList<LinkedHashMap<Talent, Integer>> talents ){
+		initSubclassTalents(cls, talents, new LinkedHashMap<>());
+	}
+
+	public static void initSubclassTalents(
+			HeroSubClass cls,
+			ArrayList<LinkedHashMap<Talent, Integer>> talents,
+			LinkedHashMap<Talent, Talent> replacements ){
+		if (cls == null || cls == HeroSubClass.NONE) return;
 
 		while (talents.size() < MAX_TALENT_TIERS){
 			talents.add(new LinkedHashMap<>());
 		}
 
-		ArrayList<Talent> tierTalents = new ArrayList<>();
-
-		//tier 3
-		switch (cls){
-			case BERSERKER: default:
-				Collections.addAll(tierTalents, ENDLESS_RAGE, DEATHLESS_FURY, ENRAGED_CATALYST);
-				break;
-			case GLADIATOR:
-				Collections.addAll(tierTalents, CLEAVE, LETHAL_DEFENSE, ENHANCED_COMBO);
-				break;
-			case BATTLEMAGE:
-				Collections.addAll(tierTalents, EMPOWERED_STRIKE, MYSTICAL_CHARGE, EXCESS_CHARGE);
-				break;
-			case WARLOCK:
-				Collections.addAll(tierTalents, SOUL_EATER, SOUL_SIPHON, NECROMANCERS_MINIONS);
-				break;
-			case ASSASSIN:
-				Collections.addAll(tierTalents, ENHANCED_LETHALITY, ASSASSINS_REACH, BOUNTY_HUNTER);
-				break;
-			case FREERUNNER:
-				Collections.addAll(tierTalents, EVASIVE_ARMOR, PROJECTILE_MOMENTUM, SPEEDY_STEALTH);
-				break;
-			case SNIPER:
-				Collections.addAll(tierTalents, FARSIGHT, SHARED_ENCHANTMENT, SHARED_UPGRADES);
-				break;
-			case WARDEN:
-				Collections.addAll(tierTalents, DURABLE_TIPS, BARKSKIN, SHIELDING_DEW);
-				break;
-			case CHAMPION:
-				Collections.addAll(tierTalents, VARIED_CHARGE, TWIN_UPGRADES, COMBINED_LETHALITY);
-				break;
-			case MONK:
-				Collections.addAll(tierTalents, UNENCUMBERED_SPIRIT, MONASTIC_VIGOR, COMBINED_ENERGY);
-				break;
-			case PRIEST:
-				Collections.addAll(tierTalents, HOLY_LANCE, HALLOWED_GROUND, MNEMONIC_PRAYER);
-				break;
-			case PALADIN:
-				Collections.addAll(tierTalents, LAY_ON_HANDS, AURA_OF_PROTECTION, WALL_OF_LIGHT);
-				break;
-			case ALCHEMIST:
-				Collections.addAll(tierTalents, ALCHEMY_SHIELD, CLOSE_BLAST, CONSERVATION);
-				break;
-			case PIOUS:
-				Collections.addAll(tierTalents, NEVER_COMPROMISE, REWIND_TIME, BRIGHT_WARRIOR);
-				break;
-			case WATERSLIME:
-				Collections.addAll(tierTalents, WATER_BODY, WATER_REVIVAL, WATER_REGENERATION);
-				break;
-			case DARKSLIME:
-				Collections.addAll(tierTalents, POTENT_OOZE, DARK_GAS, DARK_LIQUID);
-				break;
-			case TATTEKI_NINJA:
-				Collections.addAll(tierTalents, SOKO, KONO_FUKUSA, KUNIKUCHI);
-				break;
-			case NINJA_MASTER:
-				Collections.addAll(tierTalents, SOUL_HUNTING, USE_ENVIRONMENT, MIND_WATER);
-				break;
-			case AT400:
-				Collections.addAll(tierTalents, SUSTAIN_MARK, BATTLE_UPGRADE, FLY_DRONE);
-				break;
-			case AU400:
-				Collections.addAll(tierTalents, SPECIAL_MARK,ASSIST_UPGRADE,FAST_CRUISE);
-                break;
-            case RUNEMAGE:
-                Collections.addAll(tierTalents, DARKMARK,RUNE_BLAST,RUNE_SURGE);
-                break;
-            case COMBATMASTER:
-                Collections.addAll(tierTalents, FLUENT,STANCE_MASTERY,INELEMENT);
-                break;
-			case FREEMAN:
-				break;
-			case KING: // this should be *lovely*
-				Collections.addAll(tierTalents, RK_BERSERKER, RK_GLADIATOR, RK_BATTLEMAGE, RK_WARLOCK,
-												RK_ASSASSIN, RK_FREERUNNER, RK_SNIPER, RK_WARDEN,
-												RK_CHAMPION, RK_MONK, RK_PRIEST, RK_PALADIN,
-												RK_WATERSLIME, RK_DARKSLIME, RK_TATTEKI_NINJA, RK_NINJA_MASTER,
-												RK_AT400, RK_AU400, RK_RUNEMAGE, RK_COMBATMASTER);
-
+		List<Talent> tierTalents = nativeSubclassTalents.get(cls);
+		if (tierTalents != null) {
+			for (Talent talent : tierTalents){
+				talents.get(2).put(replacements.getOrDefault(talent, talent), 0);
+			}
+		} else if (cls == HeroSubClass.KING) {
+			Talent[] kingTalents = {RK_BERSERKER, RK_GLADIATOR, RK_BATTLEMAGE, RK_WARLOCK,
+					RK_ASSASSIN, RK_FREERUNNER, RK_SNIPER, RK_WARDEN,
+					RK_CHAMPION, RK_MONK, RK_PRIEST, RK_PALADIN,
+					RK_WATERSLIME, RK_DARKSLIME, RK_TATTEKI_NINJA, RK_NINJA_MASTER,
+					RK_AT400, RK_AU400, RK_RUNEMAGE, RK_COMBATMASTER};
+			for (Talent talent : kingTalents) {
+				talents.get(2).put(talent, 0);
+			}
 		}
-		for (Talent talent : tierTalents){
-			talents.get(2).put(talent, 0);
-		}
-		tierTalents.clear();
-
 	}
 
 	public static void initArmorTalents( Hero hero ){

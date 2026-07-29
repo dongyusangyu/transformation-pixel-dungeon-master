@@ -2,6 +2,7 @@
 import argparse
 import json
 import re
+import secrets
 import sqlite3
 import time
 import uuid
@@ -101,6 +102,17 @@ class TalentCloudStore:
                     selected_delta INTEGER NOT NULL DEFAULT 0,
                     appeared_delta INTEGER NOT NULL DEFAULT 0,
                     targeted_delta INTEGER NOT NULL DEFAULT 0
+                )
+                """
+            )
+            db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS restore_sessions (
+                    token TEXT PRIMARY KEY,
+                    player_uuid TEXT NOT NULL,
+                    device_key TEXT NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    committed INTEGER NOT NULL DEFAULT 0
                 )
                 """
             )
@@ -253,18 +265,29 @@ class TalentCloudStore:
         with self._connect() as db:
             db.execute("DELETE FROM player_cloud_data WHERE device_ip = ?", (local_ip,))
 
-    def download(self, player_uuid: str = "", device_key: str = "", legacy_device_ip: str = "", consume_restore_permission: bool = False):
+    def download(
+        self,
+        player_uuid: str = "",
+        device_key: str = "",
+        legacy_device_ip: str = "",
+        consume_restore_permission: bool = False,
+        prepare_restore: bool = False,
+    ):
         with self._connect() as db:
             player_uuid = (player_uuid or "").strip()
             device_key = (device_key or "").strip()
             legacy_device_ip = (legacy_device_ip or "").strip()
             row = None
-            if valid_uuid(player_uuid):
+            if player_uuid:
+                if not valid_uuid(player_uuid):
+                    return None
                 row = db.execute(
                     "SELECT player_uuid, device_ip, global_data, talent_stats, updated_at, restore_allowed FROM player_cloud_data WHERE player_uuid = ?",
                     (player_uuid,),
                 ).fetchone()
-            if row is None and device_key:
+                if row is None:
+                    return None
+            if row is None and not player_uuid and device_key:
                 mapped = db.execute("SELECT player_uuid FROM device_uuid_map WHERE device_key = ?", (device_key,)).fetchone()
                 if mapped is not None:
                     row = db.execute(
@@ -272,7 +295,7 @@ class TalentCloudStore:
                         (mapped[0],),
                     ).fetchone()
             lookup_device = device_key or legacy_device_ip
-            if row is None and lookup_device:
+            if row is None and not player_uuid and lookup_device:
                 row = db.execute(
                     "SELECT player_uuid, device_ip, global_data, talent_stats, updated_at, restore_allowed FROM player_cloud_data WHERE device_ip = ?",
                     (lookup_device,),
@@ -280,7 +303,8 @@ class TalentCloudStore:
             if row is None:
                 return None
             restore_allowed = bool(row[5])
-            if consume_restore_permission and not restore_allowed:
+            restore_requested = consume_restore_permission or prepare_restore
+            if restore_requested and not restore_allowed:
                 return {
                     "player_uuid": row[0],
                     "device_key": row[1],
@@ -288,10 +312,20 @@ class TalentCloudStore:
                     "restore_allowed": False,
                     "restore_denied": True,
                 }
-            if consume_restore_permission:
-                db.execute("UPDATE player_cloud_data SET restore_allowed = 0 WHERE player_uuid = ?", (row[0],))
+            restore_token = None
+            if prepare_restore:
+                restore_token = self._create_restore_session(db, row[0], device_key)
+            elif consume_restore_permission:
+                if not self._finalize_restore(db, row[0], device_key):
+                    return {
+                        "player_uuid": row[0],
+                        "device_key": row[1],
+                        "updated_at": row[4],
+                        "restore_allowed": False,
+                        "restore_denied": True,
+                    }
                 restore_allowed = False
-            return {
+            result = {
                 "player_uuid": row[0],
                 "device_key": row[1],
                 "global_data": json.loads(row[2]),
@@ -299,6 +333,101 @@ class TalentCloudStore:
                 "updated_at": row[4],
                 "restore_allowed": restore_allowed,
             }
+            if restore_token:
+                result["restore_token"] = restore_token
+            return result
+
+    def commit_restore(self, player_uuid: str, device_key: str, token: str):
+        player_uuid = (player_uuid or "").strip()
+        device_key = (device_key or "").strip()
+        token = (token or "").strip()
+        if not valid_uuid(player_uuid) or not device_key or not token:
+            return False
+
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            session = db.execute(
+                """
+                SELECT player_uuid, device_key, expires_at, committed
+                FROM restore_sessions
+                WHERE token = ?
+                """,
+                (token,),
+            ).fetchone()
+            if (
+                session is None
+                or session[0] != player_uuid
+                or session[1] != device_key
+            ):
+                return False
+            if session[3]:
+                return True
+            if session[2] < now_ms():
+                db.execute("DELETE FROM restore_sessions WHERE token = ?", (token,))
+                return False
+            if not self._finalize_restore(db, player_uuid, device_key):
+                db.execute("DELETE FROM restore_sessions WHERE token = ?", (token,))
+                return False
+            db.execute(
+                """
+                UPDATE restore_sessions
+                SET committed = 1
+                WHERE token = ?
+                """,
+                (token,),
+            )
+            return True
+
+    @staticmethod
+    def _create_restore_session(db, player_uuid: str, device_key: str):
+        timestamp = now_ms()
+        db.execute(
+            "DELETE FROM restore_sessions WHERE committed = 0 AND expires_at < ?",
+            (timestamp,),
+        )
+        db.execute("DELETE FROM restore_sessions WHERE player_uuid = ?", (player_uuid,))
+        token = secrets.token_urlsafe(32)
+        db.execute(
+            """
+            INSERT INTO restore_sessions(token, player_uuid, device_key, expires_at, committed)
+            VALUES (?, ?, ?, ?, 0)
+            """,
+            (token, player_uuid, device_key, timestamp + 5 * 60 * 1000),
+        )
+        return token
+
+    def _finalize_restore(self, db, player_uuid: str, device_key: str):
+        updated = db.execute(
+            """
+            UPDATE player_cloud_data
+            SET restore_allowed = 0
+            WHERE player_uuid = ? AND restore_allowed = 1
+            """,
+            (player_uuid,),
+        )
+        if updated.rowcount != 1:
+            return False
+        self._detach_previous_device_owner(db, device_key, player_uuid)
+        self._bind_device_key(db, device_key, player_uuid)
+        return True
+
+    @staticmethod
+    def _detach_previous_device_owner(db, device_key: str, player_uuid: str):
+        if not device_key:
+            return
+        previous = db.execute(
+            """
+            SELECT player_uuid
+            FROM player_cloud_data
+            WHERE device_ip = ? AND player_uuid <> ?
+            """,
+            (device_key, player_uuid),
+        ).fetchone()
+        if previous is not None:
+            db.execute(
+                "UPDATE player_cloud_data SET device_ip = ? WHERE player_uuid = ?",
+                ("detached:" + previous[0], previous[0]),
+            )
 
     def download_by_legacy_device(self, device_ip: str):
         with self._connect() as db:
@@ -700,7 +829,14 @@ class CloudHandler(BaseHTTPRequestHandler):
             player_uuid = params.get("player_uuid", [""])[0]
             device_key = params.get("device_key", [""])[0]
             device_ip = params.get("device_ip", [""])[0] or self.client_address[0]
-            data = self.store.download(player_uuid, device_key, device_ip, consume_restore_permission=True)
+            prepare_restore = params.get("prepare_restore", ["0"])[0] == "1"
+            data = self.store.download(
+                player_uuid,
+                device_key,
+                device_ip,
+                consume_restore_permission=not prepare_restore,
+                prepare_restore=prepare_restore,
+            )
             if data is None:
                 self._send_json({"ok": False, "error": "not_found"}, status=404)
                 return
@@ -721,13 +857,25 @@ class CloudHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
-        if parsed.path != "/api/upload":
+        if parsed.path not in ("/api/upload", "/api/restore/commit"):
             self._send_json({"ok": False, "error": "not_found"}, status=404)
             return
 
         try:
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            if parsed.path == "/api/restore/commit":
+                committed = self.store.commit_restore(
+                    payload.get("player_uuid") or "",
+                    payload.get("device_key") or "",
+                    payload.get("restore_token") or "",
+                )
+                if not committed:
+                    self._send_json({"ok": False, "error": "restore_commit_failed"}, status=409)
+                    return
+                self._send_json({"ok": True, "player_uuid": payload.get("player_uuid") or ""})
+                return
+
             player_uuid = payload.get("player_uuid") or ""
             device_key = payload.get("device_key") or ""
             device_ip = payload.get("device_ip") or self.client_address[0]

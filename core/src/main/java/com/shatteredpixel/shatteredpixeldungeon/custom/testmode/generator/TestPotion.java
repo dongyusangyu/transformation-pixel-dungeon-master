@@ -90,6 +90,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.AdrenalineDart;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.BlindingDart;
@@ -110,6 +111,8 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
@@ -124,9 +127,13 @@ import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 public class TestPotion extends TestGenerator {
+    private static final int TREASURE_CATEGORY = 15;
+
     {
         image = ItemSpriteSheet.POTION_HOLDER;
     }
@@ -203,6 +210,7 @@ public class TestPotion extends TestGenerator {
             case 12: return remainList.get(id);
             case 13: return trinketList.get(id);
             case 14: return equipmentList.get(id);
+            case TREASURE_CATEGORY: return treasureList.get(id);
         }
     }
 
@@ -223,11 +231,12 @@ public class TestPotion extends TestGenerator {
             case 12: return ItemSpriteSheet.SEAL_SHARD;
             case 13: return ItemSpriteSheet.TRINKET_CATA;
             case 14: return ItemSpriteSheet.BACKPACK;
+            case TREASURE_CATEGORY: return EXItemSpriteSheet.MUISCA_GOLDEN_RAFT;
         }
     }
 
     private int maxCategory(){
-        return 14;
+        return TREASURE_CATEGORY;
     }
 
     private int maxIndex(int cate){
@@ -247,6 +256,7 @@ public class TestPotion extends TestGenerator {
             case 12: return remainList.toArray().length-1;
             case 13: return trinketList.toArray().length-1;
             case 14: return equipmentList.toArray().length-1;
+            case TREASURE_CATEGORY: return treasureList.toArray().length-1;
         }
     }
 
@@ -265,6 +275,8 @@ public class TestPotion extends TestGenerator {
     private static ArrayList<Class<? extends Item>> remainList = new ArrayList<>();
     private static ArrayList<Class<? extends Item>> trinketList = new ArrayList<>();
     private static ArrayList<Class<? extends Item>> equipmentList = new ArrayList<>();
+    private static ArrayList<Class<? extends Treasures>> treasureList = new ArrayList<>();
+
     private void buildList() {
         if (potionList.isEmpty() || exoticPotionList.isEmpty()) {
             Class<?>[] classes = Generator.Category.POTION.classes;
@@ -333,20 +345,7 @@ public class TestPotion extends TestGenerator {
 
         if(miscList.isEmpty() || remainList.isEmpty()){
             Class<?>[] classes = Catalog.MISC_CONSUMABLES.items().toArray(new Class[0]);
-            int type = 0;
-            for (Class<?> t : classes) {
-                if (t == SealShard.class){
-                    type = 1;
-                }else if (t == ScrollOfMetamorphosis.class){
-                    type = 0;
-                }
-
-                if (type == 0){
-                    miscList.add((Class<? extends Item>) t);
-                }else{
-                    remainList.add((Class<? extends Item>) t);
-                }
-            }
+            splitMiscCatalogItems(Arrays.asList(classes), miscList, remainList);
         }
 
         if(trinketList.isEmpty()){
@@ -363,6 +362,33 @@ public class TestPotion extends TestGenerator {
             Class<?>[] classes = Catalog.MISC_EQUIPMENT.items().toArray(new Class[0]);
             for (Class<?> t : classes) {
                 equipmentList.add((Class<? extends Item>) t);
+            }
+        }
+
+        if(treasureList.isEmpty()){
+            Class<?>[] classes = Catalog.TREASURES.items().toArray(new Class[0]);
+            for (Class<?> t : classes) {
+                treasureList.add((Class<? extends Treasures>) t);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static void splitMiscCatalogItems(Collection<Class<?>> classes,
+                                      List<Class<? extends Item>> miscItems,
+                                      List<Class<? extends Item>> remainsItems) {
+        boolean remainsSection = false;
+        for (Class<?> itemClass : classes) {
+            if (itemClass == SealShard.class) {
+                remainsSection = true;
+            } else if (itemClass == ScrollOfMetamorphosis.class) {
+                remainsSection = false;
+            }
+
+            if (remainsSection) {
+                remainsItems.add((Class<? extends Item>) itemClass);
+            } else {
+                miscItems.add((Class<? extends Item>) itemClass);
             }
         }
     }
@@ -453,8 +479,7 @@ public class TestPotion extends TestGenerator {
                         super.onClick();
                     }
                 };
-                Image im =  new Image(Assets.Sprites.ITEMS);
-                im.frame(ItemSpriteSheet.film.get(idToCategoryImage(i)));
+                Image im = new ItemSprite(idToCategoryImage(i));
                 im.scale.set(1.0f);
                 btn.icon(im);
 
@@ -541,8 +566,8 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     } break;
                     case 9: {
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(spellList.get(i))).image));
+                        Image im = new ItemSprite(Objects.requireNonNull(
+                                Reflection.newInstance(spellList.get(i))));
                         im.scale.set(1.0f);
                         btn.icon(im);
                     } break;
@@ -553,8 +578,7 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     } break;
                     case 11: default:{
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(miscList.get(i))).image));
+                        Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(miscList.get(i))));
                         im.scale.set(1.0f);
                         btn.icon(im);
                     } break;
@@ -573,6 +597,11 @@ public class TestPotion extends TestGenerator {
                     case 14: {
                         Image im = new Image(Assets.Sprites.ITEMS);
                         im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(equipmentList.get(i))).image));
+                        im.scale.set(1.0f);
+                        btn.icon(im);
+                    } break;
+                    case TREASURE_CATEGORY: {
+                        Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(treasureList.get(i))));
                         im.scale.set(1.0f);
                         btn.icon(im);
                     } break;
@@ -603,7 +632,8 @@ public class TestPotion extends TestGenerator {
                 }
 
                 int maxCol = 6;
-                if (cateSelected==8 || cateSelected==11 || cateSelected==13){
+                if (cateSelected==8 || cateSelected==11 || cateSelected==13
+                        || cateSelected==TREASURE_CATEGORY){
                     maxCol = 7;
                 }
 

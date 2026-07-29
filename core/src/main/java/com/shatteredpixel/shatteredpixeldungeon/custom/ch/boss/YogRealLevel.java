@@ -12,6 +12,8 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
@@ -168,7 +170,9 @@ public class YogRealLevel extends Level {
 
         drop(new BrokenSeal(), plates[0]).type = Heap.Type.LOCKED_CHEST;
         drop(new MagesStaff(new WandOfMagicMissile()), plates[1]).type = Heap.Type.LOCKED_CHEST;
-        drop(new CloakOfShadows(), plates[2]).type = Heap.Type.LOCKED_CHEST;
+		Item cloakReward = Generator.claimArtifact(CloakOfShadows.class)
+				? new CloakOfShadows() : new Gold(new CloakOfShadows().value());
+        drop(cloakReward, plates[2]).type = Heap.Type.LOCKED_CHEST;
         drop(new SpiritBow(), plates[3]).type = Heap.Type.LOCKED_CHEST;
 
     }

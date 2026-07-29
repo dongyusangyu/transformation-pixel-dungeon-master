@@ -45,6 +45,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
+import com.watabou.utils.RectF;
 
 import java.nio.Buffer;
 
@@ -247,9 +248,29 @@ public class ItemSprite extends MovieClip {
 	}
 
 	public void frame( int image ){
-		frame( ItemSpriteSheet.film.get( image ));
+		boolean exFrame = EXItemSpriteSheet.isEX(image);
+		SmartTexture targetTexture = TextureCache.get(EXItemSpriteSheet.textureFor(image));
+		if (texture != targetTexture) {
+			texture(targetTexture);
+		}
 
-		float height = ItemSpriteSheet.film.height( image );
+		float height;
+		if (exFrame) {
+			int left = EXItemSpriteSheet.frameX(image);
+			int top = EXItemSpriteSheet.frameY(image);
+			int width = EXItemSpriteSheet.frameWidth(image);
+			height = EXItemSpriteSheet.frameHeight(image);
+			frame(targetTexture.uvRect(left, top, left + width, top + height));
+		} else {
+			image = EXItemSpriteSheet.frameFor(image);
+			RectF itemFrame = ItemSpriteSheet.film.get(image);
+			if (itemFrame == null) {
+				image = ItemSpriteSheet.SOMETHING;
+				itemFrame = ItemSpriteSheet.film.get(image);
+			}
+			frame(itemFrame);
+			height = ItemSpriteSheet.film.height(itemFrame);
+		}
 		//adds extra raise to very short items, so they are visible
 		if (height < 8f){
 			perspectiveRaise =  (5 + 8 - height) / 16f;
@@ -392,7 +413,8 @@ public class ItemSprite extends MovieClip {
 	}
 
 	public static int pick( int index, int x, int y ) {
-		SmartTexture tx = TextureCache.get( Assets.Sprites.ITEMS );
+		SmartTexture tx = TextureCache.get(EXItemSpriteSheet.textureFor(index));
+		index = EXItemSpriteSheet.frameFor(index);
 		int rows = tx.width / SIZE;
 		int row = index / rows;
 		int col = index % rows;

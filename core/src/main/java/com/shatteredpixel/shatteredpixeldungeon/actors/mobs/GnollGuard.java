@@ -32,7 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
-public class GnollGuard extends Mob {
+public class GnollGuard extends Mob implements PhysicalRangedAttack {
 
 	{
 		spriteClass = GnollGuardSprite.class;
@@ -108,9 +108,10 @@ public class GnollGuard extends Mob {
 	}
 
 	@Override
-	protected boolean canAttack( Char enemy ) {
+	public boolean canRangedAttack(Char enemy) {
 		//cannot 'curve' spear hits like the hero, requires fairly open space to hit at a distance
-		return Dungeon.level.distance(enemy.pos, pos) <= 2
+		return !Dungeon.level.adjacent(pos, enemy.pos)
+				&& Dungeon.level.distance(enemy.pos, pos) <= 2
 				&& new Ballistica( pos, enemy.pos, Ballistica.PROJECTILE).collisionPos == enemy.pos
 				&& new Ballistica( enemy.pos, pos, Ballistica.PROJECTILE).collisionPos == pos;
 	}

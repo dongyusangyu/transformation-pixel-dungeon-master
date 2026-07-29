@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.rings;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.Overburden;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
@@ -58,7 +59,8 @@ public class RingOfHaste extends Ring {
 	}
 	
 	public static float speedMultiplier( Char target ){
-		return (float)Math.pow(1.175, getBuffedBonus(target, Haste.class));
+		float multiplier = (float)Math.pow(1.175, getBuffedBonus(target, Haste.class));
+		return Overburden.attenuateEquipmentSpeed(target, multiplier);
 	}
 	
 	public class Haste extends RingBuff {

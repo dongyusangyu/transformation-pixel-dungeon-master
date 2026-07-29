@@ -1,0 +1,109 @@
+<h2>“提取卷轴”中心符号方向</h2>
+<p class="subtitle">三款均保持原版卷轴的 16×16 尺寸、硬边像素和左上光源。预览分别为 8× 与 1×；推荐 A，在背包中最容易读成“从装备中抽出升级能量”。</p>
+
+<style>
+  .sprite-card { cursor: pointer; }
+  .sprite-stage {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 18px;
+    min-height: 190px;
+    padding: 22px 12px;
+    background:
+      linear-gradient(45deg, #191b1b 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #191b1b 75%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #191b1b 75%) 8px -8px/16px 16px,
+      linear-gradient(45deg, #191b1b 25%, #111313 25%) 8px -8px/16px 16px;
+    border-radius: 4px;
+  }
+  .pixel-svg {
+    width: 128px;
+    height: 128px;
+    image-rendering: pixelated;
+    filter: drop-shadow(8px 8px 0 rgba(0,0,0,.35));
+  }
+  .pixel-svg.small {
+    width: 16px;
+    height: 16px;
+    filter: none;
+    margin-bottom: 4px;
+  }
+  .legend {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 8px;
+    color: #aaa;
+    font-family: monospace;
+    font-size: 12px;
+  }
+</style>
+
+<div class="cards">
+  <div class="card option sprite-card" data-choice="a-rise" onclick="toggleSelect(this)">
+    <div class="sprite-stage">
+      <svg class="pixel-svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <g fill="#4b321d"><rect x="2" y="3" width="12" height="10"/><rect x="1" y="5" width="14" height="6"/></g>
+        <g fill="#936331"><rect x="2" y="3" width="11" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="1" y="6" width="2" height="5"/></g>
+        <g fill="#d4a45d"><rect x="3" y="4" width="9" height="8"/><rect x="2" y="6" width="11" height="5"/></g>
+        <g fill="#f1d08a"><rect x="3" y="4" width="8" height="2"/><rect x="3" y="6" width="2" height="5"/></g>
+        <g fill="#315262"><rect x="5" y="9" width="6" height="2"/><rect x="5" y="7" width="2" height="3"/><rect x="9" y="7" width="2" height="3"/></g>
+        <g fill="#64c7d4"><rect x="7" y="4" width="2" height="5"/><rect x="6" y="5" width="4" height="2"/><rect x="5" y="6" width="6" height="1"/></g>
+        <rect x="7" y="3" width="2" height="1" fill="#d9ffff"/>
+      </svg>
+      <svg class="pixel-svg small" viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <g fill="#4b321d"><rect x="2" y="3" width="12" height="10"/><rect x="1" y="5" width="14" height="6"/></g><g fill="#936331"><rect x="2" y="3" width="11" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="1" y="6" width="2" height="5"/></g><g fill="#d4a45d"><rect x="3" y="4" width="9" height="8"/><rect x="2" y="6" width="11" height="5"/></g><g fill="#f1d08a"><rect x="3" y="4" width="8" height="2"/><rect x="3" y="6" width="2" height="5"/></g><g fill="#315262"><rect x="5" y="9" width="6" height="2"/><rect x="5" y="7" width="2" height="3"/><rect x="9" y="7" width="2" height="3"/></g><g fill="#64c7d4"><rect x="7" y="4" width="2" height="5"/><rect x="6" y="5" width="4" height="2"/><rect x="5" y="6" width="6" height="1"/></g><rect x="7" y="3" width="2" height="1" fill="#d9ffff"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A · 核心上浮（推荐）</h3>
+      <p>青色升级能量从打开的装备槽中向上抽离。符号在 1× 下仍有清晰的“向上取出”轮廓。</p>
+    </div>
+  </div>
+
+  <div class="card option sprite-card" data-choice="b-funnel" onclick="toggleSelect(this)">
+    <div class="sprite-stage">
+      <svg class="pixel-svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <g fill="#4b321d"><rect x="2" y="3" width="12" height="10"/><rect x="1" y="5" width="14" height="6"/></g>
+        <g fill="#936331"><rect x="2" y="3" width="11" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="1" y="6" width="2" height="5"/></g>
+        <g fill="#d4a45d"><rect x="3" y="4" width="9" height="8"/><rect x="2" y="6" width="11" height="5"/></g>
+        <g fill="#f1d08a"><rect x="3" y="4" width="8" height="2"/><rect x="3" y="6" width="2" height="5"/></g>
+        <g fill="#315262"><rect x="5" y="5" width="6" height="2"/><rect x="6" y="7" width="4" height="2"/><rect x="7" y="9" width="2" height="3"/></g>
+        <g fill="#69d0c8"><rect x="6" y="5" width="4" height="1"/><rect x="7" y="7" width="2" height="2"/><rect x="8" y="11" width="1" height="1"/></g>
+      </svg>
+      <svg class="pixel-svg small" viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <g fill="#4b321d"><rect x="2" y="3" width="12" height="10"/><rect x="1" y="5" width="14" height="6"/></g><g fill="#936331"><rect x="2" y="3" width="11" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="1" y="6" width="2" height="5"/></g><g fill="#d4a45d"><rect x="3" y="4" width="9" height="8"/><rect x="2" y="6" width="11" height="5"/></g><g fill="#f1d08a"><rect x="3" y="4" width="8" height="2"/><rect x="3" y="6" width="2" height="5"/></g><g fill="#315262"><rect x="5" y="5" width="6" height="2"/><rect x="6" y="7" width="4" height="2"/><rect x="7" y="9" width="2" height="3"/></g><g fill="#69d0c8"><rect x="6" y="5" width="4" height="1"/><rect x="7" y="7" width="2" height="2"/><rect x="8" y="11" width="1" height="1"/></g>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B · 漏斗萃取</h3>
+      <p>能量经过漏斗凝聚成一点，炼金感更强，但“返还升级卷轴”的方向性略弱。</p>
+    </div>
+  </div>
+
+  <div class="card option sprite-card" data-choice="c-peel" onclick="toggleSelect(this)">
+    <div class="sprite-stage">
+      <svg class="pixel-svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <g fill="#4b321d"><rect x="2" y="3" width="12" height="10"/><rect x="1" y="5" width="14" height="6"/></g>
+        <g fill="#936331"><rect x="2" y="3" width="11" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="1" y="6" width="2" height="5"/></g>
+        <g fill="#d4a45d"><rect x="3" y="4" width="9" height="8"/><rect x="2" y="6" width="11" height="5"/></g>
+        <g fill="#f1d08a"><rect x="3" y="4" width="8" height="2"/><rect x="3" y="6" width="2" height="5"/></g>
+        <g fill="#315262"><rect x="5" y="5" width="2" height="6"/><rect x="7" y="5" width="2" height="2"/><rect x="7" y="9" width="2" height="2"/></g>
+        <g fill="#62cad8"><rect x="9" y="6" width="2" height="4"/><rect x="11" y="7" width="2" height="2"/></g>
+        <g fill="#d9ffff"><rect x="10" y="5" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/></g>
+      </svg>
+      <svg class="pixel-svg small" viewBox="0 0 16 16" shape-rendering="crispEdges">
+        <g fill="#4b321d"><rect x="2" y="3" width="12" height="10"/><rect x="1" y="5" width="14" height="6"/></g><g fill="#936331"><rect x="2" y="3" width="11" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="1" y="6" width="2" height="5"/></g><g fill="#d4a45d"><rect x="3" y="4" width="9" height="8"/><rect x="2" y="6" width="11" height="5"/></g><g fill="#f1d08a"><rect x="3" y="4" width="8" height="2"/><rect x="3" y="6" width="2" height="5"/></g><g fill="#315262"><rect x="5" y="5" width="2" height="6"/><rect x="7" y="5" width="2" height="2"/><rect x="7" y="9" width="2" height="2"/></g><g fill="#62cad8"><rect x="9" y="6" width="2" height="4"/><rect x="11" y="7" width="2" height="2"/></g><g fill="#d9ffff"><rect x="10" y="5" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/></g>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C · 符文剥离</h3>
+      <p>升级符文从装备主体向右剥离，强调“拆解”；细节最多，1× 可读性相对最低。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p><strong>精灵表位置建议：</strong>放在 <code>ex_items.png</code> 第 3 行第 1 格，即帧索引 <code>32</code>。这样严格满足“新开一行”，也不会挤入当前第 2 行正在扩展的宝物区域。</p>
+</div>

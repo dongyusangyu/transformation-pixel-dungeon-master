@@ -52,6 +52,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfRegrowth;
@@ -74,6 +75,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.RatSprite;
@@ -104,6 +106,7 @@ import com.watabou.noosa.Visual;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.RectF;
 import com.watabou.utils.Reflection;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -646,6 +649,7 @@ public class WndJournal extends WndTabbed {
 		//sprite locations
 		private static final int EQUIP_IDX = 0;
 		private static final int CONSUM_IDX = 1;
+		//private static final int TREASURE_IDX = 2;
 		private static final int BESTIARY_IDX = 2;
 		private static final int LORE_IDX = 3;
 
@@ -672,6 +676,7 @@ public class WndJournal extends WndTabbed {
 			}
 			itemButtons[EQUIP_IDX].icon(new ItemSprite(ItemSpriteSheet.WEAPON_HOLDER));
 			itemButtons[CONSUM_IDX].icon(new ItemSprite(ItemSpriteSheet.POTION_HOLDER));
+
 			itemButtons[BESTIARY_IDX].icon(new ItemSprite(ItemSpriteSheet.MOB_HOLDER));
 			itemButtons[LORE_IDX].icon(new ItemSprite(ItemSpriteSheet.DOCUMENT_HOLDER));
 			itemButtons[TALENT_IDX].icon(Icons.get(Icons.TALENT));
@@ -908,7 +913,17 @@ public class WndJournal extends WndTabbed {
 
 			if (Item.class.isAssignableFrom(itemClass)) {
 
-				Item item = (Item) Reflection.newInstance(itemClass);
+				Item item;
+				if (Treasures.class.isAssignableFrom(itemClass)) {
+					Random.pushGenerator(0L);
+					try {
+						item = (Item) Reflection.newInstance(itemClass);
+					} finally {
+						Random.popGenerator();
+					}
+				} else {
+					item = (Item) Reflection.newInstance(itemClass);
+				}
 				boolean randomModeUnknownWand = false;
 
 				if (item instanceof Wand) {
@@ -952,14 +967,19 @@ public class WndJournal extends WndTabbed {
 				} else {
 					title = randomModeUnknownWand ? "???" : Messages.titleCase( item.name() );
 					//some items don't include direct stats, generally when they're not applicable
-					if (item instanceof ClassArmor || item instanceof SpiritBow || item instanceof Tatteki || item instanceof RitualDagger){
+					if (item instanceof Treasures) {
+						desc = ((Treasures) item).journalDesc();
+						desc += "\n\n" + Messages.get(
+								CatalogTab.class, "treasure_count",
+								Catalog.useCount(itemClass));
+					} else if (item instanceof ClassArmor || item instanceof SpiritBow || item instanceof Tatteki || item instanceof RitualDagger){
 						desc += item.desc();
 					} else {
 						desc += item.info();
 					}
 
 
-					if (Catalog.useCount(itemClass) > 1) {
+					if (!(item instanceof Treasures) && Catalog.useCount(itemClass) > 1) {
 						if (item.isUpgradable() || item instanceof Artifact) {
 							desc += "\n\n" + Messages.get(CatalogTab.class, "upgrade_count", Catalog.useCount(itemClass));
 						} else if (item instanceof Trinket) {

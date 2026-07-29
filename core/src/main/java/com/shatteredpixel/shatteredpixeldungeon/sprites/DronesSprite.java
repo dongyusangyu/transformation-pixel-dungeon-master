@@ -62,10 +62,17 @@ public abstract class DronesSprite extends MobSprite {
 
     @Override
     public void zap( int cell ) {
-        super.zap( cell, null );
+        super.zap(cell, new Callback() {
+            @Override
+            public void call() {
+                ch.onAttackComplete();
+            }
+        });
+        parent.add(rangedBeam(cell));
+    }
 
-        ((InstructionTool.Drone)ch).onZapComplete();
-        parent.add( new Beam.LightRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell)));
+    protected Beam rangedBeam(int cell) {
+        return new Beam.LightRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell));
     }
 
     public static class DroneSprite extends DronesSprite {
@@ -102,11 +109,8 @@ public abstract class DronesSprite extends MobSprite {
             return 72;
         }
         @Override
-        public void zap( int cell ) {
-            super.zap( cell, null );
-
-            ((InstructionTool.Drone)ch).onZapComplete();
-            parent.add( new Beam.HolyRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell)));
+        protected Beam rangedBeam(int cell) {
+            return new Beam.HolyRay(center(), DungeonTilemap.raisedTileCenterToWorld(cell));
         }
     }
 

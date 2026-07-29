@@ -60,7 +60,7 @@ import com.watabou.utils.GameMath;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
-public class Goo extends Mob {
+public class Goo extends Mob implements PhysicalRangedAttack {
 
 	{
 		HP = HT = Dungeon.isChallenged(Challenges.STRONGER_BOSSES) ? 120 : 100;
@@ -162,16 +162,13 @@ public class Goo extends Mob {
 	}
 
 	@Override
-	protected boolean canAttack( Char enemy ) {
-		if (pumpedUp > 0){
-			//we check both from and to in this case as projectile logic isn't always symmetrical.
-			//this helps trim out BS edge-cases
-			return Dungeon.level.distance(enemy.pos, pos) <= 2
-						&& new Ballistica( pos, enemy.pos, Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID).collisionPos == enemy.pos
-						&& new Ballistica( enemy.pos, pos, Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID).collisionPos == pos;
-		} else {
-			return super.canAttack(enemy);
-		}
+	public boolean canRangedAttack(Char enemy) {
+		int mode = Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID;
+		return pumpedUp > 0
+				&& !Dungeon.level.adjacent(pos, enemy.pos)
+				&& Dungeon.level.distance(enemy.pos, pos) <= 2
+				&& new Ballistica(pos, enemy.pos, mode).collisionPos == enemy.pos
+				&& new Ballistica(enemy.pos, pos, mode).collisionPos == pos;
 	}
 
 	@Override
@@ -210,6 +207,10 @@ public class Goo extends Mob {
 		} else if (pumpedUp >= 2 || Random.Int( (HP*2 <= HT) ? 2 : 5 ) > 0) {
 
 			boolean visible = Dungeon.level.heroFOV[pos];
+			boolean ranged = !Dungeon.level.adjacent(pos, enemy.pos);
+			if (ranged) {
+				beginPhysicalRangedAttack();
+			}
 
 			if (visible) {
 				if (pumpedUp >= 2) {
@@ -221,7 +222,10 @@ public class Goo extends Mob {
 				if (pumpedUp >= 2){
 					((GooSprite)sprite).triggerEmitters();
 				}
-				attack( enemy );
+				boolean hit = attack( enemy );
+				if (ranged) {
+					completePhysicalAttack(enemy, hit);
+				}
 				Invisibility.dispel(this);
 				spend( attackDelay() );
 			}

@@ -42,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.TalentCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityBossLevel;
@@ -88,6 +89,8 @@ public class TalentButton extends Button {
 		UPGRADE,
 		METAMORPH_CHOOSE,
 		METAMORPH_REPLACE,
+		BOSS_METAMORPH_CHOOSE,
+		BOSS_METAMORPH_REPLACE,
 		SUBLIMATION,
 		NEGATIVE,
 		METAMORPH_ALL,
@@ -293,6 +296,52 @@ public class TalentButton extends Button {
 
 				}
 			});
+		} else if (mode == Mode.BOSS_METAMORPH_CHOOSE
+				&& Dungeon.hero != null && Dungeon.hero.isAlive()) {
+			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
+
+				@Override
+				public String prompt() {
+					return Messages.titleCase(Messages.get(MetamorphosisPrism.class, "metamorphose_talent"));
+				}
+
+				@Override
+				public boolean metamorphDesc() {
+					return true;
+				}
+
+				@Override
+				public void call() {
+					MetamorphosisPrism.WndBossTalentChoose window =
+							MetamorphosisPrism.WndBossTalentChoose.INSTANCE;
+					if (window != null) {
+						MetamorphosisPrism.chooseReplacement(window.prism, talent, tier);
+					}
+				}
+			});
+		} else if (mode == Mode.BOSS_METAMORPH_REPLACE
+				&& Dungeon.hero != null && Dungeon.hero.isAlive()) {
+			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
+
+				@Override
+				public String prompt() {
+					return Messages.titleCase(Messages.get(MetamorphosisPrism.class, "metamorphose_talent"));
+				}
+
+				@Override
+				public boolean metamorphDesc() {
+					return true;
+				}
+
+				@Override
+				public void call() {
+					MetamorphosisPrism.WndBossTalentReplace window =
+							MetamorphosisPrism.WndBossTalentReplace.INSTANCE;
+					if (window != null) {
+						MetamorphosisPrism.completeReplacement(window.prism, window.replacing, talent);
+					}
+				}
+			});
 		}else if (mode == Mode.SUBLIMATION && Dungeon.hero != null && Dungeon.hero.isAlive()) {
 
 			toAdd = new WndInfoTalent(talent, pointsInTalent, new WndInfoTalent.TalentButtonCallback() {
@@ -318,7 +367,7 @@ public class TalentButton extends Button {
 						case "GOO" : case "TENGU" : case "WARRIOR":default:
 							tier=1;
 							break;
-						case "DM300":case "DWARFKING":
+						case "DM300":case "HUNTRESS":case "DWARFKING":
 							tier=2;
 							break;
 						case"YOG":
@@ -350,6 +399,7 @@ public class TalentButton extends Button {
 							Dungeon.hero.sublimationTalents.put(targetSlot, talent.name());
 							ArrayList<String> S= new ArrayList<String>();
 							S.add("DM300");
+							S.add("HUNTRESS");
 							S.add("YOG");
 							if(S.contains(type)){
 								Buff.affect(hero, ScrollOfSublimation.Sublimation1.class).setBoosted(index);

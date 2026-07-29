@@ -58,6 +58,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.CurseInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
@@ -391,6 +392,7 @@ public class QuickRecipe extends Component {
 				result.add(new QuickRecipe(new TelekineticGrab.Recipe()));
 				result.add(new QuickRecipe(new PhaseShift.Recipe()));
 				result.add(new QuickRecipe(new TransformSpell.Recipe()));
+				result.add(new QuickRecipe(new MetamorphosisPrism.Recipe()));
 				/*
 				if (!PixelScene.landscape()) result.add(null);
 				result.add(null);

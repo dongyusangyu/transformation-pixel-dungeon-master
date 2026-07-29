@@ -62,7 +62,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
-public abstract class YogFist extends Mob {
+public abstract class YogFist extends Mob implements MagicalRangedAttack {
 
 	{
 		HP = HT = 300;
@@ -101,12 +101,14 @@ public abstract class YogFist extends Mob {
 	}
 
 	@Override
-	protected boolean canAttack(Char enemy) {
-		if (rangedCooldown <= 0){
-			return new Ballistica( pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
-		} else {
-			return super.canAttack(enemy);
+	public boolean canRangedAttack(Char enemy) {
+		if (rangedCooldown > 0) {
+			return false;
 		}
+		if (Dungeon.level.adjacent(pos, enemy.pos)) {
+			return canRangedInMelee;
+		}
+		return new Ballistica(pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos;
 	}
 
 	private boolean invulnWarned = false;
@@ -126,22 +128,14 @@ public abstract class YogFist extends Mob {
 	}
 
 	@Override
-	protected boolean doAttack( Char enemy ) {
-
-		if (Dungeon.level.adjacent( pos, enemy.pos ) && (!canRangedInMelee || rangedCooldown > 0)) {
-
-			return super.doAttack( enemy );
-
+	public boolean doRangedAttack(Char enemy) {
+		incrementRangedCooldown();
+		if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+			sprite.zap( enemy.pos );
+			return false;
 		} else {
-
-			incrementRangedCooldown();
-			if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
-				sprite.zap( enemy.pos );
-				return false;
-			} else {
-				zap();
-				return true;
-			}
+			zap();
+			return true;
 		}
 	}
 
@@ -347,13 +341,13 @@ public abstract class YogFist extends Mob {
 
 			Invisibility.dispel(this);
 			Char enemy = this.enemy;
-			if (hit( this, enemy, true )) {
+			if (rangedHit(enemy)) {
 
 				Buff.affect( enemy, Roots.class, 3f );
 
 			} else {
 
-				enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+				showRangedMiss(enemy);
 			}
 
 			for (int i : PathFinder.NEIGHBOURS9){
@@ -426,6 +420,7 @@ public abstract class YogFist extends Mob {
 		@Override
 		protected void zap() {
 			spend( 1f );
+			onRangedAttackHit(enemy);
 			GameScene.add(Blob.seed(enemy.pos, 100, ToxicGas.class));
 		}
 
@@ -477,6 +472,7 @@ public abstract class YogFist extends Mob {
 		@Override
 		protected void zap() {
 			spend( 1f );
+			onRangedAttackHit(enemy);
 			Buff.affect(enemy, Cripple.class, 4f);
 		}
 
@@ -506,7 +502,7 @@ public abstract class YogFist extends Mob {
 
 			Invisibility.dispel(this);
 			Char enemy = this.enemy;
-			if (hit( this, enemy, true )) {
+			if (rangedHit(enemy)) {
 
 				enemy.damage( Random.NormalIntRange(10, 20), new LightBeam() );
 				Buff.prolong( enemy, Blindness.class, Blindness.DURATION/2f );
@@ -519,7 +515,7 @@ public abstract class YogFist extends Mob {
 
 			} else {
 
-				enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+				showRangedMiss(enemy);
 			}
 
 		}
@@ -572,7 +568,7 @@ public abstract class YogFist extends Mob {
 
 			Invisibility.dispel(this);
 			Char enemy = this.enemy;
-			if (hit( this, enemy, true )) {
+			if (rangedHit(enemy)) {
 
 				enemy.damage( Random.NormalIntRange(10, 20), new DarkBolt() );
 
@@ -589,7 +585,7 @@ public abstract class YogFist extends Mob {
 
 			} else {
 
-				enemy.sprite.showStatus( CharSprite.NEUTRAL,  enemy.defenseVerb() );
+				showRangedMiss(enemy);
 			}
 
 		}

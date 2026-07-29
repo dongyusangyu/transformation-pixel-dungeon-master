@@ -112,12 +112,14 @@ import com.shatteredpixel.shatteredpixeldungeon.items.remains.RoyalJewelry;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.SealShard;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.TornPage;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfKing;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfExtraction;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.CurseInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Recycle;
@@ -127,6 +129,26 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.AlMughiraPyxis;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.BlacasEwer;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.BookOfKells;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.CholaNataraja;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.DjenneTerracottaFigure;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.DojigiriYasutsuna;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.EthiopianProcessionalCross;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.GoryeoMaebyeong;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.GreatKhanPaiza;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.GreatZimbabweBird;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.HarbavilleTriptych;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.ImperialCrown;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.IncaGoldenLlama;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.JavaneseGoldCup;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.LewisChessQueen;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.MuiscaGoldenRaft;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.PakalJadeMask;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.RuWareBowl;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.SuttonHooHelmet;
+import com.shatteredpixel.shatteredpixeldungeon.items.treasures.TurquoiseSerpent;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SprayGun;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
@@ -169,7 +191,10 @@ public enum Catalog {
 	TIPPED_DARTS,
 	BREWS_ELIXIRS,
 	SPELLS,
-	MISC_CONSUMABLES;
+	MISC_CONSUMABLES,
+
+	//COLLECTIBLES
+	TREASURES;
 
 	//tracks whether an item has been collected while identified
 	private final LinkedHashMap<Class<?>, Boolean> seen = new LinkedHashMap<>();
@@ -270,8 +295,8 @@ public enum Catalog {
 				ElixirOfAquaticRejuvenation.class, ElixirOfArcaneArmor.class, ElixirOfDragonsBlood.class,
 				ElixirOfIcyTouch.class, ElixirOfToxicEssence.class, ElixirOfMight.class, ElixirOfFeatherFall.class);
 
-		SPELLS.addItems( UnstableSpell.class, TransformSpell.class, WildEnergy.class, TelekineticGrab.class, PhaseShift.class,
-				Alchemize.class, CurseInfusion.class, MagicalInfusion.class, Recycle.class,
+		SPELLS.addItems( UnstableSpell.class, TransformSpell.class,  WildEnergy.class, TelekineticGrab.class, PhaseShift.class,
+				Alchemize.class, CurseInfusion.class, MagicalInfusion.class, Recycle.class,MetamorphosisPrism.class,
 				ReclaimTrap.class, SummonElemental.class, BeaconOfReturning.class);
 
 		MISC_CONSUMABLES.addItems( Gold.class, EnergyCrystal.class, Dewdrop.class,
@@ -282,7 +307,30 @@ public enum Catalog {
 				LiquidMetal.class, ArcaneResin.class,
 				SealShard.class, BrokenStaff.class, CloakScrap.class, BowFragment.class, BrokenHilt.class,
 				TornPage.class,BrokenPackage.class, MatchaPudding.class, MetalFragment.class, BrokenTool.class, RoyalJewelry.class, BottledEnergy.class,
-				ScrollOfMetamorphosis.class,ScrollOfSublimation.class, RedEnvelope.class, SpecialPackage.class, RubbingsTome.class);
+				ScrollOfMetamorphosis.class,ScrollOfSublimation.class, RedEnvelope.class, SpecialPackage.class, RubbingsTome.class,
+				ScrollOfExtraction.class);
+
+		TREASURES.addItems(
+				MuiscaGoldenRaft.class,
+				ImperialCrown.class,
+				PakalJadeMask.class,
+				SuttonHooHelmet.class,
+				BookOfKells.class,
+				CholaNataraja.class,
+				DojigiriYasutsuna.class,
+				TurquoiseSerpent.class,
+				RuWareBowl.class,
+				IncaGoldenLlama.class,
+				LewisChessQueen.class,
+				HarbavilleTriptych.class,
+				AlMughiraPyxis.class,
+				BlacasEwer.class,
+				GreatKhanPaiza.class,
+				GoryeoMaebyeong.class,
+				JavaneseGoldCup.class,
+				EthiopianProcessionalCross.class,
+				GreatZimbabweBird.class,
+				DjenneTerracottaFigure.class);
 
 	}
 
@@ -326,6 +374,7 @@ public enum Catalog {
 		consumableCatalogs.add(BREWS_ELIXIRS);
 		consumableCatalogs.add(SPELLS);
 		consumableCatalogs.add(MISC_CONSUMABLES);
+        consumableCatalogs.add(TREASURES);
 	}
 	
 	public static boolean isSeen(Class<?> cls){

@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -169,6 +170,7 @@ public class LloydsBeacon extends Artifact {
                 charge -= 3;
                 gainExp(12);
                 updateQuickslot();
+				Talent.onArtifactUsed(hero);
 
                 if (returnDepth == Dungeon.depth) {
                     ScrollOfTeleportation.appear( hero, returnPos );
@@ -217,6 +219,7 @@ public class LloydsBeacon extends Artifact {
 			charge--;
 			gainExp(4);
 			updateQuickslot();
+			Talent.onArtifactUsed(curUser);
 
 			if (Actor.findChar(target) == curUser){
 				ScrollOfTeleportation.teleportChar(curUser);

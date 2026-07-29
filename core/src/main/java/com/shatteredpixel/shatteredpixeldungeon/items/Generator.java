@@ -242,6 +242,7 @@ import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -682,6 +683,7 @@ public class Generator {
 	private static boolean usingFirstDeck = false;
 	private static HashMap<Category,Float> defaultCatProbs = new LinkedHashMap<>();
 	private static HashMap<Category,Float> categoryProbs = new LinkedHashMap<>();
+	private static HashSet<Class<? extends Artifact>> claimedArtifacts = new HashSet<>();
 
 	private static boolean randomMode(){
 		return Dungeon.hero != null && Dungeon.hero.randomMode;
@@ -746,6 +748,7 @@ public class Generator {
 
 	public static void fullReset() {
 		usingFirstDeck = Random.Int(2) == 0;
+		claimedArtifacts.clear();
 		generalReset();
 		for (Category cat : Category.values()) {
 			cat.using2ndProbs =  cat.defaultProbs2 != null && Random.Int(2) == 0;
@@ -983,7 +986,14 @@ public class Generator {
 			for (int i = 0; i < cat.dropped; i++) Random.Long();
 		}
 
-		int i = Random.chances( cat.probs );
+		float[] availableProbs = cat.probs.clone();
+		for (int j = 0; j < availableProbs.length; j++) {
+			if (claimedArtifacts.contains(cat.classes[j])) {
+				availableProbs[j] = 0;
+			}
+		}
+
+		int i = Random.chances( availableProbs );
 
 		if (cat.defaultProbs != null && cat.seed != null){
 			Random.popGenerator();
@@ -995,20 +1005,36 @@ public class Generator {
 			return null;
 		}
 
-		cat.probs[i]--;
-		return (Artifact) Reflection.newInstance((Class<? extends Artifact>) cat.classes[i]).random();
+		Class<? extends Artifact> artifactClass = (Class<? extends Artifact>) cat.classes[i];
+		claimArtifact(artifactClass);
+		return (Artifact) Reflection.newInstance(artifactClass).random();
 
 	}
 
 	public static boolean removeArtifact(Class<?extends Artifact> artifact) {
 		Category cat = Category.ARTIFACT;
-		for (int i = 0; i < cat.classes.length; i++){
-			if (cat.classes[i].equals(artifact) && cat.probs[i] > 0) {
-				cat.probs[i] = 0;
-				return true;
+		for (int i = 0; i < cat.classes.length; i++) {
+			if (cat.classes[i].equals(artifact)) {
+				return cat.probs[i] > 0 && claimArtifact(artifact);
 			}
 		}
 		return false;
+	}
+
+	// Records both generated and fixed rewards, so every normal reward path shares one uniqueness rule.
+	public static boolean claimArtifact(Class<? extends Artifact> artifact) {
+		if (!claimedArtifacts.add(artifact)) {
+			return false;
+		}
+
+		Category cat = Category.ARTIFACT;
+		for (int i = 0; i < cat.classes.length; i++){
+			if (cat.classes[i].equals(artifact)) {
+				cat.probs[i] = 0;
+				break;
+			}
+		}
+		return true;
 	}
 
 	private static final String FIRST_DECK = "first_deck";
@@ -1017,6 +1043,8 @@ public class Generator {
 	private static final String CATEGORY_USING_PROBS2 = "_using_probs2";
 	private static final String CATEGORY_SEED = "_seed";
 	private static final String CATEGORY_DROPPED = "_dropped";
+	private static final String ARTIFACT_CLASSES = "artifact_classes";
+	private static final String CLAIMED_ARTIFACTS = "claimed_artifacts";
 
 	public static void storeInBundle(Bundle bundle) {
 		bundle.put(FIRST_DECK, usingFirstDeck);
@@ -1032,6 +1060,13 @@ public class Generator {
 			if (cat.defaultProbs == null) continue;
 
 			bundle.put(cat.name().toLowerCase() + CATEGORY_PROBS, cat.probs);
+			if (cat == Category.ARTIFACT) {
+				String[] artifactClasses = new String[cat.classes.length];
+				for (int i = 0; i < cat.classes.length; i++) {
+					artifactClasses[i] = cat.classes[i].getName();
+				}
+				bundle.put(ARTIFACT_CLASSES, artifactClasses);
+			}
 
 			if (cat.defaultProbs2 != null){
 				bundle.put(cat.name().toLowerCase() + CATEGORY_USING_PROBS2, cat.using2ndProbs);
@@ -1042,6 +1077,13 @@ public class Generator {
 				bundle.put(cat.name().toLowerCase() + CATEGORY_DROPPED, cat.dropped);
 			}
 		}
+
+		String[] claimedArtifactClasses = new String[claimedArtifacts.size()];
+		int claimedIndex = 0;
+		for (Class<? extends Artifact> artifactClass : claimedArtifacts) {
+			claimedArtifactClasses[claimedIndex++] = artifactClass.getName();
+		}
+		bundle.put(CLAIMED_ARTIFACTS, claimedArtifactClasses);
 	}
 
 	public static void restoreFromBundle(Bundle bundle) {
@@ -1061,7 +1103,10 @@ public class Generator {
 		for (Category cat : Category.values()){
 			if (bundle.contains(cat.name().toLowerCase() + CATEGORY_PROBS)){
 				float[] probs = bundle.getFloatArray(cat.name().toLowerCase() + CATEGORY_PROBS);
-				if (cat.defaultProbs != null && probs.length == cat.defaultProbs.length){
+				if (cat == Category.ARTIFACT) {
+					restoreArtifactProbs(probs, bundle.contains(ARTIFACT_CLASSES)
+							? bundle.getStringArray(ARTIFACT_CLASSES) : null);
+				} else if (cat.defaultProbs != null && probs.length == cat.defaultProbs.length){
 					cat.probs = probs;
 				}
 				if (bundle.contains(cat.name().toLowerCase() + CATEGORY_USING_PROBS2)){
@@ -1090,6 +1135,48 @@ public class Generator {
 
 				 */
 
+			}
+		}
+
+		if (bundle.contains(CLAIMED_ARTIFACTS)) {
+			for (String artifactClassName : bundle.getStringArray(CLAIMED_ARTIFACTS)) {
+				for (Class<?> artifactClass : Category.ARTIFACT.classes) {
+					if (artifactClass.getName().equals(artifactClassName)) {
+						claimedArtifacts.add((Class<? extends Artifact>) artifactClass);
+						break;
+					}
+				}
+			}
+		}
+
+		if (Dungeon.hero != null) {
+			for (Item item : Dungeon.hero.belongings) {
+				if (item instanceof Artifact) {
+					claimArtifact(((Artifact) item).getClass());
+				}
+			}
+		}
+
+	}
+
+	private static void restoreArtifactProbs(float[] probs, String[] savedClasses) {
+		Category cat = Category.ARTIFACT;
+		if (savedClasses != null && savedClasses.length == probs.length) {
+			for (int i = 0; i < cat.classes.length; i++) {
+				for (int j = 0; j < savedClasses.length; j++) {
+					if (cat.classes[i].getName().equals(savedClasses[j])) {
+						cat.probs[i] = probs[j];
+						break;
+					}
+				}
+			}
+		} else {
+			System.arraycopy(probs, 0, cat.probs, 0, Math.min(probs.length, cat.probs.length));
+		}
+
+		for (int i = 0; i < cat.classes.length; i++) {
+			if (cat.defaultProbs[i] > 0 && cat.probs[i] <= 0) {
+				claimedArtifacts.add((Class<? extends Artifact>) cat.classes[i]);
 			}
 		}
 

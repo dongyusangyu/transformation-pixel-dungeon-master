@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -79,7 +80,9 @@ public class StartScene extends PixelScene {
 		btnExit.setPos( insets.left + w - btnExit.width(), insets.top );
 		add( btnExit );
 
-		IconTitle title = new IconTitle( Icons.ENTER.get(), Messages.get(this, "title"));
+		IconTitle title = new IconTitle(
+				Icons.get(showsNewCycleSaves() ? Icons.STAIRS : Icons.ENTER),
+				Messages.get(this, "title"));
 		title.setSize(200, 0);
 		title.setPos(
 				insets.left + (w - title.reqWidth()) / 2f,
@@ -88,11 +91,16 @@ public class StartScene extends PixelScene {
 		align(title);
 		add(title);
 
-		ArrayList<GamesInProgress.Info> games = GamesInProgress.checkAll();
+		ArrayList<GamesInProgress.Info> games =
+				GamesInProgress.checkAll(showsNewCycleSaves());
+		int emptySlot = GamesInProgress.firstEmpty();
+		boolean showNewGame = !showsNewCycleSaves() && emptySlot != -1;
 
-		int slotCount = Math.min(GamesInProgress.MAX_SLOTS, games.size()+1);
-		int slotGap = 10 - slotCount;
-		int slotsHeight = slotCount*SLOT_HEIGHT + (slotCount-1)* slotGap;
+		int slotCount = Math.min(GamesInProgress.MAX_SLOTS,
+				games.size() + (showNewGame ? 1 : 0));
+		int layoutSlotCount = Math.max(1, slotCount);
+		int slotGap = 10 - layoutSlotCount;
+		int slotsHeight = layoutSlotCount*SLOT_HEIGHT + (layoutSlotCount-1)*slotGap;
 		slotsHeight += 14;
 
 		while (slotGap >= 2 && slotsHeight > (h-title.bottom()-2)){
@@ -114,13 +122,24 @@ public class StartScene extends PixelScene {
 
 		}
 
-		if (games.size() < GamesInProgress.MAX_SLOTS){
+		if (showNewGame){
 			SaveSlotButton newGame = new SaveSlotButton();
-			newGame.set(GamesInProgress.firstEmpty());
+			newGame.set(emptySlot);
 			newGame.setRect(slotLeft, yPos, SLOT_WIDTH, SLOT_HEIGHT);
 			yPos += SLOT_HEIGHT + slotGap;
 			align(newGame);
 			add(newGame);
+		}
+
+		if (slotCount == 0) {
+			RenderedTextBlock empty = PixelScene.renderTextBlock(Messages.get(this, "empty"), 8);
+			empty.maxWidth(SLOT_WIDTH);
+			empty.setPos(
+					slotLeft + (SLOT_WIDTH - empty.width()) / 2f,
+					yPos + (SLOT_HEIGHT - empty.height()) / 2f);
+			align(empty);
+			add(empty);
+			yPos += SLOT_HEIGHT + slotGap;
 		}
 
 		GamesInProgress.curSlot = 0;
@@ -128,10 +147,10 @@ public class StartScene extends PixelScene {
 		String sortText = "";
 		switch (SPDSettings.gamesInProgressSort()){
 			case "level":
-				sortText = Messages.get(this, "sort_level");
+				sortText = Messages.get(StartScene.class, "sort_level");
 				break;
 			case "last_played":
-				sortText = Messages.get(this, "sort_recent");
+				sortText = Messages.get(StartScene.class, "sort_recent");
 				break;
 		}
 
@@ -157,6 +176,24 @@ public class StartScene extends PixelScene {
 			btnSort.setRect(slotLeft, yPos, btnSort.reqWidth() + 4, 12);
 		}
 		add(btnSort);
+
+		StyledButton btnCycleSaves = new StyledButton(
+				Chrome.Type.TOAST_TR, Messages.get(this, "cycle_saves"), 6) {
+			@Override
+			protected void onClick() {
+				super.onClick();
+				ShatteredPixelDungeon.switchNoFade(cycleSavesScene());
+			}
+		};
+		btnCycleSaves.icon(Icons.get(showsNewCycleSaves() ? Icons.ENTER : Icons.STAIRS));
+		float cycleButtonWidth = btnCycleSaves.reqWidth() + 6;
+		float cycleButtonHeight = btnCycleSaves.reqHeight();
+		btnCycleSaves.setRect(
+				insets.left + w - cycleButtonWidth,
+				insets.top + h - cycleButtonHeight - 2,
+				cycleButtonWidth,
+				cycleButtonHeight);
+		add(btnCycleSaves);
         /*
 		// 添加从剪贴板导入按钮
 		StyledButton btnImport = new StyledButton(Chrome.Type.TOAST_TR, Messages.get(this, "import_clipboard"), 6){
@@ -219,7 +256,15 @@ public class StartScene extends PixelScene {
 		ShatteredPixelDungeon.switchNoFade( TitleScene.class );
 	}
 
-	private static class SaveSlotButton extends Button {
+	protected boolean showsNewCycleSaves() {
+		return false;
+	}
+
+	protected Class<? extends PixelScene> cycleSavesScene() {
+		return NewCycleStartScene.class;
+	}
+
+	private class SaveSlotButton extends Button {
 
 		private NinePatch bg;
 
@@ -310,7 +355,8 @@ public class StartScene extends PixelScene {
 					lastPlayed.text(Messages.get(StartScene.class, "months_ago", diff / (30L * 24 * 60 * 60_000)));
 				}
 
-				depth.text(Integer.toString(info.depth));
+				depth.text(Integer.toString(
+						Dungeon.displayDepthForLocation(info.depth, info.branch)));
 				depth.measure();
 
 				level.text(Integer.toString(info.level));
@@ -401,7 +447,8 @@ public class StartScene extends PixelScene {
 				GamesInProgress.curSlot = slot;
 				ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
 			} else {
-				ShatteredPixelDungeon.scene().add( new WndGameInProgress(slot));
+				ShatteredPixelDungeon.scene().add(
+						new WndGameInProgress(slot, StartScene.this.getClass()));
 			}
 		}
 	}

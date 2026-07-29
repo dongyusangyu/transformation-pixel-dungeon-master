@@ -91,6 +91,20 @@ public class GamesInProgress {
 
 		return result;
 	}
+
+	public static ArrayList<Info> checkAll(boolean newCycle) {
+		return filterByCycle(checkAll(), newCycle);
+	}
+
+	static ArrayList<Info> filterByCycle(ArrayList<Info> games, boolean newCycle) {
+		ArrayList<Info> result = new ArrayList<>();
+		for (Info game : games) {
+			if (game.newCycle == newCycle) {
+				result.add(game);
+			}
+		}
+		return result;
+	}
 	
 	public static Info check( int slot ) {
 		
@@ -160,6 +174,7 @@ public class GamesInProgress {
 		info.goldCollected = Statistics.goldCollected;
 		info.maxDepth = Statistics.deepestFloor;
 		info.skin=Dungeon.skin;
+		info.newCycle = Dungeon.newCycle;
 
 		slotStates.put( slot, info );
 	}
@@ -196,6 +211,7 @@ public class GamesInProgress {
 		public int slot;
 
 		public int depth;
+		public int branch;
 		public int version;
 		public int challenges;
 
@@ -219,6 +235,7 @@ public class GamesInProgress {
 		public int goldCollected;
 		public int maxDepth;
 		public int skin;
+		public boolean newCycle;
 	}
 
 	public static final Comparator<GamesInProgress.Info> levelComparator = new Comparator<GamesInProgress.Info>() {
