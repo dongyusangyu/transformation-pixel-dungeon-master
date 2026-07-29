@@ -2,8 +2,13 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Shortsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
@@ -70,6 +75,120 @@ public class EarthlySerpentTest {
 		}
 	}
 
+	@Test
+	public void directMeleeDamageGrowsStatsAndMaximumHealthUpToBaseDouble() {
+		TestSerpent serpent = new TestSerpent();
+
+		serpent.recordMeleeDamageForTest(50);
+
+		assertEquals(340, serpent.HT);
+		assertEquals(240, serpent.HP);
+		assertEquals(1.5f, serpent.growthMultiplierForTest(), 0.0001f);
+		assertEquals(1.5f, serpent.speed(), 0.0001f);
+		assertEquals(1f / 3f, serpent.attackDelay(), 0.0001f);
+		assertEquals(36, serpent.scaleDamageForTest(24));
+
+		serpent.recordMeleeDamageForTest(1000);
+
+		assertEquals(480, serpent.HT);
+		assertEquals(240, serpent.HP);
+		assertEquals(2f, serpent.growthMultiplierForTest(), 0.0001f);
+		assertEquals(2f, serpent.speed(), 0.0001f);
+		assertEquals(0.25f, serpent.attackDelay(), 0.0001f);
+		assertEquals(48, serpent.scaleDamageForTest(24));
+	}
+
+	@Test
+	public void regenerationUsesStandardTimeAndCurrentMaximumHealth() {
+		TestSerpent serpent = new TestSerpent();
+		serpent.HP = 100;
+
+		serpent.advanceRegenerationForTest(0.99f);
+		assertEquals(100, serpent.HP);
+
+		serpent.advanceRegenerationForTest(0.01f);
+		assertEquals(124, serpent.HP);
+
+		serpent.recordMeleeDamageForTest(120);
+		serpent.HP = 100;
+		serpent.advanceRegenerationForTest(1f);
+		assertEquals(148, serpent.HP);
+	}
+
+	@Test
+	public void meleeGrowthAndRegenerationProgressSurviveSaveAndLoad() {
+		TestSerpent original = new TestSerpent();
+		original.recordMeleeDamageForTest(60);
+		original.HP = 111;
+		original.advanceRegenerationForTest(0.5f);
+
+		Bundle bundle = new Bundle();
+		original.storeInBundle(bundle);
+
+		TestSerpent restored = new TestSerpent();
+		restored.restoreFromBundle(bundle);
+
+		assertEquals(360, restored.HT);
+		assertEquals(111, restored.HP);
+		assertEquals(1.6f, restored.growthMultiplierForTest(), 0.0001f);
+
+		restored.advanceRegenerationForTest(0.5f);
+		assertEquals(147, restored.HP);
+	}
+
+	@Test
+	public void qualifyingMeleeDamagePoisonsRetaliationTargetForActualHealthLost() {
+		Level previousLevel = Dungeon.level;
+		try {
+			TestLevel level = openLevel(7, 7);
+			Dungeon.level = level;
+
+			TestSerpent serpent = new TestSerpent();
+			serpent.pos = 24;
+			Gnoll target = new Gnoll();
+			target.pos = 10;
+			serpent.retaliationTarget = target;
+			Gnoll adjacentAttacker = new Gnoll();
+			adjacentAttacker.pos = 25;
+
+			serpent.damage(17, adjacentAttacker, DamageTag.UNAVOIDABLE);
+
+			assertEquals(223, serpent.HP);
+			assertEquals("17", target.buff(Poison.class).iconTextDisplay());
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
+	public void sourceClassificationAcceptsMeleeWeaponsAndAdjacentMonstersOnly() {
+		Level previousLevel = Dungeon.level;
+		try {
+			TestLevel level = openLevel(7, 7);
+			Dungeon.level = level;
+
+			TestSerpent serpent = new TestSerpent();
+			serpent.pos = 24;
+			Gnoll target = new Gnoll();
+			target.pos = 10;
+			serpent.retaliationTarget = target;
+			Gnoll adjacentMob = new Gnoll();
+			adjacentMob.pos = 25;
+			Gnoll remoteMob = new Gnoll();
+			remoteMob.pos = 1;
+
+			assertTrue(serpent.isMeleeWeaponTypeForTest(Shortsword.class));
+			assertFalse(serpent.isMeleeWeaponTypeForTest(ThrowingStone.class));
+			assertTrue(serpent.qualifiesForTest(adjacentMob, target));
+			assertFalse(serpent.qualifiesForTest(remoteMob, target));
+
+			serpent.damage(0, adjacentMob, DamageTag.UNAVOIDABLE);
+			assertTrue(target.buff(Poison.class) == null);
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
 	private static TestLevel openLevel(int width, int height) {
 		TestLevel level = new TestLevel();
 		level.setSize(width, height);
@@ -81,8 +200,39 @@ public class EarthlySerpentTest {
 
 	private static final class TestSerpent extends EarthlySerpent {
 
+		private Char retaliationTarget;
+
 		private boolean canStrike(Char target) {
 			return canMeleeAttack(target);
+		}
+
+		private void recordMeleeDamageForTest(int damage) {
+			recordMeleeDamage(damage);
+		}
+
+		private float growthMultiplierForTest() {
+			return growthMultiplier();
+		}
+
+		private int scaleDamageForTest(int damage) {
+			return scaleMeleeDamage(damage);
+		}
+
+		private void advanceRegenerationForTest(float elapsed) {
+			advanceRegeneration(elapsed);
+		}
+
+		private boolean qualifiesForTest(Object source, Char target) {
+			return isQualifyingMeleeSource(source, target);
+		}
+
+		private boolean isMeleeWeaponTypeForTest(Class<?> weaponType) {
+			return isMeleeWeaponType(weaponType);
+		}
+
+		@Override
+		protected Char retaliationTarget() {
+			return retaliationTarget;
 		}
 	}
 

@@ -14,17 +14,32 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
 public class EarthlySerpent extends Mob {
 
 	private static final int BASE_HT = 240;
+	private static final int MAX_HT = BASE_HT * 2;
+	private static final int MAX_GROWTH_DAMAGE = 120;
 	private static final float BASE_ATTACK_DELAY = 0.5f;
+	private static final float REGENERATION_INTERVAL = 1f;
+
+	private int meleeDamageDealt;
+	private float regenerationProgress;
+	private float lastRegenerationTime = Float.NaN;
 
 	{
 		HP = HT = BASE_HT;
@@ -42,7 +57,7 @@ public class EarthlySerpent extends Mob {
 
 	@Override
 	public int damageRoll() {
-		return Random.NormalIntRange(24, 36);
+		return scaleMeleeDamage(Random.NormalIntRange(24, 36));
 	}
 
 	@Override
@@ -57,7 +72,38 @@ public class EarthlySerpent extends Mob {
 
 	@Override
 	public float attackDelay() {
-		return super.attackDelay() * BASE_ATTACK_DELAY;
+		return super.attackDelay() * BASE_ATTACK_DELAY / growthMultiplier();
+	}
+
+	@Override
+	public float speed() {
+		return super.speed() * growthMultiplier();
+	}
+
+	@Override
+	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
+			DamageTag... damageTags) {
+		boolean melee = canMeleeAttack(enemy);
+		int healthBefore = enemy == null ? 0 : enemy.HP;
+		boolean hit = super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
+		if (melee && enemy != null) {
+			recordMeleeDamage(Math.max(0, healthBefore - enemy.HP));
+		}
+		return hit;
+	}
+
+	@Override
+	public void damage(int damage, Object source, DamageTag... damageTags) {
+		Char target = retaliationTarget();
+		boolean retaliates = isQualifyingMeleeSource(source, target);
+		int healthBefore = HP;
+
+		super.damage(damage, source, damageTags);
+
+		int healthLost = Math.max(0, healthBefore - HP);
+		if (retaliates && healthLost > 0 && target != null && target.isAlive()) {
+			Buff.affect(target, Poison.class).extend(healthLost);
+		}
 	}
 
 	@Override
@@ -72,5 +118,83 @@ public class EarthlySerpent extends Mob {
 		}
 		Ballistica path = new Ballistica(pos, target.pos, Ballistica.PROJECTILE);
 		return path.collisionPos == target.pos;
+	}
+
+	protected float growthMultiplier() {
+		return 1f + Math.min(meleeDamageDealt, 100) / 100f;
+	}
+
+	protected int scaleMeleeDamage(int damage) {
+		return Math.round(damage * growthMultiplier());
+	}
+
+	protected void recordMeleeDamage(int damage) {
+		if (damage <= 0 || meleeDamageDealt >= MAX_GROWTH_DAMAGE) {
+			return;
+		}
+		meleeDamageDealt = Math.min(MAX_GROWTH_DAMAGE, meleeDamageDealt + damage);
+		HT = Math.min(MAX_HT, BASE_HT + meleeDamageDealt * 2);
+	}
+
+	protected void advanceRegeneration(float elapsed) {
+		if (elapsed <= 0) {
+			return;
+		}
+		regenerationProgress += elapsed;
+		while (regenerationProgress >= REGENERATION_INTERVAL) {
+			regenerationProgress -= REGENERATION_INTERVAL;
+			heal((int) Math.ceil(HT * 0.1f), false);
+		}
+	}
+
+	protected Char retaliationTarget() {
+		return Dungeon.hero;
+	}
+
+	protected boolean isQualifyingMeleeSource(Object source, Char target) {
+		if (target instanceof Hero && source == target) {
+			KindOfWeapon weapon = ((Hero) target).belongings.attackingWeapon();
+			return isMeleeWeaponType(weapon == null ? null : weapon.getClass());
+		}
+		return source instanceof Mob
+				&& source != this
+				&& Dungeon.level != null
+				&& Dungeon.level.adjacent(pos, ((Mob) source).pos);
+	}
+
+	protected boolean isMeleeWeaponType(Class<?> weaponType) {
+		return weaponType != null && MeleeWeapon.class.isAssignableFrom(weaponType);
+	}
+
+	@Override
+	protected boolean act() {
+		float now = Actor.now();
+		if (Float.isNaN(lastRegenerationTime)) {
+			lastRegenerationTime = now;
+		} else {
+			advanceRegeneration(Math.max(0f, now - lastRegenerationTime));
+			lastRegenerationTime = now;
+		}
+		return super.act();
+	}
+
+	private static final String MELEE_DAMAGE_DEALT = "melee_damage_dealt";
+	private static final String REGENERATION_PROGRESS = "regeneration_progress";
+
+	@Override
+	public void storeInBundle(Bundle bundle) {
+		super.storeInBundle(bundle);
+		bundle.put(MELEE_DAMAGE_DEALT, meleeDamageDealt);
+		bundle.put(REGENERATION_PROGRESS, regenerationProgress);
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		meleeDamageDealt = Math.min(MAX_GROWTH_DAMAGE, bundle.getInt(MELEE_DAMAGE_DEALT));
+		regenerationProgress = Math.max(0f, bundle.getFloat(REGENERATION_PROGRESS));
+		HT = Math.min(MAX_HT, BASE_HT + meleeDamageDealt * 2);
+		HP = Math.min(HP, HT);
+		lastRegenerationTime = Float.NaN;
 	}
 }
