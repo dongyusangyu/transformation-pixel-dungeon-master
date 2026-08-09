@@ -1,12 +1,18 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -61,6 +67,37 @@ public class MechanicalFistTest {
 		assertEquals(56, fist.knockbackAimForTest(target));
 	}
 
+	@Test
+	public void knockbackBuildsThreeTileTrajectoryWithoutCollisionEffects() {
+		Level previousLevel = Dungeon.level;
+		try {
+			Dungeon.level = openLevel(11, 7);
+			ThrowCapturingMechanicalFist fist = new ThrowCapturingMechanicalFist();
+			Gnoll target = new Gnoll();
+			fist.pos = 37;
+			target.pos = 38;
+
+			fist.knockBackForTest(target);
+
+			assertSame(target, fist.thrownTarget);
+			assertEquals(3, fist.distance);
+			assertFalse(fist.closeDoors);
+			assertFalse(fist.collideDamage);
+			assertTrue(fist.trajectory.dist >= fist.distance);
+			assertEquals(41, fist.trajectory.path.get(fist.distance).intValue());
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	private static TestLevel openLevel(int width, int height) {
+		TestLevel level = new TestLevel();
+		level.setSize(width, height);
+		Arrays.fill(level.passable, true);
+		Arrays.fill(level.solid, false);
+		return level;
+	}
+
 	private static final class TestMechanicalFist extends MechanicalFist {
 
 		private int knockbackCalls;
@@ -80,6 +117,49 @@ public class MechanicalFistTest {
 
 		private int knockbackAimForTest(Char target) {
 			return knockbackAim(target);
+		}
+	}
+
+	private static final class ThrowCapturingMechanicalFist extends MechanicalFist {
+
+		private Char thrownTarget;
+		private Ballistica trajectory;
+		private int distance;
+		private boolean closeDoors;
+		private boolean collideDamage;
+
+		private void knockBackForTest(Char target) {
+			knockBack(target);
+		}
+
+		@Override
+		protected void throwTarget(
+				Char target,
+				Ballistica trajectory,
+				int distance,
+				boolean closeDoors,
+				boolean collideDamage) {
+			this.thrownTarget = target;
+			this.trajectory = trajectory;
+			this.distance = distance;
+			this.closeDoors = closeDoors;
+			this.collideDamage = collideDamage;
+		}
+	}
+
+	private static final class TestLevel extends Level {
+
+		@Override
+		protected boolean build() {
+			return true;
+		}
+
+		@Override
+		protected void createMobs() {
+		}
+
+		@Override
+		protected void createItems() {
 		}
 	}
 }

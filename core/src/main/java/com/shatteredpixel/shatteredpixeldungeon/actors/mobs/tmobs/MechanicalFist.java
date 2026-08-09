@@ -79,15 +79,29 @@ public class MechanicalFist extends Mob {
 				target.pos,
 				knockbackAim(target),
 				Ballistica.MAGIC_BOLT);
-		WandOfBlastWave.throwChar(
+		throwTarget(
 				target,
 				trajectory,
 				KNOCKBACK_DISTANCE,
 				false,
-				false,
-				this);
+				false);
 		if (target == Dungeon.hero) {
 			Dungeon.hero.interrupt();
 		}
+	}
+
+	protected void throwTarget(
+			Char target,
+			Ballistica trajectory,
+			int distance,
+			boolean closeDoors,
+			boolean collideDamage) {
+		WandOfBlastWave.throwChar(
+				target,
+				trajectory,
+				distance,
+				closeDoors,
+				collideDamage,
+				this);
 	}
 }
