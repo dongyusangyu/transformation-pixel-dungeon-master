@@ -16,6 +16,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.MechanicalFistSprite;
 import com.watabou.utils.Random;
 
 public class MechanicalFist extends Mob {
@@ -23,6 +24,8 @@ public class MechanicalFist extends Mob {
 	public static final int KNOCKBACK_DISTANCE = 3;
 
 	{
+		spriteClass = MechanicalFistSprite.class;
+
 		HP = HT = 250;
 		defenseSkill = 20;
 
