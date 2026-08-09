@@ -14,11 +14,22 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.ConeAOE;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
@@ -26,11 +37,15 @@ import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 	private static final String FLOCKED_TARGET_IDS = "flocked_target_ids";
 	private static final float SHEEP_LIFESPAN = 6f;
+	private static final int FIREBLAST_DISTANCE = 7;
+	private static final int FIREBLAST_ANGLE = 70;
+	private static final int FIRE_VOLUME = 3;
 
 	private final HashSet<Integer> flockedTargetIds = new HashSet<>();
 
@@ -126,7 +141,104 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 	@Override
 	public boolean doRangedAttack(Char target) {
-		return false;
+		if (needsFlock(target)) {
+			performFlock(target);
+		} else if (target != null) {
+			castFireblast(target.pos);
+		}
+		spend(attackDelay());
+		return true;
+	}
+
+	protected int fireblastDistance() {
+		return FIREBLAST_DISTANCE;
+	}
+
+	protected int fireblastAngle() {
+		return FIREBLAST_ANGLE;
+	}
+
+	protected int fireVolume() {
+		return FIRE_VOLUME;
+	}
+
+	protected int magicDamageRoll() {
+		return Random.NormalIntRange(15, 35);
+	}
+
+	protected void castFireblast(int targetCell) {
+		Invisibility.dispel(this);
+		Ballistica aim = new Ballistica(pos, targetCell, Ballistica.WONT_STOP);
+		ConeAOE cone = new ConeAOE(aim, fireblastDistance(), fireblastAngle(),
+				Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID);
+		LinkedHashSet<Char> affectedChars = new LinkedHashSet<>();
+		LinkedHashSet<Integer> adjacentCells = new LinkedHashSet<>();
+
+		for (int cell : cone.cells) {
+			if (cell == pos) {
+				continue;
+			}
+			if (Dungeon.level.map[cell] == Terrain.DOOR) {
+				Level.set(cell, Terrain.OPEN_DOOR);
+				GameScene.updateMap(cell);
+			}
+			if (Dungeon.level.adjacent(pos, cell)
+					&& !(Dungeon.level.flamable[cell] || Dungeon.level.solid[cell])) {
+				adjacentCells.add(cell);
+				if (Dungeon.level.heaps.get(cell) != null) {
+					Dungeon.level.heaps.get(cell).burn();
+				}
+			} else {
+				seedFire(cell);
+			}
+
+			Char affected = Actor.findChar(cell);
+			if (affected != null && affected != this) {
+				affectedChars.add(affected);
+			}
+		}
+
+		if (cone.cells.isEmpty()) {
+			adjacentCells.add(pos);
+		}
+
+		for (int cell : adjacentCells) {
+			for (int offset : PathFinder.NEIGHBOURS8) {
+				int candidate = cell + offset;
+				if (Dungeon.level.insideMap(candidate)
+						&& Dungeon.level.trueDistance(candidate, aim.collisionPos)
+						< Dungeon.level.trueDistance(cell, aim.collisionPos)
+						&& Dungeon.level.flamable[candidate]
+						&& Fire.volumeAt(candidate, Fire.class) == 0) {
+					seedFire(candidate);
+				}
+			}
+		}
+
+		for (Char affected : affectedChars) {
+			applyFireblastTo(affected);
+		}
+		playFireblastSounds();
+	}
+
+	protected void seedFire(int cell) {
+		GameScene.add(Blob.seed(cell, fireVolume(), Fire.class));
+	}
+
+	protected void applyFireblastTo(Char target) {
+		if (target == null || target == this) {
+			return;
+		}
+		target.damage(magicDamageRoll(), this, DamageTag.MAGICAL);
+		if (target.isAlive()) {
+			Buff.affect(target, Burning.class).reignite(target);
+			Buff.affect(target, Cripple.class, 4f);
+		}
+	}
+
+	protected void playFireblastSounds() {
+		Sample.INSTANCE.play(Assets.Sounds.ZAP);
+		Sample.INSTANCE.play(Assets.Sounds.BURNING);
 	}
 
 	@Override
