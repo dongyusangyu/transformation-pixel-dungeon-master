@@ -178,6 +178,36 @@ public class RoastLambWarlockTest {
 		assertEquals(37, warlock.fireblastTargetCell);
 	}
 
+	@Test
+	public void visibleCastsWaitForAnimationCallbackBeforeApplyingEffects() {
+		Level previousLevel = Dungeon.level;
+		try {
+			Dungeon.level = openLevel(9, 9);
+			TestWarlock warlock = new TestWarlock();
+			warlock.forceAnimatedCast = true;
+			warlock.pos = 39;
+			Gnoll target = new Gnoll();
+			target.pos = 40;
+
+			assertFalse(warlock.attackTargetForTest(target));
+			assertEquals(40, warlock.animatedTargetCell);
+			assertTrue(warlock.needsFlockForTest(target));
+
+			warlock.completeCastForTest();
+			assertFalse(warlock.needsFlockForTest(target));
+
+			warlock.fireblastTargetCell = -1;
+			target.pos = 43;
+			assertFalse(warlock.rangedAttackForTest(target));
+			assertEquals(-1, warlock.fireblastTargetCell);
+
+			warlock.completeCastForTest();
+			assertEquals(43, warlock.fireblastTargetCell);
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
 	private static TestLevel openLevel(int width, int height) {
 		TestLevel level = new TestLevel();
 		level.setSize(width, height);
@@ -192,6 +222,8 @@ public class RoastLambWarlockTest {
 		private final List<Float> spawnedLifespans = new ArrayList<>();
 		private boolean physicalAttackCalled;
 		private int fireblastTargetCell = -1;
+		private boolean forceAnimatedCast;
+		private int animatedTargetCell = -1;
 
 		private boolean needsFlockForTest(Char target) {
 			return needsFlock(target);
@@ -233,6 +265,10 @@ public class RoastLambWarlockTest {
 			return doRangedAttack(target);
 		}
 
+		private void completeCastForTest() {
+			onCastComplete();
+		}
+
 		@Override
 		public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
 				DamageTag... damageTags) {
@@ -248,6 +284,16 @@ public class RoastLambWarlockTest {
 
 		@Override
 		protected void playFlockSounds() {
+		}
+
+		@Override
+		protected boolean canAnimateCast(Char target) {
+			return forceAnimatedCast || super.canAnimateCast(target);
+		}
+
+		@Override
+		protected void playAnimatedCast(int cast, Char target) {
+			animatedTargetCell = target.pos;
 		}
 
 		@Override

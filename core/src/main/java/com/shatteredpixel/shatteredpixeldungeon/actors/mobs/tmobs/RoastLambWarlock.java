@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.ConeAOE;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.RoastLambWarlockSprite;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
@@ -43,13 +44,21 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 	private static final String FLOCKED_TARGET_IDS = "flocked_target_ids";
 	private static final float SHEEP_LIFESPAN = 6f;
-	private static final int FIREBLAST_DISTANCE = 7;
-	private static final int FIREBLAST_ANGLE = 70;
+	public static final int FIREBLAST_DISTANCE = 7;
+	public static final int FIREBLAST_ANGLE = 70;
 	private static final int FIRE_VOLUME = 3;
+	private static final int CAST_NONE = 0;
+	private static final int CAST_FLOCK = 1;
+	private static final int CAST_FIREBLAST = 2;
 
 	private final HashSet<Integer> flockedTargetIds = new HashSet<>();
+	private int pendingCast = CAST_NONE;
+	private Char pendingTarget;
+	private int pendingTargetCell = -1;
 
 	{
+		spriteClass = RoastLambWarlockSprite.class;
+
 		HP = HT = 150;
 		defenseSkill = 20;
 
@@ -94,6 +103,7 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 		if (target == null) {
 			return 0;
 		}
+		Invisibility.dispel(this);
 		markFlocked(target);
 		int summoned = 0;
 		for (int offset : PathFinder.NEIGHBOURS8) {
@@ -132,22 +142,73 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 	@Override
 	protected boolean doAttack(Char target) {
 		if (needsFlock(target)) {
-			performFlock(target);
-			spend(attackDelay());
-			return true;
+			if (canAnimateCast(target)) {
+				beginAnimatedCast(CAST_FLOCK, target);
+				return false;
+			} else {
+				performFlock(target);
+				spend(attackDelay());
+				return true;
+			}
 		}
 		return super.doAttack(target);
 	}
 
 	@Override
 	public boolean doRangedAttack(Char target) {
-		if (needsFlock(target)) {
+		int cast = needsFlock(target) ? CAST_FLOCK : CAST_FIREBLAST;
+		if (target != null && canAnimateCast(target)) {
+			beginAnimatedCast(cast, target);
+			return false;
+		}
+		if (cast == CAST_FLOCK) {
 			performFlock(target);
 		} else if (target != null) {
 			castFireblast(target.pos);
 		}
 		spend(attackDelay());
 		return true;
+	}
+
+	protected boolean canAnimateCast(Char target) {
+		return target != null
+				&& sprite instanceof RoastLambWarlockSprite
+				&& (sprite.visible || target.sprite != null && target.sprite.visible);
+	}
+
+	protected void beginAnimatedCast(int cast, Char target) {
+		pendingCast = cast;
+		pendingTarget = target;
+		pendingTargetCell = target.pos;
+		playAnimatedCast(cast, target);
+	}
+
+	protected void playAnimatedCast(int cast, Char target) {
+		RoastLambWarlockSprite warlockSprite = (RoastLambWarlockSprite) sprite;
+		if (cast == CAST_FLOCK) {
+			warlockSprite.flock(target.pos);
+		} else {
+			warlockSprite.fireblast(target.pos);
+		}
+	}
+
+	public void onCastComplete() {
+		int cast = pendingCast;
+		Char target = pendingTarget;
+		int targetCell = pendingTargetCell;
+		pendingCast = CAST_NONE;
+		pendingTarget = null;
+		pendingTargetCell = -1;
+
+		if (cast == CAST_FLOCK) {
+			performFlock(target);
+		} else if (cast == CAST_FIREBLAST) {
+			castFireblast(targetCell);
+		}
+		if (cast != CAST_NONE) {
+			spend(attackDelay());
+			next();
+		}
 	}
 
 	protected int fireblastDistance() {
@@ -168,9 +229,8 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 	protected void castFireblast(int targetCell) {
 		Invisibility.dispel(this);
-		Ballistica aim = new Ballistica(pos, targetCell, Ballistica.WONT_STOP);
-		ConeAOE cone = new ConeAOE(aim, fireblastDistance(), fireblastAngle(),
-				Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID);
+		ConeAOE cone = fireCone(targetCell);
+		Ballistica aim = cone.coreRay;
 		LinkedHashSet<Char> affectedChars = new LinkedHashSet<>();
 		LinkedHashSet<Integer> adjacentCells = new LinkedHashSet<>();
 
@@ -219,6 +279,12 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 			applyFireblastTo(affected);
 		}
 		playFireblastSounds();
+	}
+
+	public ConeAOE fireCone(int targetCell) {
+		Ballistica aim = new Ballistica(pos, targetCell, Ballistica.WONT_STOP);
+		return new ConeAOE(aim, fireblastDistance(), fireblastAngle(),
+				Ballistica.STOP_TARGET | Ballistica.STOP_SOLID | Ballistica.IGNORE_SOFT_SOLID);
 	}
 
 	protected void seedFire(int cell) {
