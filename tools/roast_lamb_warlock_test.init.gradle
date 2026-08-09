@@ -1,0 +1,11 @@
+allprojects {
+	tasks.withType(JavaCompile).configureEach {
+		if (name == 'compileTestJava') {
+			include '**/actors/mobs/tmobs/RoastLambWarlockTest.java'
+			include '**/sprites/tmobs/RoastLambWarlockSpriteAssetTest.java'
+			include '**/levels/towers/TowerLevelCamouflageGnollTest.java'
+			include '**/journal/TowerBestiaryCategoriesTest.java'
+			include '**/custom/testmode/TowerMobPlacerTest.java'
+		}
+	}
+}
