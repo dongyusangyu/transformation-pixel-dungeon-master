@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -168,6 +169,36 @@ public class RoastLambWarlockTest {
 	}
 
 	@Test
+	public void completeFireConeHitsTargetsSeedsFireAndExcludesCaster() {
+		Level previousLevel = Dungeon.level;
+		Actor.clear();
+		try {
+			TestLevel level = openLevel(15, 15);
+			level.heaps = new com.watabou.utils.SparseArray<>();
+			level.blobs = new HashMap<>();
+			Dungeon.level = level;
+
+			FireConeWarlock warlock = new FireConeWarlock();
+			warlock.pos = 112;
+			TestTarget target = new TestTarget();
+			target.pos = 116;
+			Actor.add(warlock);
+			Actor.add(target);
+
+			warlock.castForTest(target.pos);
+
+			assertTrue(target.damageTaken >= 15 && target.damageTaken <= 35);
+			assertNotNull(target.buff(Burning.class));
+			assertNotNull(target.buff(Cripple.class));
+			assertTrue(warlock.seededCells.contains(target.pos));
+			assertEquals(150, warlock.HP);
+		} finally {
+			Actor.clear();
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
 	public void laterRangedAttackCastsFireblastAtMarkedTarget() {
 		TestWarlock warlock = new TestWarlock();
 		Gnoll target = new Gnoll();
@@ -176,6 +207,28 @@ public class RoastLambWarlockTest {
 
 		assertTrue(warlock.rangedAttackForTest(target));
 		assertEquals(37, warlock.fireblastTargetCell);
+	}
+
+	@Test
+	public void fireblastTargetingStopsAtSevenTiles() {
+		Level previousLevel = Dungeon.level;
+		Actor.clear();
+		try {
+			Dungeon.level = openLevel(15, 5);
+			TestWarlock warlock = new TestWarlock();
+			warlock.pos = 31;
+			Gnoll target = new Gnoll();
+			Actor.add(target);
+
+			target.pos = 38;
+			assertTrue(warlock.canRangedAttackForTest(target));
+
+			target.pos = 39;
+			assertFalse(warlock.canRangedAttackForTest(target));
+		} finally {
+			Actor.clear();
+			Dungeon.level = previousLevel;
+		}
 	}
 
 	@Test
@@ -265,6 +318,10 @@ public class RoastLambWarlockTest {
 			return doRangedAttack(target);
 		}
 
+		private boolean canRangedAttackForTest(Char target) {
+			return canRangedAttack(target);
+		}
+
 		private void completeCastForTest() {
 			onCastComplete();
 		}
@@ -316,6 +373,24 @@ public class RoastLambWarlockTest {
 		@Override
 		public float resist(Class effect) {
 			return 1f;
+		}
+	}
+
+	private static final class FireConeWarlock extends RoastLambWarlock {
+
+		private final List<Integer> seededCells = new ArrayList<>();
+
+		private void castForTest(int targetCell) {
+			castFireblast(targetCell);
+		}
+
+		@Override
+		protected void seedFire(int cell) {
+			seededCells.add(cell);
+		}
+
+		@Override
+		protected void playFireblastSounds() {
 		}
 	}
 

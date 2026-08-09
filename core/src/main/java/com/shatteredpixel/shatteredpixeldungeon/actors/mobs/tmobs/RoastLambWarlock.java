@@ -170,6 +170,12 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 		return true;
 	}
 
+	@Override
+	public boolean canRangedAttack(Char target) {
+		return MagicalRangedAttack.super.canRangedAttack(target)
+				&& Dungeon.level.trueDistance(pos, target.pos) <= fireblastDistance();
+	}
+
 	protected boolean canAnimateCast(Char target) {
 		return target != null
 				&& sprite instanceof RoastLambWarlockSprite

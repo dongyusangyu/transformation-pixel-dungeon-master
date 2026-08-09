@@ -89,9 +89,9 @@ public class RoastLambWarlockSprite extends MobSprite {
 
 	@Override
 	public void onComplete(Animation animation) {
-		super.onComplete(animation);
 		if (animation == zap) {
 			idle();
 		}
+		super.onComplete(animation);
 	}
 }
