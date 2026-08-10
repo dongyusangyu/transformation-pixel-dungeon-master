@@ -417,7 +417,7 @@ public class Ring extends KindofMisc {
         if(currentHero != null && currentHero.hasTalent(Talent.RING_BOND) && currentHero.heroClass != HeroClass.PRINCESS && bonus>soloBonus){
             bonus += currentHero.pointsInTalent(Talent.RING_BOND);
         }
-		return bonus;
+		return RingBonusProvider.addCopiedBonus(target, type, false, bonus);
 	}
 
 	public static int getBuffedBonus(Char target, Class<?extends RingBuff> type){
@@ -439,7 +439,7 @@ public class Ring extends KindofMisc {
         if(hero!=null && hero.hasTalent(Talent.RING_BOND) && hero.heroClass != HeroClass.PRINCESS && bonus>soloBonus){
             bonus += hero.pointsInTalent(Talent.RING_BOND);
         }
-		return bonus;
+		return RingBonusProvider.addCopiedBonus(target, type, true, bonus);
 	}
 
 	//just used for ring descriptions
