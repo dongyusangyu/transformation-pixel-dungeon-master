@@ -461,7 +461,8 @@ public abstract class Mob extends Char {
 			} else if ( alignment == Alignment.ALLY ) {
 				//look for hostile mobs to attack
 				for (Mob mob : Dungeon.level.mobs)
-					if (mob.alignment == Alignment.ENEMY && fieldOfView[mob.pos]
+					if (mob.alignment == Alignment.ENEMY
+							&& !(mob instanceof DeceptiveHeroTarget) && fieldOfView[mob.pos]
 							&& mob.invisible <= 0 && !mob.isInvulnerable(getClass()))
 						//do not target passive mobs
 						//intelligent allies also don't target mobs which are wandering or asleep
