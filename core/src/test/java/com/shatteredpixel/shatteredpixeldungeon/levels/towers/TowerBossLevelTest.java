@@ -1,7 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
 import org.junit.After;
@@ -135,6 +137,72 @@ public class TowerBossLevelTest {
 		assertEquals(Terrain.UNLOCKED_EXIT, map[TowerBossLayout.EXIT_GATE]);
 	}
 
+	@Test
+	public void selectedBossIdSurvivesBundleRoundTrip() {
+		TowerBossEncounter encounter = new TowerBossEncounter();
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, encounter.selectedBossId());
+
+		Bundle bundle = new Bundle();
+		encounter.storeInBundle(bundle);
+		TowerBossEncounter restored = new TowerBossEncounter();
+		restored.restoreFromBundle(bundle, Dungeon.seed, Dungeon.depth, Dungeon.branch,
+				false, false, false);
+
+		assertEquals(encounter.selectedBossId(), restored.selectedBossId());
+		assertFalse(restored.bossEncounterStarted());
+		assertFalse(restored.bossEncounterDefeated());
+	}
+
+	@Test
+	public void missingLegacyBossIdIsRecomputedFromSeedAndDepth() {
+		TowerBossEncounter encounter = new TowerBossEncounter();
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		Bundle current = new Bundle();
+		encounter.storeInBundle(current);
+
+		current.remove("tower_boss_id");
+		TowerBossEncounter restored = new TowerBossEncounter();
+		restored.restoreFromBundle(current, Dungeon.seed, Dungeon.depth, Dungeon.branch,
+				false, false, false);
+
+		assertEquals(TowerBossGenerator.selectId(Dungeon.seed, Dungeon.depth, Dungeon.branch),
+				restored.selectedBossId());
+	}
+
+	@Test
+	public void encounterCreatesSelectedBossAndUsesGenericLifecycle() {
+		TowerBossEncounter encounter = new TowerBossEncounter();
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		RecordingHost host = new RecordingHost();
+
+		TowerBoss boss = encounter.start(host);
+
+		assertTrue(encounter.bossEncounterStarted());
+		assertEquals(1, host.sealCalls);
+		assertNotNull(host.launchedBoss);
+		assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID,
+				host.launchedBoss.towerBossId());
+		assertEquals(host.fixedSpawnCell, host.launchedBoss.pos);
+		assertTrue(boss == host.launchedBoss);
+		assertEquals(1, host.prepareCalls);
+	}
+
+	@Test
+	public void genericBossDeathCleanupAndUnsealAreIdempotent() {
+		TowerBossEncounter encounter = new TowerBossEncounter();
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		RecordingHost host = new RecordingHost();
+		TowerBoss boss = encounter.start(host);
+
+		encounter.onBossDefeated(boss, host);
+		encounter.onBossDefeated(boss, host);
+
+		assertTrue(encounter.bossEncounterDefeated());
+		assertEquals(1, host.unsealCalls);
+		assertEquals(1, host.cleanupCalls);
+	}
+
 	private static int[] generateMap() {
 		return generateMap(0x5B055L);
 	}
@@ -179,5 +247,58 @@ public class TowerBossLevelTest {
 			}
 		}
 		return false;
+	}
+
+	private static class RecordingHost implements TowerBossEncounter.Host {
+		private final int fixedSpawnCell = cell(14, 10);
+		private TestTowerBoss launchedBoss;
+		private int prepareCalls;
+		private int cleanupCalls;
+		private int sealCalls;
+		private int unsealCalls;
+
+		@Override
+		public TowerBoss createBoss(String id) {
+			assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, id);
+			return new TestTowerBoss();
+		}
+
+		@Override
+		public int selectBossSpawnCell() {
+			return fixedSpawnCell;
+		}
+
+		@Override
+		public boolean prepareArena(TowerBoss boss, int spawnCell) {
+			prepareCalls++;
+			return true;
+		}
+
+		@Override
+		public void launchBoss(TowerBoss boss) {
+			launchedBoss = (TestTowerBoss) boss;
+		}
+
+		@Override
+		public void sealArena() {
+			sealCalls++;
+		}
+
+		@Override
+		public void cleanupArena(TowerBoss boss) {
+			cleanupCalls++;
+		}
+
+		@Override
+		public void unsealArena() {
+			unsealCalls++;
+		}
+	}
+
+	private static class TestTowerBoss extends TowerBoss {
+		@Override
+		public String towerBossId() {
+			return TowerBossGenerator.PESTILENCE_KNIGHT_ID;
+		}
 	}
 }
