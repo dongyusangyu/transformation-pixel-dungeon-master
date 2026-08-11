@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -115,11 +116,48 @@ public class TowerBossLevel extends TowerLevel {
 
 	@Override
 	public void occupyCell(Char ch) {
-		if (TowerBossLayout.shouldStartEncounter(
-				encounter.bossEncounterStarted(), ch == Dungeon.hero, ch.pos)) {
-			startEncounter();
+		boolean hero = ch == Dungeon.hero;
+		boolean encounterBegun = encounter.bossEncounterStarted()
+				|| encounter.bossEncounterDefeated()
+				|| pestilenceArena != null && pestilenceArena.preludeStarted();
+		if (TowerBossLayout.shouldBeginPrelude(encounterBegun, hero, ch.pos)) {
+			beginEncounterPrelude();
 		}
 		super.occupyCell(ch);
+		if (hero && pestilenceArena != null && !encounter.bossEncounterDefeated()) {
+			handlePurifierEntry((Hero) ch);
+		}
+	}
+
+	private void beginEncounterPrelude() {
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		if (!TowerBossGenerator.PESTILENCE_KNIGHT_ID.equals(encounter.selectedBossId())) {
+			startEncounter();
+			return;
+		}
+		int bossCell = selectBossSpawnCell();
+		if (pestilenceArena == null) pestilenceArena = new PestilenceArenaController();
+		if (!pestilenceArena.beginPrelude(this, bossCell)) {
+			startEncounter();
+			return;
+		}
+		seal();
+		Statistics.qualifiedForBossChallengeBadge = true;
+	}
+
+	private void handlePurifierEntry(Hero hero) {
+		PestilenceArenaController.ActivationResult result = pestilenceArena.onHeroEntered(
+				this, hero, encounter.bossEncounterStarted());
+		if (result == PestilenceArenaController.ActivationResult.START_BOSS) {
+			startEncounter();
+		} else if (result == PestilenceArenaController.ActivationResult.DAMAGE_BOSS) {
+			for (Mob mob : mobs) {
+				if (mob instanceof PestilenceKnight && mob.isAlive()) {
+					mob.damage(PestilenceArenaController.PURIFIER_BOSS_DAMAGE, pestilenceArena);
+					break;
+				}
+			}
+		}
 	}
 
 	protected void startEncounter() {
@@ -139,6 +177,10 @@ public class TowerBossLevel extends TowerLevel {
 	}
 
 	protected int selectBossSpawnCell() {
+		if (pestilenceArena != null && pestilenceArena.preludeStarted()
+				&& pestilenceArena.bossCell() >= 0) {
+			return pestilenceArena.bossCell();
+		}
 		for (int attempts = 0; attempts < 200; attempts++) {
 			int cell = TowerBossLayout.cell(Random.Int(6, 23), Random.Int(7, 16));
 			if (passable[cell] && Actor.findChar(cell) == null) {

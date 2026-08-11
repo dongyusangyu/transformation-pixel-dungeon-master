@@ -31,10 +31,13 @@ import java.util.Random;
 /** Persistent state and deterministic purifier placement for the Pestilence arena. */
 public class PestilenceArenaController implements Bundlable {
 
+    static final int PRELUDE_MIASMA_AMOUNT = 20_000;
+    static final int PURIFIER_BOSS_DAMAGE = 100;
     static final int PURIFIER_COOLDOWN = 12;
     static final int MIN_RELOCATION_DISTANCE = 6;
 
     private static final String PREPARED = "prepared";
+    private static final String PRELUDE_STARTED = "prelude_started";
     private static final String PURIFIER_CELL = "purifier_cell";
     private static final String PURIFIER_COOLDOWN_KEY = "purifier_cooldown";
     private static final String SAFE_ROUTE = "safe_route";
@@ -64,6 +67,7 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     private boolean prepared;
+    private boolean preludeStarted;
     private int purifierCell = -1;
     private int purifierCooldown;
     private int[] safeRoute = new int[0];
@@ -76,6 +80,27 @@ public class PestilenceArenaController implements Bundlable {
         long seed = TowerBossGenerator.mix64(Dungeon.seed
                 ^ ((long) Dungeon.depth << 32) ^ Dungeon.branch ^ PLACEMENT_SALT);
         return prepare(new LevelArena(level), bossCell, seed);
+    }
+
+    boolean beginPrelude(Arena arena, int bossCell, long seed) {
+        if (preludeStarted) return prepared && purifierCell >= 0;
+        if (!prepare(arena, bossCell, seed)) return false;
+        preludeStarted = true;
+        return true;
+    }
+
+    boolean beginPrelude(TowerBossLevel level, int bossCell) {
+        long seed = TowerBossGenerator.mix64(Dungeon.seed
+                ^ ((long) Dungeon.depth << 32) ^ Dungeon.branch ^ PLACEMENT_SALT);
+        LevelArena arena = new LevelArena(level);
+        if (!beginPrelude(arena, bossCell, seed)) return false;
+
+        PaleMiasma miasma = null;
+        for (int cell : preludeMiasmaCells(arena)) {
+            miasma = Blob.seed(cell, PRELUDE_MIASMA_AMOUNT, PaleMiasma.class, level);
+        }
+        if (miasma != null) GameScene.add(miasma);
+        return true;
     }
 
     boolean prepare(Arena arena, int bossCell, long seed) {
@@ -135,6 +160,56 @@ public class PestilenceArenaController implements Bundlable {
             purifierCell = nextCell;
         }
         return true;
+    }
+
+    enum ActivationResult {
+        NONE, START_BOSS, DAMAGE_BOSS
+    }
+
+    ActivationResult activateForEncounter(Arena arena, int heroCell, boolean bossStarted) {
+        if (!activate(arena, heroCell)) return ActivationResult.NONE;
+        return preludeStarted && !bossStarted
+                ? ActivationResult.START_BOSS : ActivationResult.DAMAGE_BOSS;
+    }
+
+    ActivationResult onHeroEntered(TowerBossLevel level, Hero hero, boolean bossStarted) {
+        if (hero == null) return ActivationResult.NONE;
+        ActivationResult result = activateForEncounter(new LevelArena(level), hero.pos, bossStarted);
+        if (result == ActivationResult.NONE) return result;
+
+        clearAllMiasma(level);
+        Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
+        Dungeon.observe();
+        return result;
+    }
+
+    private static void clearAllMiasma(TowerBossLevel level) {
+        clearBlob(level, IncubatingMiasma.class);
+        clearBlob(level, OutbreakMiasma.class);
+        clearBlob(level, PaleMiasma.class);
+    }
+
+    private static void clearBlob(TowerBossLevel level, Class<? extends Blob> type) {
+        Blob blob = level.blobs.get(type);
+        if (blob != null) blob.fullyClear();
+    }
+
+    int[] preludeMiasmaCells(Arena arena) {
+        if (!prepared) return new int[0];
+        boolean[] safe = new boolean[arena.length()];
+        for (int cell : safeRoute) {
+            if (cell >= 0 && cell < safe.length) safe[cell] = true;
+        }
+        ArrayList<Integer> cells = new ArrayList<>();
+        for (int cell = 0; cell < arena.length(); cell++) {
+            if (arena.isArenaCell(cell) && arena.passable(cell)
+                    && cell != purifierCell && !safe[cell]) {
+                cells.add(cell);
+            }
+        }
+        int[] result = new int[cells.size()];
+        for (int i = 0; i < result.length; i++) result[i] = cells.get(i);
+        return result;
     }
 
     private int selectRelocation(Arena arena, int heroCell) {
@@ -226,6 +301,10 @@ public class PestilenceArenaController implements Bundlable {
 
     public boolean prepared() {
         return prepared;
+    }
+
+    public boolean preludeStarted() {
+        return preludeStarted;
     }
 
     public int purifierCell() {
@@ -333,6 +412,7 @@ public class PestilenceArenaController implements Bundlable {
     @Override
     public void storeInBundle(Bundle bundle) {
         bundle.put(PREPARED, prepared);
+        bundle.put(PRELUDE_STARTED, preludeStarted);
         bundle.put(PURIFIER_CELL, purifierCell);
         bundle.put(PURIFIER_COOLDOWN_KEY, purifierCooldown);
         bundle.put(SAFE_ROUTE, safeRoute);
@@ -356,6 +436,8 @@ public class PestilenceArenaController implements Bundlable {
 
         if (bundle.getBoolean(PREPARED) && restoredCell >= 0) {
             prepared = true;
+            preludeStarted = bundle.contains(PRELUDE_STARTED)
+                    && bundle.getBoolean(PRELUDE_STARTED);
             purifierCell = restoredCell;
             purifierCooldown = Math.max(0, restoredCooldown);
             safeRoute = bundle.contains(SAFE_ROUTE) ? bundle.getIntArray(SAFE_ROUTE) : new int[0];
@@ -367,6 +449,7 @@ public class PestilenceArenaController implements Bundlable {
             waterTurns = bundle.contains(WATER_TURNS) ? Math.max(0, bundle.getInt(WATER_TURNS)) : 0;
         } else {
             prepared = false;
+            preludeStarted = false;
             purifierCell = -1;
             purifierCooldown = 0;
             safeRoute = new int[0];
