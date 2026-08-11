@@ -2,11 +2,39 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.watabou.noosa.particles.Emitter;
 
 import java.util.Arrays;
 
 /** Shared evolution rules for Pestilence's arena-only miasmas. */
 public abstract class PlagueMiasma extends Blob {
+
+    private static final float PARTICLE_INTERVAL = 0.25f;
+
+    /** RGB color used by this phase's persistent gas cloud. */
+    protected abstract int particleColor();
+
+    @Override
+    public void use(BlobEmitter emitter) {
+        super.use(emitter);
+        final int color = particleColor();
+        emitter.pour(new Emitter.Factory() {
+            @Override
+            public void emit(Emitter source, int index, float x, float y) {
+                Speck particle = (Speck) source.recycle(Speck.class);
+                particle.reset(index, x, y, Speck.TOXIC);
+                particle.hardlight(color);
+            }
+        }, PARTICLE_INTERVAL);
+    }
+
+    @Override
+    public String tileDesc() {
+        return Messages.get(this, "desc");
+    }
 
     protected final boolean blockedByIncense(int cell) {
         return Blob.volumeAt(cell, PurifyingIncense.class) > 0;

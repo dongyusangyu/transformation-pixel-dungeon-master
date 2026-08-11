@@ -8,6 +8,11 @@ public class PaleMiasma extends PlagueMiasma {
     private boolean decayParity;
 
     @Override
+    protected int particleColor() {
+        return 0xC8C3E8;
+    }
+
+    @Override
     protected void evolve() {
         beginEvolution();
         decayParity = !decayParity;

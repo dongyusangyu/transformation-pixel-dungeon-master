@@ -14,6 +14,11 @@ public class OutbreakMiasma extends PlagueMiasma {
     private long rngState = 0x6A09E667F3BCC909L;
 
     @Override
+    protected int particleColor() {
+        return 0x63D13F;
+    }
+
+    @Override
     protected void evolve() {
         beginEvolution();
         ArrayList<Integer> sources = new ArrayList<>();
