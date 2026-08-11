@@ -38,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
@@ -297,6 +298,7 @@ public enum Bestiary {
 				MechanicalFist.class, MimicCrocodile.class, Obscura.class,
 				AlienatedPrismaticGuard.class, SoulCollector.class,
 				HeavyCrabification.class);
+		TOWER_BOSSES.addEntities(PestilenceKnight.class);
 
 	}
 

@@ -23,6 +23,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.PestilenceKnightSprite;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -91,6 +92,7 @@ public class PestilenceKnight extends TowerBoss {
         maxLvl = 30;
         loot = null;
         lootChance = 0f;
+        spriteClass = PestilenceKnightSprite.class;
         properties.add(Property.BOSS);
         properties.add(Property.IMMOVABLE);
         properties.add(Property.UNSLEEP);
@@ -273,6 +275,7 @@ public class PestilenceKnight extends TowerBoss {
         pendingSkill = skill;
         pendingCells = cells;
         showTelegraph(cells, skill.equals(PALE_CHARGE) ? 0xD8D8D8 : 0x88AA33);
+        if (sprite instanceof PestilenceKnightSprite) ((PestilenceKnightSprite) sprite).cast();
         spend(TICK);
         finishBossAction();
         return true;
@@ -523,6 +526,9 @@ public class PestilenceKnight extends TowerBoss {
     private void advanceHarvest(int blobCells) {
         if (harvest == HarvestState.ARMED) {
             harvest = HarvestState.CHANNELING;
+            if (sprite instanceof PestilenceKnightSprite) {
+                ((PestilenceKnightSprite) sprite).harvest();
+            }
             return;
         }
         if (harvest != HarvestState.CHANNELING) return;
@@ -616,6 +622,8 @@ public class PestilenceKnight extends TowerBoss {
     int capFinalDamageForTest(int damage) { return modifyFinalDamage(damage, null); }
     int growthForTest() { return growth; }
     Phase phaseForTest() { return phase; }
+    public Phase phase() { return phase; }
+    public String pendingSkill() { return pendingSkill; }
     HarvestState harvestForTest() { return harvest; }
     void armHarvestForTest() { harvest = HarvestState.ARMED; }
     void advanceHarvestForTest(int blobCells) { advanceHarvest(blobCells); }
