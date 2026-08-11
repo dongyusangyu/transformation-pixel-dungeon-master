@@ -347,18 +347,18 @@ public class PestilenceKnight extends TowerBoss {
         pendingCells = new int[0];
         if (PLAGUE_FLASK.equals(skill)) {
             hitHeroInCells(cells, 12, 20, diagnosedBeforeAction);
-            seedCells(cells, 6, IncubatingMiasma.class, false);
+            seedCells(cells, miasmaAmountForSkill(skill), IncubatingMiasma.class, false);
             cooldowns[FLASK_CD] = 5;
         } else if (QUARANTINE.equals(skill)) {
-            seedCells(cells, 8, OutbreakMiasma.class, false);
+            seedCells(cells, miasmaAmountForSkill(skill), OutbreakMiasma.class, false);
             cooldowns[QUARANTINE_CD] = 7;
         } else if (PALE_CHARGE.equals(skill)) {
             hitHeroInCells(cells, 30, 45, false);
             knockHeroIfInCells(cells, 2);
-            seedCells(cells, 8, PaleMiasma.class, true);
+            seedCells(cells, miasmaAmountForSkill(skill), PaleMiasma.class, true);
             cooldowns[PALE_CHARGE_CD] = 5;
         } else if (DOOM_PROCESSION.equals(skill)) {
-            seedCells(cells, 7, PaleMiasma.class, false);
+            seedCells(cells, miasmaAmountForSkill(skill), PaleMiasma.class, false);
             if (processionSteps < 3) {
                 processionSteps++;
                 pendingSkill = DOOM_PROCESSION;
@@ -372,6 +372,13 @@ public class PestilenceKnight extends TowerBoss {
         spend(TICK);
         finishBossAction();
         return true;
+    }
+
+    static int miasmaAmountForSkill(String skill) {
+        if (PLAGUE_FLASK.equals(skill)) return 60;
+        if (QUARANTINE.equals(skill) || PALE_CHARGE.equals(skill)) return 80;
+        if (DOOM_PROCESSION.equals(skill)) return 70;
+        return 0;
     }
 
     private boolean castPrescription() {

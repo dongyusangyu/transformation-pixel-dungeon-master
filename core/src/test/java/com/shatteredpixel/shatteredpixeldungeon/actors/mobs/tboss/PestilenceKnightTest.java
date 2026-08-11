@@ -137,6 +137,14 @@ public class PestilenceKnightTest {
     }
 
     @Test
+    public void everyPlagueSkillSeedsExactlyTenTimesItsOriginalVolume() {
+        assertEquals(60, PestilenceKnight.miasmaAmountForSkill("plague_flask"));
+        assertEquals(80, PestilenceKnight.miasmaAmountForSkill("quarantine"));
+        assertEquals(80, PestilenceKnight.miasmaAmountForSkill("pale_charge"));
+        assertEquals(70, PestilenceKnight.miasmaAmountForSkill("doom_procession"));
+    }
+
+    @Test
     public void plagueFlaskCyclesThroughThreeDiseaseColoredPotionSprites() {
         assertEquals(0, PestilenceKnight.plagueFlaskPaletteIndexForTest(0));
         assertEquals(1, PestilenceKnight.plagueFlaskPaletteIndexForTest(1));
