@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
 /** Stack-based plague carried by the hero during the Pestilence encounter. */
@@ -79,6 +80,16 @@ public class Infection extends Buff implements Char.HealingModifier {
     @Override
     public float incomingHealingReduction() {
         return stacks * HEALING_REDUCTION_PER_STACK;
+    }
+
+    @Override
+    public int icon() {
+        return BuffIndicator.POISON;
+    }
+
+    @Override
+    public String iconTextDisplay() {
+        return Integer.toString(stacks);
     }
 
     @Override

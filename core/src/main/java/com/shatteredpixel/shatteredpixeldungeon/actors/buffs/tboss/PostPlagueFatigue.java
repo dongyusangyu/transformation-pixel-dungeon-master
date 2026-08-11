@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 
 /** Short post-battle exhaustion which affects actions and natural regeneration only. */
 public class PostPlagueFatigue extends FlavourBuff {
@@ -11,5 +12,10 @@ public class PostPlagueFatigue extends FlavourBuff {
     {
         type = buffType.NEGATIVE;
         announced = true;
+    }
+
+    @Override
+    public int icon() {
+        return BuffIndicator.WEAKNESS;
     }
 }

@@ -321,6 +321,7 @@ public class PestilenceArenaController implements Bundlable {
     private void activateBrazier(Hero hero, int index) {
         int center = brazierCells[index];
         int width = Dungeon.level.width();
+        PurifyingIncense incense = null;
         for (int cell = 0; cell < Dungeon.level.length(); cell++) {
             int dx = Math.abs(cell % width - center % width);
             int dy = Math.abs(cell / width - center / width);
@@ -328,8 +329,11 @@ public class PestilenceArenaController implements Bundlable {
             clearAt(cell, IncubatingMiasma.class);
             clearAt(cell, OutbreakMiasma.class);
             clearAt(cell, PaleMiasma.class);
-            if (!Dungeon.level.solid[cell]) Blob.seed(cell, 3, PurifyingIncense.class);
+            if (!Dungeon.level.solid[cell]) {
+                incense = Blob.seed(cell, 3, PurifyingIncense.class);
+            }
         }
+        if (incense != null) GameScene.add(incense);
         Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
         cooldowns[index] = 12;
         preparedHeroCell = -1;

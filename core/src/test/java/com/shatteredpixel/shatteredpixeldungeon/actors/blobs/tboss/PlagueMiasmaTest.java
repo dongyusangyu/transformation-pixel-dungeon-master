@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.BlobImmunity;
 import com.watabou.utils.Bundle;
 
@@ -50,17 +51,17 @@ public class PlagueMiasmaTest {
     }
 
     @Test
-    public void purityThrowTargetsOnlyTheThreeBossMiasmas() throws Exception {
+    public void purityThrowRetainsAllHarmfulBlobsIncludingTheThreeMiasmas() throws Exception {
+        BlobImmunity immunity = new BlobImmunity();
+        assertTrue(immunity.immunities().contains(ToxicGas.class));
+        assertTrue(immunity.immunities().contains(IncubatingMiasma.class));
+        assertTrue(immunity.immunities().contains(OutbreakMiasma.class));
+        assertTrue(immunity.immunities().contains(PaleMiasma.class));
+        assertFalse(immunity.immunities().contains(PurifyingIncense.class));
+
         String source = source("items/potions/PotionOfPurity.java");
-        int start = source.indexOf("affectedBlobs = new ArrayList<>()");
-        int end = source.indexOf("}", start);
-        String initializer = source.substring(start, end);
-        assertTrue(initializer.contains("IncubatingMiasma.class"));
-        assertTrue(initializer.contains("OutbreakMiasma.class"));
-        assertTrue(initializer.contains("PaleMiasma.class"));
-        assertFalse(initializer.contains("ToxicGas.class"));
-        assertFalse(initializer.contains("Fire.class"));
-        assertFalse(initializer.contains("Web.class"));
+        assertTrue(source.contains(
+                "affectedBlobs = new ArrayList<>(new BlobImmunity().immunities())"));
     }
 
     private static String source(String relative) throws Exception {

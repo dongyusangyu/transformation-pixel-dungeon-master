@@ -6,6 +6,9 @@ import com.watabou.utils.Random;
 
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -135,6 +138,17 @@ public class PestilenceArenaControllerTest {
         assertEquals(cells[2], controller.nearestReadyBrazier(TowerBossLayout.cell(14, 29)));
         assertTrue(controller.isBrazierCell(cells[2]));
         assertFalse(controller.isBrazierCell(TowerBossLayout.cell(14, 17)));
+    }
+
+    @Test
+    public void brazierActivationSchedulesTheSeededPurifyingIncense() throws Exception {
+        Path root = Path.of(System.getProperty("user.dir"));
+        Path source = (Files.isDirectory(root.resolve("core")) ? root.resolve("core") : root)
+                .resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/towers/PestilenceArenaController.java");
+        String code = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+
+        assertTrue(code.contains("PurifyingIncense incense = null"));
+        assertTrue(code.contains("GameScene.add(incense)"));
     }
 
     private static int[] generateMap(long seed) {

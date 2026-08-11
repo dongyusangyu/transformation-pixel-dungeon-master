@@ -10,10 +10,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PurifyingIncense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
@@ -190,8 +193,9 @@ public class PestilenceKnight extends TowerBoss {
             finishBossAction();
             return true;
         }
-        if (paralysed <= 0 && state != SLEEPING && canUsePhaseSkills()) {
-            return actPhaseAI();
+        if (paralysed <= 0 && state != SLEEPING) {
+            if (canUsePhaseSkills()) return actPhaseAI();
+            resetDiagnosisStreak();
         }
         boolean completed = super.act();
         if (completed) finishBossAction();
@@ -209,13 +213,19 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean canUsePhaseSkills() {
-        return Dungeon.level != null && Dungeon.hero != null && Dungeon.hero.isAlive()
-                && Dungeon.level.distance(pos, Dungeon.hero.pos) <= viewDistance;
+        if (Dungeon.level == null || Dungeon.hero == null || !Dungeon.hero.isAlive()
+                || Dungeon.level.distance(pos, Dungeon.hero.pos) > viewDistance) return false;
+        if (fieldOfView == null || fieldOfView.length != Dungeon.level.length()) {
+            fieldOfView = new boolean[Dungeon.level.length()];
+        }
+        Dungeon.level.updateFieldOfView(this, fieldOfView);
+        return fieldOfView[Dungeon.hero.pos] && Dungeon.hero.invisible <= 0;
     }
 
     private boolean actPhaseAI() {
+        boolean diagnosedBeforeAction = hasFlaskDiagnosisBonus();
         updateDiagnosis();
-        if (!pendingSkill.isEmpty()) return resolvePendingSkill();
+        if (!pendingSkill.isEmpty()) return resolvePendingSkill(diagnosedBeforeAction);
         switch (phase) {
             case INCUBATION:
                 if (cooldowns[FLASK_CD] == 0) {
@@ -281,13 +291,13 @@ public class PestilenceKnight extends TowerBoss {
         return true;
     }
 
-    private boolean resolvePendingSkill() {
+    private boolean resolvePendingSkill(boolean diagnosedBeforeAction) {
         String skill = pendingSkill;
         int[] cells = pendingCells;
         pendingSkill = "";
         pendingCells = new int[0];
         if (PLAGUE_FLASK.equals(skill)) {
-            hitHeroInCells(cells, 12, 20, diagnosis >= 2);
+            hitHeroInCells(cells, 12, 20, diagnosedBeforeAction);
             seedCells(cells, 6, IncubatingMiasma.class, false);
             cooldowns[FLASK_CD] = 5;
         } else if (QUARANTINE.equals(skill)) {
@@ -316,35 +326,55 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean castPrescription() {
-        Hero hero = Dungeon.hero;
-        switch (prescriptionIndex++ % 3) {
-            case 0:
-                Buff.prolong(hero, Weakness.class, 4f);
-                Infection.addStacks(hero, 1);
-                break;
-            case 1:
-                Buff.affect(hero, Bleeding.class).set(Random.NormalIntRange(8, 14));
-                break;
-            default:
-                Buff.prolong(hero, Vertigo.class, 4f);
-                break;
-        }
+        applyPrescription(Dungeon.hero, prescriptionIndex++ % 3);
         cooldowns[PRESCRIPTION_CD] = 5;
         spend(TICK);
         finishBossAction();
         return true;
     }
 
+    private void applyPrescription(Char target, int index) {
+        switch (index % 3) {
+            case 0:
+                dealSkillDamage(target, 10, 16);
+                Buff.prolong(target, Weakness.class, 4f);
+                Infection.addStacks(target, 1);
+                break;
+            case 1:
+                dealSkillDamage(target, 10, 16);
+                Buff.affect(target, Bleeding.class).set(6f);
+                break;
+            default:
+                dealSkillDamage(target, 8, 14);
+                Buff.prolong(target, Vertigo.class, 3f);
+                break;
+        }
+    }
+
     private boolean castTerminalDiagnosis() {
-        Hero hero = Dungeon.hero;
-        int stacks = Infection.stacks(hero);
-        if (stacks <= 1) Buff.prolong(hero, Weakness.class, 3f);
-        else if (stacks <= 3) Buff.affect(hero, Bleeding.class).set(12f);
-        else Buff.prolong(hero, Vertigo.class, 5f);
+        applyTerminalDiagnosis(Dungeon.hero, Infection.stacks(Dungeon.hero));
         cooldowns[PRESCRIPTION_CD] = 6;
         spend(TICK);
         finishBossAction();
         return true;
+    }
+
+    private void applyTerminalDiagnosis(Char target, int stacks) {
+        if (stacks <= 1) {
+            Buff.affect(target, Poison.class).set(4f);
+        } else if (stacks <= 3) {
+            Buff.prolong(target, Weakness.class, 4f);
+            Buff.prolong(target, Vulnerable.class, 4f);
+        } else {
+            dealSkillDamage(target, 25, 40);
+            TerminalHealingPenalty.set(target, 0.25f, 3f);
+        }
+    }
+
+    private void dealSkillDamage(Char target, int min, int max) {
+        target.damage(Random.NormalIntRange(
+                Math.round(min * activeDamageMultiplier()),
+                Math.round(max * activeDamageMultiplier())), this);
     }
 
     private void hitHeroInCells(int[] cells, int min, int max, boolean extraInfection) {
@@ -386,7 +416,7 @@ public class PestilenceKnight extends TowerBoss {
 
     private int predictedHeroCell() {
         int current = Dungeon.hero.pos;
-        if (diagnosis < 2 || lastHeroPos < 0 || Dungeon.level == null) return current;
+        if (!hasFlaskDiagnosisBonus() || lastHeroPos < 0 || Dungeon.level == null) return current;
         int width = Dungeon.level.width();
         int dx = Integer.compare(current % width, lastHeroPos % width);
         int dy = Integer.compare(current / width, lastHeroPos / width);
@@ -430,8 +460,8 @@ public class PestilenceKnight extends TowerBoss {
             int side = Math.abs(delta) == width ? 1 : width;
             // The center is first in every group so it can be excluded from Pale Miasma.
             cells.add(center);
-            cells.add(validEffectCell(center - side) ? center - side : center);
-            cells.add(validEffectCell(center + side) ? center + side : center);
+            cells.add(chargeSideCell(validEffectCell(center - side), center - side));
+            cells.add(chargeSideCell(validEffectCell(center + side), center + side));
             previous = center;
         }
         return toArray(cells);
@@ -463,7 +493,11 @@ public class PestilenceKnight extends TowerBoss {
 
     private void showTelegraph(int[] cells, int color) {
         if (sprite == null || sprite.parent == null) return;
-        for (int cell : cells) sprite.parent.addToBack(new TargetedCell(cell, color));
+        for (int cell : cells) {
+            if (Dungeon.level != null && cell >= 0 && cell < Dungeon.level.length()) {
+                sprite.parent.addToBack(new TargetedCell(cell, color));
+            }
+        }
     }
 
     private void updateDiagnosis() {
@@ -479,6 +513,10 @@ public class PestilenceKnight extends TowerBoss {
                 showTelegraph(new int[]{brazier}, 0xFFD35A);
             }
         }
+    }
+
+    private void resetDiagnosisStreak() {
+        diagnosis &= ~0xFF;
     }
 
     private void finishBossAction() {
@@ -648,6 +686,17 @@ public class PestilenceKnight extends TowerBoss {
     boolean acceptNegativeForTest() { return !rollTenacity(); }
     boolean rewardDroppedForTest() { return rewardDropped; }
     void markRewardDroppedForTest() { rewardDropped = true; }
+    void setDiagnosisForTest(int value) { diagnosis = value; }
+    boolean flaskDiagnosisBonusForTest() { return hasFlaskDiagnosisBonus(); }
+    static int chargeSideCellForTest(boolean valid, int candidate) {
+        return chargeSideCell(valid, candidate);
+    }
+    void resetDiagnosisStreakForTest() { resetDiagnosisStreak(); }
+    int diagnosisForTest() { return diagnosis; }
+    void applyPrescriptionForTest(Char target, int index) { applyPrescription(target, index); }
+    void applyTerminalDiagnosisForTest(Char target, int stacks) {
+        applyTerminalDiagnosis(target, stacks);
+    }
 
     private void ensureTerminalEntered() {
         if (terminalEntered) return;
@@ -661,11 +710,24 @@ public class PestilenceKnight extends TowerBoss {
         return forcedTenacityRoll != null ? forcedTenacityRoll : Random.Int(2) == 0;
     }
 
+    private boolean hasFlaskDiagnosisBonus() {
+        return (diagnosis & 0xFF) >= 2;
+    }
+
+    private static int chargeSideCell(boolean valid, int candidate) {
+        return valid ? candidate : -1;
+    }
+
     @Override
     public synchronized boolean add(Buff buff) {
         if (!restoringFromBundle && phase == Phase.TERMINAL
                 && buff.type == Buff.buffType.NEGATIVE && !isInternalState(buff)
-                && rollTenacity()) return false;
+                && rollTenacity()) {
+            if (sprite instanceof PestilenceKnightSprite) {
+                ((PestilenceKnightSprite) sprite).tenacity();
+            }
+            return false;
+        }
         return super.add(buff);
     }
 
@@ -706,7 +768,9 @@ public class PestilenceKnight extends TowerBoss {
         for (int i = 0; i < cooldowns.length; i++) cooldowns[i] = Math.max(0, cooldowns[i]);
         pendingCells = bundle.getIntArray(PENDING_CELLS);
         prescriptionIndex = Math.max(0, bundle.getInt(PRESCRIPTION_INDEX));
-        diagnosis = Math.max(0, bundle.getInt(DIAGNOSIS));
+        int savedDiagnosis = Math.max(0, bundle.getInt(DIAGNOSIS));
+        diagnosis = (savedDiagnosis & BRAZIER_TUTORIAL_FLAG)
+                | Math.min(2, savedDiagnosis & 0xFF);
         lastHeroPos = bundle.contains(LAST_HERO_POS) ? bundle.getInt(LAST_HERO_POS) : -1;
         rewardDropped = bundle.getBoolean(REWARD_DROPPED);
         processionSteps = Math.max(0, Math.min(3, bundle.getInt(PROCESSION_STEPS)));
