@@ -6,6 +6,7 @@ import com.watabou.utils.Bundle;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PestilenceKnightTest {
@@ -111,5 +112,57 @@ public class PestilenceKnightTest {
         boss.HP = 550;
         assertEquals(25, boss.capFinalDamageForTest(100));
         assertEquals(PestilenceKnight.HarvestState.ARMED, boss.harvestForTest());
+    }
+
+    @Test
+    public void plagueFlaskUsesTelegraphThenResolutionAndFourActionCooldown() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        assertTrue(boss.telegraphSkillForTest("plague_flask", new int[]{10, 11}));
+        assertEquals("plague_flask", boss.pendingSkillForTest());
+        assertEquals(0, boss.skillCooldownForTest(0));
+
+        boss.resolveSkillForTest();
+        assertEquals("", boss.pendingSkillForTest());
+        assertEquals(4, boss.skillCooldownForTest(0));
+        for (int i = 0; i < 4; i++) boss.finishBossActionForTest();
+        assertEquals(0, boss.skillCooldownForTest(0));
+    }
+
+    @Test
+    public void outbreakAndTerminalPanelsMatchPhaseRules() {
+        PestilenceKnight boss = new PestilenceKnight(40);
+        boss.setPhaseForTest(PestilenceKnight.Phase.OUTBREAK);
+        assertEquals(120, boss.outbreakReductionForTest(150));
+
+        boss.setPhaseForTest(PestilenceKnight.Phase.TERMINAL);
+        assertEquals(2f, boss.speed(), 0.001f);
+        assertEquals(1f, boss.attackDelay(), 0.001f);
+        assertEquals(8, boss.drRollMinForTest());
+        assertEquals(21, boss.drRollMaxForTest());
+    }
+
+    @Test
+    public void terminalTenacityCanRejectOrAcceptExternalNegativeBuffs() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.setPhaseForTest(PestilenceKnight.Phase.TERMINAL);
+        boss.forceTenacityRollForTest(true);
+        assertFalse(boss.acceptNegativeForTest());
+        boss.forceTenacityRollForTest(false);
+        assertTrue(boss.acceptNegativeForTest());
+    }
+
+    @Test
+    public void pendingSkillAndCooldownSurviveBundleRoundTrip() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.telegraphSkillForTest("plague_flask", new int[]{3, 4, 5});
+        boss.setSkillCooldownForTest(2, 3);
+        Bundle bundle = new Bundle();
+        boss.storeInBundle(bundle);
+
+        PestilenceKnight restored = new PestilenceKnight(5);
+        restored.restoreFromBundle(bundle);
+        assertEquals("plague_flask", restored.pendingSkillForTest());
+        assertEquals(3, restored.pendingCellsForTest().length);
+        assertEquals(3, restored.skillCooldownForTest(2));
     }
 }
