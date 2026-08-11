@@ -7,10 +7,14 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfForce;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
+import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -62,13 +66,166 @@ public class AlienatedPrismaticGuardTest {
 		assertEquals(100, guard.HP);
 	}
 
+	@Test
+	public void firstSightSplitsForFreeBeforeNormalAction() {
+		TestGuard guard = new TestGuard(null);
+		guard.heroVisible = true;
+		guard.splitCell = 11;
+
+		assertTrue(guard.actForTest());
+		assertEquals(1, guard.spawned.size());
+		assertEquals(1, guard.baseActCalls);
+		assertFalse(guard.firstSplitPendingForTest());
+		assertEquals(0, guard.splitChargeForTest());
+		assertSame(guard.spawned.get(0).HUNTING, guard.spawned.get(0).state);
+	}
+
+	@Test
+	public void blockedFirstSplitRetriesWhileStillActingNormally() {
+		TestGuard guard = new TestGuard(null);
+		guard.heroVisible = true;
+		guard.splitCell = -1;
+
+		guard.actForTest();
+		guard.actForTest();
+		assertEquals(0, guard.spawned.size());
+		assertEquals(2, guard.baseActCalls);
+		assertTrue(guard.firstSplitPendingForTest());
+
+		guard.splitCell = 11;
+		guard.actForTest();
+		assertEquals(1, guard.spawned.size());
+		assertEquals(3, guard.baseActCalls);
+		assertFalse(guard.firstSplitPendingForTest());
+	}
+
+	@Test
+	public void recurringSplitUsesFiveActionableTurnsAndOwnsSuccessfulTurn() {
+		TestGuard guard = guardAfterFirstSplit();
+
+		for (int turn = 1; turn <= 4; turn++) {
+			guard.actForTest();
+			assertEquals(turn, guard.splitChargeForTest());
+		}
+		assertEquals(5, guard.baseActCalls);
+
+		guard.actForTest();
+		assertEquals(2, guard.spawned.size());
+		assertEquals(5, guard.baseActCalls);
+		assertEquals(0, guard.splitChargeForTest());
+	}
+
+	@Test
+	public void blockedRecurringSplitStaysFullButContinuesNormalActions() {
+		TestGuard guard = guardAfterFirstSplit();
+		for (int i = 0; i < 4; i++) {
+			guard.actForTest();
+		}
+		guard.splitCell = -1;
+
+		guard.actForTest();
+		guard.actForTest();
+		assertEquals(1, guard.spawned.size());
+		assertEquals(7, guard.baseActCalls);
+		assertEquals(5, guard.splitChargeForTest());
+
+		guard.splitCell = 12;
+		guard.actForTest();
+		assertEquals(2, guard.spawned.size());
+		assertEquals(7, guard.baseActCalls);
+		assertEquals(0, guard.splitChargeForTest());
+	}
+
+	@Test
+	public void sleepingAndParalysisDoNotAdvanceOrRetrySplit() {
+		TestGuard guard = guardAfterFirstSplit();
+		guard.actForTest();
+		assertEquals(1, guard.splitChargeForTest());
+
+		guard.state = guard.SLEEPING;
+		guard.actForTest();
+		assertEquals(1, guard.splitChargeForTest());
+		guard.state = guard.WANDERING;
+
+		guard.paralysed = 1;
+		guard.actForTest();
+		assertEquals(1, guard.splitChargeForTest());
+		guard.paralysed = 0;
+
+		guard.actForTest();
+		assertEquals(2, guard.splitChargeForTest());
+	}
+
+	@Test
+	public void failedSceneAddDoesNotCommitFirstOrRecurringSplit() {
+		TestGuard guard = new TestGuard(null);
+		guard.heroVisible = true;
+		guard.splitCell = 11;
+		guard.addSucceeds = false;
+		guard.actForTest();
+		assertTrue(guard.firstSplitPendingForTest());
+		assertEquals(0, guard.spawned.size());
+
+		guard.addSucceeds = true;
+		guard.actForTest();
+		for (int i = 0; i < 4; i++) {
+			guard.actForTest();
+		}
+		guard.addSucceeds = false;
+		guard.actForTest();
+		assertEquals(5, guard.splitChargeForTest());
+		assertEquals(1, guard.spawned.size());
+	}
+
+	@Test
+	public void splitStateRoundTripAndCorruptValuesAreNormalized() {
+		TestGuard source = guardAfterFirstSplit();
+		source.actForTest();
+		source.actForTest();
+		Bundle stored = new Bundle();
+		source.storeInBundle(stored);
+
+		TestGuard restored = new TestGuard(null);
+		restored.restoreFromBundle(stored);
+		assertTrue(restored.heroSeenForTest());
+		assertFalse(restored.firstSplitPendingForTest());
+		assertEquals(2, restored.splitChargeForTest());
+
+		stored.put("split_charge", 99);
+		restored.restoreFromBundle(stored);
+		assertEquals(5, restored.splitChargeForTest());
+		stored.put("split_charge", -7);
+		restored.restoreFromBundle(stored);
+		assertEquals(0, restored.splitChargeForTest());
+
+		stored.put("first_split_pending", true);
+		stored.put("split_charge", 4);
+		restored.restoreFromBundle(stored);
+		assertTrue(restored.firstSplitPendingForTest());
+		assertEquals(0, restored.splitChargeForTest());
+	}
+
+	private static TestGuard guardAfterFirstSplit() {
+		TestGuard guard = new TestGuard(null);
+		guard.heroVisible = true;
+		guard.splitCell = 11;
+		guard.actForTest();
+		return guard;
+	}
+
 	private static final class TestGuard extends AlienatedPrismaticGuard {
 
 		private final HeroEquipmentReplica.EquipmentSource source;
 		private float adjustedBaseChance;
+		private boolean heroVisible;
+		private int splitCell = -1;
+		private boolean addSucceeds = true;
+		private int baseActCalls;
+		private final ArrayList<TwistedMirror> spawned = new ArrayList<>();
 
 		private TestGuard(HeroEquipmentReplica.EquipmentSource source) {
 			this.source = source;
+			state = WANDERING;
 		}
 
 		@Override
@@ -92,6 +249,32 @@ public class AlienatedPrismaticGuardTest {
 			return damage + 3;
 		}
 
+		@Override
+		protected boolean canSeeHeroForSplit() {
+			return heroVisible;
+		}
+
+		@Override
+		protected int findSplitCell() {
+			return splitCell;
+		}
+
+		@Override
+		protected boolean addTwistedMirrorToLevel(TwistedMirror mirror, int cell) {
+			if (!addSucceeds) {
+				return false;
+			}
+			spawned.add(mirror);
+			return true;
+		}
+
+		@Override
+		protected boolean performBaseAct() {
+			baseActCalls++;
+			spend(TICK);
+			return true;
+		}
+
 		private void refreshForTest() {
 			refreshReplica();
 		}
@@ -102,6 +285,22 @@ public class AlienatedPrismaticGuardTest {
 
 		private Object lootClassForTest() {
 			return loot;
+		}
+
+		private boolean actForTest() {
+			return act();
+		}
+
+		private boolean heroSeenForTest() {
+			return heroSeen();
+		}
+
+		private boolean firstSplitPendingForTest() {
+			return firstSplitPending();
+		}
+
+		private int splitChargeForTest() {
+			return splitCharge();
 		}
 	}
 

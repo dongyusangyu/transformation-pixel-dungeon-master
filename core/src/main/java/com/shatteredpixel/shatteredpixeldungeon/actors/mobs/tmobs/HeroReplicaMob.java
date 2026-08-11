@@ -34,6 +34,10 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 	@Override
 	protected boolean act() {
 		refreshReplica();
+		return performReplicaBaseAct();
+	}
+
+	protected boolean performReplicaBaseAct() {
 		return super.act();
 	}
 
