@@ -18,8 +18,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Goo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -35,9 +35,7 @@ import java.util.ArrayList;
 public class TowerBossLevel extends TowerLevel {
 
 	public static final int FLOORS_PER_BOSS = 5;
-	private static final String BOSS_SPAWNED = "boss_spawned";
-
-	private boolean bossSpawned;
+	private final TowerBossEncounter encounter = new TowerBossEncounter();
 
 	@Override
 	public String tilesTex() {
@@ -75,6 +73,7 @@ public class TowerBossLevel extends TowerLevel {
 		transitions.add(new LevelTransition(this, TowerBossLayout.EXIT,
 				LevelTransition.Type.REGULAR_EXIT,
 				Dungeon.depth + 1, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_ENTRANCE));
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
 		return true;
 	}
 
@@ -113,25 +112,29 @@ public class TowerBossLevel extends TowerLevel {
 	@Override
 	public void occupyCell(Char ch) {
 		if (TowerBossLayout.shouldStartEncounter(
-				bossSpawned, ch == Dungeon.hero, ch.pos)) {
+				encounter.bossEncounterStarted(), ch == Dungeon.hero, ch.pos)) {
 			startEncounter();
 		}
 		super.occupyCell(ch);
 	}
 
-	private void startEncounter() {
-		bossSpawned = true;
-		seal();
+	protected void startEncounter() {
+		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		encounter.start(encounterHost());
 		Statistics.qualifiedForBossChallengeBadge = true;
+	}
 
-		Goo boss = new Goo();
-		boss.pos = selectBossSpawnCell();
+	protected TowerBoss createSelectedBoss() {
+		return TowerBossGenerator.create(encounter.selectedBossId());
+	}
+
+	protected void launchBoss(TowerBoss boss) {
 		boss.aggro(Dungeon.hero);
 		BossHealthBar.assignBoss(boss);
 		GameScene.add(boss, 1f);
 	}
 
-	private int selectBossSpawnCell() {
+	protected int selectBossSpawnCell() {
 		for (int attempts = 0; attempts < 200; attempts++) {
 			int cell = TowerBossLayout.cell(Random.Int(6, 23), Random.Int(7, 16));
 			if (passable[cell] && Actor.findChar(cell) == null) {
@@ -139,6 +142,61 @@ public class TowerBossLevel extends TowerLevel {
 			}
 		}
 		return TowerBossLayout.cell(14, 10);
+	}
+
+	public void onTowerBossDefeated(TowerBoss boss) {
+		encounter.onBossDefeated(boss, encounterHost());
+	}
+
+	String selectedBossId() {
+		return encounter.selectedBossId();
+	}
+
+	boolean bossEncounterStarted() {
+		return encounter.bossEncounterStarted();
+	}
+
+	boolean bossEncounterDefeated() {
+		return encounter.bossEncounterDefeated();
+	}
+
+	private TowerBossEncounter.Host encounterHost() {
+		return new TowerBossEncounter.Host() {
+			@Override
+			public TowerBoss createBoss(String id) {
+				return createSelectedBoss();
+			}
+
+			@Override
+			public int selectBossSpawnCell() {
+				return TowerBossLevel.this.selectBossSpawnCell();
+			}
+
+			@Override
+			public boolean prepareArena(TowerBoss boss, int spawnCell) {
+				return boss.prepareArena(TowerBossLevel.this, spawnCell);
+			}
+
+			@Override
+			public void sealArena() {
+				seal();
+			}
+
+			@Override
+			public void launchBoss(TowerBoss boss) {
+				TowerBossLevel.this.launchBoss(boss);
+			}
+
+			@Override
+			public void cleanupArena(TowerBoss boss) {
+				boss.cleanupArena(TowerBossLevel.this);
+			}
+
+			@Override
+			public void unsealArena() {
+				unseal();
+			}
+		};
 	}
 
 	@Override
@@ -186,21 +244,20 @@ public class TowerBossLevel extends TowerLevel {
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
-		bundle.put(BOSS_SPAWNED, bossSpawned);
+		encounter.storeInBundle(bundle);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
-		bossSpawned = bundle.contains(BOSS_SPAWNED)
-				? bundle.getBoolean(BOSS_SPAWNED)
-				: locked || hasRestoredGoo()
-						|| map[TowerBossLayout.EXIT_GATE] == Terrain.UNLOCKED_EXIT;
+		boolean exitUnlocked = map[TowerBossLayout.EXIT_GATE] == Terrain.UNLOCKED_EXIT;
+		encounter.restoreFromBundle(bundle, Dungeon.seed, Dungeon.depth, Dungeon.branch,
+				locked, hasRestoredTowerBoss(), exitUnlocked);
 	}
 
-	private boolean hasRestoredGoo() {
+	private boolean hasRestoredTowerBoss() {
 		for (Mob mob : mobs) {
-			if (mob instanceof Goo) {
+			if (mob instanceof TowerBoss) {
 				return true;
 			}
 		}
