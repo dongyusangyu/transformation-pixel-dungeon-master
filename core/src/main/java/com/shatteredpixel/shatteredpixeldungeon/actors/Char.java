@@ -1377,7 +1377,8 @@ public abstract class Char extends Actor {
 			}
 
 		}
-		shielded -= dmg;
+		dmg = Math.max(0, modifyFinalDamage(dmg, src, damageTags));
+		shielded = absorbed;
 		HP -= dmg;
 
 		if (HP > 0 && shielded > 0 && shielding() == 0){
@@ -1440,6 +1441,11 @@ public abstract class Char extends Actor {
 
 	public void damage(int dmg, Object src) {
 		damage(dmg, src, legacyDamageTags(src));
+	}
+
+	/** Last damage hook after mitigation and shield absorption, before HP is changed. */
+	protected int modifyFinalDamage(int damage, Object source, DamageTag... damageTags) {
+		return damage;
 	}
 
 	//these are misc. sources of physical damage which do not apply armor, they get a different icon
