@@ -155,6 +155,30 @@ public class PestilenceKnightTest {
     }
 
     @Test
+    public void plagueFlaskTargetUsesHeroThenPurifierThenRandomBallisticPriority() {
+        assertEquals(11, PestilenceKnight.choosePlagueFlaskTargetForTest(
+                11, true, 22, true, 33));
+        assertEquals(22, PestilenceKnight.choosePlagueFlaskTargetForTest(
+                11, false, 22, true, 33));
+        assertEquals(33, PestilenceKnight.choosePlagueFlaskTargetForTest(
+                11, false, 22, false, 33));
+    }
+
+    @Test
+    public void wanderingAndFleeingPreferThePurifierGuardPositionWhenAvailable() {
+        assertEquals(22, PestilenceKnight.preferredMovementTargetForTest(11, 22));
+        assertEquals(11, PestilenceKnight.preferredMovementTargetForTest(11, -1));
+        assertFalse(PestilenceKnight.phaseSkillsAllowedForStateForTest(true));
+        assertTrue(PestilenceKnight.phaseSkillsAllowedForStateForTest(false));
+
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.telegraphSkillForTest("plague_flask", new int[]{7, 8, 9});
+        boss.cancelPendingSkillForFleeingForTest();
+        assertEquals("", boss.pendingSkillForTest());
+        assertEquals(0, boss.pendingCellsForTest().length);
+    }
+
+    @Test
     public void laterPhaseMiasmaUsesPhaseColoredProjectileSplashes() {
         assertEquals(0x63D13F,
                 PestilenceKnight.miasmaProjectileColorForTest("quarantine"));

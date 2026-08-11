@@ -35,7 +35,7 @@ public class PestilenceArenaController implements Bundlable {
 
     static final int PRELUDE_MIASMA_AMOUNT = 20_000;
     static final int PURIFIER_BOSS_DAMAGE = 100;
-    static final int PURIFIER_COOLDOWN = 12;
+    static final int PURIFIER_COOLDOWN = 10;
     static final int MIN_RELOCATION_DISTANCE = 6;
 
     private static final String PREPARED = "prepared";
@@ -66,6 +66,7 @@ public class PestilenceArenaController implements Bundlable {
         int exitAnchor();
         void installPurifier(int cell);
         void relocatePurifier(int from, int to);
+        void setPurifierReady(int cell, boolean ready);
     }
 
     private boolean prepared;
@@ -162,6 +163,7 @@ public class PestilenceArenaController implements Bundlable {
             arena.relocatePurifier(oldCell, nextCell);
             purifierCell = nextCell;
         }
+        arena.setPurifierReady(purifierCell, false);
         return true;
     }
 
@@ -185,7 +187,12 @@ public class PestilenceArenaController implements Bundlable {
         ActivationResult result = activateForEncounter(new LevelArena(level), hero.pos, bossStarted);
         if (result == ActivationResult.NONE) return result;
 
-        clearAllMiasma(level);
+        level.beginPurifierMiasmaClear();
+        try {
+            clearAllMiasma(level);
+        } finally {
+            level.endPurifierMiasmaClear();
+        }
         Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
         Dungeon.observe();
         if (result == ActivationResult.START_BOSS) {
@@ -343,7 +350,7 @@ public class PestilenceArenaController implements Bundlable {
 
     public void putOnCooldown(int index, int turns) {
         if (index != 0) throw new IndexOutOfBoundsException();
-        purifierCooldown = Math.max(0, turns);
+        purifierCooldown = Math.max(0, Math.min(PURIFIER_COOLDOWN, turns));
     }
 
     public void prepareHeroAt(int cell) {
@@ -355,6 +362,9 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     public void onHeroTurnStarted(Hero hero) {
+        if (Dungeon.level instanceof TowerBossLevel) {
+            advanceHeroTurn(new LevelArena((TowerBossLevel) Dungeon.level));
+        }
         if (hero == null || Dungeon.level == null) return;
         Class<? extends Blob> miasma = activeMiasmaAt(hero.pos);
         if (miasma == null || hero.isImmune(miasma)) {
@@ -402,12 +412,41 @@ public class PestilenceArenaController implements Bundlable {
         return prepared && purifierCell == cell;
     }
 
-    public void advanceBossTurn() {
-        if (purifierCooldown > 0) purifierCooldown--;
+    public int randomArenaCell() {
+        if (!(Dungeon.level instanceof TowerBossLevel)) return -1;
+        Arena arena = new LevelArena((TowerBossLevel) Dungeon.level);
+        ArrayList<Integer> candidates = new ArrayList<>();
+        for (int cell = 0; cell < arena.length(); cell++) {
+            if (arena.isArenaCell(cell) && arena.passable(cell)
+                    && cell != purifierCell && !arena.forbidden(cell)) {
+                candidates.add(cell);
+            }
+        }
+        return candidates.isEmpty() ? -1
+                : candidates.get(com.watabou.utils.Random.Int(candidates.size()));
     }
 
-    public void resetBrazierCooldowns() {
-        purifierCooldown = 0;
+    static boolean shouldStartFromExternalPaleClear(boolean preludeStarted,
+            boolean bossStarted, boolean bossDefeated, boolean purifierClearing,
+            int removedVolume) {
+        return preludeStarted && !bossStarted && !bossDefeated
+                && !purifierClearing && removedVolume > 0;
+    }
+
+    public void advanceBossTurn() {
+        // Retained for compatibility: purifier recharge is driven only by hero turns.
+    }
+
+    void advanceHeroTurn(Arena arena) {
+        if (!prepared || purifierCooldown <= 0) return;
+        purifierCooldown--;
+        if (purifierCooldown == 0) arena.setPurifierReady(purifierCell, true);
+    }
+
+    void syncPurifierVisual(TowerBossLevel level) {
+        if (prepared && purifierCell >= 0) {
+            new LevelArena(level).setPurifierReady(purifierCell, purifierCooldown == 0);
+        }
     }
 
     public void finishEncounter() {
@@ -453,7 +492,7 @@ public class PestilenceArenaController implements Bundlable {
             preludeStarted = bundle.contains(PRELUDE_STARTED)
                     && bundle.getBoolean(PRELUDE_STARTED);
             purifierCell = restoredCell;
-            purifierCooldown = Math.max(0, restoredCooldown);
+            purifierCooldown = Math.max(0, Math.min(PURIFIER_COOLDOWN, restoredCooldown));
             safeRoute = bundle.contains(SAFE_ROUTE) ? bundle.getIntArray(SAFE_ROUTE) : new int[0];
             bossCell = bundle.contains(BOSS_CELL) ? bundle.getInt(BOSS_CELL) : -1;
             relocationRngState = bundle.contains(RELOCATION_RNG_STATE)
@@ -517,6 +556,15 @@ public class PestilenceArenaController implements Bundlable {
             level.set(to, Terrain.TRAP, level);
             GameScene.updateMap(from);
             GameScene.updateMap(to);
+        }
+
+        @Override
+        public void setPurifierReady(int cell, boolean ready) {
+            Trap trap = level.traps.get(cell);
+            if (trap instanceof PlagueBrazier) {
+                trap.active = ready;
+                GameScene.updateMap(cell);
+            }
         }
     }
 }

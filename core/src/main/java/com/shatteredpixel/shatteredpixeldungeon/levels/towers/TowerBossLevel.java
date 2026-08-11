@@ -41,6 +41,7 @@ public class TowerBossLevel extends TowerLevel {
 	private static final String PESTILENCE_ARENA = "pestilence_arena";
 	private final TowerBossEncounter encounter = new TowerBossEncounter();
 	private PestilenceArenaController pestilenceArena;
+	private transient boolean purifierClearingMiasma;
 
 	@Override
 	public String tilesTex() {
@@ -164,6 +165,23 @@ public class TowerBossLevel extends TowerLevel {
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
 		encounter.start(encounterHost());
 		Statistics.qualifiedForBossChallengeBadge = true;
+	}
+
+	public void onPaleMiasmaClearedExternally(int removedVolume) {
+		if (PestilenceArenaController.shouldStartFromExternalPaleClear(
+				pestilenceArena != null && pestilenceArena.preludeStarted(),
+				encounter.bossEncounterStarted(), encounter.bossEncounterDefeated(),
+				purifierClearingMiasma, removedVolume)) {
+			startEncounter();
+		}
+	}
+
+	void beginPurifierMiasmaClear() {
+		purifierClearingMiasma = true;
+	}
+
+	void endPurifierMiasmaClear() {
+		purifierClearingMiasma = false;
 	}
 
 	protected TowerBoss createSelectedBoss() {
@@ -329,6 +347,7 @@ public class TowerBossLevel extends TowerLevel {
 		super.restoreFromBundle(bundle);
 		pestilenceArena = bundle.contains(PESTILENCE_ARENA)
 				? (PestilenceArenaController) bundle.get(PESTILENCE_ARENA) : null;
+		if (pestilenceArena != null) pestilenceArena.syncPurifierVisual(this);
 		boolean exitUnlocked = map[TowerBossLayout.EXIT_GATE] == Terrain.UNLOCKED_EXIT;
 		encounter.restoreFromBundle(bundle, Dungeon.seed, Dungeon.depth, Dungeon.branch,
 				locked, hasRestoredTowerBoss(), exitUnlocked);

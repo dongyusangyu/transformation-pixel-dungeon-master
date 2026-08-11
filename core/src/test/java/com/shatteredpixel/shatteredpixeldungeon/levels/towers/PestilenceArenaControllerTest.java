@@ -9,7 +9,9 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -93,6 +95,7 @@ public class PestilenceArenaControllerTest {
         assertTrue(arena.distance(old, moved) >= PestilenceArenaController.MIN_RELOCATION_DISTANCE);
         assertEquals(PestilenceArenaController.PURIFIER_COOLDOWN, controller.cooldownAt(0));
         assertEquals(Set.of(moved), arena.installed);
+        assertFalse(arena.purifierReady(moved));
 
         assertFalse(controller.activate(arena, moved));
         assertEquals(moved, controller.purifierCell());
@@ -129,7 +132,9 @@ public class PestilenceArenaControllerTest {
                 controller.activateForEncounter(arena, controller.purifierCell(), false));
         assertEquals(100, PestilenceArenaController.PURIFIER_BOSS_DAMAGE);
 
-        controller.resetBrazierCooldowns();
+        for (int i = 0; i < PestilenceArenaController.PURIFIER_COOLDOWN; i++) {
+            controller.advanceHeroTurn(arena);
+        }
         assertEquals(PestilenceArenaController.ActivationResult.DAMAGE_BOSS,
                 controller.activateForEncounter(arena, controller.purifierCell(), true));
     }
@@ -171,6 +176,7 @@ public class PestilenceArenaControllerTest {
         assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 11L));
         assertTrue(controller.activate(arena, controller.purifierCell()));
         controller.advanceBossTurn();
+        controller.advanceHeroTurn(arena);
 
         Bundle bundle = new Bundle();
         controller.storeInBundle(bundle);
@@ -178,7 +184,8 @@ public class PestilenceArenaControllerTest {
         restored.restoreFromBundle(bundle);
 
         assertEquals(controller.purifierCell(), restored.purifierCell());
-        assertEquals(11, restored.cooldownAt(0));
+        assertEquals(PestilenceArenaController.PURIFIER_COOLDOWN - 1,
+                restored.cooldownAt(0));
         assertTrue(restored.prepared());
         assertEquals(1, arena.installed.size());
 
@@ -194,27 +201,51 @@ public class PestilenceArenaControllerTest {
         int[] cells = {101, 202, 303, 404};
         legacy.put("prepared", true);
         legacy.put("brazier_cells", cells);
-        legacy.put("cooldowns", new int[]{3, 4, 5, 6});
+        legacy.put("cooldowns", new int[]{99, 4, 5, 6});
 
         PestilenceArenaController restored = new PestilenceArenaController();
         restored.restoreFromBundle(legacy);
 
         assertTrue(restored.prepared());
         assertEquals(cells[0], restored.purifierCell());
-        assertEquals(3, restored.cooldownAt(0));
+        assertEquals(PestilenceArenaController.PURIFIER_COOLDOWN, restored.cooldownAt(0));
     }
 
     @Test
-    public void purifierCooldownUsesOnlyBossTurns() {
+    public void purifierCooldownUsesTenHeroTurnsAndUpdatesTrapAppearance() {
+        FakeArena arena = new FakeArena(generateMap(41L));
         PestilenceArenaController controller = new PestilenceArenaController();
-        controller.putOnCooldown(0, PestilenceArenaController.PURIFIER_COOLDOWN);
+        assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 41L));
+        assertTrue(controller.activate(arena, controller.purifierCell()));
+        int purifier = controller.purifierCell();
 
-        controller.onHeroTurnStarted(null);
-        assertEquals(12, controller.cooldownAt(0));
+        assertEquals(10, PestilenceArenaController.PURIFIER_COOLDOWN);
+        assertEquals(10, controller.cooldownAt(0));
+        assertFalse(arena.purifierReady(purifier));
         controller.advanceBossTurn();
-        assertEquals(11, controller.cooldownAt(0));
-        controller.resetBrazierCooldowns();
+        assertEquals(10, controller.cooldownAt(0));
+        for (int i = 0; i < 9; i++) controller.advanceHeroTurn(arena);
+        assertEquals(1, controller.cooldownAt(0));
+        assertFalse(arena.purifierReady(purifier));
+        controller.advanceHeroTurn(arena);
         assertEquals(0, controller.cooldownAt(0));
+        assertTrue(arena.purifierReady(purifier));
+    }
+
+    @Test
+    public void onlyExplicitUnsuppressedPaleMiasmaClearingStartsThePreludeBoss() {
+        assertTrue(PestilenceArenaController.shouldStartFromExternalPaleClear(
+                true, false, false, false, 1));
+        assertFalse(PestilenceArenaController.shouldStartFromExternalPaleClear(
+                false, false, false, false, 1));
+        assertFalse(PestilenceArenaController.shouldStartFromExternalPaleClear(
+                true, true, false, false, 1));
+        assertFalse(PestilenceArenaController.shouldStartFromExternalPaleClear(
+                true, false, true, false, 1));
+        assertFalse(PestilenceArenaController.shouldStartFromExternalPaleClear(
+                true, false, false, true, 1));
+        assertFalse(PestilenceArenaController.shouldStartFromExternalPaleClear(
+                true, false, false, false, 0));
     }
 
     private static int[] generateMap(long seed) {
@@ -250,6 +281,7 @@ public class PestilenceArenaControllerTest {
         private final int[] map;
         private final Set<Integer> forbidden = new HashSet<>();
         private final Set<Integer> installed = new HashSet<>();
+        private final Map<Integer, Boolean> purifierReady = new HashMap<>();
 
         private FakeArena(int[] map) {
             this.original = map.clone();
@@ -268,15 +300,27 @@ public class PestilenceArenaControllerTest {
         @Override
         public void installPurifier(int cell) {
             installed.add(cell);
+            purifierReady.put(cell, true);
             map[cell] = Terrain.TRAP;
         }
 
         @Override
         public void relocatePurifier(int from, int to) {
             installed.remove(from);
+            purifierReady.remove(from);
             map[from] = Terrain.EMPTY;
             installed.add(to);
+            purifierReady.put(to, true);
             map[to] = Terrain.TRAP;
+        }
+
+        @Override
+        public void setPurifierReady(int cell, boolean ready) {
+            purifierReady.put(cell, ready);
+        }
+
+        boolean purifierReady(int cell) {
+            return purifierReady.getOrDefault(cell, false);
         }
 
         boolean passableBeforeFixture(int cell) {

@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
@@ -209,6 +210,7 @@ public class PestilenceKnight extends TowerBoss {
 
     @Override
     protected boolean act() {
+        if (state == FLEEING && !pendingSkill.isEmpty()) cancelPendingSkillForFleeing();
         if (harvest != HarvestState.NONE && paralysed <= 0 && state != SLEEPING) {
             advanceHarvest(currentHarvestBlobCells());
             spend(TICK);
@@ -235,13 +237,24 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean canUsePhaseSkills() {
-        if (Dungeon.level == null || Dungeon.hero == null || !Dungeon.hero.isAlive()
+        if (!phaseSkillsAllowedForState(state == FLEEING)
+                || Dungeon.level == null || Dungeon.hero == null || !Dungeon.hero.isAlive()
                 || Dungeon.level.distance(pos, Dungeon.hero.pos) > viewDistance) return false;
         if (fieldOfView == null || fieldOfView.length != Dungeon.level.length()) {
             fieldOfView = new boolean[Dungeon.level.length()];
         }
         Dungeon.level.updateFieldOfView(this, fieldOfView);
         return fieldOfView[Dungeon.hero.pos] && Dungeon.hero.invisible <= 0;
+    }
+
+    private static boolean phaseSkillsAllowedForState(boolean fleeing) {
+        return !fleeing;
+    }
+
+    private void cancelPendingSkillForFleeing() {
+        pendingSkill = "";
+        pendingCells = new int[0];
+        processionSteps = 0;
     }
 
     private boolean actPhaseAI() {
@@ -251,7 +264,7 @@ public class PestilenceKnight extends TowerBoss {
         switch (phase) {
             case INCUBATION:
                 if (cooldowns[FLASK_CD] == 0) {
-                    int target = predictedHeroCell();
+                    int target = selectPlagueFlaskTarget();
                     return telegraphSkill(PLAGUE_FLASK, squareAround(target), target);
                 }
                 return maintainRangeOrMelee(4, 6);
@@ -284,7 +297,7 @@ public class PestilenceKnight extends TowerBoss {
         enemy = hero;
         int distance = Dungeon.level.distance(pos, hero.pos);
         int oldPos = pos;
-        if (distance < min && distance > 1 && getFurther(hero.pos)) {
+        if (distance < min && distance > 1 && moveTowardPurifierOrFurther(hero.pos)) {
             spend(1f / speed());
             moveSprite(oldPos, pos);
             finishBossAction();
@@ -298,6 +311,76 @@ public class PestilenceKnight extends TowerBoss {
             return true;
         }
         return completeBaseAction();
+    }
+
+    private int selectPlagueFlaskTarget() {
+        int heroTarget = predictedHeroCell();
+        int purifierTarget = arenaRef().brazier();
+        return choosePlagueFlaskTarget(heroTarget, hasProjectileLine(heroTarget),
+                purifierTarget, hasProjectileLine(purifierTarget), randomArenaTarget());
+    }
+
+    private boolean hasProjectileLine(int target) {
+        return Dungeon.level != null && target >= 0 && target < Dungeon.level.length()
+                && new Ballistica(pos, target, Ballistica.PROJECTILE).collisionPos == target;
+    }
+
+    private int randomArenaTarget() {
+        int target = arenaRef().randomTarget();
+        return target >= 0 ? target : pos;
+    }
+
+    private static int choosePlagueFlaskTarget(int heroTarget, boolean heroBallistic,
+            int purifierTarget, boolean purifierBallistic, int randomTarget) {
+        if (heroBallistic) return heroTarget;
+        if (purifierBallistic) return purifierTarget;
+        return randomTarget;
+    }
+
+    private boolean moveTowardPurifierOrFurther(int fallbackTarget) {
+        int guard = purifierGuardCell();
+        if (guard >= 0 && guard != pos && super.getCloser(guard)) return true;
+        if (guard == pos) return false;
+        return super.getFurther(fallbackTarget);
+    }
+
+    @Override
+    protected boolean getCloser(int target) {
+        if (state == WANDERING) {
+            target = preferredMovementTarget(target, purifierGuardCell());
+        }
+        return super.getCloser(target);
+    }
+
+    private static int preferredMovementTarget(int fallbackTarget, int purifierGuard) {
+        return purifierGuard >= 0 ? purifierGuard : fallbackTarget;
+    }
+
+    @Override
+    protected boolean getFurther(int target) {
+        if (state == FLEEING) return moveTowardPurifierOrFurther(target);
+        return super.getFurther(target);
+    }
+
+    private int purifierGuardCell() {
+        int purifier = arenaRef().brazier();
+        if (Dungeon.level == null || purifier < 0 || purifier >= Dungeon.level.length()) return -1;
+        int best = -1;
+        int bestDistance = Integer.MAX_VALUE;
+        int purifierX = purifier % Dungeon.level.width();
+        for (int offset : PathFinder.NEIGHBOURS8) {
+            int cell = purifier + offset;
+            if (cell < 0 || cell >= Dungeon.level.length()
+                    || Math.abs(cell % Dungeon.level.width() - purifierX) > 1
+                    || !Dungeon.level.passable[cell]
+                    || Actor.findChar(cell) != null && cell != pos) continue;
+            int distance = Dungeon.level.distance(pos, cell);
+            if (distance < bestDistance) {
+                best = cell;
+                bestDistance = distance;
+            }
+        }
+        return best;
     }
 
     private boolean completeBaseAction() {
@@ -643,7 +726,6 @@ public class PestilenceKnight extends TowerBoss {
     private void finishBossAction() {
         for (int i = 0; i < cooldowns.length; i++) if (cooldowns[i] > 0) cooldowns[i]--;
         if (Dungeon.hero != null) lastHeroPos = Dungeon.hero.pos;
-        advanceArenaBossTurn();
     }
 
     private PestilenceArenaControllerRef arenaRef() {
@@ -658,6 +740,14 @@ public class PestilenceKnight extends TowerBoss {
         int readyBrazier(int origin) {
             com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController c = controller();
             return c == null ? -1 : c.nearestReadyBrazier(origin);
+        }
+        int brazier() {
+            com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController c = controller();
+            return c == null ? -1 : c.purifierCell();
+        }
+        int randomTarget() {
+            com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController c = controller();
+            return c == null ? -1 : c.randomArenaCell();
         }
         boolean isBrazier(int cell) {
             com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController c = controller();
@@ -705,10 +795,6 @@ public class PestilenceKnight extends TowerBoss {
             phase = Phase.TERMINAL;
             announceSkill("phase_terminal", restored);
             ensureTerminalEntered();
-            if (Dungeon.level instanceof TowerBossLevel
-                    && ((TowerBossLevel) Dungeon.level).pestilenceArenaController() != null) {
-                ((TowerBossLevel) Dungeon.level).pestilenceArenaController().resetBrazierCooldowns();
-            }
         }
         harvest = HarvestState.NONE;
     }
@@ -737,13 +823,6 @@ public class PestilenceKnight extends TowerBoss {
                 ? IncubatingMiasma.class : OutbreakMiasma.class;
         Blob blob = Dungeon.level.blobs.get(type);
         if (blob != null) blob.fullyClear();
-    }
-
-    private void advanceArenaBossTurn() {
-        if (Dungeon.level instanceof TowerBossLevel
-                && ((TowerBossLevel) Dungeon.level).pestilenceArenaController() != null) {
-            ((TowerBossLevel) Dungeon.level).pestilenceArenaController().advanceBossTurn();
-        }
     }
 
     @Override
@@ -856,6 +935,18 @@ public class PestilenceKnight extends TowerBoss {
         return miasmaProjectileImpactColor(skill);
     }
     static int miasmaProjectileTargetForTest(int[] cells) { return miasmaProjectileTarget(cells); }
+    static int choosePlagueFlaskTargetForTest(int heroTarget, boolean heroBallistic,
+            int purifierTarget, boolean purifierBallistic, int randomTarget) {
+        return choosePlagueFlaskTarget(heroTarget, heroBallistic,
+                purifierTarget, purifierBallistic, randomTarget);
+    }
+    static int preferredMovementTargetForTest(int fallbackTarget, int purifierGuard) {
+        return preferredMovementTarget(fallbackTarget, purifierGuard);
+    }
+    static boolean phaseSkillsAllowedForStateForTest(boolean fleeing) {
+        return phaseSkillsAllowedForState(fleeing);
+    }
+    void cancelPendingSkillForFleeingForTest() { cancelPendingSkillForFleeing(); }
 
     private void ensureTerminalEntered() {
         if (terminalEntered) return;
