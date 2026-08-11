@@ -114,6 +114,20 @@ public class PlagueMiasmaTest {
         assertTrue(source.contains("Messages.get(this, \"desc\")"));
     }
 
+    @Test
+    public void explicitPaleMiasmaClearingNotifiesTheTowerBossLevel() throws Exception {
+        String pale = source("actors/blobs/tboss/PaleMiasma.java");
+        assertTrue(pale.contains("public void clear(int cell)"));
+        assertTrue(pale.contains("public void fullyClear()"));
+        assertTrue(pale.contains("onPaleMiasmaClearedExternally"));
+
+        String level = source("levels/towers/TowerBossLevel.java");
+        assertTrue(level.contains("purifierClearingMiasma"));
+        assertTrue(level.contains("onPaleMiasmaClearedExternally"));
+        String controller = source("levels/towers/PestilenceArenaController.java");
+        assertTrue(controller.contains("shouldStartFromExternalPaleClear"));
+    }
+
     private static String source(String relative) throws Exception {
         Path root = Path.of(System.getProperty("user.dir"));
         Path base = Files.isDirectory(root.resolve("src/main/java"))
