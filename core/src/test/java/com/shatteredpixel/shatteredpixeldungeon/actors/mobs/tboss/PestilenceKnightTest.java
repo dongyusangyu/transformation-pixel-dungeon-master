@@ -137,6 +137,15 @@ public class PestilenceKnightTest {
     }
 
     @Test
+    public void plagueFlaskCyclesThroughThreeDiseaseColoredPotionSprites() {
+        assertEquals(0, PestilenceKnight.plagueFlaskPaletteIndexForTest(0));
+        assertEquals(1, PestilenceKnight.plagueFlaskPaletteIndexForTest(1));
+        assertEquals(2, PestilenceKnight.plagueFlaskPaletteIndexForTest(2));
+        assertEquals(0, PestilenceKnight.plagueFlaskPaletteIndexForTest(3));
+        assertEquals(0x9EAD48, PestilenceKnight.plagueFlaskImpactColorForTest());
+    }
+
+    @Test
     public void brazierTutorialFlagDoesNotCountAsASecondDiagnosis() {
         PestilenceKnight boss = new PestilenceKnight(5);
 

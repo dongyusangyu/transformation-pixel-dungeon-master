@@ -71,6 +71,17 @@ public class PestilenceKnightSpriteAssetTest {
         assertTrue(boss.contains("spriteClass = PestilenceKnightSprite.class"));
         assertTrue("telegraphed skills should announce their names before resolving",
                 boss.contains("announceSkill(skill)"));
+        assertTrue("plague flask should launch an existing potion sprite",
+                boss.contains("recycle(MissileSprite.class)"));
+        assertTrue("the projectile target must be the center used to build the warning area",
+                boss.contains("telegraphSkill(PLAGUE_FLASK, squareAround(target), target)"));
+        assertTrue(boss.contains("ItemSpriteSheet.POTION_JADE"));
+        assertTrue(boss.contains("ItemSpriteSheet.POTION_GOLDEN"));
+        assertTrue(boss.contains("ItemSpriteSheet.POTION_BISTRE"));
+        assertTrue("the bottle should fly to the warning area's center",
+                boss.contains("reset(sprite, target, flask"));
+        assertTrue("the bottle should splash in the incubating miasma color",
+                boss.contains("Splash.at(target, PLAGUE_FLASK_IMPACT_COLOR"));
         assertTrue("harvest should explain the invulnerable channel",
                 boss.contains("announceSkill(\"harvest\")"));
         assertTrue("infection rupture needs visible status feedback",
