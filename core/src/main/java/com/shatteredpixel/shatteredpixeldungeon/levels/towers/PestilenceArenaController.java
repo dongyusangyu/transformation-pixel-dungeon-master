@@ -6,7 +6,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
-import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PurifyingIncense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
@@ -18,31 +17,38 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-/** Persistent state and deterministic fixture placement for the Pestilence arena. */
+/** Persistent state and deterministic purifier placement for the Pestilence arena. */
 public class PestilenceArenaController implements Bundlable {
 
+    static final int PURIFIER_COOLDOWN = 12;
+    static final int MIN_RELOCATION_DISTANCE = 6;
+
     private static final String PREPARED = "prepared";
-    private static final String BRAZIER_CELLS = "brazier_cells";
-    private static final String COOLDOWNS = "cooldowns";
-    private static final String PREPARED_HERO_CELL = "prepared_hero_cell";
+    private static final String PURIFIER_CELL = "purifier_cell";
+    private static final String PURIFIER_COOLDOWN_KEY = "purifier_cooldown";
+    private static final String SAFE_ROUTE = "safe_route";
+    private static final String BOSS_CELL = "boss_cell";
+    private static final String RELOCATION_RNG_STATE = "relocation_rng_state";
+    private static final String LEGACY_BRAZIER_CELLS = "brazier_cells";
+    private static final String LEGACY_COOLDOWNS = "cooldowns";
     private static final String WATER_CELL = "water_cell";
     private static final String WATER_TURNS = "water_turns";
 
-    private static final int BRAZIER_COUNT = 4;
-    private static final int MIN_BRAZIER_DISTANCE = 6;
     private static final int MIN_BOSS_DISTANCE = 5;
     private static final int MIN_ANCHOR_DISTANCE = 4;
     private static final long PLACEMENT_SALT = 0x4252415A49455253L;
+    private static final long RELOCATION_SALT = 0x5055524946494552L;
 
     public interface Arena {
         int length();
@@ -53,13 +59,16 @@ public class PestilenceArenaController implements Bundlable {
         boolean forbidden(int cell);
         int heroAnchor();
         int exitAnchor();
-        void installBrazier(int cell);
+        void installPurifier(int cell);
+        void relocatePurifier(int from, int to);
     }
 
     private boolean prepared;
-    private int[] brazierCells = new int[0];
-    private int[] cooldowns = new int[BRAZIER_COUNT];
-    private int preparedHeroCell = -1;
+    private int purifierCell = -1;
+    private int purifierCooldown;
+    private int[] safeRoute = new int[0];
+    private int bossCell = -1;
+    private long relocationRngState;
     private int waterCell = -1;
     private int waterTurns;
 
@@ -70,42 +79,42 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     boolean prepare(Arena arena, int bossCell, long seed) {
-        if (prepared) return brazierCells.length == BRAZIER_COUNT;
+        if (prepared) return purifierCell >= 0;
 
-        ArrayList<Integer>[] quadrants = new ArrayList[BRAZIER_COUNT];
-        ArrayList<Integer> allCandidates = new ArrayList<>();
-        for (int i = 0; i < BRAZIER_COUNT; i++) quadrants[i] = new ArrayList<>();
+        ArrayList<Integer> candidates = new ArrayList<>();
         for (int cell = 0; cell < arena.length(); cell++) {
-            if (!isCandidate(arena, cell, bossCell)) continue;
-            quadrants[quadrant(arena, cell)].add(cell);
-            allCandidates.add(cell);
+            if (isInitialCandidate(arena, cell, bossCell)) candidates.add(cell);
         }
+        Collections.shuffle(candidates, new Random(seed));
+        candidates.sort(Comparator.comparingInt(cell -> distance(arena, arena.heroAnchor(), cell)));
 
-        Random random = new Random(seed);
-        for (List<Integer> cells : quadrants) Collections.shuffle(cells, random);
-        Collections.shuffle(allCandidates, random);
-
-        ArrayList<Integer> chosen = new ArrayList<>(BRAZIER_COUNT);
-        if (!chooseByQuadrant(arena, quadrants, 0, chosen)
-                || !allConnected(arena, chosen, bossCell)) {
-            chosen.clear();
-            if (!chooseGlobally(arena, allCandidates, 0, chosen)
-                    || !allConnected(arena, chosen, bossCell)) {
-                return false;
-            }
+        int chosen = -1;
+        int[] route = new int[0];
+        for (int candidate : candidates) {
+            int[] candidateRoute = shortestRoute(arena, arena.heroAnchor(), candidate);
+            if (candidateRoute.length == 0) continue;
+            chosen = candidate;
+            route = candidateRoute;
+            break;
         }
+        if (chosen < 0) return false;
 
-        brazierCells = new int[BRAZIER_COUNT];
-        for (int i = 0; i < BRAZIER_COUNT; i++) brazierCells[i] = chosen.get(i);
-        for (int cell : brazierCells) arena.installBrazier(cell);
-        cooldowns = new int[BRAZIER_COUNT];
-        preparedHeroCell = -1;
+        purifierCell = chosen;
+        safeRoute = route;
+        this.bossCell = bossCell;
+        purifierCooldown = 0;
+        relocationRngState = TowerBossGenerator.mix64(seed ^ RELOCATION_SALT);
+        arena.installPurifier(chosen);
         prepared = true;
         return true;
     }
 
-    private static boolean isCandidate(Arena arena, int cell, int bossCell) {
+    private static boolean isInitialCandidate(Arena arena, int cell, int bossCell) {
+        int x = cell % arena.width();
+        int y = cell / arena.width();
         return arena.isArenaCell(cell)
+                && x < arena.width() / 2
+                && y > TowerBossLayout.HEIGHT / 2
                 && arena.terrain(cell) == Terrain.EMPTY
                 && arena.passable(cell)
                 && !arena.forbidden(cell)
@@ -114,45 +123,97 @@ public class PestilenceArenaController implements Bundlable {
                 && distance(arena, cell, arena.exitAnchor()) >= MIN_ANCHOR_DISTANCE;
     }
 
-    private static boolean chooseByQuadrant(Arena arena, ArrayList<Integer>[] quadrants,
-            int quadrant, ArrayList<Integer> chosen) {
-        if (quadrant == BRAZIER_COUNT) return true;
-        for (int cell : quadrants[quadrant]) {
-            if (!farEnough(arena, cell, chosen)) continue;
-            chosen.add(cell);
-            if (chooseByQuadrant(arena, quadrants, quadrant + 1, chosen)) return true;
-            chosen.remove(chosen.size() - 1);
-        }
-        return false;
-    }
+    /** Activates and relocates the purifier. World effects are applied by the live-level wrapper. */
+    boolean activate(Arena arena, int heroCell) {
+        if (!prepared || heroCell != purifierCell || purifierCooldown > 0) return false;
 
-    private static boolean chooseGlobally(Arena arena, List<Integer> candidates,
-            int start, ArrayList<Integer> chosen) {
-        if (chosen.size() == BRAZIER_COUNT) return true;
-        int remaining = BRAZIER_COUNT - chosen.size();
-        for (int i = start; i <= candidates.size() - remaining; i++) {
-            int cell = candidates.get(i);
-            if (!farEnough(arena, cell, chosen)) continue;
-            chosen.add(cell);
-            if (chooseGlobally(arena, candidates, i + 1, chosen)) return true;
-            chosen.remove(chosen.size() - 1);
-        }
-        return false;
-    }
-
-    private static boolean farEnough(Arena arena, int cell, List<Integer> chosen) {
-        for (int other : chosen) {
-            if (distance(arena, cell, other) < MIN_BRAZIER_DISTANCE) return false;
+        int oldCell = purifierCell;
+        int nextCell = selectRelocation(arena, heroCell);
+        purifierCooldown = PURIFIER_COOLDOWN;
+        if (nextCell >= 0 && nextCell != oldCell) {
+            arena.relocatePurifier(oldCell, nextCell);
+            purifierCell = nextCell;
         }
         return true;
     }
 
-    private static int quadrant(Arena arena, int cell) {
-        int x = cell % arena.width();
-        int y = cell / arena.width();
-        int centerX = arena.width() / 2;
-        int centerY = TowerBossLayout.HEIGHT / 2;
-        return (y > centerY ? 2 : 0) + (x > centerX ? 1 : 0);
+    private int selectRelocation(Arena arena, int heroCell) {
+        ArrayList<Integer> reachable = new ArrayList<>();
+        ArrayList<Integer> distant = new ArrayList<>();
+        int farthest = -1;
+        for (int cell = 0; cell < arena.length(); cell++) {
+            if (!isRelocationCandidate(arena, cell) || shortestRoute(arena, heroCell, cell).length == 0) {
+                continue;
+            }
+            reachable.add(cell);
+            int cellDistance = distance(arena, heroCell, cell);
+            if (cellDistance >= MIN_RELOCATION_DISTANCE) distant.add(cell);
+            farthest = Math.max(farthest, cellDistance);
+        }
+
+        if (!distant.isEmpty()) return distant.get(nextInt(distant.size()));
+        if (reachable.isEmpty()) return -1;
+
+        ArrayList<Integer> farthestCells = new ArrayList<>();
+        for (int cell : reachable) {
+            if (distance(arena, heroCell, cell) == farthest) farthestCells.add(cell);
+        }
+        return farthestCells.get(nextInt(farthestCells.size()));
+    }
+
+    private boolean isRelocationCandidate(Arena arena, int cell) {
+        return cell != purifierCell
+                && arena.isArenaCell(cell)
+                && arena.terrain(cell) == Terrain.EMPTY
+                && arena.passable(cell)
+                && !arena.forbidden(cell)
+                && (bossCell < 0 || distance(arena, cell, bossCell) >= MIN_BOSS_DISTANCE);
+    }
+
+    private int nextInt(int bound) {
+        relocationRngState += 0x9E3779B97F4A7C15L;
+        long z = relocationRngState;
+        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
+        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
+        z ^= z >>> 31;
+        return (int) Long.remainderUnsigned(z, bound);
+    }
+
+    private static int[] shortestRoute(Arena arena, int start, int target) {
+        if (start < 0 || target < 0 || start >= arena.length() || target >= arena.length()
+                || !arena.passable(target)) return new int[0];
+        boolean[] seen = new boolean[arena.length()];
+        int[] previous = new int[arena.length()];
+        int[] queue = new int[arena.length()];
+        java.util.Arrays.fill(previous, -1);
+        int head = 0;
+        int tail = 0;
+        seen[start] = true;
+        queue[tail++] = start;
+        while (head < tail) {
+            int cell = queue[head++];
+            if (cell == target) break;
+            int x = cell % arena.width();
+            int[] neighbours = {cell - arena.width(), cell + 1, cell + arena.width(), cell - 1};
+            for (int next : neighbours) {
+                if (next < 0 || next >= arena.length() || seen[next] || !arena.passable(next)) continue;
+                if (Math.abs(next % arena.width() - x) > 1) continue;
+                seen[next] = true;
+                previous[next] = cell;
+                queue[tail++] = next;
+            }
+        }
+        if (!seen[target]) return new int[0];
+
+        int length = 1;
+        for (int cell = target; cell != start; cell = previous[cell]) length++;
+        int[] route = new int[length];
+        int cell = target;
+        for (int i = length - 1; i >= 0; i--) {
+            route[i] = cell;
+            if (cell != start) cell = previous[cell];
+        }
+        return route;
     }
 
     private static int distance(Arena arena, int a, int b) {
@@ -163,69 +224,45 @@ public class PestilenceArenaController implements Bundlable {
         return Math.max(Math.abs(ax - bx), Math.abs(ay - by));
     }
 
-    private static boolean allConnected(Arena arena, List<Integer> chosen, int bossCell) {
-        if (chosen.size() != BRAZIER_COUNT || !reachable(arena, arena.heroAnchor(), bossCell)
-                || !reachable(arena, arena.heroAnchor(), arena.exitAnchor())) return false;
-        for (int cell : chosen) {
-            if (!reachable(arena, arena.heroAnchor(), cell)) return false;
-        }
-        return true;
-    }
-
-    private static boolean reachable(Arena arena, int start, int target) {
-        if (start < 0 || target < 0 || start >= arena.length() || target >= arena.length()
-                || !arena.passable(start) || !arena.passable(target)) return false;
-        boolean[] seen = new boolean[arena.length()];
-        int[] queue = new int[arena.length()];
-        int head = 0;
-        int tail = 0;
-        seen[start] = true;
-        queue[tail++] = start;
-        while (head < tail) {
-            int cell = queue[head++];
-            if (cell == target) return true;
-            int x = cell % arena.width();
-            int[] neighbours = {cell - arena.width(), cell + 1, cell + arena.width(), cell - 1};
-            for (int next : neighbours) {
-                if (next < 0 || next >= arena.length() || seen[next] || !arena.passable(next)) continue;
-                if (Math.abs(next % arena.width() - x) > 1) continue;
-                seen[next] = true;
-                queue[tail++] = next;
-            }
-        }
-        return false;
-    }
-
     public boolean prepared() {
         return prepared;
     }
 
+    public int purifierCell() {
+        return purifierCell;
+    }
+
     public int[] brazierCells() {
-        return brazierCells.clone();
+        return purifierCell < 0 ? new int[0] : new int[]{purifierCell};
+    }
+
+    public int[] safeRoute() {
+        return safeRoute.clone();
+    }
+
+    public int bossCell() {
+        return bossCell;
     }
 
     public int cooldownAt(int index) {
-        return index >= 0 && index < cooldowns.length ? cooldowns[index] : 0;
+        return index == 0 ? purifierCooldown : 0;
     }
 
     public void putOnCooldown(int index, int turns) {
-        if (index < 0 || index >= cooldowns.length) throw new IndexOutOfBoundsException();
-        cooldowns[index] = Math.max(0, turns);
+        if (index != 0) throw new IndexOutOfBoundsException();
+        purifierCooldown = Math.max(0, turns);
     }
 
     public void prepareHeroAt(int cell) {
-        preparedHeroCell = cell;
+        // Retained for old integrations; purifier activation is now immediate on entry.
     }
 
     public int preparedHeroCell() {
-        return preparedHeroCell;
+        return -1;
     }
 
     public void onHeroTurnStarted(Hero hero) {
         if (hero == null || Dungeon.level == null) return;
-        int brazier = brazierIndex(hero.pos);
-        preparedHeroCell = brazier >= 0 && cooldowns[brazier] == 0 ? hero.pos : -1;
-
         Class<? extends Blob> miasma = activeMiasmaAt(hero.pos);
         if (miasma == null || hero.isImmune(miasma)) {
             waterCell = -1;
@@ -253,10 +290,7 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     public void onHeroWaited(Hero hero) {
-        if (hero == null || hero.pos != preparedHeroCell) return;
-        int index = brazierIndex(hero.pos);
-        if (index < 0 || cooldowns[index] > 0) return;
-        activateBrazier(hero, index);
+        // Waiting is no longer part of purifier activation.
     }
 
     public void onHeroConsumableUsed(Hero hero, Item item) {
@@ -267,48 +301,26 @@ public class PestilenceArenaController implements Bundlable {
         }
     }
 
-    /** Returns the cell of the nearest ready brazier, or -1 when none is available. */
     public int nearestReadyBrazier(int origin) {
-        int bestCell = -1;
-        int bestDistance = Integer.MAX_VALUE;
-        for (int i = 0; i < brazierCells.length; i++) {
-            if (cooldowns[i] > 0) continue;
-            int distance = Dungeon.level == null
-                    ? Math.abs(brazierCells[i] - origin)
-                    : Dungeon.level.distance(origin, brazierCells[i]);
-            if (distance < bestDistance || distance == bestDistance && brazierCells[i] < bestCell) {
-                bestDistance = distance;
-                bestCell = brazierCells[i];
-            }
-        }
-        return bestCell;
+        return prepared && purifierCooldown == 0 ? purifierCell : -1;
     }
 
     public boolean isBrazierCell(int cell) {
-        return brazierIndex(cell) >= 0;
+        return prepared && purifierCell == cell;
     }
 
     public void advanceBossTurn() {
-        for (int i = 0; i < cooldowns.length; i++) {
-            if (cooldowns[i] > 0) cooldowns[i]--;
-        }
+        if (purifierCooldown > 0) purifierCooldown--;
     }
 
     public void resetBrazierCooldowns() {
-        Arrays.fill(cooldowns, 0);
+        purifierCooldown = 0;
     }
 
-    /** Clears transient encounter state while keeping the installed fixtures inert and reusable. */
     public void finishEncounter() {
-        preparedHeroCell = -1;
         waterCell = -1;
         waterTurns = 0;
-        Arrays.fill(cooldowns, 0);
-    }
-
-    private int brazierIndex(int cell) {
-        for (int i = 0; i < brazierCells.length; i++) if (brazierCells[i] == cell) return i;
-        return -1;
+        purifierCooldown = 0;
     }
 
     private static Class<? extends Blob> activeMiasmaAt(int cell) {
@@ -318,61 +330,48 @@ public class PestilenceArenaController implements Bundlable {
         return null;
     }
 
-    private void activateBrazier(Hero hero, int index) {
-        int center = brazierCells[index];
-        int width = Dungeon.level.width();
-        PurifyingIncense incense = null;
-        for (int cell = 0; cell < Dungeon.level.length(); cell++) {
-            int dx = Math.abs(cell % width - center % width);
-            int dy = Math.abs(cell / width - center / width);
-            if (Math.max(dx, dy) > 3) continue;
-            clearAt(cell, IncubatingMiasma.class);
-            clearAt(cell, OutbreakMiasma.class);
-            clearAt(cell, PaleMiasma.class);
-            if (!Dungeon.level.solid[cell]) {
-                incense = Blob.seed(cell, 3, PurifyingIncense.class);
-            }
-        }
-        if (incense != null) GameScene.add(incense);
-        Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
-        cooldowns[index] = 12;
-        preparedHeroCell = -1;
-    }
-
-    private static void clearAt(int cell, Class<? extends Blob> type) {
-        Blob blob = Dungeon.level.blobs.get(type);
-        if (blob != null) blob.clear(cell);
-    }
-
     @Override
     public void storeInBundle(Bundle bundle) {
         bundle.put(PREPARED, prepared);
-        bundle.put(BRAZIER_CELLS, brazierCells);
-        bundle.put(COOLDOWNS, cooldowns);
-        bundle.put(PREPARED_HERO_CELL, preparedHeroCell);
+        bundle.put(PURIFIER_CELL, purifierCell);
+        bundle.put(PURIFIER_COOLDOWN_KEY, purifierCooldown);
+        bundle.put(SAFE_ROUTE, safeRoute);
+        bundle.put(BOSS_CELL, bossCell);
+        bundle.put(RELOCATION_RNG_STATE, relocationRngState);
         bundle.put(WATER_CELL, waterCell);
         bundle.put(WATER_TURNS, waterTurns);
     }
 
     @Override
     public void restoreFromBundle(Bundle bundle) {
-        int[] restoredCells = bundle.getIntArray(BRAZIER_CELLS);
-        int[] restoredCooldowns = bundle.getIntArray(COOLDOWNS);
-        if (bundle.getBoolean(PREPARED) && restoredCells.length == BRAZIER_COUNT) {
+        int restoredCell = bundle.contains(PURIFIER_CELL) ? bundle.getInt(PURIFIER_CELL) : -1;
+        int restoredCooldown = bundle.contains(PURIFIER_COOLDOWN_KEY)
+                ? bundle.getInt(PURIFIER_COOLDOWN_KEY) : 0;
+        if (restoredCell < 0) {
+            int[] legacyCells = bundle.getIntArray(LEGACY_BRAZIER_CELLS);
+            int[] legacyCooldowns = bundle.getIntArray(LEGACY_COOLDOWNS);
+            if (legacyCells.length > 0) restoredCell = legacyCells[0];
+            if (legacyCooldowns.length > 0) restoredCooldown = legacyCooldowns[0];
+        }
+
+        if (bundle.getBoolean(PREPARED) && restoredCell >= 0) {
             prepared = true;
-            brazierCells = restoredCells.clone();
-            cooldowns = restoredCooldowns.length == BRAZIER_COUNT
-                    ? restoredCooldowns.clone() : new int[BRAZIER_COUNT];
-            for (int i = 0; i < cooldowns.length; i++) cooldowns[i] = Math.max(0, cooldowns[i]);
-            preparedHeroCell = bundle.contains(PREPARED_HERO_CELL)
-                    ? bundle.getInt(PREPARED_HERO_CELL) : -1;
+            purifierCell = restoredCell;
+            purifierCooldown = Math.max(0, restoredCooldown);
+            safeRoute = bundle.contains(SAFE_ROUTE) ? bundle.getIntArray(SAFE_ROUTE) : new int[0];
+            bossCell = bundle.contains(BOSS_CELL) ? bundle.getInt(BOSS_CELL) : -1;
+            relocationRngState = bundle.contains(RELOCATION_RNG_STATE)
+                    ? bundle.getLong(RELOCATION_RNG_STATE)
+                    : TowerBossGenerator.mix64(((long) restoredCell << 32) ^ RELOCATION_SALT);
             waterCell = bundle.contains(WATER_CELL) ? bundle.getInt(WATER_CELL) : -1;
-            waterTurns = Math.max(0, bundle.getInt(WATER_TURNS));
+            waterTurns = bundle.contains(WATER_TURNS) ? Math.max(0, bundle.getInt(WATER_TURNS)) : 0;
         } else {
             prepared = false;
-            brazierCells = new int[0];
-            cooldowns = new int[BRAZIER_COUNT];
-            preparedHeroCell = -1;
+            purifierCell = -1;
+            purifierCooldown = 0;
+            safeRoute = new int[0];
+            bossCell = -1;
+            relocationRngState = 0L;
             waterCell = -1;
             waterTurns = 0;
         }
@@ -403,12 +402,24 @@ public class PestilenceArenaController implements Bundlable {
         }
 
         @Override
-        public void installBrazier(int cell) {
-            PlagueBrazier brazier = new PlagueBrazier();
-            brazier.set(cell);
-            level.traps.put(cell, brazier);
+        public void installPurifier(int cell) {
+            PlagueBrazier purifier = new PlagueBrazier();
+            purifier.set(cell);
+            level.traps.put(cell, purifier);
             level.set(cell, Terrain.TRAP, level);
             GameScene.updateMap(cell);
+        }
+
+        @Override
+        public void relocatePurifier(int from, int to) {
+            Trap purifier = level.traps.remove(from);
+            level.set(from, Terrain.EMPTY, level);
+            if (!(purifier instanceof PlagueBrazier)) purifier = new PlagueBrazier();
+            purifier.set(to);
+            level.traps.put(to, purifier);
+            level.set(to, Terrain.TRAP, level);
+            GameScene.updateMap(from);
+            GameScene.updateMap(to);
         }
     }
 }

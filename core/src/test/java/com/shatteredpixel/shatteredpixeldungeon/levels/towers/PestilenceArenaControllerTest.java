@@ -6,9 +6,6 @@ import com.watabou.utils.Random;
 
 import org.junit.Test;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,64 +15,55 @@ import java.util.Set;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class PestilenceArenaControllerTest {
 
     @Test
-    public void generatedArenasReceiveFourSeparatedReachableBraziers() {
+    public void generatedArenasReceiveOneLeftReachablePurifierAndSafeRoute() {
         for (long seed = 1; seed <= 32; seed++) {
             FakeArena arena = new FakeArena(generateMap(seed));
             PestilenceArenaController controller = new PestilenceArenaController();
-            int bossCell = TowerBossLayout.cell(14, 10);
 
-            assertTrue("seed=" + seed, controller.prepare(arena, bossCell, seed));
-            int[] cells = controller.brazierCells();
-            assertEquals(4, cells.length);
-            assertEquals(4, arena.installed.size());
+            assertTrue("seed=" + seed,
+                    controller.prepare(arena, TowerBossLayout.cell(14, 10), seed));
+            int purifier = controller.purifierCell();
+            assertEquals(1, arena.installed.size());
+            assertEquals(purifier, (int) arena.installed.iterator().next());
+            assertTrue(purifier % arena.width() < arena.width() / 2);
+            assertTrue(arena.reachable(arena.heroAnchor(), purifier));
 
-            boolean[] quadrants = new boolean[4];
-            for (int i = 0; i < cells.length; i++) {
-                int cell = cells[i];
-                assertEquals(Terrain.EMPTY, arena.original[cell]);
-                assertTrue(arena.isArenaCell(cell));
-                assertFalse(arena.forbidden(cell));
-                assertTrue(arena.reachable(arena.heroAnchor(), cell));
-                assertTrue(arena.reachable(cell, arena.exitAnchor()));
-                assertTrue(arena.distance(cell, bossCell) >= 5);
-                quadrants[quadrant(cell)] = true;
-                for (int j = i + 1; j < cells.length; j++) {
-                    assertTrue(arena.distance(cell, cells[j]) >= 6);
-                }
+            int[] route = controller.safeRoute();
+            assertTrue(route.length > 1);
+            assertEquals(arena.heroAnchor(), route[0]);
+            assertEquals(purifier, route[route.length - 1]);
+            for (int i = 0; i < route.length; i++) {
+                assertTrue(arena.passableBeforeFixture(route[i]));
+                if (i > 0) assertEquals(1, cardinalDistance(arena, route[i - 1], route[i]));
             }
-            assertArrayEquals(new boolean[]{true, true, true, true}, quadrants);
         }
     }
 
     @Test
-    public void placementUsesOnlyEmptyUnoccupiedCells() {
+    public void purifierPlacementUsesOnlyEmptyUnoccupiedCells() {
         int[] map = new int[TowerBossLayout.WIDTH * TowerBossLayout.HEIGHT];
         Arrays.fill(map, Terrain.WALL);
-        for (int y = 5; y <= 29; y++) {
-            for (int x = 2; x <= 26; x++) {
-                map[TowerBossLayout.cell(x, y)] = Terrain.WATER;
-            }
-        }
-        int[] valid = {
-                TowerBossLayout.cell(6, 8), TowerBossLayout.cell(22, 8),
-                TowerBossLayout.cell(6, 25), TowerBossLayout.cell(22, 25)
-        };
-        for (int cell : valid) map[cell] = Terrain.EMPTY;
-        int occupiedEmpty = TowerBossLayout.cell(4, 6);
-        map[occupiedEmpty] = Terrain.EMPTY;
+        carve(map, 14, 29, 6, 25);
+        int valid = TowerBossLayout.cell(6, 25);
+        int occupied = TowerBossLayout.cell(5, 25);
+        map[occupied] = Terrain.EMPTY;
 
         FakeArena arena = new FakeArena(map);
-        arena.forbidden.add(occupiedEmpty);
+        for (int cell = 0; cell < map.length; cell++) {
+            if (map[cell] == Terrain.EMPTY && cell != valid) arena.forbidden.add(cell);
+        }
+        arena.forbidden.add(occupied);
         PestilenceArenaController controller = new PestilenceArenaController();
 
-        assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 17), 7L));
-        assertArrayEquals(sorted(valid), sorted(controller.brazierCells()));
-        assertFalse(arena.installed.contains(occupiedEmpty));
+        assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 7L));
+        assertEquals(valid, controller.purifierCell());
+        assertFalse(arena.installed.contains(occupied));
     }
 
     @Test
@@ -93,62 +81,88 @@ public class PestilenceArenaControllerTest {
     }
 
     @Test
-    public void controllerStateSurvivesBundleWithoutReinstallingFixtures() {
+    public void activationIsImmediateThenRelocatesAwayAndStartsCooldown() {
+        FakeArena arena = new FakeArena(generateMap(19L));
+        PestilenceArenaController controller = new PestilenceArenaController();
+        assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 19L));
+        int old = controller.purifierCell();
+
+        assertTrue(controller.activate(arena, old));
+        int moved = controller.purifierCell();
+        assertNotEquals(old, moved);
+        assertTrue(arena.distance(old, moved) >= PestilenceArenaController.MIN_RELOCATION_DISTANCE);
+        assertEquals(PestilenceArenaController.PURIFIER_COOLDOWN, controller.cooldownAt(0));
+        assertEquals(Set.of(moved), arena.installed);
+
+        assertFalse(controller.activate(arena, moved));
+        assertEquals(moved, controller.purifierCell());
+    }
+
+    @Test
+    public void relocationIsDeterministicAndDoesNotNeedGlobalRandom() {
+        FakeArena firstArena = new FakeArena(generateMap(23L));
+        FakeArena secondArena = new FakeArena(generateMap(23L));
+        PestilenceArenaController first = new PestilenceArenaController();
+        PestilenceArenaController second = new PestilenceArenaController();
+        assertTrue(first.prepare(firstArena, TowerBossLayout.cell(14, 10), 23L));
+        assertTrue(second.prepare(secondArena, TowerBossLayout.cell(14, 10), 23L));
+
+        assertTrue(first.activate(firstArena, first.purifierCell()));
+        assertTrue(second.activate(secondArena, second.purifierCell()));
+        assertEquals(first.purifierCell(), second.purifierCell());
+    }
+
+    @Test
+    public void controllerStateSurvivesBundleWithoutReinstallingFixture() {
         FakeArena arena = new FakeArena(generateMap(11L));
         PestilenceArenaController controller = new PestilenceArenaController();
         assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 11L));
-        controller.putOnCooldown(2, 12);
-        controller.prepareHeroAt(controller.brazierCells()[1]);
+        assertTrue(controller.activate(arena, controller.purifierCell()));
+        controller.advanceBossTurn();
 
         Bundle bundle = new Bundle();
         controller.storeInBundle(bundle);
         PestilenceArenaController restored = new PestilenceArenaController();
         restored.restoreFromBundle(bundle);
 
-        assertArrayEquals(controller.brazierCells(), restored.brazierCells());
-        assertEquals(12, restored.cooldownAt(2));
-        assertEquals(controller.brazierCells()[1], restored.preparedHeroCell());
+        assertEquals(controller.purifierCell(), restored.purifierCell());
+        assertEquals(11, restored.cooldownAt(0));
         assertTrue(restored.prepared());
-        assertEquals(4, arena.installed.size());
+        assertEquals(1, arena.installed.size());
+
+        Bundle roundTrip = new Bundle();
+        restored.storeInBundle(roundTrip);
+        assertEquals(bundle.getLong("relocation_rng_state"),
+                roundTrip.getLong("relocation_rng_state"));
     }
 
     @Test
-    public void brazierCooldownUsesBossTurnsAndCanBeResetAfterHarvest() {
+    public void oldFourBrazierSaveRestoresOnePurifier() {
+        Bundle legacy = new Bundle();
+        int[] cells = {101, 202, 303, 404};
+        legacy.put("prepared", true);
+        legacy.put("brazier_cells", cells);
+        legacy.put("cooldowns", new int[]{3, 4, 5, 6});
+
+        PestilenceArenaController restored = new PestilenceArenaController();
+        restored.restoreFromBundle(legacy);
+
+        assertTrue(restored.prepared());
+        assertEquals(cells[0], restored.purifierCell());
+        assertEquals(3, restored.cooldownAt(0));
+    }
+
+    @Test
+    public void purifierCooldownUsesOnlyBossTurns() {
         PestilenceArenaController controller = new PestilenceArenaController();
-        controller.putOnCooldown(1, 12);
+        controller.putOnCooldown(0, PestilenceArenaController.PURIFIER_COOLDOWN);
 
         controller.onHeroTurnStarted(null);
-        assertEquals(12, controller.cooldownAt(1));
+        assertEquals(12, controller.cooldownAt(0));
         controller.advanceBossTurn();
-        assertEquals(11, controller.cooldownAt(1));
-
+        assertEquals(11, controller.cooldownAt(0));
         controller.resetBrazierCooldowns();
-        assertEquals(0, controller.cooldownAt(1));
-    }
-
-    @Test
-    public void nearestReadyBrazierSkipsFixturesOnCooldown() {
-        FakeArena arena = new FakeArena(generateMap(19L));
-        PestilenceArenaController controller = new PestilenceArenaController();
-        assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 19L));
-        int[] cells = controller.brazierCells();
-        for (int i = 0; i < cells.length; i++) controller.putOnCooldown(i, 12);
-        controller.putOnCooldown(2, 0);
-
-        assertEquals(cells[2], controller.nearestReadyBrazier(TowerBossLayout.cell(14, 29)));
-        assertTrue(controller.isBrazierCell(cells[2]));
-        assertFalse(controller.isBrazierCell(TowerBossLayout.cell(14, 17)));
-    }
-
-    @Test
-    public void brazierActivationSchedulesTheSeededPurifyingIncense() throws Exception {
-        Path root = Path.of(System.getProperty("user.dir"));
-        Path source = (Files.isDirectory(root.resolve("core")) ? root.resolve("core") : root)
-                .resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/towers/PestilenceArenaController.java");
-        String code = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
-
-        assertTrue(code.contains("PurifyingIncense incense = null"));
-        assertTrue(code.contains("GameScene.add(incense)"));
+        assertEquals(0, controller.cooldownAt(0));
     }
 
     private static int[] generateMap(long seed) {
@@ -160,23 +174,30 @@ public class PestilenceArenaControllerTest {
         }
     }
 
-    private static int quadrant(int cell) {
-        int x = cell % TowerBossLayout.WIDTH;
-        int y = cell / TowerBossLayout.WIDTH;
-        return (y > 17 ? 2 : 0) + (x > 14 ? 1 : 0);
+    private static void carve(int[] map, int fromX, int fromY, int toX, int toY) {
+        int x = fromX;
+        int y = fromY;
+        map[TowerBossLayout.cell(x, y)] = Terrain.EMPTY;
+        while (x != toX) {
+            x += Integer.compare(toX, x);
+            map[TowerBossLayout.cell(x, y)] = Terrain.EMPTY;
+        }
+        while (y != toY) {
+            y += Integer.compare(toY, y);
+            map[TowerBossLayout.cell(x, y)] = Terrain.EMPTY;
+        }
     }
 
-    private static int[] sorted(int[] values) {
-        int[] copy = values.clone();
-        Arrays.sort(copy);
-        return copy;
+    private static int cardinalDistance(FakeArena arena, int a, int b) {
+        return Math.abs(a % arena.width() - b % arena.width())
+                + Math.abs(a / arena.width() - b / arena.width());
     }
 
     private static final class FakeArena implements PestilenceArenaController.Arena {
         private final int[] original;
         private final int[] map;
         private final Set<Integer> forbidden = new HashSet<>();
-        private final List<Integer> installed = new ArrayList<>();
+        private final Set<Integer> installed = new HashSet<>();
 
         private FakeArena(int[] map) {
             this.original = map.clone();
@@ -186,16 +207,29 @@ public class PestilenceArenaControllerTest {
         @Override public int length() { return map.length; }
         @Override public int width() { return TowerBossLayout.WIDTH; }
         @Override public int terrain(int cell) { return map[cell]; }
-        @Override public boolean passable(int cell) {
-            return (Terrain.flags[map[cell]] & Terrain.PASSABLE) != 0;
-        }
+        @Override public boolean passable(int cell) { return passableBeforeFixture(cell); }
         @Override public boolean isArenaCell(int cell) { return TowerBossLayout.isArenaCell(cell); }
         @Override public boolean forbidden(int cell) { return forbidden.contains(cell); }
         @Override public int heroAnchor() { return TowerBossLayout.cell(14, 29); }
         @Override public int exitAnchor() { return TowerBossLayout.cell(14, 5); }
-        @Override public void installBrazier(int cell) {
+
+        @Override
+        public void installPurifier(int cell) {
             installed.add(cell);
             map[cell] = Terrain.TRAP;
+        }
+
+        @Override
+        public void relocatePurifier(int from, int to) {
+            installed.remove(from);
+            map[from] = Terrain.EMPTY;
+            installed.add(to);
+            map[to] = Terrain.TRAP;
+        }
+
+        boolean passableBeforeFixture(int cell) {
+            return cell >= 0 && cell < original.length
+                    && (Terrain.flags[original[cell]] & Terrain.PASSABLE) != 0;
         }
 
         int distance(int a, int b) {
@@ -208,7 +242,7 @@ public class PestilenceArenaControllerTest {
 
         boolean reachable(int start, int target) {
             boolean[] seen = new boolean[map.length];
-            ArrayList<Integer> queue = new ArrayList<>();
+            List<Integer> queue = new ArrayList<>();
             seen[start] = true;
             queue.add(start);
             for (int at = 0; at < queue.size(); at++) {
@@ -217,11 +251,8 @@ public class PestilenceArenaControllerTest {
                 int x = cell % width();
                 int[] next = {cell - width(), cell + 1, cell + width(), cell - 1};
                 for (int value : next) {
-                    // Validate the route chosen before the fixtures were installed. A visible trap
-                    // uses Terrain.AVOID rather than Terrain.PASSABLE after installation, but that
-                    // does not make its cell physically impassable to actors.
                     if (value < 0 || value >= map.length || seen[value]
-                            || (Terrain.flags[original[value]] & Terrain.PASSABLE) == 0) continue;
+                            || !passableBeforeFixture(value)) continue;
                     if (Math.abs(value % width() - x) > 1) continue;
                     seen[value] = true;
                     queue.add(value);
