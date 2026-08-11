@@ -1,7 +1,13 @@
 package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.AstralLibraryLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.FrostArchiveLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.GothicCastleLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.SkyAlchemyGreenhouseLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerCoreGearworksLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 
 import org.junit.Test;
@@ -23,15 +29,38 @@ public class TowerLevelSelectionTest {
 	}
 
 	@Test
-	public void dungeonDispatchesEveryTowerFloorToTowerLevel() {
-		assertSame(TowerLevel.class, Dungeon.towerLevelClassForLocation(1, 3));
-		assertSame(TowerLevel.class, Dungeon.towerLevelClassForLocation(2, 3));
-		assertSame(TowerLevel.class, Dungeon.towerLevelClassForLocation(25, 3));
-		assertSame(TowerLevel.class, Dungeon.towerLevelClassForLocation(100, 3));
-
+	public void dungeonDispatchesOnlyTowerBranchFloorsToTowerStyles() {
 		assertNull(Dungeon.towerLevelClassForLocation(0, 3));
 		assertNull(Dungeon.towerLevelClassForLocation(1, 0));
 		assertNull(Dungeon.towerLevelClassForLocation(30, 2));
+	}
+
+	@Test
+	public void everyFifthTowerFloorUsesTheCommonBossLevel() {
+		assertSame(TowerBossLevel.class,
+				Dungeon.towerLevelClassForLocation(5, TowerLevel.BRANCH));
+		assertSame(TowerBossLevel.class,
+				Dungeon.towerLevelClassForLocation(10, TowerLevel.BRANCH));
+		assertSame(TowerBossLevel.class,
+				Dungeon.towerLevelClassForLocation(15, TowerLevel.BRANCH));
+
+		assertNotEquals(TowerBossLevel.class,
+				Dungeon.towerLevelClassForLocation(4, TowerLevel.BRANCH));
+		assertNotEquals(TowerBossLevel.class,
+				Dungeon.towerLevelClassForLocation(6, TowerLevel.BRANCH));
+		assertNull(Dungeon.towerLevelClassForLocation(5, 0));
+	}
+
+	@Test
+	public void bossDispatchStillExposesItsScheduledEnvironmentClass() {
+		Class<? extends TowerLevel> firstFloor =
+				Dungeon.towerStyleLevelClassForLocation(1, TowerLevel.BRANCH);
+		Class<? extends TowerLevel> fifthFloor =
+				Dungeon.towerStyleLevelClassForLocation(5, TowerLevel.BRANCH);
+
+		assertSame(firstFloor, fifthFloor);
+		assertNotEquals(TowerBossLevel.class, fifthFloor);
+		assertNull(Dungeon.towerStyleLevelClassForLocation(5, 0));
 	}
 
 	@Test
@@ -65,6 +94,33 @@ public class TowerLevelSelectionTest {
 	}
 
 	@Test
+	public void newTowerLevelsProvideTheirOwnEnvironmentTextures() {
+		assertSame(TowerLevel.class, AstralLibraryLevel.class.getSuperclass());
+		assertEquals("environment/tiles_astral_library.png",
+				Assets.Environment.TILES_ASTRAL_LIBRARY);
+		assertEquals("environment/water_astral_library.png",
+				Assets.Environment.WATER_ASTRAL_LIBRARY);
+
+		assertSame(TowerLevel.class, TowerCoreGearworksLevel.class.getSuperclass());
+		assertEquals("environment/tiles_tower_core_gearworks.png",
+				Assets.Environment.TILES_TOWER_CORE_GEARWORKS);
+		assertEquals("environment/water_tower_core_gearworks.png",
+				Assets.Environment.WATER_TOWER_CORE_GEARWORKS);
+
+		assertSame(TowerLevel.class, SkyAlchemyGreenhouseLevel.class.getSuperclass());
+		assertEquals("environment/tiles_sky_alchemy_greenhouse.png",
+				Assets.Environment.TILES_SKY_ALCHEMY_GREENHOUSE);
+		assertEquals("environment/water_sky_alchemy_greenhouse.png",
+				Assets.Environment.WATER_SKY_ALCHEMY_GREENHOUSE);
+
+		assertSame(TowerLevel.class, FrostArchiveLevel.class.getSuperclass());
+		assertEquals("environment/tiles_frost_archive.png",
+				Assets.Environment.TILES_FROST_ARCHIVE);
+		assertEquals("environment/water_frost_archive.png",
+				Assets.Environment.WATER_FROST_ARCHIVE);
+	}
+
+	@Test
 	public void towerFloorsDisplayAsNegativeDepths() {
 		assertEquals(-1, Dungeon.displayDepthForLocation(1, 3));
 		assertEquals(-2, Dungeon.displayDepthForLocation(2, 3));
@@ -73,7 +129,26 @@ public class TowerLevelSelectionTest {
 	}
 
 	@Test
-	public void towerDifficultyUsesCityThroughHallsDepthsAndCapsAtTwentyFive() {
+	public void towerFloorsUseTowerLabelsInTheUi() {
+		assertEquals("T1", Dungeon.displayDepthLabel(1, TowerLevel.BRANCH));
+		assertEquals("T2", Dungeon.displayDepthLabel(2, TowerLevel.BRANCH));
+		assertEquals("T100", Dungeon.displayDepthLabel(100, TowerLevel.BRANCH));
+		assertEquals("0", Dungeon.displayDepthLabel(0, 0));
+		assertEquals("16", Dungeon.displayDepthLabel(16, 0));
+	}
+
+	@Test
+	public void towerEntryIsOneWayFromTheSurface() {
+		assertFalse(Dungeon.towerTransitionAllowed(1, TowerLevel.BRANCH, 0, 0));
+		assertTrue(Dungeon.towerTransitionAllowed(0, 0, 1, TowerLevel.BRANCH));
+		assertTrue(Dungeon.towerTransitionAllowed(2, TowerLevel.BRANCH,
+				1, TowerLevel.BRANCH));
+		assertTrue(Dungeon.towerTransitionAllowed(1, TowerLevel.BRANCH,
+				2, TowerLevel.BRANCH));
+	}
+
+	@Test
+	public void towerDifficultyAlwaysUsesDepthThirty() {
 		int originalDepth = Dungeon.depth;
 		int originalBranch = Dungeon.branch;
 		Hero originalHero = Dungeon.hero;
@@ -82,13 +157,41 @@ public class TowerLevelSelectionTest {
 			Dungeon.branch = 3;
 
 			Dungeon.depth = 1;
-			assertEquals(16, Dungeon.scalingDepth());
+			assertEquals(30, Dungeon.scalingDepth());
 			Dungeon.depth = 5;
-			assertEquals(20, Dungeon.scalingDepth());
+			assertEquals(30, Dungeon.scalingDepth());
 			Dungeon.depth = 10;
-			assertEquals(25, Dungeon.scalingDepth());
+			assertEquals(30, Dungeon.scalingDepth());
 			Dungeon.depth = 100;
-			assertEquals(25, Dungeon.scalingDepth());
+			assertEquals(30, Dungeon.scalingDepth());
+
+			Dungeon.branch = 0;
+			Dungeon.depth = 24;
+			assertEquals(24, Dungeon.scalingDepth());
+			Dungeon.branch = 2;
+			Dungeon.depth = 7;
+			assertEquals(7, Dungeon.scalingDepth());
+		} finally {
+			Dungeon.depth = originalDepth;
+			Dungeon.branch = originalBranch;
+			Dungeon.hero = originalHero;
+		}
+	}
+
+	@Test
+	public void depthScaledMonstersUseTowerDifficultyInsteadOfTowerFloorNumber() {
+		int originalDepth = Dungeon.depth;
+		int originalBranch = Dungeon.branch;
+		Hero originalHero = Dungeon.hero;
+		try {
+			Dungeon.hero = null;
+			Dungeon.branch = TowerLevel.BRANCH;
+			Dungeon.depth = 1;
+
+			Piranha piranha = new Piranha();
+			assertEquals(160, piranha.HT);
+			assertEquals(70, piranha.defenseSkill);
+			assertEquals(80, piranha.attackSkill(null));
 		} finally {
 			Dungeon.depth = originalDepth;
 			Dungeon.branch = originalBranch;

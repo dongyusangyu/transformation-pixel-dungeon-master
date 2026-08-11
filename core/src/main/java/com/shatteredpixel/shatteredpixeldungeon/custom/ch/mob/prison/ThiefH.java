@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.prison;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
@@ -57,7 +59,7 @@ public class ThiefH extends MobHard {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         if (alignment == Alignment.ENEMY && item == null
                 && enemy instanceof Hero && steal( (Hero)enemy )) {
             state = FLEEING;
@@ -72,7 +74,7 @@ public class ThiefH extends MobHard {
                 }
             }
         }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     protected boolean steal( Hero hero ){
@@ -178,12 +180,12 @@ public class ThiefH extends MobHard {
     }
 
     @Override
-    public int defenseProc(Char enemy, int damage) {
+    public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
         if (state == FLEEING) {
             Dungeon.level.drop( new Gold(), pos ).sprite.drop();
         }
 
-        return super.defenseProc(enemy, damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
 
     @Override

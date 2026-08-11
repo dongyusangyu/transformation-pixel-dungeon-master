@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -51,6 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
@@ -155,7 +158,7 @@ public class Item implements Bundlable {
 			
 			GameScene.pickUp( this, pos );
 			if(hero.pointsNegative(Talent.ENDLESS_MALICE)>0 && Random.Int(10)<2+hero.pointsNegative(Talent.ENDLESS_MALICE)){
-				hero.damage((int)(hero.HT*hero.pointsNegative(Talent.ENDLESS_MALICE)*0.05), Talent.ENDLESS_MALICE);
+				hero.damage((int)(hero.HT*hero.pointsNegative(Talent.ENDLESS_MALICE)*0.05), Talent.ENDLESS_MALICE, DamageTag.PHYSICAL, DamageTag.ENDLESS_MALICE);
 				if (!hero.isAlive()) {
 					Dungeon.fail( Talent.ENDLESS_MALICE );
 					GLog.n( Messages.get(Talent.ENDLESS_MALICE, Talent.ENDLESS_MALICE.name()+".kill") );
@@ -762,7 +765,8 @@ public class Item implements Bundlable {
 		Char enemy = Actor.findChar( cell );
 		QuickSlotButton.target(enemy);
 		
-		final float delay = castDelay(user, cell);
+		final float delay = castDelay(user, cell)
+				+ (this instanceof MissileWeapon ? TwoHandedGreatsword.extraActionDelay(user) : 0f);
 
 		if (enemy != null) {
 			((MissileSprite) user.sprite.parent.recycle(MissileSprite.class)).

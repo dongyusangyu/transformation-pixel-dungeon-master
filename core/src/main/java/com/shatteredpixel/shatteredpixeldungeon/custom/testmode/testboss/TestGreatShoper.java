@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -106,7 +108,7 @@ public class TestGreatShoper extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char attacker = TestBossUtil.attackerToRetarget(this, src);
         if (attacker != null) {
             enemy = attacker;
@@ -114,12 +116,12 @@ public class TestGreatShoper extends Mob {
             beckon(attacker.pos);
         }
         if (isInvulnerable(src.getClass())) {
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
             return;
         }
         dmg = Math.min(150, dmg);
         int preHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         int dmgTaken = preHP - HP;
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (dmgTaken > 0 && lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())) {
@@ -240,7 +242,7 @@ public class TestGreatShoper extends Mob {
         if (enemy == null) {
             return;
         }
-        if (hit(this, enemy, true)) {
+		if (hit(this, enemy, DamageTag.MAGICAL)) {
             if (enemy == Dungeon.hero && Random.Int(2) == 0) {
                 Sample.INSTANCE.play(Assets.Sounds.GOLD);
             }
@@ -250,7 +252,7 @@ public class TestGreatShoper extends Mob {
                     && (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))) {
                 dmg *= 0.5f;
             }
-            enemy.damage(dmg, this);
+            enemy.damage(dmg, this, DamageTag.PHYSICAL);
         } else {
             enemy.sprite.showStatus(CharSprite.NEUTRAL, enemy.defenseVerb());
         }
@@ -347,7 +349,7 @@ public class TestGreatShoper extends Mob {
         @Override
         public void affectChar(Char ch) {
             if (!(ch instanceof TestGreatShoper) && !(ch instanceof GreatShoper)) {
-                ch.damage(Random.Int(20), new Viscosity.DeferedDamage());
+                ch.damage(Random.Int(20), new Viscosity.DeferedDamage(), DamageTag.PHYSICAL, DamageTag.DEFERRED);
                 Buff.prolong(ch, Paralysis.class, 2);
             }
         }

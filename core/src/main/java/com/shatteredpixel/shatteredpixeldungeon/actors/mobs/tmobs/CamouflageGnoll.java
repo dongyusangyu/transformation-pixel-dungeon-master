@@ -13,20 +13,24 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.CamouflageGnollSprite;
 import com.watabou.utils.Random;
 
 public class CamouflageGnoll extends Mob {
 
-	private static final float NORMAL_POISON_CHANCE = 1f / 3f;
-	private static final float GRASS_POISON_CHANCE = 1f;
-	private static final float POISON_DURATION = 4f;
+	private static final int NORMAL_POISON_MIN_DURATION = 2;
+	private static final int NORMAL_POISON_MAX_DURATION = 4;
+	private static final int GRASS_POISON_MIN_DURATION = 10;
+	private static final int GRASS_POISON_MAX_DURATION = 20;
 
 	{
 		spriteClass = CamouflageGnollSprite.class;
@@ -35,7 +39,10 @@ public class CamouflageGnoll extends Mob {
 		defenseSkill = 20;
 
 		EXP = 13;
-		maxLvl = 26;
+		maxLvl = 30;
+
+		loot = Gold.class;
+		lootChance = 0.5f;
 	}
 
 	@Override
@@ -60,8 +67,8 @@ public class CamouflageGnoll extends Mob {
 	}
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
-		damage = super.attackProc(enemy, damage);
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		applyPoison(enemy, damage);
 		return damage;
 	}
@@ -71,8 +78,15 @@ public class CamouflageGnoll extends Mob {
 	}
 
 	protected void applyPoison(Char enemy, int damage) {
-		if (damage > 0 && rollPoison()) {
-			Buff.affect(enemy, Poison.class).set(POISON_DURATION);
+		Poison poison = enemy.buff(Poison.class);
+		int duration = poisonDuration();
+		if (poison == null) {
+			poison = Buff.affect(enemy, Poison.class);
+			if (poison != null) {
+				poison.set(duration);
+			}
+		} else {
+			poison.extend(duration);
 		}
 	}
 
@@ -80,12 +94,10 @@ public class CamouflageGnoll extends Mob {
 		return isOnGrass();
 	}
 
-	protected float poisonChance() {
-		return isOnGrass() ? GRASS_POISON_CHANCE : NORMAL_POISON_CHANCE;
-	}
-
-	protected boolean rollPoison() {
-		return Random.Float() < poisonChance();
+	protected int poisonDuration() {
+		return isOnGrass()
+				? Random.IntRange(GRASS_POISON_MIN_DURATION, GRASS_POISON_MAX_DURATION)
+				: Random.IntRange(NORMAL_POISON_MIN_DURATION, NORMAL_POISON_MAX_DURATION);
 	}
 
 	protected boolean isOnGrass() {

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 
@@ -54,7 +56,7 @@ public class ArmoredStatue extends Statue {
 		super();
 
 		//double HP
-		HP = HT = 30 + Dungeon.depth * 10;
+		HP = HT = 30 + Dungeon.scalingDepth() * 10;
 	}
 
 	@Override
@@ -104,9 +106,9 @@ public class ArmoredStatue extends Statue {
 	}
 
 	@Override
-	public int defenseProc(Char enemy, int damage) {
+	public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 		damage = armor.proc(enemy, this, damage);
-		return super.defenseProc(enemy, damage);
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	@Override

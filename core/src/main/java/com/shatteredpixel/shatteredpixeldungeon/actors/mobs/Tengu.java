@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS_MINION;
@@ -145,7 +147,7 @@ public class Tengu extends Mob implements PhysicalRangedAttack {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (!Dungeon.level.mobs.contains(this)){
 			return;
 		}
@@ -157,7 +159,7 @@ public class Tengu extends Mob implements PhysicalRangedAttack {
 		int curbracket = HP / hpBracket;
 
 		int beforeHitHP = HP;
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 
 		//cannot be hit through multiple brackets at a time
 		if (HP <= (curbracket-1)*hpBracket){
@@ -660,7 +662,7 @@ public class Tengu extends Mob implements PhysicalRangedAttack {
 							dmg -= ch.drRoll();
 
 							if (dmg > 0) {
-								ch.damage(dmg, Bomb.class);
+								ch.damage(dmg, Bomb.class, DamageTag.PHYSICAL);
 							}
 
 							if (ch == Dungeon.hero){
@@ -1090,7 +1092,7 @@ public class Tengu extends Mob implements PhysicalRangedAttack {
 							
 							Char ch = Actor.findChar(cell);
 							if (ch != null && !(ch instanceof Tengu)){
-								ch.damage(2 + Dungeon.scalingDepth(), new Electricity());
+								ch.damage(2 + Dungeon.scalingDepth(), new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 								
 								if (ch == Dungeon.hero){
 									Statistics.qualifiedForBossChallengeBadge = false;

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 
@@ -208,11 +210,11 @@ public class PrismaticImage extends NPC {
 	}
 	
 	@Override
-	public int defenseProc(Char enemy, int damage) {
+	public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 		if (hero != null && hero.belongings.armor() != null){
 			damage = hero.belongings.armor().proc( enemy, this, damage );
 		}
-		return super.defenseProc(enemy, damage);
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	@Override
@@ -225,13 +227,13 @@ public class PrismaticImage extends NPC {
 	}
 
 	@Override
-	public int attackProc( Char enemy, int damage ) {
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
 		
 		if (enemy instanceof Mob) {
 			((Mob)enemy).aggro( this );
 		}
 		
-		return super.attackProc( enemy, damage );
+		return super.attackProc(enemy, damage, damageTags);
 	}
 	
 	@Override

@@ -224,7 +224,7 @@ public class AgentMinStateBuilder {
 		float heroDamage = Math.max(1, state.hero.expectedDamage);
 		float heroArmor = Math.max(0, state.hero.expectedArmor);
 		float hpFactor = Math.max(0.1f, state.hero.hpRatio);
-		float levelFactor = 1f + Dungeon.depth * 0.045f;
+		float levelFactor = 1f + Dungeon.scalingDepth() * 0.045f;
 		state.combat.heroPowerScore = (heroDamage * 2.25f + state.hero.attackSkill * 0.35f + heroArmor * 1.35f + state.hero.defenseSkill * 0.2f) * hpFactor;
 		state.combat.floorPressureScore = levelFactor;
 
@@ -318,7 +318,7 @@ public class AgentMinStateBuilder {
 		state.killChance = Math.max(0f, Math.min(1f, heroDamage.max / (float)Math.max(1, mob.HP)));
 		state.meleeDanger = state.distanceToHero <= 1 ? 1f : state.distanceToHero <= 2 ? 0.55f : 0.15f;
 		float hpWeight = Math.max(1, mob.HP) / 5f;
-		float depthWeight = 1f + Dungeon.depth * 0.06f;
+		float depthWeight = 1f + Dungeon.scalingDepth() * 0.06f;
 		float distanceWeight = state.distanceToHero <= 1 ? 1.3f : state.distanceToHero <= 3 ? 1.1f : 0.8f;
 		state.threatScore = (state.estimatedDamage * 1.8f + state.ht * 0.18f + hpWeight) * depthWeight * distanceWeight;
 		state.rangedValue = state.distanceToHero > 1 ? Math.max(0f, Math.min(1f, state.threatScore / 80f + (1f - state.hpRatio) * 0.25f)) : 0.05f;
@@ -637,7 +637,7 @@ public class AgentMinStateBuilder {
 	}
 
 	private static int estimatedMobDamage(Mob mob) {
-		int depthDamage = Math.max(1, Dungeon.depth / 2);
+		int depthDamage = Math.max(1, Dungeon.scalingDepth() / 2);
 		int hpDamage = Math.max(1, mob.HT / 12);
 		return Math.max(1, depthDamage + hpDamage);
 	}

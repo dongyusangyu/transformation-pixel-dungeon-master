@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mimic;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -110,7 +112,7 @@ public class MimicForChallenge extends Mimic {
 
         m.items = new ArrayList<>( items );
 
-        m.setFloatLevel( Dungeon.depth );
+        m.setFloatLevel( Dungeon.scalingDepth() );
         m.pos = pos;
 
         //generate an extra reward for killing the mimic
@@ -687,8 +689,8 @@ public class MimicForChallenge extends Mimic {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage) {
-        damage = super.attackProc( enemy, damage );
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
         int dr  = enemy.drRoll();
         int postDamage = damage;
         postDamage += Math.round(dr*highDefenseAddDamageMultiplier());
@@ -711,10 +713,10 @@ public class MimicForChallenge extends Mimic {
 
         attacked++;
 
-        return super.attackProc(enemy, postDamage);
+        return super.attackProc(enemy, postDamage, damageTags);
     }
     @Override
-    public int defenseProc(Char enemy, int damage) {
+    public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 
         damage -= Math.round(enemy.drRoll()*defenseCopyFactor());
         if(damage<0) damage = 0;
@@ -735,12 +737,12 @@ public class MimicForChallenge extends Mimic {
 		
 		damage=pushBackProc(enemy, damage);
 
-        return super.defenseProc(enemy,damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
     //count total times of damage it has taken
     protected int getHit = 0;
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if (state == PASSIVE){
             alignment = Alignment.ENEMY;
             stopHiding();
@@ -762,7 +764,7 @@ public class MimicForChallenge extends Mimic {
         //WARNING: enemy should not appear in damage(). Enemy may be null.
         if(dmg>1) alertProc(enemy);
 
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
     }
 
     @Override

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -29,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArtifactRecharge;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AlternatingWeapons;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -38,6 +41,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SkilledParry;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SkilledParryCooldown;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -144,7 +149,7 @@ public class MeleeWeapon extends Weapon {
 				//do nothing
 			} else if (aEnc>0){
 				GLog.w(Messages.get(this, "ability_low_str"));
-			} else if ((Buff.affect(hero, Charger.class).charges + Buff.affect(hero, Charger.class).partialCharge) < abilityChargeUse(hero, null)) {
+			} else if (!canPayAbilityCost(hero, Buff.affect(hero, Charger.class), abilityChargeUse(hero, null))) {
 				GLog.w(Messages.get(this, "ability_no_charge"));
 			} else {
 
@@ -177,7 +182,7 @@ public class MeleeWeapon extends Weapon {
 		throwSound();
 		Char enemy = Actor.findChar( cell );
 		if(hero.pointsInTalent(Talent.STRONG_THROW)>0 && enemy!=null && enemy!=hero ){
-			enemy.damage(this.tier*hero.pointsInTalent(Talent.STRONG_THROW)*2,hero);
+			enemy.damage(this.tier*hero.pointsInTalent(Talent.STRONG_THROW)*2,hero, DamageTag.PHYSICAL);
 		}
 		if(hero.pointsInTalent(Talent.WEIRD_THROW)>0 && enemy!=null && enemy!=hero){
 			Buff.affect(enemy, Terror.class,hero.pointsInTalent(Talent.WEIRD_THROW));
@@ -203,14 +208,84 @@ public class MeleeWeapon extends Weapon {
 		//do nothing by default
 	}
 
+	public enum WeaponTrait {
+		DAGGER,
+		BLOCKING
+	}
+
+	public Class<?> abilityType() {
+		return abilityType(getClass());
+	}
+
+	public static Class<?> abilityType(Class<?> weaponClass) {
+		if (weaponClass == null) return null;
+		if (isWeaponClass(weaponClass, WornShortsword.class, Shortsword.class, Sword.class,
+				Longsword.class, Greatsword.class)) return Sword.class;
+		if (isWeaponClass(weaponClass, Dagger.class, Dirk.class, AssassinsBlade.class)) return Dagger.class;
+		if (isWeaponClass(weaponClass, Gloves.class, Sai.class, Gauntlet.class)) return Sai.class;
+		if (isWeaponClass(weaponClass, Rapier.class, Katana.class)) return Rapier.class;
+		if (isWeaponClass(weaponClass, Cudgel.class, HandAxe.class, Mace.class,
+				BattleAxe.class, WarHammer.class)) return Mace.class;
+		if (isWeaponClass(weaponClass, WalkStick.class, Quarterstaff.class)) return Quarterstaff.class;
+		if (isWeaponClass(weaponClass, SpearOfConqueror.class, Spear.class, Glaive.class)) return Spear.class;
+		if (isWeaponClass(weaponClass, Wakizashi.class, Scimitar.class)) return Scimitar.class;
+		if (isWeaponClass(weaponClass, Bracer.class, RoundShield.class, Greatshield.class)) return RoundShield.class;
+		if (isWeaponClass(weaponClass, Sickle.class, WarScythe.class)) return Sickle.class;
+		if (isWeaponClass(weaponClass, LatherWhip.class, Whip.class, SteelWhip.class)) return Whip.class;
+		if (isWeaponClass(weaponClass, Blowpipe.class, Crossbow.class)) return Crossbow.class;
+		return weaponClass;
+	}
+
+	private static boolean isWeaponClass(Class<?> weaponClass, Class<?>... family) {
+		if (weaponClass == null) return false;
+		for (Class<?> member : family) {
+			if (member.isAssignableFrom(weaponClass)) return true;
+		}
+		return false;
+	}
+
+	public boolean hasTrait(WeaponTrait trait, Char owner) {
+		if (trait == null) return false;
+		switch (trait) {
+			case DAGGER:
+				return hasTrait(getClass(), trait);
+			case BLOCKING:
+				return defenseFactor(owner) > 0;
+			default:
+				return false;
+		}
+	}
+
+	public static boolean hasTrait(Class<?> weaponClass, WeaponTrait trait) {
+		return trait == WeaponTrait.DAGGER && isWeaponClass(weaponClass,
+				Dagger.class, Dirk.class, AssassinsBlade.class, RitualDagger.class);
+	}
+
+	public static boolean hasTrait(KindOfWeapon weapon, WeaponTrait trait, Char owner) {
+		return weapon instanceof MeleeWeapon && ((MeleeWeapon) weapon).hasTrait(trait, owner);
+	}
+
 	protected void beforeAbilityUsed(Hero hero, Char target){
 		hero.belongings.abilityWeapon = this;
 		Charger charger = Buff.affect(hero, Charger.class);
+		float chargeUse = abilityChargeUse(hero, target);
+		int missingCharges = MonkEnergy.missingWeaponCharges(
+				charger.charges, charger.partialCharge, chargeUse);
 
-		charger.partialCharge -= abilityChargeUse(hero, target);
-		while (charger.partialCharge < 0 && charger.charges > 0) {
-			charger.charges--;
-			charger.partialCharge++;
+		SkilledParry.trigger(hero, this);
+		int yinYangPoints = hero.pointsInTalent(Talent.YIN_YANG_BALANCE);
+		MonkEnergy energy = hero.buff(MonkEnergy.class);
+		boolean useYinYang = missingCharges > 0
+				&& yinYangPoints > 0
+				&& energy != null
+				&& MonkEnergy.canCoverWeaponChargeShortage(
+						energy.energy, missingCharges, yinYangPoints);
+		if (useYinYang) {
+			int wholeChargeUse = Math.max(0, (int)Math.ceil(chargeUse));
+			charger.spendWholeCharges(wholeChargeUse - missingCharges);
+			energy.spendForYinYang(missingCharges, yinYangPoints);
+		} else {
+			charger.spendCharge(chargeUse);
 		}
 
 		if (canUseWeaponAbilityAction(hero)
@@ -226,13 +301,18 @@ public class MeleeWeapon extends Weapon {
 
 	protected void afterAbilityUsed( Hero hero ){
 		hero.belongings.abilityWeapon = null;
+		if (hero.sprite != null && hero.sprite.visible) {
+			hero.sprite.showStatus(CharSprite.NEUTRAL, abilityName());
+		}
 		if (hero.hasTalent(Talent.PRECISE_ASSAULT)){
 			Buff.prolong(hero, Talent.PreciseAssaultTracker.class, hero.cooldown()+4f);
 		}
 		if (hero.hasTalent(Talent.VARIED_CHARGE)){
 			Talent.VariedChargeTracker tracker = hero.buff(Talent.VariedChargeTracker.class);
-			if (tracker == null || tracker.weapon == getClass() || tracker.weapon == null){
-				Buff.affect(hero, Talent.VariedChargeTracker.class).weapon = getClass();
+			Class<?> abilityType = abilityType();
+			if (tracker == null || tracker.weapon == null
+					|| !SkilledParryCooldown.isDifferentAbility(tracker.weapon, abilityType)){
+				Buff.affect(hero, Talent.VariedChargeTracker.class).weapon = abilityType;
 			} else {
 				tracker.detach();
 				Charger charger = Buff.affect(hero, Charger.class);
@@ -265,6 +345,10 @@ public class MeleeWeapon extends Weapon {
 		}
 	}
 
+	protected String abilityName() {
+		return Messages.titleCase(Messages.get(this, "ability_name"));
+	}
+
 	public static void onAbilityKill( Hero hero, Char killed ){
 		if (killed.alignment == Char.Alignment.ENEMY && hero.hasTalent(Talent.LETHAL_HASTE)){
 			//effectively 3/5 turns of greater haste
@@ -278,6 +362,18 @@ public class MeleeWeapon extends Weapon {
 
 	public final float abilityChargeUse(Hero hero, Char target){
 		return baseChargeUse(hero, target);
+	}
+
+	private static boolean canPayAbilityCost(Hero hero, Charger charger, float chargeUse) {
+		int missingCharges = MonkEnergy.missingWeaponCharges(
+				charger.charges, charger.partialCharge, chargeUse);
+		if (missingCharges == 0) return true;
+
+		int points = hero.pointsInTalent(Talent.YIN_YANG_BALANCE);
+		MonkEnergy energy = hero.buff(MonkEnergy.class);
+		return points > 0
+				&& energy != null
+				&& MonkEnergy.canCoverWeaponChargeShortage(energy.energy, missingCharges, points);
 	}
 
 	public int tier;
@@ -369,6 +465,9 @@ public class MeleeWeapon extends Weapon {
 				break;
 			case DAMAGE:
 				info += " " + Messages.get(Weapon.class, "stronger");
+				break;
+			case MAGIC:
+				info += " " + Messages.get(Weapon.class, "magical", weaponTier());
 				break;
 			case NONE:
 		}
@@ -509,7 +608,8 @@ public class MeleeWeapon extends Weapon {
 
 					//40 to 30 turns per charge for champion
 					if (hero.subClass .is(HeroSubClass.CHAMPION)){
-						chargeToGain *= 1.5f;
+						chargeToGain *= championRechargeMultiplier(
+								hero.pointsInTalent(Talent.WEAPON_ABILITY_MASTER));
 					}
 
 					//50% slower charge gain with brawler's stance enabled, even if buff is inactive
@@ -563,7 +663,8 @@ public class MeleeWeapon extends Weapon {
 		public int chargeCap(){
 			int training = hero.pointsInTalent(Talent.MARTIAL_TRAIN);
 			if (hasBaseMastery(hero)) {
-				return combinedCap(hero.lvl, training, hero.subClass.is(HeroSubClass.CHAMPION));
+				return combinedCap(hero.lvl, training, hero.subClass.is(HeroSubClass.CHAMPION),
+						hero.pointsInTalent(Talent.WEAPON_ABILITY_MASTER));
 			}
 			return trainingOnlyCap(training);
 
@@ -580,7 +681,21 @@ public class MeleeWeapon extends Weapon {
 		}
 
 		public static int combinedCap(int heroLevel, int trainingPoints, boolean champion) {
-			return masteryBaseCap(heroLevel) + Math.max(0, trainingPoints) + (champion ? 2 : 0);
+			return combinedCap(heroLevel, trainingPoints, champion, 0);
+		}
+
+		public static int combinedCap(int heroLevel, int trainingPoints, boolean champion,
+				int weaponAbilityMasterPoints) {
+			return masteryBaseCap(heroLevel) + Math.max(0, trainingPoints)
+					+ (champion ? championExtraCap(weaponAbilityMasterPoints) : 0);
+		}
+
+		public static int championExtraCap(int points) {
+			return 2 + Math.max(0, Math.min(3, points));
+		}
+
+		public static float championRechargeMultiplier(int points) {
+			return 1.5f + Math.max(0, Math.min(3, points)) / 6f;
 		}
 
 		public static int trainingOnlyCap(int trainingPoints) {
@@ -604,6 +719,20 @@ public class MeleeWeapon extends Weapon {
 				}
 				updateQuickslot();
 			}
+		}
+
+		public void spendCharge(float charge) {
+			partialCharge -= charge;
+			while (partialCharge < 0 && charges > 0) {
+				charges--;
+				partialCharge++;
+			}
+			updateQuickslot();
+		}
+
+		public void spendWholeCharges(int amount) {
+			charges = Math.max(0, charges - Math.max(0, amount));
+			updateQuickslot();
 		}
 
 		public static final String CHARGES          = "charges";
@@ -674,9 +803,14 @@ public class MeleeWeapon extends Weapon {
 				return;
 			}
 
+			boolean alternating = hero.belongings.weapon != null
+					&& hero.belongings.secondWep != null
+					&& AlternatingWeapons.consumePrimaryAttack(hero);
+
 			KindOfWeapon temp = hero.belongings.weapon;
 			hero.belongings.weapon = hero.belongings.secondWep;
 			hero.belongings.secondWep = temp;
+			if (alternating) AlternatingWeapons.trigger(hero);
 
 			hero.sprite.operate(hero.pos);
 			Sample.INSTANCE.play(Assets.Sounds.UNLOCK);

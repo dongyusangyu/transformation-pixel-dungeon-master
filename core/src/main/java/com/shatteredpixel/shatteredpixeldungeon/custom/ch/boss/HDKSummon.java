@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -239,7 +241,7 @@ public class HDKSummon {
 
             spend( TICK );
 
-            if (hit( this, enemy, true )) {
+			if (hit(this, enemy, DamageTag.MAGICAL)) {
                 //TODO would be nice for this to work on ghost/statues too
                 if (enemy == Dungeon.hero) {
                     if(Random.Int(3) == 0){
@@ -262,7 +264,7 @@ public class HDKSummon {
                 }
 
                 int dmg = Random.NormalIntRange( 9, 13 );
-                enemy.damage( dmg, this );
+                enemy.damage( dmg, this , DamageTag.PHYSICAL);
 
                 if (enemy == Dungeon.hero && !enemy.isAlive()) {
                     Badges.validateDeathFromEnemyMagic();
@@ -284,24 +286,24 @@ public class HDKSummon {
             HT = HP = 80;
         }
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             if(src instanceof Wand){
                 dmg = 0;
                 Buff.affect(this, Barrier.class).incShield(1);
                 Buff.detach(this, Barrier.class);
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
 
         @Override
         protected void zap() {
 
             spend( TICK * 2 );
-            if (hit( this, enemy, true )) {
+			if (hit(this, enemy, DamageTag.MAGICAL)) {
                 //TODO would be nice for this to work on ghost/statues too
 
                 int dmg = Random.NormalIntRange( 28, 45 );
-                enemy.damage( dmg, this );
+                enemy.damage( dmg, this , DamageTag.PHYSICAL);
 
                 if (enemy == Dungeon.hero && !enemy.isAlive()) {
                     Badges.validateDeathFromEnemyMagic();
@@ -345,11 +347,11 @@ public class HDKSummon {
 
             spend( TICK );
 
-            if (hit( this, enemy, true )) {
+			if (hit(this, enemy, DamageTag.MAGICAL)) {
                 //TODO would be nice for this to work on ghost/statues too
 
                 int dmg = Random.NormalIntRange( 5, 9 );
-                enemy.damage( dmg, this );
+                enemy.damage( dmg, this , DamageTag.PHYSICAL);
 
                 if (enemy == Dungeon.hero && !enemy.isAlive()) {
                     Badges.validateDeathFromEnemyMagic();
@@ -365,9 +367,9 @@ public class HDKSummon {
         }
 
         @Override
-        public int attackProc(Char enemy, int damage) {
+        public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
             healChar(5);
-            return super.attackProc(enemy, damage);
+            return super.attackProc(enemy, damage, damageTags);
         }
 
         protected void healChar(int amount){

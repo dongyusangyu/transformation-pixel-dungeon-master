@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.slime;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -100,7 +102,7 @@ public class RapidWaterfall extends ArmorAbility {
                         if (ch != null
                                 && !ch.isImmune(getClass())
                                 && Char.hasProp(ch, Char.Property.FIERY)){
-                            ch.damage(1 + Dungeon.scalingDepth()/5, this);
+                            ch.damage(1 + Dungeon.scalingDepth()/5, this, DamageTag.PHYSICAL);
                         }
                         if (ch != null){
                             if ( (ch.properties().contains(Char.Property.BOSS_MINION)

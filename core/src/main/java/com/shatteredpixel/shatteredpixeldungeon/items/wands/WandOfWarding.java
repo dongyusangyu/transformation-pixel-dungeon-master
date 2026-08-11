@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 
@@ -385,7 +387,7 @@ public class WandOfWarding extends Wand {
 
 			Char enemy = this.enemy;
             dmg = Talent.onWandDamage(null,enemy, dmg);
-			enemy.damage( dmg, this );
+			enemy.damage( dmg, this , DamageTag.MAGICAL);
 			if (enemy.isAlive()){
 				Wand.wandProc(enemy, wandLevel, 1);
                 Talent.onWandProc(enemy, wandLevel, 1,dmg);

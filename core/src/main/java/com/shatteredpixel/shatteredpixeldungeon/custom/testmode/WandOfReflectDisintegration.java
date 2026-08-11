@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -196,9 +198,9 @@ public class WandOfReflectDisintegration extends WandOfDisintegration {
             wandProc(ch, chargesPerCast());
             int damage = Math.round(damageRoll(lvl)*reflectionDamageFactor(reflection));
             if(!ch.equals(curUser)) {
-                ch.damage(damage, this);
+                ch.damage(damage, this, DamageTag.PHYSICAL);
             }else{
-                ch.damage(damage/6, this);
+                ch.damage(damage/6, this, DamageTag.PHYSICAL);
             }
             ch.sprite.centerEmitter().burst( PurpleParticle.BURST, Random.IntRange( 1, 2 ) );
             ch.sprite.flash();

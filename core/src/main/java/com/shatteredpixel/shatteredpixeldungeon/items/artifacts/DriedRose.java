@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -687,8 +689,8 @@ public class DriedRose extends Artifact {
 		}
 		
 		@Override
-		public int attackProc(Char enemy, int damage) {
-			damage = super.attackProc(enemy, damage);
+		public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+			damage = super.attackProc(enemy, damage, damageTags);
 
 			if (weapon() != null) {
 				damage = weapon().proc(this, enemy, damage);
@@ -702,16 +704,16 @@ public class DriedRose extends Artifact {
 		}
 		
 		@Override
-		public int defenseProc(Char enemy, int damage) {
+		public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 			if (armor() != null) {
 				damage = armor().proc( enemy, this, damage );
 			}
-			return super.defenseProc(enemy, damage);
+			return super.defenseProc(enemy, damage, damageTags);
 		}
 		
 		@Override
-		public void damage(int dmg, Object src) {
-			super.damage( dmg, src );
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
+			super.damage(dmg, src, damageTags);
 			
 			//for the rose status indicator
 			Item.updateQuickslot();

@@ -32,7 +32,12 @@ import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameSettings;
 import com.watabou.utils.Point;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 public class SPDSettings extends GameSettings {
 	
@@ -52,6 +57,12 @@ public class SPDSettings extends GameSettings {
 
 	public static final String KEY_QUIZ_ANSWERS_TOTAL = "quiz_answers_total";
 	public static final String KEY_QUIZ_ANSWERS_CORRECT = "quiz_answers_correct";
+	public static final String KEY_QUIZ_CORRECT_QUESTION_IDS =
+			"quiz_correct_question_ids";
+
+	private static final int MAX_QUIZ_QUESTION_IDS_LENGTH = 1199;
+	private static final Pattern QUIZ_QUESTION_ID = Pattern.compile(
+			"Q(?:00[1-9]|0[1-9][0-9]|1[0-9]{2}|200)");
 
 	public static int quizAnswersTotal() {
 		return getInt(KEY_QUIZ_ANSWERS_TOTAL, 0, 0, Integer.MAX_VALUE);
@@ -87,6 +98,40 @@ public class SPDSettings extends GameSettings {
 	public static void resetQuizStatistics() {
 		put(KEY_QUIZ_ANSWERS_TOTAL, 0);
 		put(KEY_QUIZ_ANSWERS_CORRECT, 0);
+	}
+
+	public static Set<String> quizCorrectQuestionIds() {
+		String stored = getString(KEY_QUIZ_CORRECT_QUESTION_IDS, "",
+				MAX_QUIZ_QUESTION_IDS_LENGTH);
+		TreeSet<String> normalizedIds = new TreeSet<>();
+		if (stored != null && !stored.isEmpty()) {
+			for (String questionId : stored.split(",")) {
+				if (QUIZ_QUESTION_ID.matcher(questionId).matches()) {
+					normalizedIds.add(questionId);
+				}
+			}
+		}
+
+		String normalized = String.join(",", normalizedIds);
+		if (!normalized.equals(stored)) {
+			put(KEY_QUIZ_CORRECT_QUESTION_IDS, normalized);
+		}
+		return Collections.unmodifiableSet(new LinkedHashSet<>(normalizedIds));
+	}
+
+	public static void recordCorrectQuizQuestion(String questionId) {
+		if (questionId == null
+				|| !QUIZ_QUESTION_ID.matcher(questionId).matches()) {
+			return;
+		}
+		TreeSet<String> questionIds = new TreeSet<>(quizCorrectQuestionIds());
+		if (questionIds.add(questionId)) {
+			put(KEY_QUIZ_CORRECT_QUESTION_IDS, String.join(",", questionIds));
+		}
+	}
+
+	public static void resetCorrectQuizQuestions() {
+		put(KEY_QUIZ_CORRECT_QUESTION_IDS, "");
 	}
 	
 	//Display

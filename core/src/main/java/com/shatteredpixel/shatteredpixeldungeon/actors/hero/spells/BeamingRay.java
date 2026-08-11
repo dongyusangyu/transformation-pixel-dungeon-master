@@ -132,7 +132,7 @@ public class BeamingRay extends TargetedClericSpell {
 
 		if (ally == Stasis.getStasisAlly()){
 			ally.pos = telePos;
-			GameScene.add((Mob) ally);
+			Stasis.release((Mob) ally);
 			hero.buff(Stasis.StasisBuff.class).detach();
 			hero.sprite.parent.add(
 					new Beam.SunRay(hero.sprite.center(), DungeonTilemap.raisedTileCenterToWorld(telePos)));

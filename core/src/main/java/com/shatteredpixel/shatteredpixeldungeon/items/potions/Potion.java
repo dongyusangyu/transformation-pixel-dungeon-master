@@ -586,11 +586,7 @@ public class Potion extends Item {
 				Dungeon.LimitedDrops.COOKING_HP.count++;
 			}
 			int outQuantity = 1;
-			if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-				result.quantity(outQuantity+1);
-			}else{
-				result.quantity(outQuantity);
-			}
+			result.quantity(outQuantity + Talent.miracleAlchemyBonus(hero, result));
 			
 			return result;
 		}
@@ -611,11 +607,7 @@ public class Potion extends Item {
 					}
 				};
 				int outQuantity = 1;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
+				result.quantity(outQuantity + Talent.miracleAlchemyBonus(hero, result));
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

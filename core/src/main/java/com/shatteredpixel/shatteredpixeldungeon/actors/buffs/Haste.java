@@ -31,6 +31,16 @@ public class Haste extends FlavourBuff {
 	}
 	
 	public static final float DURATION	= 20f;
+
+	public void extendCapped(float duration, float cap) {
+		// A fresh FlavourBuff already displays one turn at zero cooldown.
+		float currentDuration = cooldown() > 0f ? getturns() : 0f;
+		float targetDuration = Math.min(cap, currentDuration + duration);
+		float addedDuration = Math.max(0f, targetDuration - getturns());
+		if (addedDuration > 0f) {
+			spend(addedDuration);
+		}
+	}
 	
 	@Override
 	public int icon() {

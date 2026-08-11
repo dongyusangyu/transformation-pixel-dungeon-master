@@ -19,10 +19,13 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.content.FileProvider;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -56,7 +59,7 @@ public class AndroidMissingNativesHandler extends Activity {
         crashInfo = getIntent().getStringExtra("CRASH_STACK");
 
         // 1. 快速显示基础UI（使用默认字体，无任何耗时操作）
-        LinearLayout layout = initBasicUI();
+        View layout = initBasicUI();
         setContentView(layout);
 
         // 2. 异步执行所有耗时操作（字体加载、图片加载、包信息查询）
@@ -86,11 +89,17 @@ public class AndroidMissingNativesHandler extends Activity {
     /**
      * 初始化基础UI（无耗时操作，仅创建视图）
      */
-    private LinearLayout initBasicUI() {
+    private View initBasicUI() {
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int horizontalPadding = dp(16);
+        int verticalPadding = dp(8);
+
         // 图片视图（先使用系统默认图标）
         imageView = new ImageView(this);
         imageView.setImageResource(android.R.drawable.ic_dialog_alert);
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setAdjustViewBounds(true);
+        imageView.setMaxHeight(reportImageMaxHeight(metrics.heightPixels, metrics.density));
         LinearLayout.LayoutParams imgParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -105,7 +114,7 @@ public class AndroidMissingNativesHandler extends Activity {
         infoTextView.setTextColor(0xFFFFFFFF);
         infoTextView.setTypeface(Typeface.MONOSPACE); // 使用系统等宽字体，无延迟
         infoTextView.setGravity(Gravity.CENTER_VERTICAL);
-        infoTextView.setPadding(20, 20, 20, 20);
+        infoTextView.setPadding(0, dp(8), 0, dp(8));
 
         // 复制按钮
         Button copyBtn = new Button(this);
@@ -124,16 +133,70 @@ public class AndroidMissingNativesHandler extends Activity {
             System.exit(0);
         });
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setBackgroundColor(0xFF000000);
-        layout.addView(imageView);
-        layout.addView(infoTextView);
-        layout.addView(copyBtn);
-        layout.addView(shareBtn);
-        layout.addView(exitBtn);
-        return layout;
+        LinearLayout actions = new LinearLayout(this);
+        boolean verticalActions = useVerticalActionButtons(
+                Math.round(metrics.widthPixels / metrics.density));
+        actions.setOrientation(verticalActions
+                ? LinearLayout.VERTICAL
+                : LinearLayout.HORIZONTAL);
+        actions.setGravity(Gravity.CENTER);
+        addActionButton(actions, copyBtn, verticalActions);
+        addActionButton(actions, shareBtn, verticalActions);
+        addActionButton(actions, exitBtn, verticalActions);
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER);
+        content.setPadding(horizontalPadding, verticalPadding,
+                horizontalPadding, verticalPadding);
+        content.setBackgroundColor(0xFF000000);
+        content.addView(imageView, imgParams);
+        content.addView(infoTextView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        content.addView(actions, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+        scrollView.setBackgroundColor(0xFF000000);
+        scrollView.addView(content, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        return scrollView;
+    }
+
+    private void addActionButton(LinearLayout actions, Button button, boolean vertical) {
+        int gap = dp(4);
+        LinearLayout.LayoutParams params;
+        if (vertical) {
+            params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.setMargins(0, gap / 2, 0, gap / 2);
+        } else {
+            params = new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f);
+            params.setMargins(gap / 2, 0, gap / 2, 0);
+        }
+        button.setTextSize(14);
+        button.setAllCaps(false);
+        actions.addView(button, params);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    static boolean useVerticalActionButtons(int widthDp) {
+        return widthDp < 360;
+    }
+
+    static int reportImageMaxHeight(int screenHeightPx, float density) {
+        return Math.min(Math.round(screenHeightPx * 0.4f), Math.round(320 * density));
     }
 
     /**

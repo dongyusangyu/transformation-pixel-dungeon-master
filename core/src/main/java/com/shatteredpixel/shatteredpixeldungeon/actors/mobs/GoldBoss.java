@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -113,13 +115,13 @@ public abstract class GoldBoss extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         dmg = Math.min(100, dmg);
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())){
             lock.addTime(dmg*0.33f);
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
     }
 
 
@@ -146,14 +148,14 @@ public abstract class GoldBoss extends Mob {
 
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             if(src==hero && ((hero.belongings.attackingWeapon() instanceof MissileWeapon) || (hero.belongings.attackingWeapon() instanceof SpiritBow))){
                 yell(Messages.get(this, "missileweapon"));
                 Buff.affect(this, Adrenaline.class,5);
                 //Buff.affect(this, Haste.class,2);
                 dmg=0;
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
 
         @Override
@@ -167,8 +169,8 @@ public abstract class GoldBoss extends Mob {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if(hero != null){
                 damage *= (Talent.onAttackProcMult(hero, enemy, 1 )+1);
                 damage += Talent.onAttackProcBonus(hero, enemy);
@@ -197,7 +199,7 @@ public abstract class GoldBoss extends Mob {
             Invisibility.dispel(this);
             Char enemy = this.enemy;
             if (rangedHit(enemy)) {
-                attackProc( enemy ,damageRoll());
+            attackProc(enemy, damageRoll(), DamageTag.PHYSICAL);
             } else {
                 showRangedMiss(enemy);
             }
@@ -208,7 +210,7 @@ public abstract class GoldBoss extends Mob {
             next();
         }
         @Override
-        public int attackProc( Char enemy, int damage ) {
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
 
             if(Random.Int(4)==0){
                 Buff.affect(enemy, Paralysis.class,1);
@@ -223,7 +225,7 @@ public abstract class GoldBoss extends Mob {
                     GLog.i(Messages.get(this,"give"));
                 }
             }
-            damage = super.attackProc( enemy, damage );
+            damage = super.attackProc(enemy, damage, damageTags);
             return damage;
         }
         @Override
@@ -287,9 +289,9 @@ public abstract class GoldBoss extends Mob {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
 
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
         @Override
         public int drRoll() {
@@ -356,7 +358,7 @@ public abstract class GoldBoss extends Mob {
                         && (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
                     dmg *= 0.5f;
                 }
-                enemy.damage( dmg, new Warlock.DarkBolt() );
+                enemy.damage( dmg, new Warlock.DarkBolt() , DamageTag.MAGICAL);
 
                 if (enemy == hero && !enemy.isAlive()) {
                     Badges.validateDeathFromEnemyMagic();

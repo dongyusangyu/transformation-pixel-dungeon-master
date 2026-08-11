@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.city;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -52,7 +54,7 @@ public class MonkH extends MobHard {
     protected int hitsToDisarm = 0;
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         if (enemy == Dungeon.hero) {
 
             Hero hero = Dungeon.hero;
@@ -84,7 +86,7 @@ public class MonkH extends MobHard {
                 }
             }
         }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     private static String FOCUS_COOLDOWN = "focus_cooldown";

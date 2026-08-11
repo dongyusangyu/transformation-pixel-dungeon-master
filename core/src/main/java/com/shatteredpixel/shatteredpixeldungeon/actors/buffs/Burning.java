@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -132,7 +134,7 @@ public class Burning extends Buff implements Hero.Doom {
 				
 				Hero hero = (Hero)target;
 
-				hero.damage( damage, this );
+				hero.damage( damage, this , DamageTag.PHYSICAL, DamageTag.FIRE);
 
 				burnIncrement++;
 
@@ -168,7 +170,7 @@ public class Burning extends Buff implements Hero.Doom {
 				}
 				
 			} else {
-				target.damage( damage, this );
+				target.damage( damage, this , DamageTag.PHYSICAL, DamageTag.FIRE);
 			}
 
 			if (target instanceof Thief && ((Thief) target).item != null) {

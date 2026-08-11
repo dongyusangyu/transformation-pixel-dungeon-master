@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.dm400;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -112,7 +114,7 @@ public class Discharge_Gas extends ArmorAbility {
                     cell = i + j*Dungeon.level.width();
                     if (cur[cell] > 0 && (ch = Actor.findChar( cell )) != null) {
                         if (!ch.isImmune(this.getClass()) && !((ch instanceof Hero)|| (ch instanceof InstructionTool.Drone))) {
-                            ch.damage(damage, this);
+                            ch.damage(damage, this, DamageTag.PHYSICAL);
                         }
                     }
                 }

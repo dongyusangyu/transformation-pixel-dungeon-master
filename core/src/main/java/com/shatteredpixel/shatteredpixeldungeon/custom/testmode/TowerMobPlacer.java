@@ -7,8 +7,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -41,10 +42,7 @@ public class TowerMobPlacer extends TestItem {
 	private static final String MOB_INDEX = "mob_index";
 	private static final String ELITE_OPTIONS = "elite_options";
 
-	private static final List<Class<? extends Mob>> TOWER_MOBS =
-			Collections.unmodifiableList(Arrays.asList(
-					CamouflageGnoll.class
-			));
+	private static final List<Class<? extends Mob>> TOWER_MOBS = towerMobsFromBestiary();
 
 	private static final List<Class<? extends ChampionEnemy>> ELITE_BUFFS =
 			Collections.unmodifiableList(Arrays.asList(
@@ -67,6 +65,16 @@ public class TowerMobPlacer extends TestItem {
 	{
 		image = ItemSpriteSheet.MOB_HOLDER;
 		defaultAction = AC_PLACE;
+	}
+
+	private static List<Class<? extends Mob>> towerMobsFromBestiary() {
+		ArrayList<Class<? extends Mob>> mobs = new ArrayList<>();
+		for (Class<?> entity : Bestiary.TOWER_MOBS.entities()) {
+			if (Mob.class.isAssignableFrom(entity)) {
+				mobs.add(entity.asSubclass(Mob.class));
+			}
+		}
+		return Collections.unmodifiableList(mobs);
 	}
 
 	static int mobCount() {
@@ -131,6 +139,7 @@ public class TowerMobPlacer extends TestItem {
 	private void placeMob(int cell) {
 		try {
 			Mob mob = Reflection.newInstance(selectedMobClass());
+			applyInitialState(mob);
 			mob.pos = cell;
 			GameScene.add(mob);
 			for (int i = 0; i < ELITE_BUFFS.size(); i++) {
@@ -143,6 +152,10 @@ public class TowerMobPlacer extends TestItem {
 		} catch (Exception e) {
 			ShatteredPixelDungeon.reportException(e);
 		}
+	}
+
+	static void applyInitialState(Mob mob) {
+		mob.state = mob instanceof MimicCrocodile ? mob.WANDERING : mob.SLEEPING;
 	}
 
 	private Class<? extends Mob> selectedMobClass() {

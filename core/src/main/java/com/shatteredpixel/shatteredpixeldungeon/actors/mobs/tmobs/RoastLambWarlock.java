@@ -26,6 +26,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfFlock;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
@@ -50,6 +54,8 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 	private static final int CAST_NONE = 0;
 	private static final int CAST_FLOCK = 1;
 	private static final int CAST_FIREBLAST = 2;
+	private static final float INITIAL_WAND_DROP_CHANCE = 1f / 20f;
+	private static final float FLOCK_STONE_DROP_CHANCE = 1f / 6f;
 
 	private final HashSet<Integer> flockedTargetIds = new HashSet<>();
 	private int pendingCast = CAST_NONE;
@@ -67,6 +73,8 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 		loot = null;
 		lootChance = 0f;
+		immunities.add(Fire.class);
+		immunities.add(Burning.class);
 	}
 
 	@Override
@@ -86,7 +94,38 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 	@Override
 	public float lootChance() {
-		return 0f;
+		return adjustedLootChance(wandDropChance() + FLOCK_STONE_DROP_CHANCE);
+	}
+
+	protected float wandDropChance() {
+		return INITIAL_WAND_DROP_CHANCE * (float) Math.pow(
+				0.5f, Dungeon.LimitedDrops.ROAST_LAMB_WAND.count);
+	}
+
+	protected float lootSelectionRoll() {
+		return Random.Float();
+	}
+
+	@Override
+	public Item createLoot() {
+		float wandChance = wandDropChance();
+		float totalChance = wandChance + FLOCK_STONE_DROP_CHANCE;
+		if (lootSelectionRoll() < wandChance / totalChance) {
+			Item wand = createWandLoot();
+			if (wand != null) {
+				Dungeon.LimitedDrops.ROAST_LAMB_WAND.count++;
+			}
+			return wand;
+		}
+		return createFlockStoneLoot();
+	}
+
+	protected Item createWandLoot() {
+		return Generator.random(WandOfFireblast.class);
+	}
+
+	protected Item createFlockStoneLoot() {
+		return new StoneOfFlock();
 	}
 
 	protected boolean needsFlock(Char target) {
@@ -142,14 +181,7 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 	@Override
 	protected boolean doAttack(Char target) {
 		if (needsFlock(target)) {
-			if (canAnimateCast(target)) {
-				beginAnimatedCast(CAST_FLOCK, target);
-				return false;
-			} else {
-				performFlock(target);
-				spend(attackDelay());
-				return true;
-			}
+			return castAtTarget(CAST_FLOCK, target);
 		}
 		return super.doAttack(target);
 	}
@@ -157,6 +189,10 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 	@Override
 	public boolean doRangedAttack(Char target) {
 		int cast = needsFlock(target) ? CAST_FLOCK : CAST_FIREBLAST;
+		return castAtTarget(cast, target);
+	}
+
+	private boolean castAtTarget(int cast, Char target) {
 		if (target != null && canAnimateCast(target)) {
 			beginAnimatedCast(cast, target);
 			return false;
@@ -172,8 +208,20 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 	@Override
 	public boolean canRangedAttack(Char target) {
-		return MagicalRangedAttack.super.canRangedAttack(target)
-				&& Dungeon.level.trueDistance(pos, target.pos) <= fireblastDistance();
+		if (target == null
+				|| Dungeon.level == null
+				|| Dungeon.level.trueDistance(pos, target.pos) > fireblastDistance()) {
+			return false;
+		}
+
+		if (needsFlock(target)) {
+			return MagicalRangedAttack.super.canRangedAttack(target);
+		}
+
+		return fieldOfView != null
+				&& target.pos >= 0
+				&& target.pos < fieldOfView.length
+				&& fieldOfView[target.pos];
 	}
 
 	protected boolean canAnimateCast(Char target) {

@@ -25,7 +25,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
-import com.shatteredpixel.shatteredpixeldungeon.custom.dict.DictBook;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.HeroSelectScene;
@@ -65,7 +64,8 @@ public class WndGame extends Window {
         addButton( curBtn = new RedButton( Messages.get(this, "data") ) {
             @Override
             protected void onClick() {
-                GameScene.show(new DictBook.WndDict());
+                hide();
+                GameScene.show(WndJournal.dictionaryPage());
             }
         } );
         curBtn.icon(Icons.get(Icons.CATALOG));

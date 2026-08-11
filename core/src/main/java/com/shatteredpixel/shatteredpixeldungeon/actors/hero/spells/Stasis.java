@@ -52,6 +52,25 @@ public class Stasis extends ClericSpell {
 
 	public static Stasis INSTANCE = new Stasis();
 
+	public interface ReleaseListener {
+		void onStasisReleased();
+	}
+
+	static void notifyReleased(Mob mob) {
+		if (mob instanceof ReleaseListener) {
+			((ReleaseListener) mob).onStasisReleased();
+		}
+	}
+
+	public static void release(Mob mob) {
+		release(mob, () -> GameScene.add(mob));
+	}
+
+	static void release(Mob mob, Runnable addToScene) {
+		addToScene.run();
+		notifyReleased(mob);
+	}
+
 	@Override
 	public int icon() {
 		return HeroIcon.STASIS;
@@ -126,6 +145,22 @@ public class Stasis extends ClericSpell {
 		return null;
 	}
 
+	public static void discardHeldAlly(Mob expected) {
+		if (Dungeon.hero == null) {
+			return;
+		}
+		StasisBuff stasisBuff = Dungeon.hero.buff(StasisBuff.class);
+		if (stasisBuff != null) {
+			discardHeldAlly(stasisBuff.stasisAlly, expected, stasisBuff::detach);
+		}
+	}
+
+	static void discardHeldAlly(Mob held, Mob expected, Runnable detach) {
+		if (expected != null && held == expected) {
+			detach.run();
+		}
+	}
+
 	public static class StasisBuff extends FlavourBuff {
 
 		{
@@ -162,7 +197,7 @@ public class Stasis extends ClericSpell {
 				spawnPoints.add(target.pos + PathFinder.NEIGHBOURS8[Random.Int(8)]);
 			}
 			stasisAlly.pos = Random.element(spawnPoints);
-			GameScene.add(stasisAlly);
+			release(stasisAlly);
 
 			if (stasisAlly instanceof DirectableAlly){
 				((DirectableAlly) stasisAlly).clearDefensingPos();

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS_MINION;
@@ -349,11 +351,12 @@ public class DM300 extends Mob {
 	}
 
 	@Override
-	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti) {
+	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
+			DamageTag... damageTags) {
 		if (enemy == Dungeon.hero && supercharged){
 			Statistics.qualifiedForBossChallengeBadge = false;
 		}
-		return super.attack(enemy, dmgMulti, dmgBonus, accMulti);
+		return super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
 	}
 
 	@Override
@@ -521,13 +524,13 @@ public class DM300 extends Mob {
 	private boolean invulnWarned = false;
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (!BossHealthBar.isAssigned()){
 			notice();
 		}
 
 		int preHP = HP;
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 		if (isInvulnerable(src.getClass())){
 			return;
 		}
@@ -753,9 +756,11 @@ public class DM300 extends Mob {
 		public void affectChar(Char ch) {
 			if (!(ch instanceof DM300 || ch instanceof Pylon)){
 				if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES)) {
-					ch.damage(Random.NormalIntRange(10, 20), this);
+					ch.damage(Random.NormalIntRange(10, 20), this,
+							DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 				} else {
-					ch.damage(Random.NormalIntRange(6, 12), this);
+					ch.damage(Random.NormalIntRange(6, 12), this,
+							DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 				}
 				if (ch.isAlive()) {
 					Buff.prolong(ch, Paralysis.class, Dungeon.isChallenged(Challenges.STRONGER_BOSSES) ? 5 : 3);

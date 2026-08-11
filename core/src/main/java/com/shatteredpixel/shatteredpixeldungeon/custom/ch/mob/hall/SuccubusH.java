@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.hall;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -63,8 +65,8 @@ public class SuccubusH extends MobHard {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
-        int dmg = super.attackProc(enemy, damage);
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
+        int dmg = super.attackProc(enemy, damage, damageTags);
 
         //super content
         if (enemy.buff(Charm.class) != null ){

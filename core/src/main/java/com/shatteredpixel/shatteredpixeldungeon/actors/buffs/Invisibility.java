@@ -148,6 +148,10 @@ public class Invisibility extends FlavourBuff {
 			}
 
 		}
+		CloakOfShadows.cloakStealth cloakBuff = ch.buff( CloakOfShadows.cloakStealth.class );
+		if (cloakBuff != null) {
+			cloakBuff.dispel();
+		}
 		Preparation prep = ch.buff( Preparation.class );
 		if(prep != null){
 			prep.detach();
@@ -157,11 +161,6 @@ public class Invisibility extends FlavourBuff {
 		}
 		if(hero != null && hero.buff(Talent.EnemyDies.class)!=null){
 			hero.buff(Talent.EnemyDies.class).detach();
-		}
-
-		CloakOfShadows.cloakStealth cloakBuff = ch.buff( CloakOfShadows.cloakStealth.class );
-		if (cloakBuff != null) {
-			cloakBuff.dispel();
 		}
 
 		//these aren't forms of invisibility, but do dispel at the same time as it.

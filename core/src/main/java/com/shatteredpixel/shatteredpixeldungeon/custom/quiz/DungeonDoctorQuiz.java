@@ -11,10 +11,13 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.quiz;
 
 import com.badlogic.gdx.Gdx;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public final class DungeonDoctorQuiz {
 
@@ -29,7 +32,19 @@ public final class DungeonDoctorQuiz {
 	}
 
 	public static QuizSession newSession() {
-		return new QuizSession(questions());
+		return new QuizSession(availableQuestions(
+				questions(), SPDSettings.quizCorrectQuestionIds()));
+	}
+
+	static List<QuizQuestion> availableQuestions(
+			List<QuizQuestion> questions, Set<String> excludedIds) {
+		List<QuizQuestion> available = new ArrayList<>();
+		for (QuizQuestion question : questions) {
+			if (!excludedIds.contains(question.id())) {
+				available.add(question);
+			}
+		}
+		return available;
 	}
 
 	private static List<QuizQuestion> loadQuestions() {

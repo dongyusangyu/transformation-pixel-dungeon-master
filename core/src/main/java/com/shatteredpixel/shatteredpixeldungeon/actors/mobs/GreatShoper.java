@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.level;
 
@@ -25,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
@@ -142,7 +145,7 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
 
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         /*
         if(phase == 2 || phase ==3){
             yell(Messages.get(this, "no_damage"));
@@ -151,7 +154,7 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
 
          */
         if (isInvulnerable(src.getClass())){
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
             return;
         }
         dmg=Math.min(150,dmg);
@@ -159,7 +162,7 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
         if (lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())){
             lock.addTime(dmg*0.33f);
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         if(phase == 1 && HP < 500){
             HP = 500;
             phase = 2;
@@ -217,9 +220,10 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
             mob.pos = pos1;
             mob.state= mob.HUNTING;
             GameScene.add( mob );
-        }else if((Actor.findChar( pos1 ) instanceof Hero)
-                || (Actor.findChar( pos1 ) instanceof GoldBoss )
-                || (Actor.findChar( pos1 ) instanceof GreatShoper )){
+		}else if((Actor.findChar( pos1 ) instanceof Hero)
+				|| (Actor.findChar( pos1 ) instanceof GoldBoss )
+				|| (Actor.findChar( pos1 ) instanceof GreatShoper )
+				|| (Actor.findChar( pos1 ) instanceof DirectableAlly)){
 
         }else{
 
@@ -318,7 +322,7 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
                     && (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
                 dmg *= 0.5f;
             }
-            enemy.damage( dmg, this );
+            enemy.damage( dmg, this , DamageTag.MAGICAL);
 
             if (enemy == hero && !enemy.isAlive()) {
                 Badges.validateDeathFromEnemyMagic();
@@ -471,7 +475,7 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
         @Override
         public void affectChar(Char ch) {
             if (!(ch instanceof GreatShoper)){
-                ch.damage(Random.Int(20),new Viscosity.DeferedDamage());
+                ch.damage(Random.Int(20),new Viscosity.DeferedDamage(), DamageTag.PHYSICAL, DamageTag.DEFERRED);
                 Buff.prolong(ch, Paralysis.class, 2);
                 if (ch == hero && !ch.isAlive()) {
                     Badges.validateDeathFromEnemyMagic();
@@ -502,10 +506,10 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
                 if(Dungeon.gold>100){
                     Dungeon.gold -= 10;
                 }else{
-                    target.damage(5,Viscosity.ViscosityTracker.class);
+                    target.damage(5,Viscosity.ViscosityTracker.class, DamageTag.MAGICAL);
                 }
             }else{
-                target.damage(5,Viscosity.ViscosityTracker.class);
+                target.damage(5,Viscosity.ViscosityTracker.class, DamageTag.MAGICAL);
             }
             spend( TICK );
             return true;

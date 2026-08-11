@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClericArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
@@ -201,10 +202,19 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WarHammer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WarScythe;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Whip;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.AuxiliaryCore;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMace;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.HundredTonHammer;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.DamageGear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ForceCube;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.HeavyBoomerang;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Javelin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Kunai;
@@ -257,6 +267,7 @@ public class Generator {
 		WEP_T3	( 0, 0, MeleeWeapon.class),
 		WEP_T4	( 0, 0, MeleeWeapon.class),
 		WEP_T5	( 0, 0, MeleeWeapon.class),
+		WEP_T6	( 0, 0, MeleeWeapon.class),
 		
 		ARMOR	( 2, 1, Armor.class ),
 		
@@ -266,6 +277,7 @@ public class Generator {
 		MIS_T3  ( 0, 0, MissileWeapon.class ),
 		MIS_T4  ( 0, 0, MissileWeapon.class ),
 		MIS_T5  ( 0, 0, MissileWeapon.class ),
+		MIS_T6  ( 0, 0, MissileWeapon.class ),
 		
 		WAND	( 1, 1, Wand.class ),
 		RING	( 1, 0, Ring.class ),
@@ -514,6 +526,19 @@ public class Generator {
 			};
 			WEP_T5.defaultProbs = new float[]{ 2, 2, 2, 2, 2, 2, 2 ,2};
 			WEP_T5.probs = WEP_T5.defaultProbs.clone();
+
+			WEP_T6.classes = new Class<?>[]{
+					GreatGreatGreatsword.class,
+					SakuraBlossomBlade.class,
+					ChainMace.class,
+					TwoHandedGreatsword.class,
+					PalermoSword.class,
+					MercuryBlade.class,
+					AuxiliaryCore.class,
+					HundredTonHammer.class
+			};
+			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1};
+			WEP_T6.probs = WEP_T6.defaultProbs.clone();
 			
 			//see Generator.randomArmor
 			ARMOR.classes = new Class<?>[]{
@@ -587,6 +612,12 @@ public class Generator {
 			};
 			MIS_T5.defaultProbs = new float[]{ 3, 3, 3 };
 			MIS_T5.probs = MIS_T5.defaultProbs.clone();
+
+			MIS_T6.classes = new Class<?>[]{
+					Gungnir.class
+			};
+			MIS_T6.defaultProbs = new float[]{ 1 };
+			MIS_T6.probs = MIS_T6.defaultProbs.clone();
 			
 			FOOD.classes = new Class<?>[]{
 					Food.class,
@@ -680,6 +711,18 @@ public class Generator {
 			{0,  0,  0, 20, 80}
 	};
 
+	private static final float[][] weaponFloorSetTierProbs = new float[][] {
+			{0, 75, 20,  4,  1, 0},
+			{0, 25, 50, 20,  5, 0},
+			{0,  0, 40, 50, 10, 0},
+			{0,  0, 20, 40, 40, 0},
+			{0,  0,  0, 19, 80, 1}
+	};
+
+	private static final float[] towerEquipmentTierProbs = new float[]{
+			0, 0, 0, 5, 60, 35
+	};
+
 	private static boolean usingFirstDeck = false;
 	private static HashMap<Category,Float> defaultCatProbs = new LinkedHashMap<>();
 	private static HashMap<Category,Float> categoryProbs = new LinkedHashMap<>();
@@ -730,20 +773,68 @@ public class Generator {
 		return false;
 	}
 
-	private static int randomTier(Category[] tiers, int floorSet){
-		if (!randomMode()){
-			return Random.chances(floorSetTierProbs[floorSet]);
+	private static float[] weaponTierProbs(int floorSet, int depth, boolean randomMode) {
+		return weaponTierProbs(floorSet, depth, 0, randomMode);
+	}
+
+	private static float[] weaponTierProbs(int floorSet, int depth, int branch,
+			boolean randomMode) {
+		if (isTowerEquipmentLocation(depth, branch)) {
+			return towerEquipmentTierProbs.clone();
 		}
-		float[] tierProbs = new float[tiers.length];
-		for (int i = 0; i < tiers.length; i++){
-			if (i == 0) {
-				continue;
-			}
-			if (tiers[i].defaultProbs != null && hasPositiveProbs(tiers[i].defaultProbs)){
-				tierProbs[i] = 1;
+
+		floorSet = (int)GameMath.gate(0, floorSet, weaponFloorSetTierProbs.length - 1);
+		float[] tierProbs = weaponFloorSetTierProbs[floorSet].clone();
+		boolean tierSixAllowed = floorSet == weaponFloorSetTierProbs.length - 1
+				&& depth >= 21 && depth <= 25;
+
+		if (!tierSixAllowed) {
+			// Preserve the original 20/80 final-region split outside depths 21-25.
+			tierProbs[3] += tierProbs[5];
+			tierProbs[5] = 0;
+		}
+		if (!randomMode) {
+			return tierProbs;
+		}
+
+		float tierSixWeight = tierProbs[5];
+		Arrays.fill(tierProbs, 0);
+		int regularTierCount = 0;
+		for (int i = 1; i < wepTiers.length - 1; i++) {
+			if (wepTiers[i].defaultProbs != null && hasPositiveProbs(wepTiers[i].defaultProbs)) {
+				regularTierCount++;
 			}
 		}
-		return Random.chances(tierProbs);
+		if (regularTierCount > 0) {
+			float regularTierWeight = (100f - tierSixWeight) / regularTierCount;
+			for (int i = 1; i < wepTiers.length - 1; i++) {
+				if (wepTiers[i].defaultProbs != null && hasPositiveProbs(wepTiers[i].defaultProbs)) {
+					tierProbs[i] = regularTierWeight;
+				}
+			}
+		}
+		tierProbs[5] = tierSixWeight;
+		return tierProbs;
+	}
+
+	private static float[] armorTierProbs(int floorSet, int depth, int branch,
+			boolean randomMode) {
+		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length - 1);
+		if (!isTowerEquipmentLocation(depth, branch)) {
+			return randomMode
+					? randomModeEquipmentProbs(Category.ARMOR.probs, 1)
+					: floorSetTierProbs[floorSet];
+		}
+
+		float[] tierProbs = Arrays.copyOf(towerEquipmentTierProbs, floorSetTierProbs[0].length);
+		for (int i = tierProbs.length; i < towerEquipmentTierProbs.length; i++) {
+			tierProbs[tierProbs.length - 1] += towerEquipmentTierProbs[i];
+		}
+		return tierProbs;
+	}
+
+	private static boolean isTowerEquipmentLocation(int depth, int branch) {
+		return depth >= 1 && branch == TowerLevel.BRANCH;
 	}
 
 	public static void fullReset() {
@@ -905,7 +996,8 @@ public class Generator {
 
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
 		
-		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(randomMode() ? randomModeEquipmentProbs(Category.ARMOR.probs, 1) : floorSetTierProbs[floorSet])]);
+		Armor a = (Armor)Reflection.newInstance(Category.ARMOR.classes[Random.chances(
+				armorTierProbs(floorSet, Dungeon.depth, Dungeon.branch, randomMode()))]);
 		a.random();
 		return a;
 	}
@@ -915,7 +1007,8 @@ public class Generator {
 			Category.WEP_T2,
 			Category.WEP_T3,
 			Category.WEP_T4,
-			Category.WEP_T5
+			Category.WEP_T5,
+			Category.WEP_T6
 	};
 
 	public static MeleeWeapon randomWeapon(){
@@ -935,10 +1028,12 @@ public class Generator {
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
 
 		MeleeWeapon w;
+		int tier = Random.chances(weaponTierProbs(
+				floorSet, Dungeon.depth, Dungeon.branch, randomMode()));
 		if (useDefaults){
-			w = (MeleeWeapon) randomUsingDefaults(wepTiers[randomTier(wepTiers, floorSet)]);
+			w = (MeleeWeapon) randomUsingDefaults(wepTiers[tier]);
 		} else {
-			w = (MeleeWeapon) random(wepTiers[randomTier(wepTiers, floorSet)]);
+			w = (MeleeWeapon) random(wepTiers[tier]);
 		}
 		return w;
 	}
@@ -948,8 +1043,20 @@ public class Generator {
 			Category.MIS_T2,
 			Category.MIS_T3,
 			Category.MIS_T4,
-			Category.MIS_T5
+			Category.MIS_T5,
+			Category.MIS_T6
 	};
+
+	private static int availableMissileTier(int requestedTier) {
+		int tier = Math.min(requestedTier, misTiers.length - 1);
+		while (tier > 0 && (misTiers[tier].classes == null
+				|| misTiers[tier].classes.length == 0
+				|| misTiers[tier].defaultProbs == null
+				|| !hasPositiveProbs(misTiers[tier].defaultProbs))) {
+			tier--;
+		}
+		return tier;
+	}
 	
 	public static MissileWeapon randomMissile(){
 		return randomMissile(Dungeon.depth / 5);
@@ -968,10 +1075,12 @@ public class Generator {
 		floorSet = (int)GameMath.gate(0, floorSet, floorSetTierProbs.length-1);
 
 		MissileWeapon w;
+		int tier = availableMissileTier(Random.chances(
+				weaponTierProbs(floorSet, Dungeon.depth, Dungeon.branch, randomMode())));
 		if (useDefaults){
-			w = (MissileWeapon)randomUsingDefaults(misTiers[randomTier(misTiers, floorSet)]);
+			w = (MissileWeapon)randomUsingDefaults(misTiers[tier]);
 		} else {
-			w = (MissileWeapon)random(misTiers[randomTier(misTiers, floorSet)]);
+			w = (MissileWeapon)random(misTiers[tier]);
 		}
 		return w;
 	}

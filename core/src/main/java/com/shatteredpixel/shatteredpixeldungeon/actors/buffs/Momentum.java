@@ -23,9 +23,11 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -62,6 +64,7 @@ public class Momentum extends Buff implements ActionIndicator.Action {
 
 	@Override
 	public boolean act() {
+		boolean fullyRecovered = freerunCooldown == 1;
 		if (freerunCooldown > 0){
 			freerunCooldown--;
 		}
@@ -76,6 +79,9 @@ public class Momentum extends Buff implements ActionIndicator.Action {
 		if (freerunTurns > 0){
 			if (target.invisible == 0 || Dungeon.hero.pointsInTalent(Talent.SPEEDY_STEALTH) < 2) {
 				freerunTurns--;
+				if (freerunTurns == 0) {
+					onFreerunEnded();
+				}
 			}
 		} else if (!movedLastTurn){
 			momentumStacks = (int)GameMath.gate(0, momentumStacks-1, Math.round(momentumStacks * 0.667f));
@@ -85,6 +91,9 @@ public class Momentum extends Buff implements ActionIndicator.Action {
 			} else {
 				ActionIndicator.refresh();
 			}
+		}
+		if (fullyRecovered && freerunCooldown == 0) {
+			onFullyRecovered();
 		}
 		movedLastTurn = false;
 
@@ -104,6 +113,73 @@ public class Momentum extends Buff implements ActionIndicator.Action {
 
 	public boolean freerunning(){
 		return freerunTurns > 0;
+	}
+
+	public boolean recovering() {
+		return freerunCooldown > 0 && !freerunning();
+	}
+
+	public float wandChargeMultiplier() {
+		if (recovering() && target instanceof Hero) {
+			return recoveryWandChargeMultiplier(
+					((Hero) target).pointsInTalent(Talent.MOMENTUM_RESERVE));
+		}
+		return 1f;
+	}
+
+	public static int afterimageDuration(int heroLevel, int talentPoints) {
+		if (talentPoints <= 0) return 0;
+		float levelMultiplier = 0.05f + 0.05f * Math.min(3, talentPoints);
+		return (int) Math.ceil(2f + heroLevel * levelMultiplier);
+	}
+
+	public static float recoveryWandChargeMultiplier(int talentPoints) {
+		return 1f + 0.5f * Math.max(0, Math.min(3, talentPoints));
+	}
+
+	public static int warmupMomentum(int talentPoints) {
+		return talentPoints >= 1 ? 4 : 0;
+	}
+
+	public static int warmupCloakCharge(int talentPoints) {
+		return talentPoints >= 2 ? 2 : 0;
+	}
+
+	public static int warmupStaminaDuration(int talentPoints) {
+		return talentPoints >= 3 ? 7 : 0;
+	}
+
+	private void onFreerunEnded() {
+		if (!(target instanceof Hero)) return;
+		Hero hero = (Hero) target;
+		int duration = afterimageDuration(
+				hero.lvl, hero.pointsInTalent(Talent.FREERUNNER_AFTERIMAGE));
+		if (duration > 0) {
+			Buff.affect(hero, GreaterHaste.class).set(duration);
+		}
+	}
+
+	private void onFullyRecovered() {
+		if (!(target instanceof Hero)) return;
+		Hero hero = (Hero) target;
+		int points = hero.pointsInTalent(Talent.WARMUP_PREPARATION);
+		int momentum = warmupMomentum(points);
+		if (momentum > 0) {
+			momentumStacks = Math.min(10, momentumStacks + momentum);
+			ActionIndicator.setAction(this);
+			BuffIndicator.refreshHero();
+		}
+		int cloakCharge = warmupCloakCharge(points);
+		if (cloakCharge > 0) {
+			CloakOfShadows cloak = hero.belongings.getItem(CloakOfShadows.class);
+			if (cloak != null) {
+				cloak.directCharge(cloakCharge);
+			}
+		}
+		int staminaDuration = warmupStaminaDuration(points);
+		if (staminaDuration > 0) {
+			Buff.prolong(hero, Stamina.class, staminaDuration);
+		}
 	}
 	
 	public float speedMultiplier(){

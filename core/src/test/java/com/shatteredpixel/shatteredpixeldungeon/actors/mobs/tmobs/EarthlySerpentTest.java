@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Shortsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
@@ -21,9 +22,18 @@ import java.util.HashMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class EarthlySerpentTest {
+
+	@Test
+	public void alwaysDropsARandomSeed() {
+		TestSerpent serpent = new TestSerpent();
+
+		assertEquals(1f, serpent.lootChance(), 0f);
+		assertSame(Generator.Category.SEED, serpent.lootType());
+	}
 
 	@Test
 	public void baseStatsMatchSpecification() {
@@ -67,6 +77,7 @@ public class EarthlySerpentTest {
 
 			target.pos = 26;
 			assertTrue(serpent.canStrike(target));
+			assertTrue(serpent.canEngage(target));
 
 			target.pos = 27;
 			assertFalse(serpent.canStrike(target));
@@ -75,6 +86,7 @@ public class EarthlySerpentTest {
 			level.solid[25] = true;
 			level.losBlocking[25] = true;
 			assertFalse(serpent.canStrike(target));
+			assertFalse(serpent.canEngage(target));
 		} finally {
 			Dungeon.level = previousLevel;
 		}
@@ -218,9 +230,13 @@ public class EarthlySerpentTest {
 
 			serpent.spitAtForTest(82);
 
-			assertTrue(Blob.volumeAt(82, CorrosiveGas.class) > 0);
-			assertTrue(Blob.volumeAt(81, CorrosiveGas.class) > 0);
-			assertEquals(8, storedStrength(gas));
+			CorrosiveGas spitGas = (CorrosiveGas) level.blobs.get(
+					EarthlySerpent.EarthlySerpentSpitGas.class);
+			assertNotNull(spitGas);
+			assertTrue(Blob.volumeAt(82, EarthlySerpent.EarthlySerpentSpitGas.class) > 0);
+			assertTrue(Blob.volumeAt(81, EarthlySerpent.EarthlySerpentSpitGas.class) > 0);
+			assertEquals(1, storedStrength(gas));
+			assertEquals(8, storedStrength(spitGas));
 		} finally {
 			Dungeon.level = previousLevel;
 		}
@@ -356,8 +372,21 @@ public class EarthlySerpentTest {
 		private Char retaliationTarget;
 		private int explodedCell = -1;
 
+		@Override
+		protected float adjustedLootChance(float baseChance) {
+			return baseChance;
+		}
+
+		private Object lootType() {
+			return loot;
+		}
+
 		private boolean canStrike(Char target) {
 			return canMeleeAttack(target);
+		}
+
+		private boolean canEngage(Char target) {
+			return canAttack(target);
 		}
 
 		private void recordMeleeDamageForTest(int damage) {
@@ -421,7 +450,7 @@ public class EarthlySerpentTest {
 			explodedCell = cell;
 		}
 
-		@Override
+
 		protected Char retaliationTarget() {
 			return retaliationTarget;
 		}

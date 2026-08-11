@@ -73,6 +73,7 @@ public enum Rankings {
 	public static final String RANKINGS_FILE = "rankings.dat";
 	
 	public ArrayList<Record> records;
+	private ArrayList<Record> heroHallRecords = new ArrayList<>();
 	public int lastRecord;
 	public int totalNumber;
 	public int wonNumber;
@@ -157,7 +158,7 @@ public enum Rankings {
 			}
 			save();
 			if (win) {
-				uploadCloudDataAfterWin();
+				uploadCloudData();
 			}
 			return;
 		}
@@ -183,11 +184,11 @@ public enum Rankings {
 		
 		save();
 		if (win) {
-			uploadCloudDataAfterWin();
+			uploadCloudData();
 		}
 	}
 
-	private void uploadCloudDataAfterWin() {
+	private void uploadCloudData() {
 		CloudSyncService.uploadLocalData(SILENT_CLOUD_CALLBACK);
 	}
 
@@ -428,6 +429,7 @@ public enum Rankings {
 	private static final String WON     = "won";
 	private static final String NEW_CYCLE_TOTAL = "new_cycle_total";
 	private static final String NEW_CYCLE_WON   = "new_cycle_won";
+	static final String HERO_HALL_RECORDS = "hero_hall_records";
 
 	public static final String LATEST_DAILY	        = "latest_daily";
 	public static final String DAILY_HISTORY_DATES  = "daily_history_dates";
@@ -445,6 +447,7 @@ public enum Rankings {
 		bundle.put( WON, wonNumber );
 		bundle.put( NEW_CYCLE_TOTAL, newCycleTotalNumber );
 		bundle.put( NEW_CYCLE_WON, newCycleWonNumber );
+		bundle.put( HERO_HALL_RECORDS, heroHallRecords );
 
 		bundle.put(LATEST_DAILY, latestDaily);
 
@@ -476,12 +479,19 @@ public enum Rankings {
 		}
 		
 		records = new ArrayList<>();
+		heroHallRecords = new ArrayList<>();
 		
 		try {
 			Bundle bundle = FileUtils.bundleFromFile( RANKINGS_FILE );
 			
 			for (Bundlable record : bundle.getCollection( RECORDS )) {
 				records.add( (Record)record );
+			}
+			if (bundle.contains(HERO_HALL_RECORDS)) {
+				for (Bundlable record : bundle.getCollection(HERO_HALL_RECORDS)) {
+					heroHallRecords.add((Record) record);
+				}
+				Collections.sort(heroHallRecords, scoreComparator);
 			}
 			lastRecord = bundle.getInt( LATEST );
 			ArrayList<Record> originalOrder = new ArrayList<>(records);
@@ -746,6 +756,100 @@ public enum Rankings {
 	public ArrayList<Record> recordsForCycle(boolean newCycle) {
 		load();
 		return filterByCycle(records, newCycle);
+	}
+
+	public ArrayList<Record> heroHallRecords() {
+		load();
+		return new ArrayList<>(heroHallRecords);
+	}
+
+	public boolean isInHeroHall(Record record) {
+		load();
+		return record != null && containsHeroHallRecord(heroHallRecords, record.gameID);
+	}
+
+	public boolean addToHeroHall(Record record) {
+		load();
+		if (!copyToHeroHall(heroHallRecords, record)) {
+			return false;
+		}
+		if (saveWithResult()) {
+			uploadCloudData();
+			return true;
+		}
+		removeFromHeroHall(heroHallRecords, record.gameID);
+		return false;
+	}
+
+	public boolean removeFromHeroHall(Record record) {
+		load();
+		if (record == null || !containsHeroHallRecord(heroHallRecords, record.gameID)) {
+			return false;
+		}
+		Record removed = null;
+		for (Record hallRecord : heroHallRecords) {
+			if (record.gameID.equals(hallRecord.gameID)) {
+				removed = hallRecord;
+				break;
+			}
+		}
+		removeFromHeroHall(heroHallRecords, record.gameID);
+		if (saveWithResult()) {
+			uploadCloudData();
+			return true;
+		}
+		heroHallRecords.add(removed);
+		Collections.sort(heroHallRecords, scoreComparator);
+		return false;
+	}
+
+	static boolean copyToHeroHall(ArrayList<Record> hall, Record record) {
+		if (record == null || record.newCycle || record.gameID == null
+				|| containsHeroHallRecord(hall, record.gameID)) {
+			return false;
+		}
+		Bundle recordBundle = new Bundle();
+		record.storeInBundle(recordBundle);
+		Record copy = new Record();
+		copy.restoreFromBundle(recordBundle);
+		hall.add(copy);
+		Collections.sort(hall, scoreComparator);
+		return true;
+	}
+
+	static boolean containsHeroHallRecord(List<Record> hall, String gameID) {
+		if (gameID == null) {
+			return false;
+		}
+		for (Record record : hall) {
+			if (gameID.equals(record.gameID)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean removeFromHeroHall(ArrayList<Record> hall, String gameID) {
+		if (gameID == null) {
+			return false;
+		}
+		for (int i = 0; i < hall.size(); i++) {
+			if (gameID.equals(hall.get(i).gameID)) {
+				hall.remove(i);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static void preserveLocalHeroHall(Bundle localRankings, Bundle cloudRankings) {
+		if (localRankings != null && cloudRankings != null
+				&& localRankings.contains(HERO_HALL_RECORDS)
+				&& !cloudRankings.contains(HERO_HALL_RECORDS)) {
+			cloudRankings.put(
+					HERO_HALL_RECORDS,
+					localRankings.getCollection(HERO_HALL_RECORDS));
+		}
 	}
 
 	public int totalNumber(boolean newCycle) {

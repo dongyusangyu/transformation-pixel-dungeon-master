@@ -88,7 +88,13 @@ public class MetamorphosisPrismTest {
 				continue;
 			}
 			int expectedSize = subClass == HeroSubClass.BERSERKER
-					|| subClass == HeroSubClass.GLADIATOR ? 6 : 3;
+					|| subClass == HeroSubClass.GLADIATOR
+					|| subClass == HeroSubClass.BATTLEMAGE
+					|| subClass == HeroSubClass.WARLOCK
+					|| subClass == HeroSubClass.ASSASSIN
+					|| subClass == HeroSubClass.FREERUNNER
+					|| subClass == HeroSubClass.CHAMPION
+					|| subClass == HeroSubClass.MONK ? 6 : 3;
 			assertEquals(subClass.name(), expectedSize, Talent.subclassTalentPool(subClass).size());
 			poolCount++;
 		}
@@ -97,14 +103,14 @@ public class MetamorphosisPrismTest {
 
 	@Test
 	public void threeTalentSubclassPoolsCannotBeMetamorphosed() {
-		HashSet<Talent> owned = new HashSet<>(Arrays.asList(Talent.EMPOWERED_STRIKE));
+		HashSet<Talent> owned = new HashSet<>(Arrays.asList(Talent.FARSIGHT));
 
 		assertFalse(MetamorphosisPrism.subclassPoolSupportsMetamorphosis(
-				Talent.subclassTalentPool(HeroSubClass.BATTLEMAGE)));
+				Talent.subclassTalentPool(HeroSubClass.SNIPER)));
 		assertTrue(MetamorphosisPrism.eligibleSubclassTalents(
-				Talent.EMPOWERED_STRIKE, owned).isEmpty());
+				Talent.FARSIGHT, owned).isEmpty());
 		assertTrue(MetamorphosisPrism.chooseSubclassCandidates(
-				Talent.EMPOWERED_STRIKE, owned, 3).isEmpty());
+				Talent.FARSIGHT, owned, 3).isEmpty());
 	}
 
 	@Test

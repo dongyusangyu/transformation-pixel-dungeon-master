@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -180,10 +182,10 @@ public class TestYogDzewa extends Mob {
         Invisibility.dispel(this);
 
         for (Char ch : affected) {
-            if (hit(this, ch, true)) {
+		if (hit(this, ch, DamageTag.MAGICAL)) {
                 ch.damage(Dungeon.isChallenged(Challenges.STRONGER_BOSSES)
                         ? Random.NormalIntRange(30, 50)
-                        : Random.NormalIntRange(20, 30), new Eye.DeathGaze());
+                        : Random.NormalIntRange(20, 30), new Eye.DeathGaze(), DamageTag.MAGICAL);
                 if (sprite != null && ch.sprite != null && Dungeon.level.heroFOV[pos]) {
                     ch.sprite.flash();
                 }
@@ -199,7 +201,7 @@ public class TestYogDzewa extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char attacker = TestBossUtil.attackerToRetarget(this, src);
         if (attacker != null) {
             enemy = attacker;
@@ -207,11 +209,11 @@ public class TestYogDzewa extends Mob {
             beckon(attacker.pos);
         }
         if (findFist() != null) {
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
             return;
         }
         int preHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         int dmgTaken = preHP - HP;
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (dmgTaken > 0 && lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())) {

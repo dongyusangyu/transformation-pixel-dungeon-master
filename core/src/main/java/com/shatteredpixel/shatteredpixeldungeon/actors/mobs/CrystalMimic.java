@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -124,7 +126,7 @@ public class CrystalMimic extends Mimic {
 	}
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
 		if (alignment == Alignment.NEUTRAL && enemy == Dungeon.hero){
 			steal( Dungeon.hero );
 
@@ -142,7 +144,7 @@ public class CrystalMimic extends Mimic {
 
 			if (alignment == Alignment.ENEMY) state = FLEEING;
 		}
-		return super.attackProc(enemy, damage);
+		return super.attackProc(enemy, damage, damageTags);
 	}
 
 	protected void steal( Hero hero ) {

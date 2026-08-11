@@ -50,7 +50,7 @@ public class Chilling extends Weapon.Enchantment {
 		if(hero.hasTalent(Talent.DEEP_FREEZE) && attacker==hero){
 			damage=(int)(1.2f*damage);
 		}
-		if (Random.Float() < procChance) {
+		if (procChance(procChance)) {
 
 
 			float powerMulti = Math.max(1f, procChance);

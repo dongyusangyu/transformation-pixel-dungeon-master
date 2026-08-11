@@ -27,8 +27,17 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.PowerOfMany;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Decoy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
@@ -283,7 +292,11 @@ public enum Bestiary {
 				BlandfruitBush.class,
 				WandOfRegrowth.Dewcatcher.class, WandOfRegrowth.Seedpod.class, WandOfRegrowth.Lotus.class);
 
-		TOWER_MOBS.addEntities(CamouflageGnoll.class, CorrosiveSwarm.class);
+		TOWER_MOBS.addEntities(CamouflageGnoll.class, CorrosiveSwarm.class,
+				Corpse.class, EarthlySerpent.class, RoastLambWarlock.class,
+				MechanicalFist.class, MimicCrocodile.class, Obscura.class,
+				AlienatedPrismaticGuard.class, SoulCollector.class,
+				HeavyCrabification.class);
 
 	}
 

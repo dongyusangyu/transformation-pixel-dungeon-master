@@ -48,6 +48,26 @@ public final class EXItemSpriteSheet {
 	public static final int SCROLL_EXTRACTION = encode(32, 15, 14);
 	public static final int META_INFUSE = encode(48, 10, 15);
 
+	// Row 7 (indices 96-111): new tier 1-5 weapons.
+	public static final int WEAPON_PLACEHOLDER = encode(96, 16, 16);
+
+	// Row 10 (indices 144-159): new tier 6 weapons.
+	public static final int GREAT_GREAT_GREATSWORD = encode(144, 16, 16);
+	public static final int SAKURA_BLOSSOM = encode(145, 15, 16);
+	public static final int BLOOD_SAKURA = encode(146, 15, 16);
+	public static final int CHAIN_MACE = encode(147, 16, 16);
+	public static final int TWO_HANDED_GREATSWORD = encode(148, 16, 16);
+	public static final int PALERMO_SWORD = encode(149, 16, 16);
+	public static final int MERCURY_BLADE = encode(150, 15, 16);
+	public static final int AUXILIARY_CORE = encode(151, 14, 15);
+	public static final int HUNDRED_TON_HAMMER = encode(152, 16, 16);
+
+	// Rows 11-13 (indices 160-207) are intentionally reserved as blank spacers.
+
+	// Row 14 (indices 208-223): new tier 6 missile weapons.
+	public static final int GUNGNIR = encode(208, 16, 16);
+	public static final int TIER6_MISSILE_WEAPON_PLACEHOLDER = GUNGNIR;
+
 	public static final int SEAL = encode(ItemSpriteSheet.SEAL, 16, 16);
 
 	private EXItemSpriteSheet() {

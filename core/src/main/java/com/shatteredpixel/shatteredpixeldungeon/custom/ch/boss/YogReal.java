@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -399,7 +401,7 @@ public class YogReal extends Boss{
     }
 
     @Override
-    public void damage(int damage, Object src){
+    public void damage(int damage, Object src, DamageTag... damageTags){
         if(phase >= 5){
             if(damage > 25) {
                 damage = 25;
@@ -411,7 +413,7 @@ public class YogReal extends Boss{
         }
 
         int preHP = HP;
-        super.damage(damage, src);
+        super.damage(damage, src, damageTags);
         int postHP = HP;
         int threshold = HT-HP_PER_PHASE*phase;
         if(preHP > threshold && postHP<=threshold && phase < 4){
@@ -570,28 +572,28 @@ public class YogReal extends Boss{
         }
 
         @Override
-        public void damage(int dmg, Object src){
+        public void damage(int dmg, Object src, DamageTag... damageTags){
             if(Dungeon.level.distance(pos, YogRealLevel.CENTER)<=4){
                 dmg = Math.max(dmg/6, 2);
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
 
         @Override
-        public int attackProc(Char enemy, int damage) {
+        public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
             Buff.affect(enemy, Poison.class).extend(Random.Float(3f, 6f));
-            return super.attackProc(enemy, damage);
+            return super.attackProc(enemy, damage, damageTags);
         }
     }
 
     //used so death to yog's ripper demons have their own rankings description and are more aggro
     public static class YogRealRipper extends RipperDemon {
         @Override
-        public void damage(int dmg, Object src){
+        public void damage(int dmg, Object src, DamageTag... damageTags){
             if(Dungeon.level.distance(pos, YogRealLevel.CENTER)<=4){
                 dmg = Math.max(dmg/6, 2);
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
     }
 
@@ -601,11 +603,11 @@ public class YogReal extends Boss{
             viewDistance = 8;
         }
         @Override
-        public void damage(int dmg, Object src){
+        public void damage(int dmg, Object src, DamageTag... damageTags){
             if(Dungeon.level.distance(pos, YogRealLevel.CENTER)<=4){
                 dmg = Math.max(dmg/6, 2);
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
     }
 
@@ -615,11 +617,11 @@ public class YogReal extends Boss{
             viewDistance = 10;
         }
         @Override
-        public void damage(int dmg, Object src){
+        public void damage(int dmg, Object src, DamageTag... damageTags){
             if(Dungeon.level.distance(pos, YogRealLevel.CENTER)<=4){
                 dmg = Math.max(dmg/6, 2);
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
     }
 
@@ -733,7 +735,7 @@ public class YogReal extends Boss{
         @Override
         public int onHitProc(Char ch) {
             if(ch.alignment == Alignment.ENEMY) return 0;
-            ch.damage( Random.Int(50, 80), YogReal.class );
+            ch.damage( Random.Int(50, 80), YogReal.class , DamageTag.PHYSICAL);
             ch.sprite.centerEmitter().burst( PurpleParticle.BURST, Random.IntRange( 5, 10 ) );
             ch.sprite.flash();
             Buff.affect(ch, ZeroAttack.class, 50f);
@@ -818,7 +820,7 @@ public class YogReal extends Boss{
         @Override
         public int onHitProc(Char ch) {
             if (ch.alignment == Alignment.ENEMY) return 0;
-            ch.damage(Random.Int(40, 70), YogReal.class);
+            ch.damage(Random.Int(40, 70), YogReal.class, DamageTag.PHYSICAL);
             ch.sprite.centerEmitter().burst(RainbowParticle.BURST, Random.Int(20, 35));
             ch.sprite.flash();
             Buff.affect(ch, Blindness.class, 100f);
@@ -892,7 +894,7 @@ public class YogReal extends Boss{
                 Char ch = findChar(cell);
                 if (ch != null) {
                     if (ch.alignment == Alignment.ENEMY) continue;
-                    ch.damage(Random.Int(30, 50), YogReal.class);
+                    ch.damage(Random.Int(30, 50), YogReal.class, DamageTag.PHYSICAL);
                     Buff.affect(ch, Blindness.class, 5f);
                     ch.sprite.flash();
                     if (ch == Dungeon.hero) {

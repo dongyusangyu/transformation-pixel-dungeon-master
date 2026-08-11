@@ -98,11 +98,24 @@ public class HeroSprite extends CharSprite {
 			placeCurrentCell();
 			return;
 		}
+		preserveOperateCompletion();
 		magicGirlDisguise = true;
 		texture( Assets.Sprites.MAGICGIRL );
 		updateMagicGirlFrames();
 		placeCurrentCell();
 		transform();
+	}
+
+	private void preserveOperateCompletion() {
+		if (curAnim == operate && animCallback == null && ch instanceof Hero) {
+			final Hero operatingHero = (Hero) ch;
+			animCallback = new Callback() {
+				@Override
+				public void call() {
+					operatingHero.onOperateComplete();
+				}
+			};
+		}
 	}
 
 

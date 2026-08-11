@@ -92,6 +92,7 @@ import java.util.Arrays;
 public class QuickRecipe extends Component {
 	
 	private ArrayList<Item> ingredients;
+	private boolean quickAlchemyEnabled = true;
 	
 	private ArrayList<ItemSlot> inputs;
 	private QuickRecipe.arrow arrow;
@@ -174,6 +175,12 @@ public class QuickRecipe extends Component {
 		
 		layout();
 	}
+
+	private QuickRecipe disableQuickAlchemy() {
+		quickAlchemyEnabled = false;
+		arrow.enable(false);
+		return this;
+	}
 	
 	@Override
 	protected void layout() {
@@ -246,6 +253,9 @@ public class QuickRecipe extends Component {
 		@Override
 		protected void onClick() {
 			super.onClick();
+			if (!quickAlchemyEnabled || !(ShatteredPixelDungeon.scene() instanceof AlchemyScene)) {
+				return;
+			}
 			
 			//find the window this is inside of and close it
 			Group parent = this.parent;
@@ -407,6 +417,13 @@ public class QuickRecipe extends Component {
 				result.add(new QuickRecipe(new ReclaimTrap.Recipe()));
 				result.add(new QuickRecipe(new SummonElemental.Recipe()));
 				result.add(new QuickRecipe(new BeaconOfReturning.Recipe()));
+				return result;
+			case 9:
+				for (Recipe.WeaponRecipe recipe : Recipe.weaponRecipes()) {
+					ArrayList<Item> inputs = recipe.getIngredients();
+					result.add(new QuickRecipe(recipe, inputs, recipe.sampleOutput(inputs))
+							.disableQuickAlchemy());
+				}
 				return result;
 		}
 	}

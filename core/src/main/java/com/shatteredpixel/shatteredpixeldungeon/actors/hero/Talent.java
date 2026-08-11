@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.eat_item;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.energy;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
@@ -187,6 +189,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Pasty;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.StewedMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
@@ -208,17 +211,22 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfDivination;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.ReclaimTrap;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.SummonElemental;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfIntuition;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
@@ -234,20 +242,14 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.AssassinsBlade;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Bracer;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dagger;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dirk;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatshield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gloves;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Katana;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Quarterstaff;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Rapier;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RoundShield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
@@ -332,8 +334,10 @@ public enum Talent {
 	DESPERATE_POWER(41, 3, 3, TalentType.MAGIC), ALLY_WARP(42, 3, 3, TalentType.SPELL),
 	//Battlemage T3
 	EMPOWERED_STRIKE(43, 3, 3, TalentType.SUBCLASS), MYSTICAL_CHARGE(44, 3, 3, TalentType.SUBCLASS), EXCESS_CHARGE(45, 3, 3, TalentType.SUBCLASS),
+	LONG_ARM(678, 3, 3, TalentType.SUBCLASS), ARCANE_CONFLUENCE(679, 3, 3, TalentType.SUBCLASS), FOCUSED_CASTING(680, 3, 3, TalentType.SUBCLASS),
 	//Warlock T3
 	SOUL_EATER(46, 3, 3, TalentType.SUBCLASS), SOUL_SIPHON(47, 3, 3, TalentType.SUBCLASS), NECROMANCERS_MINIONS(48, 3, 3, TalentType.SUBCLASS),
+	FINE_TASTING(681, 3, 3, TalentType.SUBCLASS), BONE_DEEP(682, 3, 3, TalentType.SUBCLASS), MIND_IMPRISONMENT(683, 3, 3, TalentType.SUBCLASS),
 	//Elemental Blast T4
 	BLAST_RADIUS(49, 4, 4, TalentType.ARMOR), ELEMENTAL_POWER(50, 4, 4, TalentType.ARMOR), REACTIVE_BARRIER(51, 4, 4, TalentType.ARMOR),
 	//Wild Magic T4
@@ -349,8 +353,10 @@ public enum Talent {
 	ENHANCED_RINGS(73, 3, 3, TalentType.EFFECT), LIGHT_CLOAK(74, 3, 3, TalentType.ASSIST),
 	//Assassin T3
 	ENHANCED_LETHALITY(75, 3, 3, TalentType.SUBCLASS), ASSASSINS_REACH(76, 3, 3, TalentType.SUBCLASS), BOUNTY_HUNTER(77, 3, 3, TalentType.SUBCLASS),
+	UNEXPECTED_STRIKE(684, 3, 3, TalentType.SUBCLASS), CLOSING_STAGE(685, 3, 3, TalentType.SUBCLASS), PERFECT_FINALE(686, 3, 3, TalentType.SUBCLASS),
 	//Freerunner T3
 	EVASIVE_ARMOR(78, 3, 3, TalentType.SUBCLASS), PROJECTILE_MOMENTUM(79, 3, 3, TalentType.SUBCLASS), SPEEDY_STEALTH(80, 3, 3, TalentType.SUBCLASS),
+	FREERUNNER_AFTERIMAGE(687, 3, 3, TalentType.SUBCLASS), MOMENTUM_RESERVE(688, 3, 3, TalentType.SUBCLASS), WARMUP_PREPARATION(689, 3, 3, TalentType.SUBCLASS),
 	//Smoke Bomb T4
 	HASTY_RETREAT(81, 4, 4, TalentType.ARMOR), BODY_REPLACEMENT(82, 4, 4, TalentType.ARMOR), SHADOW_STEP(83, 4, 4, TalentType.ARMOR),
 	//Death Mark T4
@@ -383,8 +389,10 @@ public enum Talent {
 	PRECISE_ASSAULT(137, 3, 3, TalentType.ATTACK), DEADLY_FOLLOWUP(138, 3, 3, TalentType.ATTACK),
 	//Champion T3
 	VARIED_CHARGE(139, 3, 3, TalentType.SUBCLASS), TWIN_UPGRADES(140, 3, 3, TalentType.SUBCLASS), COMBINED_LETHALITY(141, 3, 3, TalentType.SUBCLASS),
+	WEAPON_ABILITY_MASTER(696, 3, 3, TalentType.SUBCLASS), SKILLED_PARRY(697, 3, 3, TalentType.SUBCLASS), ALTERNATING_WEAPONS(698, 3, 3, TalentType.SUBCLASS),
 	//Monk T3
 	UNENCUMBERED_SPIRIT(142, 3, 3, TalentType.SUBCLASS), MONASTIC_VIGOR(143, 3, 3, TalentType.SUBCLASS), COMBINED_ENERGY(144, 3, 3, TalentType.SUBCLASS),
+	NATURAL_WAY(699, 3, 3, TalentType.SUBCLASS), INNER_PEACE(700, 3, 3, TalentType.SUBCLASS), YIN_YANG_BALANCE(701, 3, 3, TalentType.SUBCLASS),
 	//Challenge T4
 	CLOSE_THE_GAP(145, 4, 4, TalentType.ARMOR), INVIGORATING_VICTORY(146, 4, 4, TalentType.ARMOR), ELIMINATION_MATCH(147, 4, 4, TalentType.ARMOR),
 	//Elemental Strike T4
@@ -2804,16 +2812,12 @@ public enum Talent {
 		if (hero == null){
 			return false;
 		}
-		return hasBlockingWeapon(hero.belongings.weapon()) || hasBlockingWeapon(hero.belongings.secondWep());
+		return hasBlockingWeapon(hero, hero.belongings.weapon())
+				|| hasBlockingWeapon(hero, hero.belongings.secondWep());
 	}
 
-	private static boolean hasBlockingWeapon( KindOfWeapon weapon ){
-		return weapon instanceof Rapier
-				|| weapon instanceof Bracer
-				|| weapon instanceof Quarterstaff
-				|| weapon instanceof RoundShield
-				|| weapon instanceof Katana
-				|| weapon instanceof Greatshield;
+	private static boolean hasBlockingWeapon( Hero hero, KindOfWeapon weapon ){
+		return MeleeWeapon.hasTrait(weapon, MeleeWeapon.WeaponTrait.BLOCKING, hero);
 	}
 	public static void onPotionUsed( Hero hero, int cell, float factor, Potion potion ){
 		onPotionUsed(hero, cell, factor);
@@ -2832,6 +2836,37 @@ public enum Talent {
 			return cost;
 		}
 		return Math.max(1, cost - (3 + hero.pointsInTalent(ALCHEMY_SHIELD)));
+	}
+
+	public static int miracleAlchemyBonus( Hero hero, Item result ){
+		if (hero == null){
+			return 0;
+		}
+		// Keep the roll before product filtering to preserve the legacy RNG sequence.
+		return miracleAlchemyBonus(hero.pointsInTalent(MIRACLE_ALCHEMY), Random.Int(5),
+				result == null ? null : result.getClass());
+	}
+
+	static int miracleAlchemyBonus( int points, int roll, Class<? extends Item> productType ){
+		if (points <= roll || productType == null){
+			return 0;
+		}
+		return isMiracleAlchemyProduct(productType) ? 1 : 0;
+	}
+
+	private static boolean isMiracleAlchemyProduct( Class<? extends Item> productType ){
+		return !Trinket.class.isAssignableFrom(productType)
+				&& !StewedMeat.class.isAssignableFrom(productType)
+				&& !Blandfruit.class.isAssignableFrom(productType)
+				&& !Bomb.class.isAssignableFrom(productType)
+				&& !LiquidMetal.class.isAssignableFrom(productType)
+				&& !ScrollOfEnchantment.class.isAssignableFrom(productType)
+				&& !RubbingsTome.class.isAssignableFrom(productType)
+				&& !MagicalInfusion.class.isAssignableFrom(productType)
+				&& !ElixirOfMight.class.isAssignableFrom(productType)
+				&& !TransformSpell.class.isAssignableFrom(productType)
+				&& !MetamorphosisPrism.class.isAssignableFrom(productType)
+				&& !PotionOfMastery.class.isAssignableFrom(productType);
 	}
 
 	public static void onAlchemyEnergyConsumed( Hero hero ){
@@ -2907,7 +2942,7 @@ public enum Talent {
 			dmg*=1+0.35*hero.pointsInTalent(GIANT_KILLER);
 		}
 		if(hero.HP<hero.HT*0.3 && hero.hasTalent(AFRAID_DEATH)){
-			dmg*=(8/10-hero.pointsInTalent(AFRAID_DEATH)/10);
+			dmg*=afraidDeathDamageMultiplier(hero.pointsInTalent(AFRAID_DEATH));
 		}
 		if(hero.hasTalent(SKY_EARTH) && (!hero.buffs(Roots.class).isEmpty() || !hero.buffs(Levitation.class).isEmpty() || !hero.buffs(Earthroot.Armor.class).isEmpty())){
 			dmg*=1+0.15*hero.pointsInTalent(SKY_EARTH);
@@ -3084,9 +3119,6 @@ public enum Talent {
 				dmg+=hero.pointsInTalent(TARGET_TARGETING);
 			}
 		}
-		if(hero.hasTalent(BIG_FIST) && hero.belongings.attackingWeapon()==null){
-			dmg+=enemy.drRoll();
-		}
         if(hero.glyphLevel(Viscosity.class)>=0 && hero.subClass.is(HeroSubClass.COMBATMASTER) && hero.buff(Viscosity.DeferedDamage.class)!=null){
             int d=hero.buff(Viscosity.DeferedDamage.class).getDamage();
             dmg+=d/2;
@@ -3096,7 +3128,8 @@ public enum Talent {
 		return dmg;
 	}
 
-	public static int onAttackProc( Hero hero,Char attacker, Char enemy, int dmg ){
+	public static int onAttackProc(Hero hero, Char attacker, Char enemy, int dmg,
+			DamageTag... damageTags) {
 		if(attacker==hero){
 			dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
 		}
@@ -3129,11 +3162,10 @@ public enum Talent {
 			Buff.affect( enemy, Bleeding.class).set(hero.pointsInTalent(COVER_SCAR));
 		}
 		if(hero.hasTalent(ICE_BREAKING) && !enemy.buffs(Chill.class).isEmpty()  && enemy.isAlive()){
-			enemy.damage(hero.pointsInTalent(ICE_BREAKING), new WandOfMagicMissile());
+			enemy.damage(hero.pointsInTalent(ICE_BREAKING), new WandOfMagicMissile(), DamageTag.MAGICAL);
 		}
-		if(hero.hasTalent(POSION_DAGGER) && (hero.belongings.attackingWeapon() instanceof Dagger ||
-				hero.belongings.attackingWeapon() instanceof Dirk
-                || hero.belongings.attackingWeapon() instanceof  AssassinsBlade || hero.belongings.attackingWeapon() instanceof  RitualDagger)){
+		if (hero.hasTalent(POSION_DAGGER) && MeleeWeapon.hasTrait(
+				hero.belongings.attackingWeapon(), MeleeWeapon.WeaponTrait.DAGGER, hero)) {
 			Buff.affect(enemy,Poison.class).set(hero.pointsInTalent(POSION_DAGGER)*2);
 		}
 		if(!attacker.buffs(YogFistPower.class).isEmpty()){
@@ -3155,13 +3187,13 @@ public enum Talent {
 		}
 		if(hero.hasTalent(DAMAGED_CORE)  && enemy.isAlive()){
 			//enemy.damage(hero.pointsInTalent(DAMAGED_CORE), new WandOfMagicMissile());
-			enemy.damage(hero.pointsInTalent(DAMAGED_CORE), new WandOfMagicMissile());
+			enemy.damage(hero.pointsInTalent(DAMAGED_CORE), new WandOfMagicMissile(), DamageTag.MAGICAL);
 		}
 		if(hero.pointsInTalent(FUDI_CHOUXIN)> Random.Int(4)){
 			Buff.affect(enemy, Weakness.class,2);
 		}
 		if(hero.pointsNegative(MENTAL_COLLAPSE)> Random.Int(10)  && enemy.isAlive()){
-			hero.damage(dmg/2,new WandOfMagicMissile());
+			hero.damage(dmg/2,new WandOfMagicMissile(), DamageTag.MAGICAL);
 		}
 		if(hero.pointsNegative(Talent.FIRE_WOOD)>Random.Int(20)){
 			Buff.affect(attacker, Burning.class).reignite(hero,3);
@@ -3309,7 +3341,7 @@ public enum Talent {
             RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
             if((weapon instanceof Weapon && ((Weapon)weapon).getEnchant()!=null) ||
                 (ring != null && ring.enchantment != null && !ring.cursed && ring.isEquipped(hero))){
-                enemy.damage(hero.pointsInTalent(RUNE_BLADE), new WandOfMagicMissile());
+                enemy.damage(hero.pointsInTalent(RUNE_BLADE), new WandOfMagicMissile(), DamageTag.MAGICAL);
             }
         }
         if(hero.hasTalent(MANA_WREATH)){
@@ -3324,12 +3356,12 @@ public enum Talent {
             hero.heal((int)(dmg*0.2f));
         }
         if(hero.glyphLevel(AntiMagic.class)>=0 && hero.subClass.is(HeroSubClass.COMBATMASTER)  && enemy.isAlive()){
-            enemy.damage(AntiMagic.drRoll(hero, hero.glyphLevel(AntiMagic.class)), new WandOfMagicMissile());
+            enemy.damage(AntiMagic.drRoll(hero, hero.glyphLevel(AntiMagic.class)), new WandOfMagicMissile(), DamageTag.MAGICAL);
         }
         if(hero.glyphLevel(Entanglement.class)>=0 && hero.subClass.is(HeroSubClass.COMBATMASTER) && hero.buff(Earthroot.Armor.class)!=null){
             int shield = hero.buff(Earthroot.Armor.class).getLevel();
             if(shield>Random.Int(20)){
-                hero.buff(Earthroot.Armor.class).changeLevel(-(5+Dungeon.depth)/2);
+                hero.buff(Earthroot.Armor.class).changeLevel(-(5+Dungeon.scalingDepth())/2);
                 Plant plant = (Plant) Reflection.newInstance(Random.element(SpiritBow.harmfulPlants));
                 plant.pos = enemy.pos;
 				if(plant instanceof Icecap){
@@ -3364,7 +3396,7 @@ public enum Talent {
             }
             for (Char ch : shocking.affected) {
                 if (ch.alignment != attacker.alignment  && ch.isAlive()) {
-                    ch.damage(Math.round(dmg * 0.5f), new Electricity());
+                    ch.damage(Math.round(dmg * 0.5f), new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
                 }
             }
             attacker.sprite.parent.addToFront( new Lightning( shocking.arcs, null ) );
@@ -3387,7 +3419,7 @@ public enum Talent {
 		}
 	}
 
-	public static int onDefenseProc( Char enemy, int damage ) {
+	public static int onDefenseProc(Char enemy, int damage, DamageTag... damageTags) {
         if(hero.hasTalent(ARCANE_SHIELD)){
             Armor a = hero.belongings.armor();
             RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
@@ -3442,7 +3474,7 @@ public enum Talent {
 
 		if(hero.pointsInTalent(COUNTER_ATTACK)>0 && Dungeon.level.distance(hero.pos,enemy.pos)<2 &&
 				Random.Int(100)<5+hero.pointsInTalent(COUNTER_ATTACK)*15  && enemy.isAlive()){
-			enemy.damage((int)(hero.lvl*(0.5)),new LifeLink());
+			enemy.damage((int)(hero.lvl*(0.5)),new LifeLink(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 
 		}
 
@@ -3450,12 +3482,12 @@ public enum Talent {
 			damage*=0.5;
 		}
 		if(!hero.buffs(Light.class).isEmpty() && hero.hasTalent(ANGEL_STANCE)  && enemy.isAlive()){
-			enemy.damage((int)(damage*(0.2+0.1*hero.pointsInTalent(ANGEL_STANCE))), new WandOfMagicMissile());
+			enemy.damage((int)(damage*(0.2+0.1*hero.pointsInTalent(ANGEL_STANCE))), new WandOfMagicMissile(), DamageTag.MAGICAL);
 		}
 		if(hero.hasTalent(THORNY_ROSE)  && enemy.isAlive()){
 			Buff.affect(enemy, Bleeding.class).set(1);
 			if(hero.pointsInTalent(THORNY_ROSE)==2){
-				enemy.damage(1,new LifeLink());
+				enemy.damage(1,new LifeLink(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 			}
 		}
 		//史莱姆娘
@@ -3537,8 +3569,10 @@ public enum Talent {
 
 
 
-	public static int onDamage(  int dmg, Object src  ){
-		if (isUnavoidableDamage(src)){
+	public static int onDamage(int dmg, Object src, DamageTag... damageTags) {
+		EnumSet<DamageTag> tags = DamageTag.of(damageTags);
+		boolean unavoidable = tags.contains(DamageTag.UNAVOIDABLE);
+		if (unavoidable) {
 			return dmg;
 		}
 		if (hero != null){
@@ -3546,7 +3580,7 @@ public enum Talent {
 			if (shield != null){
 				dmg = shield.absorb(dmg, src);
 			}
-			if (dmg >= hero.HP && triggerDyingWill(dmg,src)){
+			if (dmg >= hero.HP && triggerDyingWill(dmg, src, unavoidable)){
 				dmg = Math.max(0, hero.HP - 1);
                 Sample.INSTANCE.play( Assets.Sounds.DEATHSDOOR, 1, 1, Random.Float( 0.9f, 1.1f ) );
 			}
@@ -3617,12 +3651,17 @@ public enum Talent {
 				}
 			}
 		}
-		if(hero.hasTalent(Talent.CONCEPT_GRID) && !(src instanceof Viscosity.DeferedDamage) && !(src instanceof Hunger)){
+		if (hero.hasTalent(Talent.CONCEPT_GRID)
+				&& !tags.contains(DamageTag.DEFERRED)
+				&& !tags.contains(DamageTag.HUNGER)) {
 			dmg-=hero.pointsInTalent(Talent.CONCEPT_GRID);
 		}
 
-		if(hero.pointsNegative(Talent.UNAVOIDABLE)>0 && !(src instanceof Electricity || src instanceof Bleeding
-				|| src instanceof Hunger || src instanceof Viscosity.DeferedDamage)){
+		if (hero.pointsNegative(Talent.UNAVOIDABLE) > 0
+				&& !tags.contains(DamageTag.ELECTRIC)
+				&& !tags.contains(DamageTag.BLEEDING)
+				&& !tags.contains(DamageTag.HUNGER)
+				&& !tags.contains(DamageTag.DEFERRED)) {
 			dmg=Math.max((int)(hero.HT*0.05*hero.pointsNegative(Talent.UNAVOIDABLE)),dmg);
 		}
 		if (hero.buff(Talent.WarriorFoodImmunity.class) != null){
@@ -3643,7 +3682,7 @@ public enum Talent {
 			}
 		}
 
-		if (AntiMagic.RESISTS.contains(src.getClass()) && hero.belongings.armor() != null){
+		if (tags.contains(DamageTag.MAGICAL) && hero.belongings.armor() != null){
 			int armDr = Random.NormalIntRange( hero.belongings.armor().DRMin(), hero.belongings.armor().DRMax());
 			if (hero.STR() < hero.belongings.armor().STRReq()){
 				armDr -= 2*(hero.belongings.armor().STRReq() - hero.STR());
@@ -3656,7 +3695,7 @@ public enum Talent {
 		if(hero.armorAbility!=null && hero.armorAbility instanceof Decoy && dmg>=hero.HP){
 			ArrayList<Decoy.Decoyman> decoymen = Decoy.getDecoymanAlly();
 			if(decoymen!=null  && decoymen.get(0).isAlive()){
-				decoymen.get(0).damage(114514,src);
+				decoymen.get(0).damage(114514,src, DamageTag.PHYSICAL);
 				return 0;
 			}
 		}
@@ -3683,9 +3722,10 @@ public enum Talent {
 		return src instanceof Reason;
 	}
 
-	private static boolean triggerDyingWill(int dmg,Object src){
+	private static boolean triggerDyingWill(int dmg, Object src, boolean unavoidable){
 
-		if (hero == null || !hero.hasTalent(NEVER_COMPROMISE) || !hasSufferingOrVirtue(hero) || isUnavoidableDamage(src)){
+		if (hero == null || !hero.hasTalent(NEVER_COMPROMISE)
+				|| !hasSufferingOrVirtue(hero) || unavoidable) {
 			return false;
 		}
 		int shift = 60 - 10 * hero.pointsInTalent(NEVER_COMPROMISE);
@@ -3815,7 +3855,7 @@ public enum Talent {
 				for (int p : b.path) {
 					Char ch = Actor.findChar(p);
 					if (ch != null && ch!=hero && ch.alignment != Char.Alignment.ALLY  && ch.isAlive()) {
-						ch.damage(Random.NormalIntRange(40, 50+hero.pointsInTalent(Talent.YOG_RAY)*10), new Eye.DeathGaze());
+						ch.damage(Random.NormalIntRange(40, 50+hero.pointsInTalent(Talent.YOG_RAY)*10), new Eye.DeathGaze(), DamageTag.MAGICAL);
 					}
 				}
 			}
@@ -3887,9 +3927,8 @@ public enum Talent {
 				dmg = (int)Math.round(dmg * Math.pow(0.9333f, chillturns));
 			}
 		}
-        if(hero.hasTalent(Talent.MAGIC_GIRL) && !hero.buffs(HeroDisguise.class).isEmpty()){
-            dmg=(int)(dmg*(1+0.2*hero.pointsInTalent(Talent.MAGIC_GIRL)));
-        }
+		dmg = magicGirlWandDamage(dmg, hero.pointsInTalent(Talent.MAGIC_GIRL),
+				hero.hasTalent(Talent.MAGIC_GIRL) && !hero.buffs(HeroDisguise.class).isEmpty());
         if (hero.hasTalent(Talent.EXTREME_CASTING)){
             dmg=(int)(dmg*(1f+0.2f*hero.pointsInTalent(Talent.EXTREME_CASTING)));
         }
@@ -3904,6 +3943,14 @@ public enum Talent {
             dmg+=3;
         }
 		return dmg;
+	}
+
+	static float afraidDeathDamageMultiplier(int points) {
+		return 0.8f - 0.1f * points;
+	}
+
+	static int magicGirlWandDamage(int damage, int points, boolean disguised) {
+		return disguised ? (int) (damage * (1f + 0.2f * points)) : damage;
 	}
 
 	public static void onArmorAbility( Hero hero, float chargeUse ){
@@ -4021,6 +4068,14 @@ public enum Talent {
 			if (ritualDagger != null){
 				ritualDagger.onKill(hero);
 			}
+		}
+		if (cause == hero && emeny.alignment == Char.Alignment.ENEMY
+				&& hero.belongings.attackingWeapon() instanceof SakuraBlossomBlade) {
+			((SakuraBlossomBlade) hero.belongings.attackingWeapon()).onDirectKill();
+		}
+		if (cause == hero && emeny.alignment == Char.Alignment.ENEMY
+				&& hero.belongings.attackingWeapon() instanceof Gungnir) {
+			((Gungnir) hero.belongings.attackingWeapon()).onDirectKill(hero, emeny);
 		}
         if(hero.heroClass==HeroClass.FRIAR){
 			int virtueKillExtend = hero.subClass.is(HeroSubClass.PIOUS) && hero.hasTalent(BRIGHT_WARRIOR) ? 3 + hero.pointsInTalent(BRIGHT_WARRIOR)*3 : 3;
@@ -4244,7 +4299,8 @@ public enum Talent {
         @Override
         public void affectChar(Char ch) {
             if (ch.alignment != Char.Alignment.ALLY){
-                ch.damage(Random.NormalIntRange(10, 20),this);
+                ch.damage(Random.NormalIntRange(10, 20), this,
+						DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
                 Buff.prolong(ch, Paralysis.class, 2);
             }
         }
@@ -4833,14 +4889,20 @@ public enum Talent {
 				CEASELESS_RAGE, MIRRORED_REVENGE, BLOODTHIRSTY_BERSERK);
 		registerSubclassPool(pools, HeroSubClass.GLADIATOR,
 				COMBO_FOCUS, RELENTLESS_COMBAT, COMBO_MASTERY);
-		registerSubclassPool(pools, HeroSubClass.BATTLEMAGE);
-		registerSubclassPool(pools, HeroSubClass.WARLOCK);
-		registerSubclassPool(pools, HeroSubClass.ASSASSIN);
-		registerSubclassPool(pools, HeroSubClass.FREERUNNER);
+		registerSubclassPool(pools, HeroSubClass.BATTLEMAGE,
+				LONG_ARM, ARCANE_CONFLUENCE, FOCUSED_CASTING);
+		registerSubclassPool(pools, HeroSubClass.WARLOCK,
+				FINE_TASTING, BONE_DEEP, MIND_IMPRISONMENT);
+		registerSubclassPool(pools, HeroSubClass.ASSASSIN,
+				UNEXPECTED_STRIKE, CLOSING_STAGE, PERFECT_FINALE);
+		registerSubclassPool(pools, HeroSubClass.FREERUNNER,
+				FREERUNNER_AFTERIMAGE, MOMENTUM_RESERVE, WARMUP_PREPARATION);
 		registerSubclassPool(pools, HeroSubClass.SNIPER);
 		registerSubclassPool(pools, HeroSubClass.WARDEN);
-		registerSubclassPool(pools, HeroSubClass.CHAMPION);
-		registerSubclassPool(pools, HeroSubClass.MONK);
+		registerSubclassPool(pools, HeroSubClass.CHAMPION,
+				WEAPON_ABILITY_MASTER, SKILLED_PARRY, ALTERNATING_WEAPONS);
+		registerSubclassPool(pools, HeroSubClass.MONK,
+				NATURAL_WAY, INNER_PEACE, YIN_YANG_BALANCE);
 		registerSubclassPool(pools, HeroSubClass.PRIEST);
 		registerSubclassPool(pools, HeroSubClass.PALADIN);
 		registerSubclassPool(pools, HeroSubClass.WATERSLIME);

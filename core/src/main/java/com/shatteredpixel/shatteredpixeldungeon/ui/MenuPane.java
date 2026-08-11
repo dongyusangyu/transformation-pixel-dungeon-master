@@ -87,7 +87,7 @@ public class MenuPane extends Component {
 		add(depthIcon);
 
 		depthText = new BitmapText(
-				Integer.toString(Dungeon.displayDepthForLocation(Dungeon.depth, Dungeon.branch)),
+				Dungeon.displayDepthLabel(Dungeon.depth, Dungeon.branch),
 				PixelScene.pixelFont);
 		depthText.hardlight( 0xCACFC2 );
 		depthText.measure();

@@ -58,11 +58,11 @@ public abstract class DamageWand extends Wand{
 	public abstract int max(int lvl);
 
 	public int damageRoll(){
-		return damageRoll(buffedLvl());
+		return Talent.onWandDamage(this, null, damageRoll(buffedLvl()));
 	}
 
 	public int damageRoll(Char target){
-		return Talent.onWandDamage(this, target, damageRoll());
+		return Talent.onWandDamage(this, target, damageRoll(buffedLvl()));
 	}
 
 	public int damageRoll(int lvl){
@@ -76,7 +76,6 @@ public abstract class DamageWand extends Wand{
 			}
 			Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG, 0.75f, 1.2f);
 		}
-		dmg = Talent.onWandDamage(this,null, dmg);
         MagicFeather feather = Dungeon.hero.belongings.getItem(MagicFeather.class);
         if (feather != null) {
             dmg=(int)(dmg*(1f+0.075f*(1+feather.buffedLvl())));

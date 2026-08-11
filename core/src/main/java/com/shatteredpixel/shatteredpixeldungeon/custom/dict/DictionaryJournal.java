@@ -375,6 +375,8 @@ public enum DictionaryJournal {
         DOCUMENTS.d.put("info_property",    DictSpriteSheet.ELEMENTAL_CHAOS);
         DOCUMENTS.d.put("info_spawn",       DictSpriteSheet.SPAWNER);
         DOCUMENTS.d.put("info_shop",        ItemSpriteSheet.GOLD);
+        DOCUMENTS.d.put("info_surface",     DictSpriteSheet.AREA_SURFACE);
+        DOCUMENTS.d.put("info_tower",       DictSpriteSheet.AREA_TOWER);
         DOCUMENTS.d.put("info_feeling",     DictSpriteSheet.AREA_HALL);
         DOCUMENTS.d.put("info_chasm",       DictSpriteSheet.CHASM);
         DOCUMENTS.d.put("info_lck_floor",   DictSpriteSheet.LOCKED_FLOOR);

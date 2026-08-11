@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.mechanics;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,6 +114,7 @@ public class Ballistica {
 
 		int err = dA / 2;
 		while (Dungeon.level.insideMap(cell)) {
+			Char character = Actor.findChar(cell);
 
 			//if we're in solid terrain, and there's no char there, collide with the previous cell.
 			// we don't use solid here because we don't want to stop short of closed doors.
@@ -121,7 +123,7 @@ public class Ballistica {
 					&& cell != sourcePos
 					&& !Dungeon.level.passable[cell]
 					&& !Dungeon.level.avoid[cell]
-					&& Actor.findChar(cell) == null) {
+					&& !stopsOnCharacter(character)) {
 				collide(path.get(path.size() - 1));
 			}
 
@@ -134,7 +136,7 @@ public class Ballistica {
 					collide(cell);
 				}
 			}
-			if (collisionPos == null && cell != sourcePos && stopChars && Actor.findChar( cell ) != null) {
+			if (collisionPos == null && cell != sourcePos && stopChars && stopsOnCharacter(character)) {
 				collide(cell);
 			}
 			if (collisionPos == null && cell == to && stopTarget){
@@ -149,6 +151,10 @@ public class Ballistica {
 				cell = cell + stepB;
 			}
 		}
+	}
+
+	static boolean stopsOnCharacter(Char character) {
+		return character != null && character.blocksBallistica();
 	}
 
 	//we only want to record the first position collision occurs at.

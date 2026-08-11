@@ -36,6 +36,9 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 // There is a decent amount of logic that ties into this, which is why it has its own abstract class
 public abstract class AllyBuff extends Buff {
 
+	public interface NoConversionRewards {
+	}
+
 	{
 		revivePersists = true;
 	}
@@ -57,7 +60,8 @@ public abstract class AllyBuff extends Buff {
 	//for when applying an ally buff should also cause that enemy to give exp/loot as if they had died
 	//consider that chars with the ally alignment do not drop items or award exp on death
 	public static void affectAndLoot(Mob enemy, Hero hero, Class<?extends AllyBuff> buffCls){
-		boolean wasEnemy = enemy.alignment == Char.Alignment.ENEMY || enemy instanceof Mimic;
+		boolean wasEnemy = isConversionRewardEligible(enemy)
+				&& (enemy.alignment == Char.Alignment.ENEMY || enemy instanceof Mimic);
 		Buff.affect(enemy, buffCls);
 
 		if (enemy.buff(buffCls) != null && wasEnemy){
@@ -84,6 +88,10 @@ public abstract class AllyBuff extends Buff {
 				Buff.affect(hero, Ninja_Energy.class).gainEnergy(enemy);
 			}
 		}
+	}
+
+	public static boolean isConversionRewardEligible(Mob mob) {
+		return !(mob instanceof NoConversionRewards);
 	}
 
 }

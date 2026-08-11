@@ -42,8 +42,10 @@ public class ScrollOfPassage extends ExoticScroll {
 		detach(curUser.belongings.backpack);
 		identify();
 		readAnimation();
+		int returnDepth = Math.max(1, (Dungeon.depth - 1 - (Dungeon.depth-2)%5));
 		
-		if (!Dungeon.interfloorTeleportAllowed()) {
+		if (!Dungeon.returnTeleportAllowed()
+				|| !Dungeon.returnTeleportLocationAllowed(returnDepth, 0)) {
 			
 			GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
 			return;
@@ -52,7 +54,7 @@ public class ScrollOfPassage extends ExoticScroll {
 
 		Level.beforeTransition();
 		InterlevelScene.mode = InterlevelScene.Mode.RETURN;
-		InterlevelScene.returnDepth = Math.max(1, (Dungeon.depth - 1 - (Dungeon.depth-2)%5));
+		InterlevelScene.returnDepth = returnDepth;
 		InterlevelScene.returnBranch = 0;
 		InterlevelScene.returnPos = -1;
 		Game.switchScene( InterlevelScene.class );

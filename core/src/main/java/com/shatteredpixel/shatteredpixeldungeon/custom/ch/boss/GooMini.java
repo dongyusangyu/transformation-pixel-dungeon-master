@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -51,7 +53,7 @@ public class GooMini extends Mob {
             Char ch=findChar(n+pos);
             if(ch!=null){
                 if(!(ch instanceof GooHard || ch instanceof GooMini)) {
-                    ch.damage(Math.round((empower?3f:1.5f)*(Math.max(damageRoll(),damageRoll()))), this);
+                    ch.damage(Math.round((empower?3f:1.5f)*(Math.max(damageRoll(),damageRoll()))), this, DamageTag.PHYSICAL);
                     Buff.affect(ch, Vulnerable.class, empower?9f:3f);
                 }
                 if (ch == Dungeon.hero && !ch.isAlive()) {

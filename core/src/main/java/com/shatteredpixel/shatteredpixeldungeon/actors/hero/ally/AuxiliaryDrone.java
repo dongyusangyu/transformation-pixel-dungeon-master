@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.newLevel;
 
@@ -529,7 +531,7 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                     }
                     dmg -= ch.drRoll();
                     if (dmg > 0 && !((ch instanceof  Hero) || (ch instanceof InstructionTool.Drone))) {
-                        ch.damage(dmg, this);
+                        ch.damage(dmg, this, DamageTag.PHYSICAL);
                     }
                     if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
                         Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));

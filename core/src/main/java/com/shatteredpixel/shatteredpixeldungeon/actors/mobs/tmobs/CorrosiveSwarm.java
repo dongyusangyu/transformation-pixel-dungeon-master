@@ -13,26 +13,36 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Swarm;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.CorrosiveSwarmSprite;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
 public class CorrosiveSwarm extends Swarm {
 
-	private static final float CORROSION_DURATION = 2f;
-	private static final int CORROSION_DAMAGE = 1;
+	private static final float OOZE_DURATION = 2f;
 	private static final int SPLIT_HP_THRESHOLD = 10;
+	private static final float BASE_LOOT_CHANCE = 1f / 8f;
+	private static final String SPLIT_DEPTH = "split_depth";
+
+	private int splitDepth;
 
 	{
 		spriteClass = CorrosiveSwarmSprite.class;
@@ -41,10 +51,10 @@ public class CorrosiveSwarm extends Swarm {
 		defenseSkill = 20;
 
 		EXP = 13;
-		maxLvl = 26;
+		maxLvl = 30;
 
-		loot = null;
-		lootChance = 0f;
+		loot = Generator.Category.POTION;
+		lootChance = BASE_LOOT_CHANCE;
 	}
 
 	@Override
@@ -73,29 +83,61 @@ public class CorrosiveSwarm extends Swarm {
 
 	@Override
 	protected Swarm createSplit() {
-		return new CorrosiveSwarm();
+		CorrosiveSwarm split = new CorrosiveSwarm();
+		split.splitDepth = splitDepth + 1;
+		return split;
 	}
 
 	@Override
 	public float lootChance() {
-		return 0f;
+		return adjustedLootChance(
+				BASE_LOOT_CHANCE * (float) Math.pow(0.5f, splitDepth));
 	}
 
 	@Override
-	public void damage(int damage, Object source) {
+	public Item createLoot() {
+		return createPotionLoot();
+	}
+
+	protected Item createPotionLoot() {
+		return Generator.randomUsingDefaults(Generator.Category.POTION);
+	}
+
+	@Override
+	public void storeInBundle(Bundle bundle) {
+		super.storeInBundle(bundle);
+		bundle.put(SPLIT_DEPTH, splitDepth);
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		splitDepth = Math.max(0, bundle.getInt(SPLIT_DEPTH));
+	}
+
+	@Override
+	public void damage(int damage, Object source, DamageTag... damageTags) {
 		if (!isAlive()) {
 			return;
 		}
 
-		BurstChain chain = burstChainFor(damage, source);
-		if (chain != null && chain.enter(this)) {
-			emitCorrosiveBurst(chain);
+		int receivedDamage = damage;
+		if (DamageTag.of(damageTags).contains(DamageTag.OOZE)) {
+			if (receivedDamage > 0) {
+				tryToSplit(receivedDamage);
+			}
+			damage = 0;
+		}
+
+		BurstChain chain = burstChainFor(receivedDamage, source);
+		if (chain != null) {
+			chain.trigger(this);
 		}
 
 		if (damage == 0 && source instanceof BurstChain) {
 			return;
 		}
-		super.damage(damage, source);
+		super.damage(damage, source, damageTags);
 	}
 
 	protected BurstChain burstChainFor(int damage, Object source) {
@@ -128,26 +170,26 @@ public class CorrosiveSwarm extends Swarm {
 				continue;
 			}
 
-			applyCorrosion(target);
+			applyOoze(target);
 			if (target instanceof CorrosiveSwarm) {
-				target.damage(0, chain);
+				target.damage(0, chain, DamageTag.PHYSICAL);
 			}
 		}
 	}
 
-	protected void applyCorrosion(Char target) {
-		if (target == null || target.isImmune(Corrosion.class)) {
+	protected void applyOoze(Char target) {
+		if (target == null || target.isImmune(Ooze.class)) {
 			return;
 		}
 
-		Corrosion corrosion = target.buff(Corrosion.class);
-		if (corrosion == null) {
-			Corrosion applied = Buff.affect(target, Corrosion.class);
+		Ooze ooze = target.buff(Ooze.class);
+		if (ooze == null) {
+			Ooze applied = Buff.affect(target, Ooze.class);
 			if (applied != null) {
-				applied.set(CORROSION_DURATION, CORROSION_DAMAGE, CorrosiveSwarm.class);
+				applied.set(OOZE_DURATION);
 			}
 		} else {
-			corrosion.extend(CORROSION_DURATION);
+			ooze.extend(OOZE_DURATION);
 		}
 	}
 
@@ -155,9 +197,30 @@ public class CorrosiveSwarm extends Swarm {
 
 		private final Set<CorrosiveSwarm> entered =
 				Collections.newSetFromMap(new IdentityHashMap<>());
+		private final Deque<CorrosiveSwarm> pending = new ArrayDeque<>();
+		private boolean processing;
 
 		boolean enter(CorrosiveSwarm swarm) {
 			return entered.add(swarm);
+		}
+
+		void trigger(CorrosiveSwarm swarm) {
+			if (!enter(swarm)) {
+				return;
+			}
+			pending.addLast(swarm);
+			if (processing) {
+				return;
+			}
+
+			processing = true;
+			try {
+				while (!pending.isEmpty()) {
+					pending.removeFirst().emitCorrosiveBurst(this);
+				}
+			} finally {
+				processing = false;
+			}
 		}
 	}
 }

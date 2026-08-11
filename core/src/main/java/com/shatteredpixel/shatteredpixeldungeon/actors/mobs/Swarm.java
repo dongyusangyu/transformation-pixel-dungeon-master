@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -85,8 +87,12 @@ public class Swarm extends Mob {
 	}
 	
 	@Override
-	public int defenseProc( Char enemy, int damage ) {
+	public int defenseProc( Char enemy, int damage , DamageTag... damageTags) {
+		tryToSplit(damage);
+		return super.defenseProc(enemy, damage, damageTags);
+	}
 
+	protected void tryToSplit(int damage) {
 		if (canSplit(damage)) {
 			ArrayList<Integer> candidates = new ArrayList<>();
 			
@@ -115,8 +121,6 @@ public class Swarm extends Mob {
 				HP -= clone.HP;
 			}
 		}
-		
-		return super.defenseProc(enemy, damage);
 	}
 	
 	@Override

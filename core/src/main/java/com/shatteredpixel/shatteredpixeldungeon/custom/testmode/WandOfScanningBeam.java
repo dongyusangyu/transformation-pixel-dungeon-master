@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.custom.utils.BallisticaReal;
@@ -44,7 +46,7 @@ public class WandOfScanningBeam extends WandOfDisintegration implements Scanning
             return 0;
         }
         wandProc(ch, chargesPerCast());
-        ch.damage( damageRoll(buffedLvl()), this );
+        ch.damage( damageRoll(buffedLvl()), this , DamageTag.PHYSICAL);
         ch.sprite.centerEmitter().burst( PurpleParticle.BURST, Random.IntRange( 1, 2 ) );
         ch.sprite.flash();
         return 1;

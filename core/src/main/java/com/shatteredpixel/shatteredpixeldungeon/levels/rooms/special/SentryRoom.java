@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
@@ -312,8 +314,8 @@ public class SentryRoom extends SpecialRoom {
 			if (hero == null) {
 				return;
 			}
-			if (hit(this, hero, true)) {
-				hero.damage(Random.NormalIntRange(2 + Dungeon.depth / 2, 4 + Dungeon.depth), new Eye.DeathGaze());
+				if (hit(this, hero, DamageTag.MAGICAL)) {
+				hero.damage(Random.NormalIntRange(2 + Dungeon.scalingDepth() / 2, 4 + Dungeon.scalingDepth()), new Eye.DeathGaze(), DamageTag.MAGICAL);
 				if (!hero.isAlive()) {
 					Badges.validateDeathFromEnemyMagic();
 					Dungeon.fail(this);
@@ -326,7 +328,7 @@ public class SentryRoom extends SpecialRoom {
 
 		@Override
 		public int attackSkill(Char target) {
-			return 20 + Dungeon.depth * 2;
+			return 20 + Dungeon.scalingDepth() * 2;
 		}
 
 		@Override
@@ -335,7 +337,7 @@ public class SentryRoom extends SpecialRoom {
 		}
 
 		@Override
-		public void damage( int dmg, Object src ) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 			//do nothing
 		}
 

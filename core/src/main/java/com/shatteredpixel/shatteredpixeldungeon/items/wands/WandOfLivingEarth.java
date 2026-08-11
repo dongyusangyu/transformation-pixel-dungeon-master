@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 
@@ -134,7 +136,7 @@ public class WandOfLivingEarth extends DamageWand {
 				ch.sprite.centerEmitter().burst(MagicMissile.EarthParticle.BURST, 5 + buffedLvl()/2);
 
 				wandProc(ch, chargesPerCast());
-				ch.damage(damage, this);
+				ch.damage(damage, this, DamageTag.MAGICAL);
 
 				int closest = -1;
 				boolean[] passable = Dungeon.level.passable;
@@ -180,7 +182,7 @@ public class WandOfLivingEarth extends DamageWand {
 				ch.sprite.centerEmitter().burst(MagicMissile.EarthParticle.BURST, 5 + buffedLvl() / 2);
 
 				wandProc(ch, chargesPerCast());
-				ch.damage(damage, this);
+				ch.damage(damage, this, DamageTag.MAGICAL);
 				Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, 0.8f * Random.Float(0.87f, 1.15f) );
 				
 				if (guardian == null) {
@@ -411,9 +413,9 @@ public class WandOfLivingEarth extends DamageWand {
 		}
 
 		@Override
-		public int attackProc(Char enemy, int damage) {
+		public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
 			if (enemy instanceof Mob) ((Mob)enemy).aggro(this);
-			return super.attackProc(enemy, damage);
+			return super.attackProc(enemy, damage, damageTags);
 		}
 
 		@Override

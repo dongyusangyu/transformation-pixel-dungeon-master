@@ -24,9 +24,20 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
@@ -48,6 +59,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GuardianTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.StormTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.SummoningTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WarpingTrap;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Random;
 
@@ -57,8 +70,9 @@ public class TowerLevel extends RegularLevel {
 
 	private static final int FIRST_CONTENT_DEPTH = 16;
 	private static final int LAST_CONTENT_DEPTH = 25;
-	// Stored as a positive branch depth; MenuPane presents these floors as -1, -2, and so on.
+	// Stored as a positive branch depth; UI presents these floors as T1, T2, and so on.
 	public static final int BRANCH = 3;
+	private int generationTowerFloor = -1;
 
 	{
 		color1 = 0x7B2D26;
@@ -81,11 +95,13 @@ public class TowerLevel extends RegularLevel {
 	protected boolean build() {
 		int towerDepth = Dungeon.depth;
 		boolean built;
+		generationTowerFloor = towerDepth;
 		Dungeon.depth = contentDepthForFloor(towerDepth);
 		try {
 			built = super.build();
 		} finally {
 			Dungeon.depth = towerDepth;
+			generationTowerFloor = -1;
 		}
 		if (!built) {
 			return false;
@@ -108,6 +124,16 @@ public class TowerLevel extends RegularLevel {
 	}
 
 	@Override
+	public boolean activateTransition(Hero hero, LevelTransition transition) {
+		if (!Dungeon.towerTransitionAllowed(
+				Dungeon.depth, Dungeon.branch, transition.destDepth, transition.destBranch)) {
+			GLog.w(Messages.get(TowerLevel.class, "surface_blocked"));
+			return false;
+		}
+		return super.activateTransition(hero, transition);
+	}
+
+	@Override
 	protected ArrayList<Room> initRooms() {
 		ArrayList<Room> result = new ArrayList<>();
 		result.add(roomEntrance = new LibraryHallEntranceRoom());
@@ -124,6 +150,9 @@ public class TowerLevel extends RegularLevel {
 			} while (!room.setSizeCat(standards - i));
 			i += room.sizeFactor() - 1;
 			result.add(room);
+		}
+		if (isShopFloor(towerFloor())) {
+			result.add(new TowerShopRoom(towerFloor()));
 		}
 		return result;
 	}
@@ -197,32 +226,69 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	public Mob createMob() {
-		switch (TowerMobRules.select(towerFloor(), Random.Float())) {
+		Mob mob;
+		switch (TowerMobRules.select(Random.Float())) {
 			case CAMOUFLAGE_GNOLL:
-				return new CamouflageGnoll();
-			case CORROSIVE_SWARM:
-				return new CorrosiveSwarm();
-			case DEFAULT_POOL:
-			default:
+				mob = new CamouflageGnoll();
 				break;
+			case CORROSIVE_SWARM:
+				mob = new CorrosiveSwarm();
+				break;
+			case CORPSE:
+				mob = new Corpse();
+				break;
+			case EARTHLY_SERPENT:
+				mob = new EarthlySerpent();
+				break;
+			case ROAST_LAMB_WARLOCK:
+				mob = new RoastLambWarlock();
+				break;
+			case MECHANICAL_FIST:
+				mob = new MechanicalFist();
+				break;
+			case MIMIC_CROCODILE:
+				mob = new MimicCrocodile();
+				break;
+			case OBSCURA:
+				mob = new Obscura();
+				break;
+			case ALIENATED_PRISMATIC_GUARD:
+				mob = new AlienatedPrismaticGuard();
+				break;
+			case SOUL_COLLECTOR:
+				mob = new SoulCollector();
+				break;
+			case HEAVY_CRABIFICATION:
+				mob = new HeavyCrabification();
+				break;
+			default:
+				throw new IllegalStateException("Unknown tower mob selection");
 		}
-		int actualDepth = Dungeon.depth;
-		Dungeon.depth = contentDepth();
-		try {
-			return super.createMob();
-		} finally {
-			Dungeon.depth = actualDepth;
-		}
+		return TowerMobRules.prepareNaturalSpawn(mob);
 	}
 
 	@Override
 	protected void createItems() {
 		int actualDepth = Dungeon.depth;
-		Dungeon.depth = contentDepth();
+		generationTowerFloor = actualDepth;
+		Dungeon.depth = contentDepthForFloor(actualDepth);
 		try {
+			addTowerGuaranteedItems();
 			super.createItems();
 		} finally {
 			Dungeon.depth = actualDepth;
+			generationTowerFloor = -1;
+		}
+	}
+
+	protected void addTowerGuaranteedItems() {
+		addItemToSpawn(TowerGenerationRules.guaranteedFloorItem());
+	}
+
+	@Override
+	public void addItemToSpawn(Item item) {
+		if (!TowerGenerationRules.isForbiddenNaturalItem(item)) {
+			super.addItemToSpawn(item);
 		}
 	}
 
@@ -237,11 +303,9 @@ public class TowerLevel extends RegularLevel {
 	}
 
 	private int towerFloor() {
-		return Math.max(1, Dungeon.depth);
-	}
-
-	private int contentDepth() {
-		return contentDepthForFloor(towerFloor());
+		return generationTowerFloor > 0
+				? generationTowerFloor
+				: Math.max(1, Dungeon.depth);
 	}
 
 	private int contentDepthForFloor(int floor) {
@@ -249,5 +313,13 @@ public class TowerLevel extends RegularLevel {
 				LAST_CONTENT_DEPTH - FIRST_CONTENT_DEPTH,
 				Math.max(0, floor - 1));
 		return FIRST_CONTENT_DEPTH + offset;
+	}
+
+	static boolean isShopFloor(int floor) {
+		return TowerGenerationRules.isShopFloor(floor);
+	}
+
+	static int shopPriceDepth(int floor) {
+		return TowerGenerationRules.shopPriceDepth(floor);
 	}
 }

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.level;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
@@ -92,6 +94,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         spriteClass = RogueBossSprite.class;
 
         properties.add(Property.BOSS);
+        properties.add(Property.DEMONIC);
 
     }
     {
@@ -171,15 +174,18 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         }
 
         //GLog.p("隐身冷却"+InvisibilityCoolDown);
-        if (state != HUNTING){
+        if (shouldResetInvisibilityCooldown(state == HUNTING, state == SLEEPING, paralysed)){
             InvisibilityCoolDown = 0;
             sprite.idle();
         }
-        if(enemy != null && state!= SLEEPING){
-            if (this.buffs(AbsoluteInvisibility.class).isEmpty() && this.buffs(Paralysis.class).isEmpty()) {
-                InvisibilityCoolDown++;
+        if (enemy != null){
+            if (this.buffs(AbsoluteInvisibility.class).isEmpty()) {
+                InvisibilityCoolDown = advanceSpecialCounter(
+                        InvisibilityCoolDown, paralysed, state == SLEEPING);
             } else if (!this.buffs(AbsoluteInvisibility.class).isEmpty() && HP > HT/2) {
-                this.buff(AbsoluteInvisibility.class).InvisibilityAttack++;
+                AbsoluteInvisibility invisibility = this.buff(AbsoluteInvisibility.class);
+                invisibility.InvisibilityAttack = advanceSpecialCounter(
+                        invisibility.InvisibilityAttack, paralysed, state == SLEEPING);
             }
         }
         if(InvisibilityCoolDown >= 8){
@@ -233,6 +239,23 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         return super.act();
     }
 
+    static boolean canAdvanceSpecialCounter(int paralysed, boolean sleeping) {
+        return paralysed <= 0 && !sleeping;
+    }
+
+    static int advanceSpecialCounter(int current, int paralysed, boolean sleeping) {
+        return canAdvanceSpecialCounter(paralysed, sleeping) ? current + 1 : current;
+    }
+
+    static float advanceSpecialCounter(float current, int paralysed, boolean sleeping) {
+        return canAdvanceSpecialCounter(paralysed, sleeping) ? current + 1 : current;
+    }
+
+    static boolean shouldResetInvisibilityCooldown(boolean hunting, boolean sleeping,
+            int paralysed) {
+        return paralysed <= 0 && !hunting && !sleeping;
+    }
+
     @Override
     protected boolean canAttack( Char enemy ) {
         if (HP > HT/2) {
@@ -250,8 +273,8 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
     }
 
     @Override
-    public int attackProc( Char enemy, int damage ) {
-        damage = super.attackProc( enemy, damage );
+    public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
         if (this.buff(MomentumTime.class)!=null && this.buff(MomentumTime.class).left<=0){
             damage = (int) (damage*1.33f);
         }
@@ -259,9 +282,9 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
     }
 
     @Override
-    public int defenseProc( Char enemy, int damage ) {
+    public int defenseProc( Char enemy, int damage , DamageTag... damageTags) {
 
-        return super.defenseProc(enemy, damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
 
     @Override
@@ -275,7 +298,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         /*
         if (!BossHealthBar.isAssigned()){
             BossHealthBar.assignBoss( this );
@@ -307,7 +330,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         boolean bleeding = (HP*2 <= HT);
 
         dmg = Math.min(25,dmg);
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
 
         if (phase == 0 && HP<100) {
             //转阶段锁血
@@ -423,7 +446,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES)){
             Buff.affect(enemy, Grim.GrimTracker.class).maxChance=1;
         }
-        enemy.damage(damage, RogueBoss.this);
+        enemy.damage(damage, RogueBoss.this, DamageTag.PHYSICAL);
         yell( Messages.get(this, "execute") );
         if (enemy == hero && !enemy.isAlive()) {
             Dungeon.fail( this );

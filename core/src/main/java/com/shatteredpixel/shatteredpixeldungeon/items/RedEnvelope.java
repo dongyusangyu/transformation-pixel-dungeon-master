@@ -63,7 +63,8 @@ public class RedEnvelope  extends Item {
             curUser = hero;
             curItem.detach(curUser.belongings.backpack);
 
-            Dungeon.level.drop(new Gold().quantity(Dungeon.depth*10+ Random.Int(Dungeon.depth*20)), hero.pos).sprite.drop();
+            int scalingDepth = Dungeon.scalingDepth();
+            Dungeon.level.drop(new Gold().quantity(scalingDepth*10 + Random.Int(scalingDepth*20)), hero.pos).sprite.drop();
             Item bonus=null;
             if(Random.Int(10)==1){
                 int cnt=Random.Int(3);
@@ -98,7 +99,8 @@ public class RedEnvelope  extends Item {
             ArrayList<Item>items=new ArrayList<Item>();
             for(int i=0;i<cnt;i++){
                 curItem.detach(curUser.belongings.backpack);
-                items.add(new Gold().quantity(Dungeon.depth*10+ Random.Int(Dungeon.depth*20)));
+                int scalingDepth = Dungeon.scalingDepth();
+                items.add(new Gold().quantity(scalingDepth*10 + Random.Int(scalingDepth*20)));
                 if(Random.Int(10)==1){
                     switch (Random.Int(3)){
                         case 0:items.add(genLowValueConsumable());break;
@@ -123,7 +125,8 @@ public class RedEnvelope  extends Item {
             HashMap<Class<? extends Item>, Item> items=new HashMap<Class<? extends Item>, Item>();
             for(int i=0;i<cnt;i++){
                 curItem.detach(curUser.belongings.backpack);
-                int goldQuantity = Dungeon.depth * 10 + Random.Int(Dungeon.depth * 20);
+                int scalingDepth = Dungeon.scalingDepth();
+                int goldQuantity = scalingDepth * 10 + Random.Int(scalingDepth * 20);
                 Item gold = new Gold().quantity(goldQuantity);
                 if (items.containsKey(Gold.class)) {
                     Item existingGold = (Item) items.get(Gold.class);

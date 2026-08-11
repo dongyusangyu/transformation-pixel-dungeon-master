@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -74,7 +76,7 @@ public class Focus_Light extends TargetedClericSpell {
                 new Beam.HolyRay(hero.sprite.center(), DungeonTilemap.raisedTileCenterToWorld(aim.collisionPos)));
         Char ch = Actor.findChar( aim.collisionPos );
         if (ch != null) {
-            ch.damage(Random.NormalIntRange(2+2*hero.pointsInTalent(Talent.FOCUS_LIGHT), 6+2*hero.pointsInTalent(Talent.FOCUS_LIGHT)), new WandOfMagicMissile());
+            ch.damage(Random.NormalIntRange(2+2*hero.pointsInTalent(Talent.FOCUS_LIGHT), 6+2*hero.pointsInTalent(Talent.FOCUS_LIGHT)), new WandOfMagicMissile(), DamageTag.MAGICAL);
             Sample.INSTANCE.play( Assets.Sounds.BURNING );
             if (ch.isAlive() && hero.subClass.is(HeroSubClass.PRIEST)){
                 Buff.affect(ch, GuidingLight.Illuminated.class);

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.city;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -110,8 +112,8 @@ public abstract class ElementalH extends MobHard implements MagicalRangedAttack 
     }
 
     @Override
-    public int attackProc( Char enemy, int damage ) {
-        damage = super.attackProc( enemy, damage );
+    public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
         meleeProc( enemy, damage );
 
         return damage;
@@ -222,7 +224,7 @@ public abstract class ElementalH extends MobHard implements MagicalRangedAttack 
 
         protected void iceBreak(Char enemy){
             Buff.detach(enemy, Frost.class);
-            enemy.damage(Math.max(enemy.HP/5, enemy.HT/8), this);
+            enemy.damage(Math.max(enemy.HP/5, enemy.HT/8), this, DamageTag.MAGICAL);
             enemy.sprite.burst(0x3325D4, 18);
             enemy.sprite.showStatus(0x2299FF, "!!!");
             int[] iceArea = RangeMap.C1(enemy.pos);
@@ -361,7 +363,7 @@ public abstract class ElementalH extends MobHard implements MagicalRangedAttack 
             }
 
             for (Char ch : affected) {
-                ch.damage( Math.round( damage * 0.6f ), this );
+                ch.damage( Math.round( damage * 0.6f ), this , DamageTag.MAGICAL);
             }
 
             sprite.parent.addToFront( new Lightning( arcs, null ) );
@@ -388,7 +390,7 @@ public abstract class ElementalH extends MobHard implements MagicalRangedAttack 
         }
 
         @Override
-        public int defenseProc(Char enemy, int damage){
+        public int defenseProc(Char enemy, int damage, DamageTag... damageTags){
 
             if(Blob.volumeAt(pos, Electricity.class)>0){
                 if(enemy!=null){
@@ -402,7 +404,7 @@ public abstract class ElementalH extends MobHard implements MagicalRangedAttack 
                 }
             }
 
-            return super.defenseProc(enemy, damage);
+            return super.defenseProc(enemy, damage, damageTags);
         }
 
         @Override

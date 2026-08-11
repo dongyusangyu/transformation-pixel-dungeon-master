@@ -40,7 +40,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfParalyticG
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfToxicGas;
-import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
@@ -151,11 +150,7 @@ public class ExoticPotion extends Potion {
 			try {
 				Item result = Reflection.newInstance(regToExo.get(ingredients.get(0).getClass()));
 				int outQuantity = 1;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !(result instanceof PotionOfMastery)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
+				result.quantity(outQuantity + Talent.miracleAlchemyBonus(hero, result));
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

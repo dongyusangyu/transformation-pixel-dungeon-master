@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -39,7 +41,7 @@ public class PhantomLandPiranha extends LandPiranha{
         return speed * AscensionChallenge.enemySpeedModifier(this);
     }
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char dmgSource = null;
         if (src instanceof Char) dmgSource = (Char)src;
         if (src instanceof Wand) dmgSource = Dungeon.hero;
@@ -50,7 +52,7 @@ public class PhantomLandPiranha extends LandPiranha{
         if(hero.hasTalent(Talent.FISHING_TIME)){
             dmg*=1.3;
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         if (hero.pointsInTalent(Talent.FISHING_TIME)==2){
             return;
         }

@@ -1,6 +1,5 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
@@ -35,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
@@ -48,7 +48,6 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 public class TestMelee extends TestGenerator {
     {
@@ -89,7 +88,9 @@ public class TestMelee extends TestGenerator {
     }
 
     private void createWeapon(){
-        Weapon melee = Reflection.newInstance(weaponList(tier)[weapon_id]);
+        Class<? extends Weapon>[] weapons = weaponList(tier);
+        weapon_id = Math.min(weapon_id, weapons.length - 1);
+        Weapon melee = Reflection.newInstance(weapons[weapon_id]);
         melee = modifyWeapon(melee);
         melee.identify();
         if(melee.collect()){
@@ -189,20 +190,9 @@ public class TestMelee extends TestGenerator {
         return null;
     }
 
-    private Class<? extends Weapon>[] weaponList(int t) {
-        switch (t) {
-            case 1:
-            default:
-                return (Class<? extends Weapon>[]) Generator.Category.WEP_T1.classes.clone();
-            case 2:
-                return (Class<? extends Weapon>[]) Generator.Category.WEP_T2.classes.clone();
-            case 3:
-                return (Class<? extends Weapon>[]) Generator.Category.WEP_T3.classes.clone();
-            case 4:
-                return (Class<? extends Weapon>[]) Generator.Category.WEP_T4.classes.clone();
-            case 5:
-                return (Class<? extends Weapon>[]) Generator.Category.WEP_T5.classes.clone();
-        }
+    private static Class<? extends Weapon>[] weaponList(int t) {
+        int tierIndex = Math.max(0, Math.min(t - 1, Generator.wepTiers.length - 1));
+        return (Class<? extends Weapon>[]) Generator.wepTiers[tierIndex].classes.clone();
     }
 
     private String currentEnchName(Class<? extends Weapon.Enchantment> ench) {
@@ -237,12 +227,14 @@ public class TestMelee extends TestGenerator {
 
         private void createWeaponArray() {
             all = weaponList(tier);
+            weapon_id = Math.min(weapon_id, all.length - 1);
         }
 
         public SettingsWindow() {
             super();
             createWeaponArray();
-            o_tier = new OptionSlider(Messages.get(this, "tier"), "1", "5", 1, 5) {
+            o_tier = new OptionSlider(Messages.get(this, "tier"), "1",
+                    String.valueOf(Generator.wepTiers.length), 1, Generator.wepTiers.length) {
                 @Override
                 protected void onChange() {
                     tier = getSelectedValue();
@@ -334,8 +326,7 @@ public class TestMelee extends TestGenerator {
                         super.onClick();
                     }
                 };
-                Image im = new Image(Assets.Sprites.ITEMS);
-                im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(all[i])).image));
+                Image im = new ItemSprite(Reflection.newInstance(all[i]));
                 im.scale.set(1f);
                 btn.icon(im);
                 btn.setRect(left + Math.floorMod(placed,7) * BTN_SIZE, top+(int)(placed/7)*BTN_SIZE, BTN_SIZE, BTN_SIZE);

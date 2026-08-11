@@ -355,8 +355,7 @@ public class StartScene extends PixelScene {
 					lastPlayed.text(Messages.get(StartScene.class, "months_ago", diff / (30L * 24 * 60 * 60_000)));
 				}
 
-				depth.text(Integer.toString(
-						Dungeon.displayDepthForLocation(info.depth, info.branch)));
+				depth.text(Dungeon.displayDepthLabel(info.depth, info.branch));
 				depth.measure();
 
 				level.text(Integer.toString(info.level));

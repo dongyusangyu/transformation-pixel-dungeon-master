@@ -125,6 +125,25 @@ public class RankingsScene extends PixelScene {
 				cycleButtonTop,
 				cycleButtonWidth,
 				cycleButtonHeight);
+
+		StyledButton btnHeroHall = null;
+		if (!showsNewCycleRecords()) {
+			btnHeroHall = new StyledButton(
+					Chrome.Type.TOAST_TR, Messages.get(this, "hero_hall"), 6) {
+				@Override
+				protected void onClick() {
+					super.onClick();
+					ShatteredPixelDungeon.switchNoFade(HeroHallScene.class);
+				}
+			};
+			btnHeroHall.icon(new ItemSprite(ItemSpriteSheet.CROWN, null));
+			float hallButtonWidth = btnHeroHall.reqWidth() + 6;
+			btnHeroHall.setRect(
+					insets.left,
+					cycleButtonTop,
+					hallButtonWidth,
+					cycleButtonHeight);
+		}
 		
 		if (!visibleRecords.isEmpty()) {
 
@@ -215,6 +234,9 @@ public class RankingsScene extends PixelScene {
 		}
 
 		add(btnCycleRankings);
+		if (btnHeroHall != null) {
+			add(btnHeroHall);
+		}
 
 		fadeIn();
 	}
@@ -249,6 +271,7 @@ public class RankingsScene extends PixelScene {
 		private static final int FLARE_LOSE	= 0x666666;
 		
 		private Rankings.Record rec;
+		private boolean fromHeroHall;
 		
 		protected Image shield;
 		private Flare flare;
@@ -260,9 +283,14 @@ public class RankingsScene extends PixelScene {
 		private BitmapText level;
 		
 		public Record( int pos, boolean latest, Rankings.Record rec ) {
+			this(pos, latest, rec, false);
+		}
+
+		public Record( int pos, boolean latest, Rankings.Record rec, boolean fromHeroHall ) {
 			super();
 			
 			this.rec = rec;
+			this.fromHeroHall = fromHeroHall;
 			
 			if (latest) {
 				flare = new Flare( 6, 24 );
@@ -271,7 +299,7 @@ public class RankingsScene extends PixelScene {
 				addToBack( flare );
 			}
 
-			if (pos != Rankings.TABLE_SIZE-1) {
+			if (fromHeroHall || pos != Rankings.TABLE_SIZE-1) {
 				position.text(Integer.toString(pos + 1));
 			} else
 				position.text(" ");
@@ -394,7 +422,7 @@ public class RankingsScene extends PixelScene {
 		
 		@Override
 		protected void onClick() {
-			parent.add( new WndRanking( rec ) );
+			parent.add( new WndRanking( rec, fromHeroHall ) );
 		}
 	}
 }

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.bombs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -71,7 +73,7 @@ public class FlashBangBomb extends Bomb {
 		for (Char ch : affected){
 			//25% bonus damage and 10 turns of stun
 			int damage = Math.round(Random.NormalIntRange(4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth()) / 4f);
-			ch.damage(damage, new Electricity());
+			ch.damage(damage, new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 			if (ch.isAlive()) Buff.prolong(ch, Paralysis.class, Paralysis.DURATION);
 			arcs.add(new Lightning.Arc(DungeonTilemap.tileCenterToWorld(cell), ch.sprite.center()));
 

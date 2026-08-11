@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.mage;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -40,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
@@ -90,7 +93,10 @@ public class WarpBeacon extends ArmorAbility {
 			GameScene.show( new WndOptions(
 					new Image(hero.sprite),
 					Messages.titleCase(name()),
-					Messages.get(WarpBeacon.class, "window_desc", tracker.depth),
+					Messages.get(WarpBeacon.class,
+							tracker.branch == TowerLevel.BRANCH
+									? "window_desc_tower" : "window_desc",
+							tracker.depth),
 					Messages.get(WarpBeacon.class, "window_tele"),
 					Messages.get(WarpBeacon.class, "window_clear"),
 					Messages.get(WarpBeacon.class, "window_cancel")){
@@ -98,15 +104,30 @@ public class WarpBeacon extends ArmorAbility {
 				@Override
 				protected void onSelect(int index) {
 					if (index == 0){
+						boolean sameLocation = Dungeon.sameLocation(
+								tracker.depth, tracker.branch, Dungeon.depth, Dungeon.branch);
+						if (sameLocation) {
+							tracker.markerReachable = Dungeon.returnTeleportPositionAllowed(tracker.pos);
+						}
+						if (!Dungeon.returnTeleportMarkerAllowed(
+										tracker.depth, tracker.branch, tracker.markerValid)) {
+							GLog.w(Messages.get(WarpBeacon.class, "locked_floor"));
+							return;
+						}
+						if (!Dungeon.returnTeleportAllowed(
+								tracker.depth, tracker.branch, tracker.pos, tracker.markerReachable)) {
+							GLog.w(Messages.get(WarpBeacon.class, "locked_floor"));
+							return;
+						}
 
-						if (tracker.depth != Dungeon.depth && !hero.hasTalent(Talent.LONGRANGE_WARP)){
+						if (!sameLocation && !hero.hasTalent(Talent.LONGRANGE_WARP)){
 							GLog.w( Messages.get(WarpBeacon.class, "depths") );
 							return;
 						}
 
 						float chargeNeeded = chargeUse(hero);
 
-						if (tracker.depth != Dungeon.depth){
+						if (!sameLocation){
 							chargeNeeded *= 1.833f - 0.333f*Dungeon.hero.pointsInTalent(Talent.LONGRANGE_WARP);
 						}
 
@@ -119,19 +140,19 @@ public class WarpBeacon extends ArmorAbility {
 						Talent.onArmorAbility(hero, chargeNeeded);
 						armor.updateQuickslot();
 
-						if (tracker.depth == Dungeon.depth && tracker.branch == Dungeon.branch){
+						if (sameLocation){
 							Char existing = Actor.findChar(tracker.pos);
 
 							if (existing != null && existing != hero){
 								if (hero.hasTalent(Talent.TELEFRAG)){
 									int heroHP = hero.HP + hero.shielding();
 									int heroDmg = 5 * hero.pointsInTalent(Talent.TELEFRAG);
-									hero.damage(Math.min(heroDmg, heroHP-1), WarpBeacon.this);
+									hero.damage(Math.min(heroDmg, heroHP-1), WarpBeacon.this, DamageTag.MAGICAL);
 
 									int damage = Hero.heroDamageIntRange(10*hero.pointsInTalent(Talent.TELEFRAG), 15*hero.pointsInTalent(Talent.TELEFRAG));
 									existing.sprite.flash();
 									existing.sprite.bloodBurstA(existing.sprite.center(), damage);
-									existing.damage(damage, WarpBeacon.this);
+									existing.damage(damage, WarpBeacon.this, DamageTag.MAGICAL);
 
 									Sample.INSTANCE.play(Assets.Sounds.HIT_CRUSH);
 									Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG);
@@ -175,11 +196,6 @@ public class WarpBeacon extends ArmorAbility {
 
 						} else {
 
-							if (!Dungeon.interfloorTeleportAllowed()){
-								GLog.w( Messages.get(ScrollOfTeleportation.class, "no_tele") );
-								return;
-							}
-
 							//transition before dispel, to cancel out trap effects
 							Level.beforeTransition();
 							Invisibility.dispel();
@@ -197,6 +213,11 @@ public class WarpBeacon extends ArmorAbility {
 			} );
 
 		} else {
+			if (!Dungeon.returnTeleportMarkerPlacementAllowed()) {
+				GLog.w(Messages.get(WarpBeacon.class, "locked_floor"));
+				return;
+			}
+
 			if (!Dungeon.level.mapped[target] && !Dungeon.level.visited[target]){
 				return;
 			}
@@ -219,6 +240,8 @@ public class WarpBeacon extends ArmorAbility {
 			tracker.pos = target;
 			tracker.depth = Dungeon.depth;
 			tracker.branch = Dungeon.branch;
+			tracker.markerValid = true;
+			tracker.markerReachable = Dungeon.returnTeleportPositionAllowed(target);
 			tracker.attachTo(hero);
 
 			hero.sprite.operate(target);
@@ -237,12 +260,15 @@ public class WarpBeacon extends ArmorAbility {
 		int pos;
 		int depth;
 		int branch;
+		boolean markerValid;
+		boolean markerReachable;
 
 		Emitter e;
 
 		@Override
 		public void fx(boolean on) {
-			if (on && depth == Dungeon.depth) {
+			if (on && markerValid
+					&& Dungeon.sameLocation(depth, branch, Dungeon.depth, Dungeon.branch)) {
 				e = CellEmitter.center(pos);
 				e.pour(MagicMissile.WardParticle.UP, 0.05f);
 			}
@@ -252,13 +278,20 @@ public class WarpBeacon extends ArmorAbility {
 		public static final String POS = "pos";
 		public static final String DEPTH = "depth";
 		public static final String BRANCH = "branch";
+		public static final String MARKER_VALID = "marker_valid";
+		public static final String MARKER_REACHABLE = "marker_reachable";
 
 		@Override
 		public void storeInBundle(Bundle bundle) {
 			super.storeInBundle(bundle);
+			if (Dungeon.sameLocation(depth, branch, Dungeon.depth, Dungeon.branch)) {
+				markerReachable = Dungeon.returnTeleportPositionAllowed(pos);
+			}
 			bundle.put(POS, pos);
 			bundle.put(DEPTH, depth);
 			bundle.put(BRANCH, branch);
+			bundle.put(MARKER_VALID, markerValid);
+			bundle.put(MARKER_REACHABLE, markerReachable);
 		}
 
 		@Override
@@ -267,6 +300,10 @@ public class WarpBeacon extends ArmorAbility {
 			pos = bundle.getInt(POS);
 			depth = bundle.getInt(DEPTH);
 			branch = bundle.getInt(BRANCH);
+			markerValid = bundle.getBoolean(MARKER_VALID)
+					&& Dungeon.returnTeleportMarkerLocationAllowed(depth, branch);
+			markerReachable = !bundle.contains(MARKER_REACHABLE)
+					|| bundle.getBoolean(MARKER_REACHABLE);
 		}
 	}
 

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
@@ -126,7 +128,7 @@ public class NewHardDK extends Boss{
         for(Mob m: Dungeon.level.mobs.toArray(new Mob[0])){
             if(m.state == m.SLEEPING){
                 if(m != this){
-                    m.damage(0, this);
+                    m.damage(0, this, DamageTag.PHYSICAL);
                 }
             }
         }
@@ -746,7 +748,7 @@ public class NewHardDK extends Boss{
     }
 
     @Override
-    public int defenseProc(Char enemy, int damage) {
+    public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 
         if(phase == 2) {
             if(damageFromMissile(enemy)) {
@@ -762,11 +764,11 @@ public class NewHardDK extends Boss{
             }
         }
 
-        return super.defenseProc(enemy, damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if(!BossHealthBar.isAssigned()){
             BossHealthBar.assignBoss(this);
         }
@@ -796,7 +798,7 @@ public class NewHardDK extends Boss{
             notice();
         }
         int beforeHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         int lostHP = - HP + beforeHP;
 
         summonCD -= lostHP / 4f;

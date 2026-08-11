@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.dict;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.ChallengeItem;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
@@ -12,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournal;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.ColorBlock;
@@ -28,6 +30,14 @@ public class DictBook extends ChallengeItem {
     }
 
     private static final String AC_READ = "read";
+
+    private static void showWindow(Window window) {
+        if (ShatteredPixelDungeon.scene() instanceof GameScene) {
+            GameScene.show(window);
+        } else {
+            ShatteredPixelDungeon.scene().addToFront(window);
+        }
+    }
 
     @Override
     public boolean isIdentified() {
@@ -49,7 +59,7 @@ public class DictBook extends ChallengeItem {
     @Override
     public void execute(Hero hero, String action) {
         if(action.equals(AC_READ)){
-            GameScene.show(new WndDict());
+            GameScene.show(WndJournal.dictionaryPage());
         }else {
             super.execute(hero, action);
         }
@@ -139,16 +149,16 @@ public class DictBook extends ChallengeItem {
             float buttonWidth = width() / perRow;
 
             for (int i = 0; i < NUM_BUTTONS; i++) {
-                itemButtons[i].setRect((i % perRow) * (buttonWidth), (i / perRow) * (ITEM_HEIGHT),
+                itemButtons[i].setRect(x + (i % perRow) * buttonWidth, y + (i / perRow) * ITEM_HEIGHT,
                         buttonWidth, ITEM_HEIGHT);
                 PixelScene.align(itemButtons[i]);
             }
 
-            list.setRect(0, itemButtons[NUM_BUTTONS - 1].bottom() + 1, width,
-                    height - itemButtons[NUM_BUTTONS - 1].bottom() - 1);
+            list.setRect(x, itemButtons[NUM_BUTTONS - 1].bottom() + 1, width,
+                    height - (itemButtons[NUM_BUTTONS - 1].bottom() - y) - 1);
         }
 
-        private void updateList() {
+        public void updateList() {
 
             items.clear();
 
@@ -226,7 +236,7 @@ public class DictBook extends ChallengeItem {
 
             public boolean onClick(float x, float y) {
                 if (inside(x, y)) {
-                    GameScene.show(new WndScrollTitledMessage(new Image(icon), M.TL(Dict.class, k ), M.L(Dict.class, k + "_d"), 152));
+                    showWindow(new WndScrollTitledMessage(new Image(icon), M.TL(Dict.class, k ), M.L(Dict.class, k + "_d"), 152));
                     return true;
                 }
                 return false;

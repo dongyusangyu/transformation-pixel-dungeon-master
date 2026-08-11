@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -15,6 +17,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RogueBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Tengu;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.WarriorBoss;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.WindParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -354,8 +357,9 @@ public class PrisonNewBossLevel extends Level{
 
         //remove all mobs, but preserve allies
         ArrayList<Mob> allies = new ArrayList<>();
-        for(Mob m : mobs.toArray(new Mob[0])){
-            if (m.alignment == Char.Alignment.ALLY && !m.properties().contains(Char.Property.IMMOVABLE)){
+		for(Mob m : mobs.toArray(new Mob[0])){
+			if ((m.alignment == Char.Alignment.ALLY || m instanceof DirectableAlly)
+					&& !m.properties().contains(Char.Property.IMMOVABLE)){
                 allies.add(m);
                 mobs.remove(m);
             }
@@ -439,8 +443,9 @@ public class PrisonNewBossLevel extends Level{
             }
         }
 
-        for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
-            if ((safeArea == null || !safeArea.inside(cellToPoint(mob.pos)))){
+		for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
+			if (!(mob instanceof DirectableAlly)
+					&& (safeArea == null || !safeArea.inside(cellToPoint(mob.pos)))){
                 mob.destroy();
                 if (mob.sprite != null)
                     mob.sprite.killAndErase();
@@ -542,7 +547,7 @@ public class PrisonNewBossLevel extends Level{
         }
 
         @Override
-        public void damage( int dmg, Object src ) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             //do nothing
         }
 

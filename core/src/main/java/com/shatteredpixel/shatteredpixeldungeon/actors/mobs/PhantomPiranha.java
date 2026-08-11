@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -50,7 +52,7 @@ public class PhantomPiranha extends Piranha {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		Char dmgSource = null;
 		if (src instanceof Char) dmgSource = (Char)src;
 		if (src instanceof Wand || src instanceof ClericSpell) dmgSource = Dungeon.hero;
@@ -61,7 +63,7 @@ public class PhantomPiranha extends Piranha {
 		if(hero.hasTalent(Talent.FISHING_TIME)){
 			dmg*=1.3;
 		}
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 		if (hero.pointsInTalent(Talent.FISHING_TIME)==2){
 			return;
 		}
@@ -92,8 +94,8 @@ public class PhantomPiranha extends Piranha {
 	}
 
 	@Override
-	public int defenseProc(Char enemy, int damage) {
-		return super.defenseProc(enemy, damage);
+	public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	@Override

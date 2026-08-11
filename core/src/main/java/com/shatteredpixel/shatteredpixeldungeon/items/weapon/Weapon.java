@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 
@@ -108,6 +110,7 @@ abstract public class Weapon extends KindOfWeapon {
 	public enum Augment {
 		SPEED   (0.7f, 2/3f),
 		DAMAGE  (1.5f, 5/3f),
+		MAGIC   (1.0f, 1f),
 		NONE	(1.0f, 1f);
 
 		private float damageFactor;
@@ -128,6 +131,28 @@ abstract public class Weapon extends KindOfWeapon {
 	}
 	
 	public Augment augment = Augment.NONE;
+
+	public static int magicDamageMinForTier(int tier) {
+		return Math.max(1, Math.min(5, tier));
+	}
+
+	public static int magicDamageMax() {
+		return 10;
+	}
+
+	public static int magicReachBonus(int baseReach) {
+		return baseReach < 2 ? 1 : 0;
+	}
+
+	public static float magicDelayMultiplier(int baseReach) {
+		return baseReach > 1 ? 2f / 3f : 1f;
+	}
+
+	public int weaponTier() {
+		if (this instanceof MeleeWeapon) return ((MeleeWeapon) this).tier;
+		if (this instanceof MissileWeapon) return ((MissileWeapon) this).tier;
+		return 0;
+	}
 
 	protected int usesToID(){
 		return 20;
@@ -209,7 +234,7 @@ abstract public class Weapon extends KindOfWeapon {
                 }
 				if (defender.isAlive() && !becameAlly) {
 					int dmg = ((Hero) attacker).subClass.is(HeroSubClass.PALADIN) ? 6 : 2;
-					defender.damage(Math.round(dmg * Enchantment.genericProcChanceMultiplier(attacker)), HolyWeapon.INSTANCE);
+					defender.damage(Math.round(dmg * Enchantment.genericProcChanceMultiplier(attacker)), HolyWeapon.INSTANCE, DamageTag.MAGICAL);
 				}
 
 			} else {
@@ -259,7 +284,7 @@ abstract public class Weapon extends KindOfWeapon {
 
 			if (attacker instanceof Hero && isEquipped((Hero) attacker) &&
 					attacker.buff(Smite.SmiteTracker.class) != null && !becameAlly){
-				defender.damage(Smite.bonusDmg((Hero) attacker, defender), Smite.INSTANCE);
+				defender.damage(Smite.bonusDmg((Hero) attacker, defender), Smite.INSTANCE, DamageTag.MAGICAL);
 			}
             ring = null;
 		}
@@ -270,6 +295,11 @@ abstract public class Weapon extends KindOfWeapon {
 		}
 
 		 */
+		if (augment == Augment.MAGIC && defender.isAlive() && !becameAlly
+				&& weaponTier() >= 1 && weaponTier() <= 5) {
+			defender.damage(Random.IntRange(weaponTier(), magicDamageMax()),
+					this, DamageTag.MAGICAL);
+		}
 
 		//do not progress toward ID in the specific case of a missile weapon with no parent using
 		// up it's last shot, as in this case there's nothing left to ID anyway
@@ -412,6 +442,9 @@ abstract public class Weapon extends KindOfWeapon {
 
 	protected float baseDelay( Char owner ){
 		float delay = augment.delayFactor(this.DLY);
+		if (augment == Augment.MAGIC) {
+			delay *= magicDelayMultiplier(RCH);
+		}
 		if (owner instanceof Hero) {
 			int encumbrance = STRReq() - ((Hero)owner).STR();
 			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
@@ -438,6 +471,9 @@ abstract public class Weapon extends KindOfWeapon {
 	@Override
 	public int reachFactor(Char owner) {
 		int reach = RCH;
+		if (augment == Augment.MAGIC) {
+			reach += magicReachBonus(RCH);
+		}
 		if(owner instanceof Hero && ((Hero) owner).pointsInTalent(Talent.ACCUMULATE_STEADILY)==3){
 			reach+=1;
 		}
@@ -688,12 +724,37 @@ abstract public class Weapon extends KindOfWeapon {
 		};
 
 		private static final long RANDOM_MODE_POOL_SEED = 0x5EED5A11A71E1L;
+
+		private static final ThreadLocal<Enchantment> forcedProc = new ThreadLocal<>();
 		
 			
 		public abstract int proc( Weapon weapon, Char attacker, Char defender, int damage );
 
 		protected float procChanceMultiplier( Char attacker ){
 			return genericProcChanceMultiplier( attacker );
+		}
+
+		/**
+		 * Checks an enchantment's own proc probability.  A weapon ability can
+		 * temporarily force one exact enchantment instance without affecting any
+		 * other proc source or changing the computed effect magnitude.
+		 */
+		protected boolean procChance(float chance) {
+			return isForcedProc() || Random.Float() < chance;
+		}
+
+		protected boolean isForcedProc() {
+			return this == forcedProc.get();
+		}
+
+		public static void forceProc(Enchantment enchantment) {
+			forcedProc.set(enchantment);
+		}
+
+		public static void clearForcedProc(Enchantment enchantment) {
+			if (forcedProc.get() == enchantment) {
+				forcedProc.remove();
+			}
 		}
 
 		public static float genericProcChanceMultiplier( Char attacker ){

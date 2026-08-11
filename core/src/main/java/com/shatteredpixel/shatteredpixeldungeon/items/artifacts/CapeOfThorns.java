@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -289,7 +291,7 @@ public class CapeOfThorns extends Artifact {
 		public int proc(int damage, Char attacker) {
 			if (damage <= 0) return damage;
 			int deflected = Random.NormalIntRange(minimumDeflection(damage, effectLevel), damage);
-			if (attacker != null) attacker.damage(deflected, this);
+			if (attacker != null) attacker.damage(deflected, this, DamageTag.PHYSICAL);
 			return damage - deflected;
 		}
 

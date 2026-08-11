@@ -68,14 +68,8 @@ public class Pushing extends Actor {
 	protected boolean act() {
 		Actor.remove( Pushing.this );
 
-		if (sprite != null && sprite.parent != null) {
-			if (Dungeon.level.heroFOV[from] || Dungeon.level.heroFOV[to]){
-				sprite.visible = true;
-			}
-			if (effect == null) {
-				new Effect();
-			}
-		} else {
+		if (!startEffect()) {
+			completeCallback();
 			return true;
 		}
 
@@ -86,6 +80,38 @@ public class Pushing extends Actor {
 		}
 		return false;
 
+	}
+
+	/**
+	 * Starts the visual without waiting for this effect to receive an Actor turn.
+	 * This is needed by callback chains which deliberately keep the current actor
+	 * busy until the pushing animation has finished.
+	 */
+	public void startImmediately() {
+		// Keep this registered so pushingExistsForChar and the normal scheduler
+		// can still observe it; only the visual startup bypasses the Actor turn.
+		Actor.add( Pushing.this );
+		if (!startEffect()) {
+			Actor.remove( Pushing.this );
+			completeCallback();
+		}
+	}
+
+	private boolean startEffect() {
+		if (sprite == null || sprite.parent == null) return false;
+		if (Dungeon.level.heroFOV[from] || Dungeon.level.heroFOV[to]){
+			sprite.visible = true;
+		}
+		if (effect == null) {
+			effect = new Effect();
+		}
+		return true;
+	}
+
+	private void completeCallback() {
+		Callback executing = callback;
+		callback = null;
+		if (executing != null) executing.call();
 	}
 
 	public static boolean pushingExistsForChar(Char ch) {
@@ -135,7 +161,7 @@ public class Pushing extends Actor {
 				
 				killAndErase();
 				Actor.remove(Pushing.this);
-				if (callback != null) callback.call();
+				completeCallback();
 				GameScene.sortMobSprites();
 
 				next();

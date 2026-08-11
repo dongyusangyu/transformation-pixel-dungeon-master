@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.traps;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -101,7 +103,7 @@ public class RockfallTrap extends Trap {
 				}
 				int damage = Random.NormalIntRange(5+scalingDepth(), 10+scalingDepth()*2);
 				damage -= ch.drRoll();
-				ch.damage( Math.max(damage, 0) , this);
+				ch.damage( Math.max(damage, 0) , this, DamageTag.PHYSICAL);
 
 				if (ch.isActive()) {
 					Buff.prolong(ch, Paralysis.class, Paralysis.DURATION);

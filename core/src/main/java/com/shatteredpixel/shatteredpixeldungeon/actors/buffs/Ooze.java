@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -107,11 +109,11 @@ public class Ooze extends Buff {
 			}
 			acted = true;
 			if (Dungeon.scalingDepth() > 5) {
-				target.damage(1 + Dungeon.scalingDepth() / 5, this);
+				target.damage(1 + Dungeon.scalingDepth() / 5, this, DamageTag.PHYSICAL, DamageTag.OOZE);
 			} else if (Dungeon.scalingDepth() == 5){
-				target.damage(1, this); //1 dmg per turn vs Goo
+				target.damage(1, this, DamageTag.PHYSICAL, DamageTag.OOZE); //1 dmg per turn vs Goo
 			} else if (Random.Int(2) == 0) {
-				target.damage(1, this); //0.5 dmg per turn in sewers
+				target.damage(1, this, DamageTag.PHYSICAL, DamageTag.OOZE); //0.5 dmg per turn in sewers
 			}
 
 			if (!target.isAlive() && target == Dungeon.hero) {

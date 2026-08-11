@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -46,7 +48,7 @@ public class BackgroundBeamCounter extends Buff {
                 if (ch.alignment != Char.Alignment.ENEMY) {
                     Buff.affect(ch, Blindness.class, 5f);
                     Buff.detach(ch, MindVision.class);
-                    ch.damage(Random.IntRange(10, 15), TenguHard.class);
+                    ch.damage(Random.IntRange(10, 15), TenguHard.class, DamageTag.PHYSICAL);
                     if (ch == Dungeon.hero && !ch.isAlive()) {
                         Dungeon.fail(getClass());
                     }

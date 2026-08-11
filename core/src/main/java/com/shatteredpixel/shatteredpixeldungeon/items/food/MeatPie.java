@@ -34,7 +34,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
-import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -106,11 +105,7 @@ public class MeatPie extends Food {
 			try {
 				Item result = new MeatPie();
 				int outQuantity = 1;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
+				result.quantity(outQuantity + Talent.miracleAlchemyBonus(hero, result));
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

@@ -167,8 +167,8 @@ public final class DungeonDoctorAnswerRegistry {
 				"复仇卷轴加6点炼金能量可制成灵爆秘卷。");
 		register(answers, "Q070", 3,
 				"恐惧卷轴加6点炼金能量可制成梦魇秘卷。");
-		register(answers, "Q071", 2,
-				"嬗变卷轴加6点炼金能量可制成蜕变秘卷。");
+		register(answers, "Q071", 0,
+				"非Boss且处于主线分支的楼层创建时，会固定加入1张蜕变卷轴。");
 		register(answers, "Q072", 1,
 				"悲伤幽灵任务NPC会在2至4层出现。");
 		register(answers, "Q073", 0,
@@ -200,7 +200,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q086", 3,
 				"每个暗金矿折算50人情。");
 		register(answers, "Q087", 2,
-				"暗金矿最多40个。");
+				"不计相关天赋时，每块暗金矿值50人情，击杀任务强敌另得1000人情；达到3000人情上限共需40块暗金矿。");
 		register(answers, "Q088", 1,
 				"豺狼地卜师或巨型水晶各值1000人情。");
 		register(answers, "Q089", 0,
@@ -212,7 +212,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q092", 1,
 				"毒气房内有2个宝箱和1个遗骸。");
 		register(answers, "Q093", 0,
-				"血色哨卫能瞄准隐形玩家。");
+				"血色哨卫的锁定逻辑不受玩家隐形状态影响。");
 		register(answers, "Q094", 3,
 				"浮空房由悬崖或陷阱隔开，对面是一个宝箱。");
 		register(answers, "Q095", 2,
@@ -234,7 +234,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q103", 2,
 				"石像护甲必定带刻印。");
 		register(answers, "Q104", 1,
-				"玩家上下左右各生成1只怨灵。");
+				"墓碑会尝试在玩家的四个正交相邻格各生成一只怨灵；被阻挡的位置不会生成。");
 		register(answers, "Q105", 0,
 				"墓碑房怨灵闪避高，但生命值只有1。");
 		register(answers, "Q106", 3,
@@ -244,7 +244,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q108", 1,
 				"六选三房间固定消耗3把水晶钥匙。");
 		register(answers, "Q109", 0,
-				"治疗泉会回满生命与饱食度。");
+				"无相关挑战影响时，治疗泉会直接回满生命与饱食度。");
 		register(answers, "Q110", 3,
 				"任意物品都可丢入鉴定泉进行鉴定。");
 		register(answers, "Q111", 2,
@@ -252,7 +252,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q112", 1,
 				"普通商店固定出现在6、11、16层。");
 		register(answers, "Q113", 0,
-				"商店必定生成在上楼楼梯口附近。");
+				"普通商店的生成位置固定参考本层入口，也就是上楼楼梯口。");
 		register(answers, "Q114", 3,
 				"6、11、16层不会生成任务NPC。");
 		register(answers, "Q115", 2,
@@ -266,7 +266,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q119", 2,
 				"随机模式通关会验证RANDOM_HERO徽章“鸿运当头”。");
 		register(answers, "Q120", 1,
-				"随机模式下鼠王从护甲技能池随机选择奖励。");
+				"随机模式的王冠界面会显示本局预先随机出的护甲技能候选。");
 		register(answers, "Q121", 0,
 				"两套卷轴权重中有一套把嬗变卷轴权重设为0。");
 		register(answers, "Q122", 3,
@@ -282,7 +282,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q127", 2,
 				"一区前三层的毒气房容器可能装有魔能触媒。");
 		register(answers, "Q128", 1,
-				"极速房的武器或护甲自带等级范围为+0至+3。");
+				"非随机模式下，极速房生成装备最高自带+2，再有三分之一概率额外升1级，因此最高为+3。");
 		register(answers, "Q129", 0,
 				"水爆魔药能将特殊地块变成水，从而绕过哨卫机制。");
 		register(answers, "Q130", 3,
@@ -304,11 +304,11 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q138", 3,
 				"普通炼金房不会生成在任何大区的前两层。");
 		register(answers, "Q139", 2,
-				"石像武器必有附魔，护甲必有刻印。");
+				"石像武器必有附魔，护甲必有刻印；两件装备掉落时也都会被鉴定。");
 		register(answers, "Q140", 1,
-				"房间按权重排位，经验和嬗变属于最低权重，不能出现在最外侧。");
+				"房间会分别按照药剂与卷轴的默认生成权重排序，再将其放入对应位置。");
 		register(answers, "Q141", 0,
-				"饮用会回满生命和饱食度，并移除负面状态及装备诅咒。");
+				"治疗泉会回满生命与饱食度，清除治疗药剂可治愈的状态，并解除已装备物品的诅咒。");
 		register(answers, "Q142", 3,
 				"会获悉本层物品位置并发现隐藏门和陷阱。");
 		register(answers, "Q143", 2,
@@ -324,7 +324,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q148", 1,
 				"食物房固定生成一株无味果。");
 		register(answers, "Q149", 0,
-				"蜜蜂仅有罐子周围三格视野与索敌范围。");
+				"敌对蜜蜂只会索敌蜂罐周围三格内的目标，并会返回蜂罐附近。");
 		register(answers, "Q150", 3,
 				"同种子的武器与护甲奖励自带等级相同。");
 		register(answers, "Q151", 2,
@@ -338,7 +338,7 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q155", 2,
 				"三个不同种子时，50%完全随机，50%由种子决定。");
 		register(answers, "Q156", 1,
-				"此配方约67%按种子决定，约33%完全随机。");
+				"两同一种子加一异种时，75%按投入种子决定，25%从普通药剂池完全随机。");
 		register(answers, "Q157", 0,
 				"肌肉记忆合剂的对应配方是力量药剂+4能量。");
 		register(answers, "Q158", 3,
@@ -378,55 +378,55 @@ public final class DungeonDoctorAnswerRegistry {
 		register(answers, "Q175", 2,
 				"梦魇秘卷由恐惧卷轴加6点炼金能量制成。");
 		register(answers, "Q176", 1,
-				"蜕变秘卷由嬗变卷轴加6点炼金能量制成。");
+				"蜕变结晶由8张蜕变卷轴加1点炼金能量制成。");
 		register(answers, "Q177", 0,
-				"随机模式把每个原本大于0的概率项改为1。");
+				"随机模式把物品生成器中每个原本大于0的权重改为1。");
 		register(answers, "Q178", 3,
 				"随机器由地牢种子、常量盐和职业序号共同初始化。");
 		register(answers, "Q179", 2,
-				"类型已知、完整鉴定或无诅咒施法后才应用效果图标。");
+				"法杖类型已知、完整鉴定，或成功施放过非诅咒效果后，才显示对应效果图标。");
 		register(answers, "Q180", 1,
 				"刻印列表使用地牢种子异或固定盐后洗牌。");
-		register(answers, "Q181", 0,
-				"鉴定卷轴在两套卷轴生成权重中均为3。");
-		register(answers, "Q182", 3,
-				"祛邪卷轴在两套卷轴生成权重中均为2。");
-		register(answers, "Q183", 2,
-				"镜像卷轴的两套权重为1和2。");
+		register(answers, "Q181", 1,
+				"一区固定有3张升级卷轴，但野生宝箱不会生成升级卷轴；同图案又代表同类型，因此这3张都不是升级卷轴。");
+		register(answers, "Q182", 1,
+				"火墙会在合规位置固定生成冰霜药剂，野生宝箱中的冰霜药剂只来自普通随机生成，二者恰好同类是巧合。");
+		register(answers, "Q183", 1,
+				"一区前三层的魔能触媒可能藏在毒气房的2个宝箱或1个遗骸中；其他位置已搜尽时，应回去检查这些容器。");
 		register(answers, "Q184", 1,
-				"充能卷轴的两套权重为2和1。");
-		register(answers, "Q185", 0,
-				"传送卷轴的两套权重为1和2。");
-		register(answers, "Q186", 3,
-				"治疗药剂在两套药剂生成权重中均为3。");
+				"无法确定冰霜药剂时，应在距火墙1格且不在水上的位置饮用；这样能让冰霜生效，也避免把力量药剂误掷出去。");
+		register(answers, "Q185", 1,
+				"先用炸弹或震爆符石远程炸开宝箱即可查看物品，再决定是否值得消耗浮空药剂前往拾取。");
+		register(answers, "Q186", 1,
+				"虚空锁链能把巨型食人鱼拉上岸解决威胁，因此可以保留本层固定生成的隐身药剂再取宝箱。");
 		register(answers, "Q187", 2,
-				"灵视药剂在两套药剂生成权重中均为2。");
-		register(answers, "Q188", 1,
-				"冰霜药剂的两套权重为1和2。");
+				"六选三属于可能错过物品的选择结构，不会放入固定的力量药剂和升级卷轴；相同外观对应的背包物品也可排除这两类。");
+		register(answers, "Q188", 0,
+				"极速房宝箱出现液火药剂，说明本层还有为隐藏附魔石房固定生成的液火药剂，应重点检查可烧开的书架。");
 		register(answers, "Q189", 0,
-				"液火药剂的两套权重为2和1。");
-		register(answers, "Q190", 3,
-				"对应+0至+3的概率依次为50%、38.3%、10%、1.7%。");
+				"种子袋初始计1分，另三种包裹初始为0分；种子符石有2件时种子袋得3分，因此法杖与投掷武器合计至少4件才能让魔法筒袋严格最高。");
+		register(answers, "Q190", 0,
+				"浮空药剂先花4点炼成暴风骤雨合剂，再花8点炼成水爆魔药，总能耗为12点。");
 		register(answers, "Q191", 2,
-				"石像装备+0至+2的概率依次为75%、20%、5%。");
+				"横扫对其他可攻击敌人造成向上取整的100×(1+2)/(10+2)=25点物理伤害；主目标A不会重复受到横扫伤害。");
 		register(answers, "Q192", 1,
-				"幽灵奖励+0至+3的概率依次为50%、30%、15%、5%。");
-		register(answers, "Q193", 0,
-				"法杖+1至+3的概率依次为2/3、4/15、1/15。");
-		register(answers, "Q194", 3,
-				"戒指+2至+4的概率依次为2/3、4/15、1/15。");
+				"武技精通的基础上限为min(2+(19-1)/3,8)=8点；勇士再增加2点，上限为10点，并使武技充能回复速度提升50%。");
+		register(answers, "Q193", 3,
+				"符石转换的基础消耗为8点，+2符石专家减少4点，因此每颗消耗4点；连续转换3颗共消耗12点炼金能量。");
+		register(answers, "Q194", 0,
+				"+1符文爆破按印记层数×0.25为所有法杖充能；8层使每根回复2点，3根未满充法杖合计回复6点。");
 		register(answers, "Q195", 2,
-				"锻造装备+0至+3的概率依次为30%、45%、20%、5%。");
+				"极恶中队不限定召唤来源或怪物种类；只要怪物处于盟友阵营，+1同步大部分物攻特效，+2还会同步大部分物攻增伤。");
 		register(answers, "Q196", 1,
-				"3.2版本后的物品权重中，神器和戒指各占三分之一。");
-		register(answers, "Q197", 0,
-				"二区有75%概率生成2个，25%概率生成3个隐藏房。");
-		register(answers, "Q198", 3,
-				"其他食物降低三分之二；大饼计入饱腹持续后只降低二分之一。");
+				"背包没有手里剑箱时，+2忍者便当改为提供2回合神器充能；食物来自丰饶之角时，该充能不会作用于丰饶之角自身。");
+		register(answers, "Q197", 3,
+				"粘液温室通常让体内发芽不耗回合，但荒芜之地会改用挑战耗时；升级后耗时由20回合降至15回合，+2同时回复30点饱食度。");
+		register(answers, "Q198", 0,
+				"武技训练已经使非决斗家能够使用武技，因此+2专注一餐触发常规效果并获得1点武技充能，不再触发下次攻击增加英雄等级一半伤害的兼容效果。");
 		register(answers, "Q199", 2,
-				"随机模式跳过一阶，并把所有可生成的二至五阶等阶权重设为1。");
+				"+2炼金屏障让每次消耗炼金能量获得2层屏障，工具箱供能升级也会触发；两次本应获得4层但上限为3层，敌人造成正伤害后消耗1层，剩2层。");
 		register(answers, "Q200", 1,
-				"附魔池内容用地牢种子与固定盐初始化后洗牌，同种子结果一致。");
+				"DM-400的物理攻击通常施加3回合指令标记；+2指令餐把进食后的前3次提高到6回合，效果耗尽后第4次恢复为3回合。");
 		DungeonDoctorQuestionBankValidator.validateIds(answers.keySet());
 		return Collections.unmodifiableMap(answers);
 	}

@@ -661,6 +661,14 @@ class TalentCloudStore:
             merged["daily_history_dates"] = [day for day, _score in history]
             merged["daily_history_scores"] = [score for _day, score in history]
 
+        # Hero Hall is an unlimited, user-managed archive. An incoming value is
+        # authoritative so removals sync; legacy clients which omit it retain
+        # the server's existing archive.
+        if "hero_hall_records" in incoming:
+            merged["hero_hall_records"] = deepcopy(cls._as_list(incoming.get("hero_hall_records")))
+        elif "hero_hall_records" in existing:
+            merged["hero_hall_records"] = deepcopy(cls._as_list(existing.get("hero_hall_records")))
+
         return merged
 
     @classmethod

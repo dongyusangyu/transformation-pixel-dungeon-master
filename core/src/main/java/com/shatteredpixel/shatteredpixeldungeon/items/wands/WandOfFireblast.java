@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -152,7 +154,7 @@ public class WandOfFireblast extends DamageWand {
 			if(hero!=null && hero.pointsInTalent(Talent.DEVIL_FLAME)>2){
 				dmg=(int)(dmg*1.2f);
 			}
-			ch.damage(dmg, this);
+			ch.damage(dmg, this, DamageTag.MAGICAL);
 			if (ch.isAlive()) {
 				Buff.affect(ch, Burning.class).reignite(ch);
 				switch (charge) {
@@ -216,7 +218,7 @@ public class WandOfFireblast extends DamageWand {
 						}
 						if (ch.alignment == Char.Alignment.ENEMY) {
 							//damage of a 2-charge zap
-							ch.damage(Math.round(powerMulti*Random.NormalIntRange(2 + 2*buffedLvl(), 8 + 4*buffedLvl())), this);
+							ch.damage(Math.round(powerMulti*Random.NormalIntRange(2 + 2*buffedLvl(), 8 + 4*buffedLvl())), this, DamageTag.MAGICAL);
 						}
 					}
 				}

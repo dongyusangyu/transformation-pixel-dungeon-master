@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -102,13 +104,13 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
             //enemy.damage(damageRoll(),new WandOfMagicMissile());
-            damage = super.attackProc( enemy, damage );
+            damage = super.attackProc(enemy, damage, damageTags);
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null){
                 Buff.affect(enemy, Blindness.class,3);
                 if (Char.hasProp(enemy, Char.Property.UNDEAD) || Char.hasProp(enemy, Char.Property.DEMONIC)){
-                    enemy.damage(5, this);
+                    enemy.damage(5, this, DamageTag.PHYSICAL);
                 }
             }
             return damage;
@@ -157,8 +159,8 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            enemy.damage(damageRoll(),this);
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            enemy.damage(damageRoll(), this, DamageTag.MAGICAL);
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(2)==0){
                 Buff.affect(enemy, Burning.class).extend(3);
             }
@@ -196,8 +198,8 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(3)==0){
                 Buff.affect(enemy, Vertigo.class,3);
                 if(Random.Int(2)==1){
@@ -257,8 +259,8 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(6)==0){
                 Buff.affect(enemy, Amok.class,3);
             }else if(Random.Int(3)==0){
@@ -303,8 +305,8 @@ public class AttackDrone  extends InstructionTool.Drone {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(3)==0){
                 Buff.affect(enemy, Terror.class,8).object = id();;
             }else if(Random.Int(6)==0){

@@ -15,6 +15,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
+import com.watabou.noosa.MovieClip;
 import com.watabou.noosa.TextureFilm;
 
 public class CorrosiveSwarmSprite extends MobSprite {
@@ -47,7 +48,18 @@ public class CorrosiveSwarmSprite extends MobSprite {
 	}
 
 	public void burst() {
-		play(burst);
+		if (parent == null) {
+			play(burst);
+			return;
+		}
+
+		BurstEffect effect = new BurstEffect();
+		effect.x = x;
+		effect.y = y;
+		effect.flipHorizontal = flipHorizontal;
+		effect.visible = visible;
+		effect.scale.set(scale.x, scale.y);
+		parent.add(effect);
 	}
 
 	@Override
@@ -61,5 +73,22 @@ public class CorrosiveSwarmSprite extends MobSprite {
 	@Override
 	public int blood() {
 		return 0xFFA0B938;
+	}
+
+	private static final class BurstEffect extends MovieClip implements MovieClip.Listener {
+
+		private BurstEffect() {
+			listener = this;
+			texture(Assets.Sprites.CORROSIVE_SWARM);
+			TextureFilm frames = new TextureFilm(texture, 16, 16);
+			Animation animation = new Animation(24, false);
+			animation.frames(frames, 15, 16);
+			play(animation);
+		}
+
+		@Override
+		public void onComplete(Animation animation) {
+			killAndErase();
+		}
 	}
 }

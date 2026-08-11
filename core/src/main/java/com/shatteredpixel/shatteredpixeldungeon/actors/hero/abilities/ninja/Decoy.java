@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -210,8 +212,8 @@ public class Decoy extends ArmorAbility {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if(hero.hasTalent(Talent.ALLHUNTING)){
                 Buff.affect(enemy, ShadowMark.class,2*hero.pointsInTalent(Talent.ALLHUNTING));
             }
@@ -258,8 +260,8 @@ public class Decoy extends ArmorAbility {
         }
 
         @Override
-        public int defenseProc(Char enemy, int damage) {
-            damage = super.defenseProc(enemy, damage);
+        public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
+            damage = super.defenseProc(enemy, damage, damageTags);
             if(hero.pointsInTalent(Talent.SHINKAGE)>1){
                 Buff.affect(hero, Adrenaline.class,0.5f+0.5f*(int)(hero.pointsInTalent(Talent.SHINKAGE)/2));
             }
@@ -267,12 +269,12 @@ public class Decoy extends ArmorAbility {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
 
             //TODO improve this when I have proper damage source logic
 
 
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
 
         @Override

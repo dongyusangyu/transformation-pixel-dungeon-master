@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.sewer;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -82,7 +84,7 @@ public class SwarmH extends MobHard {
     }
 
     @Override
-    public int defenseProc( Char enemy, int damage ) {
+    public int defenseProc( Char enemy, int damage , DamageTag... damageTags) {
 
             if (HP >= damage + 2 && generation < 4) {
                 ArrayList<Integer> candidates = new ArrayList<>();
@@ -114,7 +116,7 @@ public class SwarmH extends MobHard {
             }
 
 
-        return super.defenseProc(enemy, damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
 
     @Override

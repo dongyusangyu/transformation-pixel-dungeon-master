@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -114,7 +116,9 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public int min() {
 		if (hero != null){
-			return Math.max(0, min(buffedLvl() + RingOfSharpshooting.levelDamageBonus(hero)));
+			int ringBonus = benefitsFromSharpshooting()
+					? RingOfSharpshooting.levelDamageBonus(hero) : 0;
+			return Math.max(0, min(buffedLvl() + ringBonus));
 		} else {
 			return Math.max(0 , min( buffedLvl() ));
 		}
@@ -129,10 +133,16 @@ abstract public class MissileWeapon extends Weapon {
 	@Override
 	public int max() {
 		if (hero != null){
-			return Math.max(0, max( buffedLvl() + RingOfSharpshooting.levelDamageBonus(hero) ));
+			int ringBonus = benefitsFromSharpshooting()
+					? RingOfSharpshooting.levelDamageBonus(hero) : 0;
+			return Math.max(0, max(buffedLvl() + ringBonus));
 		} else {
 			return Math.max(0 , max( buffedLvl() ));
 		}
+	}
+
+	public boolean benefitsFromSharpshooting() {
+		return true;
 	}
 	
 	@Override
@@ -394,7 +404,7 @@ abstract public class MissileWeapon extends Weapon {
 		}
 
 		if(hero.hasTalent(Talent.PHANTOM_SHOOTER)){
-			defender.damage((int)(damage*hero.pointsInTalent(Talent.PHANTOM_SHOOTER)*0.1),hero);
+			defender.damage((int)(damage*hero.pointsInTalent(Talent.PHANTOM_SHOOTER)*0.1),hero, DamageTag.PHYSICAL);
 		}
 		if(hero.hasTalent(Talent.STRENGTH_GREATEST)){
 			result+=hero.pointsInTalent(Talent.STRENGTH_GREATEST);
@@ -552,7 +562,9 @@ abstract public class MissileWeapon extends Weapon {
 		//+50% durability on speed aug, -33% durability on damage aug
 		usages /= augment.delayFactor(1f);
 
-		if (Dungeon.hero != null) usages *= RingOfSharpshooting.durabilityMultiplier( Dungeon.hero );
+		if (Dungeon.hero != null && benefitsFromSharpshooting()) {
+			usages *= RingOfSharpshooting.durabilityMultiplier(Dungeon.hero);
+		}
 
 		//at 100 uses, items just last forever.
 		if (usages >= 100f) return 0;
@@ -794,6 +806,9 @@ abstract public class MissileWeapon extends Weapon {
 				break;
 			case DAMAGE:
 				info += " " + Messages.get(Weapon.class, "stronger");
+				break;
+			case MAGIC:
+				info += " " + Messages.get(Weapon.class, "magical", weaponTier());
 				break;
 			case NONE:
 		}

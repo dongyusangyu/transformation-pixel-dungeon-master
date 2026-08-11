@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -28,8 +30,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.journal.RegionLorePage;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfCleansing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -47,6 +47,7 @@ import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 
 public class GreatDemon extends Mob implements PhysicalRangedAttack {
 
@@ -87,8 +88,8 @@ public class GreatDemon extends Mob implements PhysicalRangedAttack {
     public int drRoll() {
         return super.drRoll() + Random.NormalIntRange(5, 15);
     }
-    public int attackProc( Char enemy, int damage ) {
-        damage = super.attackProc( enemy, damage );
+    public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
         if(buffs(ThrowCooldown.class).isEmpty()){
             damage +=13;
             Buff c= enemy.buff(PotionOfCleansing.Cleanse.class);
@@ -121,14 +122,23 @@ public class GreatDemon extends Mob implements PhysicalRangedAttack {
 
 
     @Override
-    public void damage(int dmg, Object src) {
-        if(!buffs(MeleesDefence.class).isEmpty() && src==hero && (hero.belongings.attackingWeapon() instanceof MeleeWeapon)){
-            hero.damage((int)(dmg*0.5), new LifeLink());
-            dmg=(int)(dmg*0.8);
-        }
-        if(!buffs(MissilesDefence.class).isEmpty() && src==hero && (hero.belongings.attackingWeapon() instanceof MissileWeapon)){
-            hero.damage((int)(dmg*0.5), new Shocking());
-            dmg=0;
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
+        DefenceType defenceType = defenceType(damageTags);
+        Char attacker = src instanceof Char ? (Char) src : null;
+
+        if (defenceType == DefenceType.MAGIC && buff(MagicImmune.class) != null) {
+            dmg = 0;
+        } else if (defenceType == DefenceType.MELEE && buff(MeleesDefence.class) != null) {
+            if (attacker != null) {
+                attacker.damage((int) (dmg * 0.5f), new LifeLink(),
+                        DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
+            }
+            dmg = (int) (dmg * 0.8f);
+        } else if (defenceType == DefenceType.MISSILE && buff(MissilesDefence.class) != null) {
+            if (attacker != null) {
+                attacker.damage((int) (dmg * 0.5f), new Shocking(), DamageTag.MAGICAL);
+            }
+            dmg = 0;
         }
         dmg=Math.min(150,dmg);
         if (Random.Int( 3 ) == 0 && dmg>5) {
@@ -151,7 +161,29 @@ public class GreatDemon extends Mob implements PhysicalRangedAttack {
         if (lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())){
             lock.addTime(dmg*0.33f);
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
+    }
+
+    enum DefenceType {
+        NONE,
+        MAGIC,
+        MELEE,
+        MISSILE
+    }
+
+    static DefenceType defenceType(DamageTag... damageTags) {
+        EnumSet<DamageTag> tags = DamageTag.of(damageTags);
+        if (tags.contains(DamageTag.MAGICAL)) {
+            return DefenceType.MAGIC;
+        }
+        switch (DamageTag.physicalDelivery(tags)) {
+            case MELEE:
+                return DefenceType.MELEE;
+            case RANGED:
+                return DefenceType.MISSILE;
+            default:
+                return DefenceType.NONE;
+        }
     }
     @Override
     protected boolean act() {

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.sewer;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
@@ -18,8 +20,8 @@ public class AlbinoH extends MobHard {
     {
         spriteClass = AlbinoSprite.class;
 
-        HP = HT = 10 + Dungeon.depth * 4 - 4;
-        defenseSkill = 5 + Dungeon.depth - 1;
+        HP = HT = 10 + Dungeon.scalingDepth() * 4 - 4;
+        defenseSkill = 5 + Dungeon.scalingDepth() - 1;
         EXP = 2;
 
         loot = new MysteryMeat();
@@ -28,23 +30,23 @@ public class AlbinoH extends MobHard {
     }
     @Override
     public int damageRoll() {
-        return Random.IntRange(1, 4 + Dungeon.depth - 1);
+        return Random.IntRange(1, 4 + Dungeon.scalingDepth() - 1);
     }
 
     @Override
     public int attackSkill(Char target) {
-        return 10 + 2*Dungeon.depth;
+        return 10 + 2*Dungeon.scalingDepth();
     }
 
     @Override
     public int drRoll() {
-        return Random.IntRange(0, Dungeon.depth);
+        return Random.IntRange(0, Dungeon.scalingDepth());
     }
 
     @Override
-    public int attackProc( Char enemy, int damage ) {
-        damage = super.attackProc( enemy, damage );
-        if (Random.Int( 100 ) < 30 + Dungeon.depth * 9) {
+    public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
+        if (Random.Int( 100 ) < 30 + Dungeon.scalingDepth() * 9) {
             Buff.affect( enemy, Bleeding.class ).set( damage );
         }
 

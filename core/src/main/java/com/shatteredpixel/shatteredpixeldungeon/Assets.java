@@ -353,6 +353,7 @@ public class Assets {
 		public static final String SPINNER  = "sprites/spinner.png";
 		public static final String DM300    = "sprites/dm300.png";
 		public static final String WRAITH   = "sprites/wraith.png";
+		public static final String POWERFUL_WRAITH = "sprites/powerful_wraith.png";
 		public static final String UNDEAD   = "sprites/undead.png";
 		public static final String KING     = "sprites/king.png";
 		public static final String PIRANHA  = "sprites/piranha.png";
@@ -399,8 +400,13 @@ public class Assets {
 		public static final String GUARDIAN = "sprites/guardian.png";
 		public static final String SLIME    = "sprites/slime.png";
 		public static final String SNAKE    = "sprites/snake.png";
+		public static final String MIMIC_CROCODILE = "sprites/mimic_crocodile.png";
+		public static final String HEAVY_CRABIFICATION = "sprites/heavy_crabification.png";
 		public static final String EARTHLY_SERPENT = "sprites/earthly_serpent.png";
+		public static final String OBSCURA = "sprites/obscura.png";
+		public static final String WILD_DREAD = "sprites/wild_dread.png";
 		public static final String NECRO    = "sprites/necromancer.png";
+		public static final String SOUL_COLLECTOR = "sprites/soul_collector.png";
 		public static final String GHOUL    = "sprites/ghoul.png";
 		public static final String RIPPER   = "sprites/ripper.png";
 		public static final String SPAWNER  = "sprites/spawner.png";

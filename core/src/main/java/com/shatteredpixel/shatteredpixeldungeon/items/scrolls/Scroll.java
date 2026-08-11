@@ -377,9 +377,7 @@ public abstract class Scroll extends Item {
 			try {
 				Item result = Reflection.newInstance(stones.get(s.getClass()));
 				int outQuantity = 2;
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					outQuantity+=1;
-				}
+				outQuantity += Talent.miracleAlchemyBonus(hero, result);
                 if(hero!=null && hero.pointsInTalent(Talent.RUNE_EXPERT)>0 && hero.heroClass != HeroClass.PRINCESS){
                     outQuantity+=hero.pointsInTalent(Talent.RUNE_EXPERT);
                 }

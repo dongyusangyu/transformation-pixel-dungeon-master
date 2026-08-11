@@ -266,7 +266,7 @@ public class TerrainPlacer extends TestItem {
         }
 
         Level.set(cell, Terrain.PEDESTAL);
-        SacrificialFire fire = Blob.seed(cell, 6 + Dungeon.depth * 4, SacrificialFire.class);
+        SacrificialFire fire = Blob.seed(cell, 6 + Dungeon.scalingDepth() * 4, SacrificialFire.class);
         fire.setPrize(SacrificeRoom.prize(Dungeon.level));
         GameScene.add(fire);
         GameScene.updateMap(cell);

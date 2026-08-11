@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -230,7 +232,7 @@ public class Shuriken_Box extends Artifact {
                     && curUser == Dungeon.hero
                     && Dungeon.hero.subClass.is(HeroSubClass.PRIEST)
                     && defender.alignment == Char.Alignment.ENEMY) {
-                defender.damage(5+Dungeon.hero.lvl, GuidingLight.INSTANCE);
+                defender.damage(5+Dungeon.hero.lvl, GuidingLight.INSTANCE, DamageTag.MAGICAL);
             }
             return super.proc(attacker, defender, damage);
         }

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
@@ -508,7 +510,7 @@ public class CursedWand {
 				toHeal.sprite.emitter().burst(Speck.factory(Speck.HEALING), 3);
 
                 toHeal.heal(damage/2);
-				toDamage.damage(damage, new CursedWand());
+				toDamage.damage(damage, new CursedWand(), DamageTag.MAGICAL);
 				toDamage.sprite.emitter().start(ShadowParticle.UP, 0.05f, 10);
 
 				if (toDamage == Dungeon.hero){
@@ -594,7 +596,7 @@ public class CursedWand {
 				//does not harm allies if positive only
 				if (ch.alignment != Char.Alignment.ALLY || !positiveOnly){
 					//shocking dart damage and a little stun
-					ch.damage(Random.NormalIntRange(5 + Dungeon.scalingDepth() / 4, 10 + Dungeon.scalingDepth() / 4), new Electricity());
+					ch.damage(Random.NormalIntRange(5 + Dungeon.scalingDepth() / 4, 10 + Dungeon.scalingDepth() / 4), new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 					if (ch.isAlive()) {
 						Buff.affect(ch, Paralysis.class, Paralysis.DURATION / 2f);
 					} else if (ch == Dungeon.hero){
@@ -774,15 +776,23 @@ public class CursedWand {
 
 		@Override
 		public boolean effect(Item origin, Char user, Ballistica bolt, boolean positiveOnly) {
-			if (!positiveOnly && Dungeon.depth > 1 && Dungeon.interfloorTeleportAllowed() && user == Dungeon.hero) {
+			if (!positiveOnly && Dungeon.depth > 1
+					&& Dungeon.returnTeleportAllowed() && user == Dungeon.hero) {
 
 				//starting from 10 floors up (or floor 1), each floor has 1 more weight
 				float[] depths = new float[Dungeon.depth-1];
 				int start = Math.max(1, Dungeon.depth-10);
 				for (int i = start; i < Dungeon.depth; i++) {
-					depths[i-1] = i-start+1;
+					if (Dungeon.returnTeleportLocationAllowed(i, 0)) {
+						depths[i-1] = i-start+1;
+					}
 				}
-				int depth = 1+Random.chances(depths);
+				int depthIndex = Random.chances(depths);
+				if (depthIndex == -1) {
+					ScrollOfTeleportation.teleportChar(user);
+					return true;
+				}
+				int depth = 1 + depthIndex;
 
 				Level.beforeTransition();
 				InterlevelScene.mode = InterlevelScene.Mode.RETURN;
@@ -838,7 +848,7 @@ public class CursedWand {
 						Burning burning = Buff.affect(ch, Burning.class);
 						burning.reignite(ch);
 						int dmg = Random.NormalIntRange(5 + Dungeon.scalingDepth(), 10 + Dungeon.scalingDepth()*2);
-						ch.damage(dmg, burning);
+						ch.damage(dmg, burning, DamageTag.PHYSICAL, DamageTag.FIRE);
 					}
 					if (Dungeon.level.flamable[i]){
 						GameScene.add(Blob.seed(i, 4, Fire.class));
@@ -922,28 +932,28 @@ public class CursedWand {
 						case 0: default:
 							Burning burning = Buff.affect(ch, Burning.class);
 							burning.reignite(ch);
-							ch.damage(dmg, burning);
+							ch.damage(dmg, burning, DamageTag.PHYSICAL, DamageTag.FIRE);
 							ch.sprite.emitter().burst(FlameParticle.FACTORY, 20);
 							break;
 						case 1:
-							ch.damage(dmg, new Frost());
+							ch.damage(dmg, new Frost(), DamageTag.PHYSICAL, DamageTag.FROST);
 							if (ch.isAlive()) Buff.affect(ch, Frost.class, Frost.DURATION);
 							Splash.at( ch.sprite.center(), 0xFFB2D6FF, 20 );
 							break;
 						case 2:
 							Poison poison = Buff.affect(ch, Poison.class);
 							poison.set(3 + Dungeon.scalingDepth() / 2);
-							ch.damage(dmg, poison);
+							ch.damage(dmg, poison, DamageTag.PHYSICAL, DamageTag.POISON);
 							ch.sprite.emitter().burst(PoisonParticle.SPLASH, 20);
 							break;
 						case 3:
 							Ooze ooze = Buff.affect(ch, Ooze.class);
 							ooze.set(Ooze.DURATION);
-							ch.damage(dmg, ooze);
+							ch.damage(dmg, ooze, DamageTag.PHYSICAL, DamageTag.OOZE);
 							Splash.at( ch.sprite.center(), 0x000000, 20 );
 							break;
 						case 4:
-							ch.damage(dmg, new Electricity());
+							ch.damage(dmg, new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 							if (ch.isAlive()) Buff.affect(ch, Paralysis.class, Paralysis.DURATION);
 							ch.sprite.emitter().burst(SparkParticle.FACTORY, 20);
 							break;

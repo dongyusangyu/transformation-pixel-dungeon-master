@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.sewer;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
@@ -57,16 +59,16 @@ public class SlimeH extends MobHard {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         Ballistica trajectory = new Ballistica(pos, enemy.pos, Ballistica.STOP_TARGET);
         trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size()-1), Ballistica.PROJECTILE);
         WandOfBlastWave.throwChar(enemy, trajectory, 2, true, false, SlimeH.class);
-        return super.attackProc(enemy,damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     @Override
-    public void damage(int damage, Object src){
+    public void damage(int damage, Object src, DamageTag... damageTags){
         damage = Math.min(damage,5);
-        super.damage(damage, src);
+        super.damage(damage, src, damageTags);
     }
 }

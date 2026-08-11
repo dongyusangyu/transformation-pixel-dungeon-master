@@ -199,7 +199,7 @@ public class ShopRoom extends SpecialRoom {
 				Level.set(cell, Terrain.GRASS, level);
 				GameScene.updateMap(cell);
 			}
-			level.drop( item, cell ).type = Heap.Type.FOR_SALE;
+			placeForSale(level, item, cell);
 			itemsToSpawn.remove(item);
 		}
 
@@ -209,7 +209,7 @@ public class ShopRoom extends SpecialRoom {
 				int cell = level.pointToCell(p);
 				if ((level.map[cell] == Terrain.EMPTY_SP || level.map[cell] == Terrain.EMPTY)
 						&& level.heaps.get(cell) == null && level.findMob(cell) == null){
-					level.drop( itemsToSpawn.remove(0), level.pointToCell(p) ).type = Heap.Type.FOR_SALE;
+					placeForSale(level, itemsToSpawn.remove(0), level.pointToCell(p));
 				}
 				if (itemsToSpawn.isEmpty()){
 					break;
@@ -222,14 +222,31 @@ public class ShopRoom extends SpecialRoom {
 		}
 
 	}
+
+	private void placeForSale(Level level, Item item, int cell) {
+		Heap heap = level.drop(item, cell);
+		heap.type = Heap.Type.FOR_SALE;
+		if (saleDepth() >= 0) {
+			heap.saleDepth(saleDepth());
+		}
+	}
+
+	protected int generationDepth() {
+		return Dungeon.depth;
+	}
+
+	protected int saleDepth() {
+		return -1;
+	}
 	
-	protected static ArrayList<Item> generateItems() {
+	protected ArrayList<Item> generateItems() {
 
 		ArrayList<Item> itemsToSpawn = new ArrayList<>();
+		int generationDepth = generationDepth();
 
 		MeleeWeapon w;
 		MissileWeapon m;
-		switch (Dungeon.depth) {
+		switch (generationDepth) {
 		case 6: default:
 			w = (MeleeWeapon) Generator.random(Generator.wepTiers[1]);
 			m = (MissileWeapon) Generator.random(Generator.misTiers[1]);
@@ -326,7 +343,7 @@ public class ShopRoom extends SpecialRoom {
 			int bags = 0;
 			//creates the given float percent of the remaining bags to be dropped.
 			//this way players who get the hourglass late can still max it, usually.
-			switch (Dungeon.depth) {
+			switch (generationDepth) {
 				case 6:
 					bags = (int)Math.ceil(( 5-hourglass.sandBags) * 0.20f ); break;
 				case 11:

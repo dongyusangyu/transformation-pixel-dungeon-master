@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -66,11 +68,19 @@ public class Eye extends Mob implements MagicalRangedAttack {
 		flying = true;
 
 		HUNTING = new Hunting();
-		
-		loot = new Dewdrop();
-		lootChance = 1f;
 
 		properties.add(Property.DEMONIC);
+	}
+
+	public Eye() {
+		this(true);
+	}
+
+	protected Eye(boolean initializeLoot) {
+		if (initializeLoot) {
+			loot = new Dewdrop();
+			lootChance = 1f;
+		}
 	}
 
 	@Override
@@ -92,9 +102,13 @@ public class Eye extends Mob implements MagicalRangedAttack {
 	protected int beamTarget = -1;
 	private int beamCooldown;
 	public boolean beamCharged;
+	private transient boolean beamFiring;
 
 	@Override
 	protected boolean canAttack( Char enemy ) {
+		if (!canUseDeathGazeAgainst(enemy)) {
+			return super.canAttack(enemy);
+		}
 
 		if (beamCooldown == 0) {
 			Ballistica aim = new Ballistica(pos, enemy.pos, Ballistica.STOP_SOLID);
@@ -114,10 +128,18 @@ public class Eye extends Mob implements MagicalRangedAttack {
 	}
 
 	@Override
+	public boolean canRangedAttack(Char target) {
+		return target != null
+				&& canUseDeathGazeAgainst(target)
+				&& beamCharged
+				&& beamCooldown == 0
+				&& beam != null;
+	}
+
+	@Override
 	protected boolean act() {
 		if (beamCharged && state != HUNTING){
-			beamCharged = false;
-			sprite.idle();
+			cancelDeathGazeCharge();
 		}
 		if (beam == null && beamTarget != -1) {
 			beam = new Ballistica(pos, beamTarget, Ballistica.STOP_SOLID);
@@ -130,6 +152,10 @@ public class Eye extends Mob implements MagicalRangedAttack {
 
 	@Override
 	protected boolean doAttack( Char enemy ) {
+		if (!canUseDeathGazeAgainst(enemy)) {
+			cancelDeathGazeCharge();
+			return super.doAttack(enemy);
+		}
 
 		beam = new Ballistica(pos, beamTarget, Ballistica.STOP_SOLID);
 		if (beamCooldown > 0 || (!beamCharged && !beam.subPath(1, beam.dist).contains(enemy.pos))) {
@@ -147,7 +173,15 @@ public class Eye extends Mob implements MagicalRangedAttack {
 
 	@Override
 	public boolean doRangedAttack(Char enemy) {
+		if (!canUseDeathGazeAgainst(enemy)) {
+			cancelDeathGazeCharge();
+			spend(attackDelay());
+			return true;
+		}
 		spend( attackDelay() );
+		if (!beginDeathGaze()) {
+			return true;
+		}
 
 		if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[beam.collisionPos] ) {
 			sprite.zap( beam.collisionPos );
@@ -159,10 +193,33 @@ public class Eye extends Mob implements MagicalRangedAttack {
 		}
 	}
 
+	protected boolean canUseDeathGazeAgainst(Char target) {
+		return deathGazeAllowedWhenRangedBlocked(soulMarkBlocksRangedAttack(target));
+	}
+
+	protected boolean validateDeathGazeCharge(Char target) {
+		if (RangedAttack.shouldInterruptCharge(beamCharged, canUseDeathGazeAgainst(target))) {
+			cancelDeathGazeCharge();
+			return false;
+		}
+		return beamCharged;
+	}
+
+	protected void cancelDeathGazeCharge() {
+		beamCharged = false;
+		beam = null;
+		beamTarget = -1;
+		if (sprite != null) sprite.idle();
+	}
+
+	static boolean deathGazeAllowedWhenRangedBlocked(boolean rangedAttackBlocked) {
+		return !rangedAttackBlocked;
+	}
+
 	@Override
-	public void damage(int dmg, Object src) {
-		if (beamCharged) dmg /= 4;
-		super.damage(dmg, src);
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
+		if (beamCharged || beamFiring) dmg /= 4;
+		super.damage(dmg, src, damageTags);
 	}
 
 	@Override
@@ -174,12 +231,22 @@ public class Eye extends Mob implements MagicalRangedAttack {
 	//used so resistances can differentiate between melee and magical attacks
 	public static class DeathGaze{}
 
-	public void deathGaze(){
-		if (!beamCharged || beamCooldown > 0 || beam == null)
-			return;
+	private boolean beginDeathGaze() {
+		if (!beamCharged || beamCooldown > 0 || beam == null) {
+			return false;
+		}
 
 		beamCharged = false;
 		beamCooldown = Random.IntRange(4, 6);
+		beamFiring = true;
+		return true;
+	}
+
+	public void deathGaze(){
+		if (!beamFiring && !beginDeathGaze())
+			return;
+
+		beamFiring = false;
 
 		boolean terrainAffected = false;
 
@@ -213,7 +280,7 @@ public class Eye extends Mob implements MagicalRangedAttack {
 					}
 				}
 
-				ch.damage( dmg, new DeathGaze() );
+				ch.damage( dmg, new DeathGaze() , DamageTag.MAGICAL);
 				if (Dungeon.level.heroFOV[pos]) {
 					ch.sprite.flash();
 					CellEmitter.center( pos ).burst( PurpleParticle.BURST, Random.IntRange( 1, 2 ) );
@@ -275,6 +342,7 @@ public class Eye extends Mob implements MagicalRangedAttack {
 	private static final String BEAM_TARGET     = "beamTarget";
 	private static final String BEAM_COOLDOWN   = "beamCooldown";
 	private static final String BEAM_CHARGED    = "beamCharged";
+	private static final String BEAM_FIRING     = "beamFiring";
 
 	@Override
 	public void storeInBundle(Bundle bundle) {
@@ -282,6 +350,7 @@ public class Eye extends Mob implements MagicalRangedAttack {
 		bundle.put( BEAM_TARGET, beamTarget);
 		bundle.put( BEAM_COOLDOWN, beamCooldown );
 		bundle.put( BEAM_CHARGED, beamCharged );
+		bundle.put( BEAM_FIRING, beamFiring );
 	}
 
 	@Override
@@ -289,8 +358,12 @@ public class Eye extends Mob implements MagicalRangedAttack {
 		super.restoreFromBundle(bundle);
 		if (bundle.contains(BEAM_TARGET))
 			beamTarget = bundle.getInt(BEAM_TARGET);
-		beamCooldown = bundle.getInt(BEAM_COOLDOWN);
-		beamCharged = bundle.getBoolean(BEAM_CHARGED);
+		boolean restoredBeamFiring = bundle.getBoolean(BEAM_FIRING);
+		beamCooldown = RangedAttack.restoredChargeCooldown(
+				bundle.getInt(BEAM_COOLDOWN), restoredBeamFiring);
+		beamCharged = RangedAttack.restoredCharge(
+				bundle.getBoolean(BEAM_CHARGED), restoredBeamFiring);
+		beamFiring = false;
 	}
 
 	{
@@ -303,7 +376,7 @@ public class Eye extends Mob implements MagicalRangedAttack {
 		@Override
 		public boolean act(boolean enemyInFOV, boolean justAlerted) {
 			//even if enemy isn't seen, attack them if the beam is charged
-			if (beamCharged && enemy != null && canAttack(enemy)) {
+			if (enemy != null && validateDeathGazeCharge(enemy) && canAttack(enemy)) {
 				enemySeen = enemyInFOV;
 				return doAttack(enemy);
 			}

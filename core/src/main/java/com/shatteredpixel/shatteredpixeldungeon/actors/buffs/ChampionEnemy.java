@@ -294,7 +294,7 @@ public abstract class ChampionEnemy extends Buff {
 		@Override
 		public boolean attachTo(Char target) {
 			if (super.attachTo(target)) {
-				int boost = Dungeon.depth * 3;
+				int boost = Dungeon.scalingDepth() * 3;
 				target.HT += boost;
 				target.HP += boost;
 				return true;
@@ -304,7 +304,7 @@ public abstract class ChampionEnemy extends Buff {
 
 		@Override
 		public float meleeDamageFactor() {
-			return 1.12f + Dungeon.depth*0.02f;
+			return 1.12f + Dungeon.scalingDepth()*0.02f;
 		}
 
 		@Override
@@ -314,7 +314,7 @@ public abstract class ChampionEnemy extends Buff {
 
 		@Override
 		public float evasionAndAccuracyFactor() {
-			return 1.16f + Dungeon.depth*0.01f;
+			return 1.16f + Dungeon.scalingDepth()*0.01f;
 		}
 
 		public static boolean validTarget(Mob mob) {

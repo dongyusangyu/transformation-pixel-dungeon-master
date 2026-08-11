@@ -64,6 +64,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
@@ -154,11 +158,7 @@ public abstract class Recipe {
 			
 			//sample output and real output are identical in this case.
 			Item result = sampleOutput(null);
-			if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5) && !((result instanceof MagicalInfusion) || (result instanceof ElixirOfMight) || (result instanceof TransformSpell) || (result instanceof MetamorphosisPrism))){
-				result.quantity(outQuantity+1);
-			}else{
-				result.quantity(outQuantity);
-			}
+			result.quantity(outQuantity + Talent.miracleAlchemyBonus(hero, result));
 			return result;
 		}
 		
@@ -174,6 +174,195 @@ public abstract class Recipe {
 			}
 		}
 	}
+
+	/**
+	 * A fixed alchemy recipe whose output is exactly one identified weapon.
+	 * Weapon type and base level are recipe-defined; input weapons may pass on
+	 * their upgrade level and a positive enchantment.
+	 */
+	public static class WeaponRecipe extends Recipe {
+
+		protected final Class<? extends Item>[] inputs;
+		protected final int[] inQuantity;
+		protected final int cost;
+		protected final Class<? extends Weapon> output;
+		protected final int baseLevel;
+
+		public WeaponRecipe(Class<? extends Item>[] inputs, int[] inQuantity, int cost,
+				Class<? extends Weapon> output, int baseLevel) {
+			if (inputs == null || inQuantity == null || inputs.length != inQuantity.length
+					|| inputs.length == 0 || output == null) {
+				throw new IllegalArgumentException("Invalid weapon recipe");
+			}
+			for (int i = 0; i < inputs.length; i++) {
+				if (inputs[i] == null || inQuantity[i] <= 0) {
+					throw new IllegalArgumentException("Invalid weapon recipe ingredient");
+				}
+				for (int j = 0; j < i; j++) {
+					if (inputs[i] == inputs[j]) {
+						throw new IllegalArgumentException("Duplicate weapon recipe ingredient");
+					}
+				}
+			}
+			this.inputs = inputs.clone();
+			this.inQuantity = inQuantity.clone();
+			this.cost = Math.max(0, cost);
+			this.output = output;
+			this.baseLevel = Math.max(0, Math.min(3, baseLevel));
+		}
+
+		public ArrayList<Item> getIngredients() {
+			ArrayList<Item> result = new ArrayList<>();
+			for (int i = 0; i < inputs.length; i++) {
+				Item ingredient = Reflection.newInstance(inputs[i]);
+				ingredient.quantity(inQuantity[i]);
+				result.add(ingredient);
+			}
+			return result;
+		}
+
+		boolean acceptsIngredient(Item item) {
+			if (item == null) return false;
+			for (Class<? extends Item> input : inputs) {
+				if (item.getClass() == input) return true;
+			}
+			return false;
+		}
+
+		@Override
+		public boolean testIngredients(ArrayList<Item> ingredients) {
+			if (ingredients == null || ingredients.isEmpty()) return false;
+
+			int[] needed = inQuantity.clone();
+			for (Item ingredient : ingredients) {
+				if (!ingredient.isIdentified() || ingredient.cursed) return false;
+				if (ingredient instanceof Weapon && ((Weapon) ingredient).hasCurseEnchant()) {
+					return false;
+				}
+
+				boolean matched = false;
+				for (int i = 0; i < inputs.length; i++) {
+					if (ingredient.getClass() == inputs[i]) {
+						needed[i] -= ingredient.quantity();
+						matched = true;
+						break;
+					}
+				}
+				if (!matched) return false;
+			}
+
+			for (int amount : needed) {
+				if (amount > 0) return false;
+			}
+			return true;
+		}
+
+		@Override
+		public int cost(ArrayList<Item> ingredients) {
+			return cost;
+		}
+
+		@Override
+		public Item brew(ArrayList<Item> ingredients) {
+			if (!testIngredients(ingredients)) return null;
+
+			Weapon result = createOutput(ingredients, true);
+			if (result == null) return null;
+
+			int[] needed = inQuantity.clone();
+			for (Item ingredient : ingredients) {
+				for (int i = 0; i < inputs.length; i++) {
+					if (ingredient.getClass() == inputs[i] && needed[i] > 0) {
+						int used = Math.min(needed[i], ingredient.quantity());
+						ingredient.quantity(ingredient.quantity() - used);
+						needed[i] -= used;
+						break;
+					}
+				}
+			}
+
+			result.identify();
+			return result;
+		}
+
+		@Override
+		public Item sampleOutput(ArrayList<Item> ingredients) {
+			Weapon result = createOutput(ingredients, false);
+			if (result != null) result.identify(false);
+			return result;
+		}
+
+		private Weapon createOutput(ArrayList<Item> ingredients, boolean inheritEnchantment) {
+			Weapon result = Reflection.newInstance(output);
+			if (result == null) return null;
+
+			result.quantity(1);
+			result.level(outputLevel(ingredients));
+			result.enchant(null);
+			result.cursed = false;
+			result.curseInfusionBonus = false;
+			result.enchantHardened = false;
+			result.masteryPotionBonus = false;
+
+			if (inheritEnchantment) {
+				ArrayList<Class<? extends Weapon.Enchantment>> candidates =
+						enchantmentCandidates(ingredients);
+				if (!candidates.isEmpty()
+						&& Random.Float() < enchantmentInheritanceChance(candidates.size())) {
+					Weapon.Enchantment enchantment = Reflection.newInstance(Random.element(candidates));
+					if (enchantment != null) result.enchant(enchantment);
+				}
+			}
+
+			return result;
+		}
+
+		private int outputLevel(ArrayList<Item> ingredients) {
+			int weaponCount = 0;
+			int levelTotal = 0;
+			if (ingredients != null) {
+				for (Item ingredient : ingredients) {
+					if (ingredient instanceof Weapon) {
+						weaponCount++;
+						levelTotal += Math.max(0, Math.min(3, ingredient.trueLevel()));
+					}
+				}
+			}
+
+			int inheritedLevel = weaponCount == 0
+					? 0
+					: (levelTotal + weaponCount - 1) / weaponCount;
+			return Math.min(3, Math.max(baseLevel, inheritedLevel));
+		}
+
+		ArrayList<Class<? extends Weapon.Enchantment>> enchantmentCandidates(
+				ArrayList<Item> ingredients) {
+			ArrayList<Class<? extends Weapon.Enchantment>> result = new ArrayList<>();
+			if (ingredients == null) return result;
+
+			for (Item ingredient : ingredients) {
+				if (ingredient instanceof Weapon) {
+					Weapon.Enchantment enchantment = ((Weapon) ingredient).enchantment;
+					if (enchantment != null && !enchantment.curse()) {
+						result.add(enchantment.getClass());
+					}
+				}
+			}
+			return result;
+		}
+
+		static float enchantmentInheritanceChance(int enchantedWeaponCount) {
+			if (enchantedWeaponCount >= 3) return 1f;
+			switch (enchantedWeaponCount) {
+				case 0: default:
+					return 0f;
+				case 1:
+					return 0.5f;
+				case 2:
+					return 0.75f;
+			}
+		}
+	}
 	
 	
 	//*******
@@ -183,6 +372,25 @@ public abstract class Recipe {
 	private static Recipe[] variableRecipes = new Recipe[]{
 			new LiquidMetal.Recipe()
 	};
+
+	// Fixed weapon-output recipes are registered here so they can match any
+	// valid combination of one to three input slots.
+	private static WeaponRecipe[] weaponRecipes = new WeaponRecipe[]{
+			new WeaponRecipe(
+					new Class[]{Greatsword.class},
+					new int[]{3},
+					5,
+					GreatGreatGreatsword.class,
+					0)
+	};
+
+	public static ArrayList<WeaponRecipe> weaponRecipes() {
+		ArrayList<WeaponRecipe> result = new ArrayList<>();
+		for (WeaponRecipe recipe : weaponRecipes) {
+			result.add(recipe);
+		}
+		return result;
+	}
 	
 	private static Recipe[] oneIngredientRecipes = new Recipe[]{
 		new Scroll.ScrollToStone(),
@@ -239,6 +447,12 @@ public abstract class Recipe {
 
 		ArrayList<Recipe> result = new ArrayList<>();
 
+		for (WeaponRecipe recipe : weaponRecipes) {
+			if (recipe.testIngredients(ingredients)) {
+				result.add(recipe);
+			}
+		}
+
 		for (Recipe recipe : variableRecipes){
 			if (recipe.testIngredients(ingredients)){
 				result.add(recipe);
@@ -271,6 +485,10 @@ public abstract class Recipe {
 	}
 	
 	public static boolean usableInRecipe(Item item){
+		if (item instanceof MeleeWeapon && usableInWeaponRecipe(item)) {
+			Weapon weapon = (Weapon) item;
+			return item.isIdentified() && !item.cursed && !weapon.hasCurseEnchant();
+		}
 		//only upgradeable thrown weapons and wands allowed among equipment items
 		if (item instanceof EquipableItem){
 			return item.cursedKnown && !item.cursed &&
@@ -281,6 +499,15 @@ public abstract class Recipe {
 			//other items can be unidentified, but not cursed
 			return !item.cursed;
 		}
+	}
+
+	private static boolean usableInWeaponRecipe(Item item) {
+		for (WeaponRecipe recipe : weaponRecipes) {
+			if (recipe.acceptsIngredient(item)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

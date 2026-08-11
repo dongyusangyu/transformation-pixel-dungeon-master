@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -172,7 +174,7 @@ public class TestTengu extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char attacker = TestBossUtil.attackerToRetarget(this, src);
         if (attacker != null) {
             enemy = attacker;
@@ -183,7 +185,7 @@ public class TestTengu extends Mob {
             notice();
         }
         int preHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         int dmgTaken = preHP - HP;
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (dmgTaken > 0 && lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())) {
@@ -329,7 +331,7 @@ public class TestTengu extends Mob {
                             dmg -= ch.drRoll();
 
                             if (dmg > 0) {
-                                ch.damage(dmg, Bomb.class);
+                                ch.damage(dmg, Bomb.class, DamageTag.PHYSICAL);
                             }
 
                             if (ch == Dungeon.hero){
@@ -741,7 +743,7 @@ public class TestTengu extends Mob {
 
                             Char ch = Actor.findChar(cell);
                             if (ch != null && !(ch instanceof TestTengu)){
-                                ch.damage(2 + Dungeon.scalingDepth(), new Electricity());
+                                ch.damage(2 + Dungeon.scalingDepth(), new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 
                                 if (ch == Dungeon.hero){
                                     Statistics.qualifiedForBossChallengeBadge = false;

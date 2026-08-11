@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -31,15 +33,18 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArcaneConfluence;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FocusedCasting;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MostDegrade;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
@@ -79,6 +84,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MagicFeather;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetRecorder;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
@@ -242,7 +248,7 @@ public abstract class Wand extends Item {
 		}
 
 		//if we're using wild magic, then assume we have charges
-		if ( owner.buff(WildMagic.WildMagicTracker.class) != null || curCharges >= chargesPerCast()){
+		if (owner.buff(WildMagic.WildMagicTracker.class) != null || hasChargeForCast(owner)){
 			Talent.ontryToZap(owner,target );
 			return true;
 		} else {
@@ -309,13 +315,15 @@ public abstract class Wand extends Item {
 
 		if (Dungeon.hero.subClass.is(HeroSubClass.PRIEST) && target.buff(GuidingLight.Illuminated.class) != null) {
 			target.buff(GuidingLight.Illuminated.class).detach();
-			target.damage(Dungeon.hero.lvl, GuidingLight.INSTANCE);
+			target.damage(Dungeon.hero.lvl, GuidingLight.INSTANCE, DamageTag.MAGICAL);
 		}
 		if (target != hero &&
 				hero.subClass.is(HeroSubClass.WARLOCK) &&
-				//standard 1 - 0.92^x chance, plus 7%. Starts at 15%
-				Random.Float() > (Math.pow(0.92f, (wandLevel*chargesUsed)+1) - 0.07f)){
-			SoulMark.prolong(target, SoulMark.class, SoulMark.DURATION + wandLevel);
+				//standard 1 - 0.92^x chance, plus 7% and the talent bonus
+				Random.Float() < SoulMark.markChance(wandLevel, chargesUsed,
+				hero.pointsInTalent(Talent.BONE_DEEP))){
+			SoulMark.prolong(target, SoulMark.class,
+					SoulMark.markDuration(wandLevel, hero.pointsInTalent(Talent.BONE_DEEP)));
 		}
 	}
 
@@ -394,6 +402,20 @@ public abstract class Wand extends Item {
 		}
 
 		return desc;
+	}
+
+	public boolean hasChargeForCast(Hero owner) {
+		int cost = chargesPerCast();
+		FocusedCasting focus = owner == null ? null : owner.buff(FocusedCasting.class);
+		if (focus != null && owner.hasTalent(Talent.FOCUSED_CASTING) && isStaffWand(owner)) {
+			return FocusedCasting.canSpendCharge(curCharges, partialCharge, cost);
+		}
+		return curCharges >= cost;
+	}
+
+	private boolean isStaffWand(Hero owner) {
+		MagesStaff staff = owner == null ? null : owner.belongings.getItem(MagesStaff.class);
+		return staff != null && staff.wand() == this;
 	}
 
 	@Override
@@ -624,6 +646,11 @@ public abstract class Wand extends Item {
 				}
 			}
 
+			if (charger.target instanceof Hero && isStaffWand((Hero) charger.target)) {
+				FocusedCasting focusedCasting = charger.target.buff(FocusedCasting.class);
+				if (focusedCasting != null) lvl += focusedCasting.levelBonus();
+			}
+
 			WandOfMagicMissile.MagicCharge buff = charger.target.buff(WandOfMagicMissile.MagicCharge.class);
 			if (buff != null && buff.level() > lvl){
 				return buff.level();
@@ -664,6 +691,12 @@ public abstract class Wand extends Item {
 	}
 
 	public void wandUsed() {
+		boolean staffCast = hero != null && isStaffWand(hero);
+		FocusedCasting focusedCasting = hero == null ? null : hero.buff(FocusedCasting.class);
+		boolean discountedStaffCast = staffCast && focusedCasting != null
+				&& hero.hasTalent(Talent.FOCUSED_CASTING);
+		ArcaneConfluence.cancel(hero);
+
 		if (!cursed) {
 			randomModeNonCursedZapped = true;
 			if (hero != null && hero.randomMode) {
@@ -717,8 +750,17 @@ public abstract class Wand extends Item {
 			}else if(this instanceof WandOfFireblast &&hero != null && hero.pointsInTalent(Talent.DEVIL_FLAME)>0 && c>2){
 				c--;
 			}
-			curCharges -= cursed ? 1 : c;
+			int cost = cursed ? 1 : c;
+			if (discountedStaffCast) {
+				float remaining = FocusedCasting.remainingCharge(curCharges, partialCharge, cost);
+				curCharges = (int) Math.floor(remaining + 0.0001f);
+				partialCharge = Math.max(0f, remaining - curCharges);
+			} else {
+				curCharges -= cost;
+			}
 		}
+
+		if (staffCast) FocusedCasting.onStaffCast(hero);
 
 		//remove magic charge at a higher priority, if we are benefiting from it are and not the
 		//wand that just applied it
@@ -773,7 +815,7 @@ public abstract class Wand extends Item {
 
 		Invisibility.dispel();
 		updateQuickslot();
-		curUser.spendAndNext( TIME_TO_ZAP );
+		curUser.spendAndNext( TIME_TO_ZAP + TwoHandedGreatsword.extraActionDelay(curUser) );
 
 	}
 	
@@ -1183,6 +1225,10 @@ public abstract class Wand extends Item {
 			MagicFeather feather = Dungeon.hero.belongings.getItem(MagicFeather.class);
 			if (feather != null) {
 				gainCharge*=1f+0.075f*(1+feather.buffedLvl());
+			}
+			Momentum momentum = target.buff(Momentum.class);
+			if (momentum != null) {
+				gainCharge *= momentum.wandChargeMultiplier();
 			}
 			if (Regeneration.regenOn())
 				partialCharge += (gainCharge) * RingOfEnergy.wandChargeMultiplier(target);

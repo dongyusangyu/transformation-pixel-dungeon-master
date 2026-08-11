@@ -22,6 +22,19 @@ import java.util.Locale;
 
 public class WndDungeonDoctor extends WndOptions {
 
+	enum MainAction {
+		START,
+		STATISTICS,
+		RESET,
+		LEAVE
+	}
+
+	enum StartState {
+		UNAVAILABLE,
+		MASTERED,
+		READY
+	}
+
 	private final DungeonDoctor doctor;
 
 	public WndDungeonDoctor(DungeonDoctor doctor) {
@@ -29,6 +42,7 @@ public class WndDungeonDoctor extends WndOptions {
 				Messages.get(WndDungeonDoctor.class, "welcome"),
 				Messages.get(WndDungeonDoctor.class, "start"),
 				Messages.get(WndDungeonDoctor.class, "statistics"),
+				Messages.get(WndDungeonDoctor.class, "reset"),
 				Messages.get(WndDungeonDoctor.class, "leave"));
 		this.doctor = doctor;
 	}
@@ -36,21 +50,38 @@ public class WndDungeonDoctor extends WndOptions {
 	@Override
 	protected void onSelect(int index) {
 		super.onSelect(index);
-		if (index == 0) {
-			startQuiz();
-		} else if (index == 1) {
-			showStatistics();
+		switch (mainAction(index)) {
+			case START:
+				startQuiz();
+				break;
+			case STATISTICS:
+				showStatistics();
+				break;
+			case RESET:
+				confirmReset();
+				break;
+			case LEAVE:
+				break;
 		}
 	}
 
 	private void startQuiz() {
-		QuizRun run = new QuizRun(
-				DungeonDoctorQuiz.newSession(), SPDSettings::recordQuizAnswer);
-		QuizQuestion question = run.nextQuestion();
-		if (question == null) {
+		if (startState(DungeonDoctorQuiz.questions().isEmpty(), null)
+				== StartState.UNAVAILABLE) {
 			GameScene.show(new WndOptions(
 					Messages.get(WndDungeonDoctor.class, "empty_title"),
 					Messages.get(WndDungeonDoctor.class, "empty_body"),
+					Messages.get(WndDungeonDoctor.class, "close")));
+			return;
+		}
+
+		QuizRun run = new QuizRun(
+				DungeonDoctorQuiz.newSession(), WndDungeonDoctor::recordAnswer);
+		QuizQuestion question = run.nextQuestion();
+		if (startState(false, question) == StartState.MASTERED) {
+			GameScene.show(new WndOptions(
+					Messages.get(WndDungeonDoctor.class, "mastered_title"),
+					Messages.get(WndDungeonDoctor.class, "mastered_body"),
 					Messages.get(WndDungeonDoctor.class, "close")));
 			return;
 		}
@@ -117,5 +148,64 @@ public class WndDungeonDoctor extends WndOptions {
 						SPDSettings.quizAnswersCorrect(),
 						accuracy),
 				Messages.get(WndDungeonDoctor.class, "close")));
+	}
+
+	private void confirmReset() {
+		GameScene.show(new WndOptions(
+				Messages.get(WndDungeonDoctor.class, "reset_title"),
+				Messages.get(WndDungeonDoctor.class, "reset_body"),
+				Messages.get(WndDungeonDoctor.class, "reset_confirm"),
+				Messages.get(WndDungeonDoctor.class, "cancel")) {
+			@Override
+			protected void onSelect(int index) {
+				super.onSelect(index);
+				if (resetIfConfirmed(index)) {
+					showResetComplete();
+				}
+			}
+		});
+	}
+
+	private void showResetComplete() {
+		GameScene.show(new WndOptions(
+				Messages.get(WndDungeonDoctor.class, "reset_complete_title"),
+				Messages.get(WndDungeonDoctor.class, "reset_complete_body"),
+				Messages.get(WndDungeonDoctor.class, "close")));
+	}
+
+	static MainAction mainAction(int index) {
+		switch (index) {
+			case 0:
+				return MainAction.START;
+			case 1:
+				return MainAction.STATISTICS;
+			case 2:
+				return MainAction.RESET;
+			default:
+				return MainAction.LEAVE;
+		}
+	}
+
+	static StartState startState(
+			boolean questionBankEmpty, QuizQuestion firstQuestion) {
+		if (questionBankEmpty) {
+			return StartState.UNAVAILABLE;
+		}
+		return firstQuestion == null ? StartState.MASTERED : StartState.READY;
+	}
+
+	static void recordAnswer(QuizQuestion question, boolean correct) {
+		SPDSettings.recordQuizAnswer(correct);
+		if (correct) {
+			SPDSettings.recordCorrectQuizQuestion(question.id());
+		}
+	}
+
+	static boolean resetIfConfirmed(int index) {
+		if (index != 0) {
+			return false;
+		}
+		SPDSettings.resetCorrectQuizQuestions();
+		return true;
 	}
 }

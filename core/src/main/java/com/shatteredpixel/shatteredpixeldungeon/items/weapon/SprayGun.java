@@ -13,6 +13,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -587,7 +589,7 @@ public class SprayGun extends Weapon {
 			int damage = Hero.heroDamageIntRange(min(lvl), max(lvl));
 
 			damage = Math.round(damage * Talent.alchemistCloseBlastMultiplier(hero, Dungeon.level.distance(hero.pos, ch.pos), range(hero)));
-			ch.damage(damage, new WandOfMagicMissile());
+			ch.damage(damage, new WandOfMagicMissile(), DamageTag.MAGICAL);
 		}
 		if (!ally && loaded != Loaded.FROST && loaded != Loaded.MIND_VISION && knockback() > 0) {
             Ballistica a = new Ballistica(hero.pos, ch.pos, Ballistica.WONT_STOP);
@@ -641,7 +643,7 @@ public class SprayGun extends Weapon {
 			case LIQUID_FLAME:
 				if (!Char.hasProp(ch, Char.Property.FIERY)) {
 					Buff.affect(ch, Burning.class).reignite(ch);
-					ch.damage(Hero.heroDamageIntRange(alchemist ? 4 + lvl : 1 + lvl, alchemist ? 10 + 5 * lvl : 3 + 2 * lvl), new Burning());
+					ch.damage(Hero.heroDamageIntRange(alchemist ? 4 + lvl : 1 + lvl, alchemist ? 10 + 5 * lvl : 3 + 2 * lvl), new Burning(), DamageTag.PHYSICAL, DamageTag.FIRE);
 				}
 				break;
 			case TOXIC_GAS:
@@ -664,7 +666,7 @@ public class SprayGun extends Weapon {
 			case LEVITATION:
 				if (!ally) Buff.prolong(ch, Vertigo.class, 2 + lvl);
 				if (alchemist && Char.hasProp(ch, Char.Property.FIERY)) {
-					ch.damage(Hero.heroDamageIntRange(5 + Dungeon.depth, 10 + 2 * Dungeon.depth), new GeyserTrap());
+					ch.damage(Hero.heroDamageIntRange(5 + Dungeon.scalingDepth(), 10 + 2 * Dungeon.scalingDepth()), new GeyserTrap(), DamageTag.PHYSICAL, DamageTag.WATER);
 				}
 				break;
 			case PARALYTIC_GAS:
@@ -682,7 +684,7 @@ public class SprayGun extends Weapon {
 				if (ally) {
 					Buff.prolong(ch, Bless.class, 30f);
 				} else if (Char.hasProp(ch, Char.Property.UNDEAD) || Char.hasProp(ch, Char.Property.DEMONIC)) {
-					ch.damage(7 + lvl, new WandOfMagicMissile());
+					ch.damage(7 + lvl, new WandOfMagicMissile(), DamageTag.MAGICAL);
 				}
                 /*
 				if (alchemist && !ally) {

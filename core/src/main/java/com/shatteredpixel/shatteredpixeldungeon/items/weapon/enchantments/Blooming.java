@@ -48,7 +48,7 @@ public class Blooming extends Weapon.Enchantment {
 		// lvl 1 - 50%
 		// lvl 2 - 60%
 		float procChance = (level+1f)/(level+3f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (procChance(procChance)) {
 
 			float powerMulti = Math.max(1f, procChance);
 

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -247,7 +249,7 @@ public class HDKItem {
                                 Sample.INSTANCE.play( Assets.Sounds.LIGHTNING, 1.1f);
 
                                 float missing = 1f - (float)toProtect.HP / toProtect.HT;
-                                m.damage(GME.accurateRound(damage * Random.Float(0.8f, 1.25f) * (1f + 4f * missing * missing)), toProtect);
+                                m.damage(GME.accurateRound(damage * Random.Float(0.8f, 1.25f) * (1f + 4f * missing * missing)), toProtect, DamageTag.PHYSICAL);
                                 m.sprite.centerEmitter().burst( SparkParticle.FACTORY, 32 );
                                 m.sprite.flash();
                             });

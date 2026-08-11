@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -23,7 +25,7 @@ public class TestPoisonDartTrap extends PoisonDartTrap {
         if (target != null) {
             int dmg = Random.NormalIntRange(4, 8) - target.drRoll();
             if (dmg < 0) dmg = 0;
-            target.damage(dmg, this);
+            target.damage(dmg, this, DamageTag.PHYSICAL);
             Buff.affect(target, Poison.class).set(poisonAmount());
             Sample.INSTANCE.play(Assets.Sounds.HIT, 1, 1, Random.Float(0.8f, 1.25f));
             if (target.sprite != null) {

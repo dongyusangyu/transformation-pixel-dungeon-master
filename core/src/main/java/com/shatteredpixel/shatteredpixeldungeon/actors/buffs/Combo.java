@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -195,8 +197,11 @@ public class Combo extends Buff implements ActionIndicator.Action {
 				? bundle.getEnum(MOVE_BEING_USED, ComboMove.class) : null;
 		movePowerCount = bundle.getInt(MOVE_POWER_COUNT);
 		movePrepared = bundle.getBoolean(MOVE_PREPARED);
+	}
 
+	public void updateActionIndicator() {
 		if (getHighestMove() != null) ActionIndicator.setAction(this);
+		else ActionIndicator.clearAction(this);
 	}
 
 	@Override
@@ -380,7 +385,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 	}
 
 	public int requirement(ComboMove move) {
-		return moveRequirement(move.comboReq, ((Hero) target).pointsInTalent(Talent.COMBO_MASTERY));
+		int masteryPoints = target instanceof Hero
+				? ((Hero) target).pointsInTalent(Talent.COMBO_MASTERY) : 0;
+		return moveRequirement(move.comboReq, masteryPoints);
 	}
 
 	public boolean canUseMove(ComboMove move){
@@ -562,9 +569,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 							if (ch.buff(Vulnerable.class) != null) aoeHit *= 1.33f;
 							if (ch instanceof DwarfKing){
 								//change damage type for DK so that crush AOE doesn't count for DK's challenge badge
-								ch.damage(aoeHit, this);
+								ch.damage(aoeHit, this, DamageTag.PHYSICAL);
 							} else {
-								ch.damage(aoeHit, target);
+								ch.damage(aoeHit, target, DamageTag.PHYSICAL);
 							}
 							ch.sprite.bloodBurstA(target.sprite.center(), aoeHit);
 							ch.sprite.flash();
