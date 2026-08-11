@@ -459,6 +459,30 @@ public class Armor extends EquipableItem {
 		}
 	}
 
+	/**
+	 * Physical protection copied by a non-hero equipment replica. This keeps the
+	 * armor item's own level, augment and challenge behavior, but deliberately
+	 * excludes hero talents and temporary hero state.
+	 */
+	public int replicaDRMax() {
+		int lvl = buffedLvl();
+		if (Dungeon.isChallenged(Challenges.NO_ARMOR)) {
+			return 1 + tier + lvl + augment.defenseFactor(lvl);
+		}
+
+		int max = tier * (2 + lvl) + augment.defenseFactor(lvl);
+		return lvl > max ? ((lvl - max) + 1) / 2 : max;
+	}
+
+	public int replicaDRMin() {
+		if (Dungeon.isChallenged(Challenges.NO_ARMOR)) {
+			return 0;
+		}
+		int lvl = buffedLvl();
+		int max = replicaDRMax();
+		return lvl >= max ? lvl - max : lvl;
+	}
+
 	//This exists so we can test what a char's base evasion would be without armor affecting it
 	//more ugly static vars yaaay~
 	public static boolean testingNoArmDefSkill = false;
@@ -492,6 +516,12 @@ public class Armor extends EquipableItem {
 		
 		return evasion + augment.evasionFactor(buffedLvl());
 	}
+
+	public float replicaEvasionFactor(Char owner, float evasion) {
+		if (testingNoArmDefSkill) return evasion;
+		if (hasGlyph(Stone.class, owner) && !Stone.testingEvasion()) return 0;
+		return evasion + augment.evasionFactor(buffedLvl());
+	}
 	
 	public float speedFactor( Char owner, float speed ){
 		Hero currentHero = hero;
@@ -517,6 +547,13 @@ public class Armor extends EquipableItem {
 		
 		return speed;
 		
+	}
+
+	public float replicaSpeedFactor(Char owner, float speed) {
+		speed *= Bulk.speedBoost(owner, owner.glyphLevel(Bulk.class));
+		speed *= Swiftness.speedBoost(owner, owner.glyphLevel(Swiftness.class));
+		speed *= Flow.speedBoost(owner, owner.glyphLevel(Flow.class));
+		return speed;
 	}
 	
 	public float stealthFactor( Char owner, float stealth ){

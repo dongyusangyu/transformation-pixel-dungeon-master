@@ -41,7 +41,7 @@ public class AlienatedPrismaticGuardTest {
 	}
 
 	@Test
-	public void armorEvasionAndProcUseGuardAsEquipmentOwner() {
+	public void armorCombatStatsAndProcUseGuardAsEquipmentOwner() {
 		RecordingArmor armor = new RecordingArmor();
 		TestGuard guard = new TestGuard(new FixedSource(null, armor, 18, 0));
 		Char attacker = new Char() {
@@ -49,6 +49,8 @@ public class AlienatedPrismaticGuardTest {
 		guard.refreshForTest();
 
 		assertEquals(54, guard.defenseSkill(attacker));
+		assertEquals(5, guard.drRoll());
+		assertEquals(3f, guard.speed(), 0f);
 		assertEquals(26, guard.defenseProc(attacker, 10, DamageTag.MELEE));
 		assertSame(guard, armor.evasionOwner);
 		assertSame(attacker, armor.procAttacker);
@@ -245,6 +247,16 @@ public class AlienatedPrismaticGuardTest {
 		}
 
 		@Override
+		protected float hasteRingMultiplier() {
+			return 1f;
+		}
+
+		@Override
+		protected int baseDrRoll() {
+			return 0;
+		}
+
+		@Override
 		protected int processBaseDefenseProc(Char enemy, int damage, DamageTag... tags) {
 			return damage + 3;
 		}
@@ -350,9 +362,24 @@ public class AlienatedPrismaticGuardTest {
 		}
 
 		@Override
-		public float evasionFactor(Char owner, float evasion) {
+		public float replicaEvasionFactor(Char owner, float evasion) {
 			evasionOwner = owner;
 			return evasion + 7f;
+		}
+
+		@Override
+		public int replicaDRMin() {
+			return 5;
+		}
+
+		@Override
+		public int replicaDRMax() {
+			return 5;
+		}
+
+		@Override
+		public float replicaSpeedFactor(Char owner, float speed) {
+			return speed * 3f;
 		}
 
 		@Override

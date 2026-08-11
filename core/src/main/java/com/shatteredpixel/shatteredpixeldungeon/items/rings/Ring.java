@@ -501,6 +501,12 @@ public class Ring extends KindofMisc {
 
 	public class RingBuff extends Buff {
 
+		/** The ring item's contribution without hero talents or proxy buffs. */
+		public int copiedEquipmentBonus(boolean buffed) {
+			int itemLevel = buffed ? Ring.this.buffedLvl() : Ring.this.level();
+			return Ring.this.cursed ? Math.min(0, itemLevel - 2) : itemLevel + 1;
+		}
+
 		@Override
 		public boolean attachTo( Char target ) {
 			if (super.attachTo( target )) {
