@@ -165,4 +165,16 @@ public class PestilenceKnightTest {
         assertEquals(3, restored.pendingCellsForTest().length);
         assertEquals(3, restored.skillCooldownForTest(2));
     }
+
+    @Test
+    public void committedRewardFlagSurvivesBundleRoundTrip() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.markRewardDroppedForTest();
+        Bundle bundle = new Bundle();
+        boss.storeInBundle(bundle);
+
+        PestilenceKnight restored = new PestilenceKnight(5);
+        restored.restoreFromBundle(bundle);
+        assertTrue(restored.rewardDroppedForTest());
+    }
 }

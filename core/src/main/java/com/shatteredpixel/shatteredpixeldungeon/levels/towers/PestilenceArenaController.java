@@ -298,6 +298,14 @@ public class PestilenceArenaController implements Bundlable {
         Arrays.fill(cooldowns, 0);
     }
 
+    /** Clears transient encounter state while keeping the installed fixtures inert and reusable. */
+    public void finishEncounter() {
+        preparedHeroCell = -1;
+        waterCell = -1;
+        waterTurns = 0;
+        Arrays.fill(cooldowns, 0);
+    }
+
     private int brazierIndex(int cell) {
         for (int i = 0; i < brazierCells.length; i++) if (brazierCells[i] == cell) return i;
         return -1;
