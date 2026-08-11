@@ -8,7 +8,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfAccuracy;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfForce;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfSharpshooting;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 
 import org.junit.Test;
 
@@ -49,6 +51,7 @@ public class HeroEquipmentReplicaTest {
 		replica.refresh(source, HeroEquipmentReplica.Scope.MIRROR);
 		assertSame(first, replica.weapon());
 		assertNull(replica.armor());
+		assertEquals(10, replica.strength());
 		assertEquals(0, replica.ringBonus(RingOfForce.Force.class, true));
 
 		source.weapon = second;
@@ -82,6 +85,49 @@ public class HeroEquipmentReplicaTest {
 		assertSame(mob, weapon.defenseOwner);
 		assertSame(mob, weapon.procAttacker);
 		assertSame(target, weapon.procDefender);
+	}
+
+	@Test
+	public void sharpshootingAppliesOnlyToGuardMissilesAndForceNeverBoostsThem() {
+		FixedMissile missile = new FixedMissile();
+		HeroEquipmentReplica.EquipmentSource source = new HeroEquipmentReplica.EquipmentSource() {
+			@Override
+			public KindOfWeapon weapon() {
+				return missile;
+			}
+
+			@Override
+			public Armor armor() {
+				return null;
+			}
+
+			@Override
+			public int strength() {
+				return 18;
+			}
+
+			@Override
+			public int ringBonus(Class<? extends Ring.RingBuff> type, boolean buffed) {
+				return type == RingOfSharpshooting.Aim.class ? 2 : 0;
+			}
+		};
+		TestReplicaMob guard = new TestReplicaMob(
+				source, HeroEquipmentReplica.Scope.GUARD, 7);
+		TestReplicaMob mirror = new TestReplicaMob(
+				source, HeroEquipmentReplica.Scope.MIRROR, 7);
+		guard.refreshForTest();
+		mirror.refreshForTest();
+
+		assertEquals(12, guard.damageRoll());
+		assertEquals(10, mirror.damageRoll());
+	}
+
+	@Test
+	public void tenacitySkipsUnavoidableDamageAndRoundsLikeTheHero() {
+		TestReplicaMob mob = new TestReplicaMob(null);
+
+		assertEquals(3, mob.applyTenacityForTest(5));
+		assertEquals(5, mob.applyTenacityForTest(5, DamageTag.UNAVOIDABLE));
 	}
 
 	private static final class TestSource implements HeroEquipmentReplica.EquipmentSource {
@@ -123,14 +169,23 @@ public class HeroEquipmentReplicaTest {
 	private static final class TestReplicaMob extends HeroReplicaMob {
 
 		private final HeroEquipmentReplica.EquipmentSource source;
+		private final HeroEquipmentReplica.Scope scope;
+		private final int armedForceBonus;
 
 		private TestReplicaMob(HeroEquipmentReplica.EquipmentSource source) {
+			this(source, HeroEquipmentReplica.Scope.MIRROR, 0);
+		}
+
+		private TestReplicaMob(HeroEquipmentReplica.EquipmentSource source,
+				HeroEquipmentReplica.Scope scope, int armedForceBonus) {
 			this.source = source;
+			this.scope = scope;
+			this.armedForceBonus = armedForceBonus;
 		}
 
 		@Override
 		protected HeroEquipmentReplica.Scope replicaScope() {
-			return HeroEquipmentReplica.Scope.MIRROR;
+			return scope;
 		}
 
 		@Override
@@ -154,8 +209,13 @@ public class HeroEquipmentReplicaTest {
 		}
 
 		@Override
+		protected float tenacityRingMultiplier() {
+			return 0.5f;
+		}
+
+		@Override
 		protected int armedForceDamageBonus() {
-			return 0;
+			return armedForceBonus;
 		}
 
 		@Override
@@ -179,6 +239,23 @@ public class HeroEquipmentReplicaTest {
 
 		private boolean canAttackForTest(Char target) {
 			return canAttack(target);
+		}
+
+		private int applyTenacityForTest(int damage, DamageTag... tags) {
+			return applyTenacity(damage, tags);
+		}
+	}
+
+	private static final class FixedMissile extends MissileWeapon {
+
+		@Override
+		public int min(int lvl) {
+			return 10 + lvl;
+		}
+
+		@Override
+		public int max(int lvl) {
+			return 10 + lvl;
 		}
 	}
 

@@ -13,7 +13,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEvasion;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfForce;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfFuror;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfHaste;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfSharpshooting;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfTenacity;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.MirrorSprite;
 import com.watabou.utils.Random;
 
 /** Shared combat implementation for hostile creatures which copy hero equipment. */
@@ -29,6 +32,9 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 
 	protected void refreshReplica() {
 		replica.refresh(equipmentSource(), replicaScope());
+		if (sprite instanceof MirrorSprite) {
+			((MirrorSprite) sprite).updateArmor();
+		}
 	}
 
 	@Override
@@ -45,6 +51,12 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 	public int damageRoll() {
 		KindOfWeapon weapon = replica.weapon();
 		if (weapon != null) {
+			if (weapon instanceof MissileWeapon) {
+				MissileWeapon missile = (MissileWeapon) weapon;
+				int aimBonus = replicaScope() == HeroEquipmentReplica.Scope.GUARD
+						? replica.ringBonus(RingOfSharpshooting.Aim.class, true) : 0;
+				return missile.damageRollWithLevelBonus(this, aimBonus);
+			}
 			return weapon.damageRoll(this) + armedForceDamageBonus();
 		}
 		return unarmedDamageRoll();
@@ -88,7 +100,7 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 		float defense = 20f;
 		Armor armor = replica.armor();
 		if (armor != null) {
-			defense = armor.evasionFactor(this, defense);
+			defense = armor.replicaEvasionFactor(this, defense);
 		}
 		return Math.round(defense * evasionRingMultiplier());
 	}
@@ -114,7 +126,7 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 	public float speed() {
 		float speed = super.speed() * hasteRingMultiplier();
 		Armor armor = replica.armor();
-		return armor == null ? speed : armor.speedFactor(this, speed);
+		return armor == null ? speed : armor.replicaSpeedFactor(this, speed);
 	}
 
 	protected float hasteRingMultiplier() {
@@ -132,7 +144,7 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 		int dr = baseDrRoll();
 		Armor armor = replica.armor();
 		if (armor != null) {
-			dr += Random.NormalIntRange(armor.DRMin(), armor.DRMax());
+			dr += Random.NormalIntRange(armor.replicaDRMin(), armor.replicaDRMax());
 		}
 		KindOfWeapon weapon = replica.weapon();
 		if (weapon != null) {
@@ -185,8 +197,17 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 
 	@Override
 	public void damage(int damage, Object source, DamageTag... tags) {
-		damage = Math.round(damage * tenacityRingMultiplier());
+		damage = applyTenacity(damage, tags);
 		super.damage(damage, source, tags);
+	}
+
+	protected int applyTenacity(int damage, DamageTag... tags) {
+		if (tags != null) {
+			for (DamageTag tag : tags) {
+				if (tag == DamageTag.UNAVOIDABLE) return damage;
+			}
+		}
+		return (int) Math.ceil(damage * tenacityRingMultiplier());
 	}
 
 	protected float tenacityRingMultiplier() {

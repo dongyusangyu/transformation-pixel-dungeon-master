@@ -611,6 +611,17 @@ abstract public class MissileWeapon extends Weapon {
 		
 		return damage;
 	}
+
+	/**
+	 * Rolls missile damage with an explicit effective-level bonus. This avoids
+	 * consulting the global hero when another actor is temporarily using a
+	 * read-only reference to the hero's missile weapon.
+	 */
+	public int damageRollWithLevelBonus(Char owner, int levelBonus) {
+		int level = buffedLvl() + levelBonus;
+		return augment.damageFactor(Random.NormalIntRange(
+				Math.max(0, min(level)), Math.max(0, max(level))));
+	}
 	
 	@Override
 	public void reset() {

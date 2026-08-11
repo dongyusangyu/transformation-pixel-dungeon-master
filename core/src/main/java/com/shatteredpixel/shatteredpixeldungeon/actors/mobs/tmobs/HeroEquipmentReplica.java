@@ -65,8 +65,8 @@ public final class HeroEquipmentReplica {
 		}
 
 		weapon = source.weapon();
-		strength = source.strength();
 		if (scope == Scope.GUARD) {
+			strength = source.strength();
 			armor = source.armor();
 			for (Class<? extends Ring.RingBuff> ring : COMBAT_RINGS) {
 				ringBonuses.put(ring, source.ringBonus(ring, false));
@@ -111,7 +111,8 @@ public final class HeroEquipmentReplica {
 
 		@Override
 		public int strength() {
-			return Dungeon.hero == null ? 10 : Dungeon.hero.STR();
+			return Dungeon.hero == null ? 10
+					: Dungeon.hero.STR + ringBonus(RingOfMight.Might.class, false);
 		}
 
 		@Override
@@ -119,7 +120,11 @@ public final class HeroEquipmentReplica {
 			if (Dungeon.hero == null) {
 				return 0;
 			}
-			return buffed ? Ring.getBuffedBonus(Dungeon.hero, type) : Ring.getBonus(Dungeon.hero, type);
+			int bonus = 0;
+			for (Ring.RingBuff ring : Dungeon.hero.buffs(type)) {
+				bonus += ring.copiedEquipmentBonus(buffed);
+			}
+			return bonus;
 		}
 	}
 }

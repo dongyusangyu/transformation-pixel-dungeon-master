@@ -39,6 +39,14 @@ public class HeroReplicaSpriteContractTest {
 	}
 
 	@Test
+	public void equipmentRefreshAlsoRefreshesTheLiveHeroAppearance() throws IOException {
+		String monster = monsterSource("HeroReplicaMob.java");
+
+		assertTrue(monster.contains("sprite instanceof MirrorSprite"));
+		assertTrue(monster.contains("((MirrorSprite) sprite).updateArmor()"));
+	}
+
+	@Test
 	public void filtersAreDistinctAndRestoredAcrossSpriteLifecycle() throws IOException {
 		String guard = source("AlienatedPrismaticGuardSprite.java");
 		String mirror = source("TwistedMirrorSprite.java");
@@ -77,6 +85,11 @@ public class HeroReplicaSpriteContractTest {
 	private static String source(String name) throws IOException {
 		return Files.readString(coreDirectory().resolve(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tmobs/" + name));
+	}
+
+	private static String monsterSource(String name) throws IOException {
+		return Files.readString(coreDirectory().resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tmobs/" + name));
 	}
 
 	private static Path coreDirectory() {
