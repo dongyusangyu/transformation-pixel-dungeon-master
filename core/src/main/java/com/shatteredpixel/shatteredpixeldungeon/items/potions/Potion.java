@@ -315,6 +315,9 @@ public class Potion extends Item {
 		detach( hero.belongings.backpack );
 		
 		hero.spend( TIME_TO_DRINK );
+		if (!anonymous && Dungeon.level != null) {
+			Dungeon.level.onHeroConsumableUsed(hero, this);
+		}
 		hero.busy();
 		apply( hero );
 		

@@ -206,6 +206,9 @@ public abstract class Scroll extends Item {
 		//if scroll is being created for its effect, depend on creating item to dispel
 		if (!anonymous) Invisibility.dispel();
 		curUser.spend( TIME_TO_READ );
+		if (!anonymous && Dungeon.level != null) {
+			Dungeon.level.onHeroConsumableUsed(curUser, this);
+		}
 		curUser.busy();
 		((HeroSprite)curUser.sprite).read();
 
