@@ -18,7 +18,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 
@@ -100,6 +102,7 @@ public class PestilenceArenaController implements Bundlable {
             miasma = Blob.seed(cell, PRELUDE_MIASMA_AMOUNT, PaleMiasma.class, level);
         }
         if (miasma != null) GameScene.add(miasma);
+        GLog.w(Messages.get(PestilenceArenaController.class, "prelude"));
         return true;
     }
 
@@ -174,12 +177,23 @@ public class PestilenceArenaController implements Bundlable {
 
     ActivationResult onHeroEntered(TowerBossLevel level, Hero hero, boolean bossStarted) {
         if (hero == null) return ActivationResult.NONE;
+        if (prepared && hero.pos == purifierCell && purifierCooldown > 0) {
+            GLog.w(Messages.get(PestilenceArenaController.class,
+                    "recharging", purifierCooldown));
+            return ActivationResult.NONE;
+        }
         ActivationResult result = activateForEncounter(new LevelArena(level), hero.pos, bossStarted);
         if (result == ActivationResult.NONE) return result;
 
         clearAllMiasma(level);
         Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
         Dungeon.observe();
+        if (result == ActivationResult.START_BOSS) {
+            GLog.p(Messages.get(PestilenceArenaController.class, "purifier_start"));
+        } else {
+            GLog.p(Messages.get(PestilenceArenaController.class,
+                    "purifier_strike", PURIFIER_BOSS_DAMAGE));
+        }
         return result;
     }
 

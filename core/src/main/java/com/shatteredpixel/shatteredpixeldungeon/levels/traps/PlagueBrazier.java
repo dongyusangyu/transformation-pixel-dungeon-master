@@ -1,6 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.traps;
 
-/** A visible, non-triggering floor fixture activated by waiting on its cell. */
+/** A visible floor fixture whose entry effect is coordinated by TowerBossLevel. */
 public class PlagueBrazier extends Trap {
 
     public PlagueBrazier() {
@@ -14,7 +14,7 @@ public class PlagueBrazier extends Trap {
 
     @Override
     public void trigger() {
-        // Intentionally inert on entry. TowerBossLevel handles an explicit wait action.
+        // Intentionally inert here. TowerBossLevel handles entry, relocation and encounter state.
     }
 
     @Override

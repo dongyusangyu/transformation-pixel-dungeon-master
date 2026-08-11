@@ -88,8 +88,34 @@ public class PestilenceKnightSpriteAssetTest {
                 infection.contains("Messages.get(this, \"rupture\")"));
         assertTrue("infection rupture needs a distinct particle burst",
                 infection.contains("target.sprite.burst(INFECTION_BURST_COLOR"));
+        assertTrue("purple prescription needs a visible purple projectile",
+                boss.contains("MagicMissile.SHAMAN_PURPLE"));
+        assertTrue("purple prescription needs a distinct impact splash",
+                boss.contains("Splash.at(target.pos, PURPLE_PRESCRIPTION_COLOR"));
+        assertTrue("purple prescription needs curse particles on the target",
+                boss.contains("ShadowParticle.CURSE"));
         assertEquals("both retreat and approach movement must synchronize the sprite",
                 2, occurrences(boss, "moveSprite(oldPos, pos)"));
+    }
+
+    @Test
+    public void purifierTextExplainsInstantGlobalClearRelocationAndBossDamage() throws IOException {
+        Path messages = coreDirectory().resolve("src/main/assets/messages");
+        String levels = read(messages.resolve("levels/levels.properties"));
+        String levelsZh = read(messages.resolve("levels/levels_zh.properties"));
+        String actors = read(messages.resolve("actors/actors.properties"));
+        String actorsZh = read(messages.resolve("actors/actors_zh.properties"));
+
+        assertTrue(levels.contains("plague purifier"));
+        assertTrue(levels.contains("instantly clears all plague miasma"));
+        assertTrue(levels.contains("100 damage"));
+        assertTrue(levels.contains("relocates"));
+        assertTrue(levelsZh.contains("净疫触发器"));
+        assertTrue(levelsZh.contains("立即清除全图所有瘟疫瘴气"));
+        assertTrue(levelsZh.contains("100点伤害"));
+        assertTrue(levelsZh.contains("转移"));
+        assertTrue(actors.contains("mobile purifier"));
+        assertTrue(actorsZh.contains("移动净化器"));
     }
 
     private static Path spritePath() {

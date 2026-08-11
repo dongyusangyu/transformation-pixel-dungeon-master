@@ -20,6 +20,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHeali
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
+import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
@@ -49,6 +51,7 @@ public class PestilenceKnight extends TowerBoss {
     public static final int KNOCKBACK_DISTANCE = 1;
     public static final int FINAL_DAMAGE_CAP = 150;
     private static final int PLAGUE_FLASK_IMPACT_COLOR = 0x9EAD48;
+    private static final int PURPLE_PRESCRIPTION_COLOR = 0x9A55D6;
 
     static final String PLAGUE_FLASK = "plague_flask";
     static final String QUARANTINE = "quarantine";
@@ -403,9 +406,22 @@ public class PestilenceKnight extends TowerBoss {
                 Buff.affect(target, Bleeding.class).set(6f);
                 break;
             default:
+                showPurplePrescription(target);
                 dealSkillDamage(target, 8, 14);
                 Buff.prolong(target, Vertigo.class, 3f);
                 break;
+        }
+    }
+
+    private void showPurplePrescription(Char target) {
+        if (target == null) return;
+        if (sprite != null && sprite.parent != null) {
+            MagicMissile.boltFromChar(sprite.parent, MagicMissile.SHAMAN_PURPLE,
+                    sprite, target.pos, null);
+        }
+        if (target.sprite != null && target.sprite.visible) {
+            Splash.at(target.pos, PURPLE_PRESCRIPTION_COLOR, 10);
+            target.sprite.emitter().burst(ShadowParticle.CURSE, 6);
         }
     }
 
