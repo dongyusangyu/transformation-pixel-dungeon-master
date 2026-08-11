@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.SpiritForm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ChaoticCenser;
@@ -89,6 +90,9 @@ public class Regeneration extends Buff {
 					}
 				}
 				delay /= SaltCube.healthRegenMultiplier();
+				if (target.buff(PostPlagueFatigue.class) != null) {
+					delay /= PostPlagueFatigue.NATURAL_REGEN_MULTIPLIER;
+				}
 				if(Dungeon.hero.subClass.is(HeroSubClass.WATERSLIME)){
 					delay/=Math.max(target.HT* 0.01 * (1+Dungeon.hero.pointsInTalent(Talent.WATER_REGENERATION)/6f),1);
 				}
@@ -136,6 +140,9 @@ public class Regeneration extends Buff {
 					}
 				}
 				delay /= SaltCube.healthRegenMultiplier();
+				if (target.buff(PostPlagueFatigue.class) != null) {
+					delay /= PostPlagueFatigue.NATURAL_REGEN_MULTIPLIER;
+				}
 				if(Dungeon.hero.subClass.is(HeroSubClass.WATERSLIME)){
 					delay/=Math.max(target.HT* 0.01 * (1+Dungeon.hero.pointsInTalent(Talent.WATER_REGENERATION)/6f),1);
 				}

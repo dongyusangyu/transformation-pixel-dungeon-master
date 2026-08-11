@@ -98,6 +98,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.TimeStasis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Virtue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.AscendedForm;
@@ -1358,6 +1359,9 @@ public class Hero extends Char {
         if(buff(MarchForward.Forward.class)!=null){
             speed*=1+buff(MarchForward.Forward.class).speed;
         }
+		if (buff(PostPlagueFatigue.class) != null) {
+			speed /= PostPlagueFatigue.MOVE_DELAY_MULTIPLIER;
+		}
 		return speed;
 		
 	}
@@ -1454,6 +1458,9 @@ public class Hero extends Char {
         }
         if ( buff( Suffering.Paranoia.class ) != null) delay/=1.2f;
 		if ( buff( Suffering.Ecstasy.class ) != null) delay/=1.5f;
+		if (buff(PostPlagueFatigue.class) != null) {
+			delay *= PostPlagueFatigue.ATTACK_DELAY_MULTIPLIER;
+		}
 		if (!RingOfForce.fightingUnarmed(this)) {
 			
 			return delay * belongings.attackingWeapon().delayFactor( this );
