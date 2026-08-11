@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.AlienatedPrismaticGuardSprite;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -24,6 +25,8 @@ public class AlienatedPrismaticGuard extends HeroReplicaMob {
 	private int splitCharge;
 
 	{
+		spriteClass = AlienatedPrismaticGuardSprite.class;
+
 		HP = HT = 100;
 		defenseSkill = 20;
 
@@ -99,7 +102,11 @@ public class AlienatedPrismaticGuard extends HeroReplicaMob {
 		mirror.pos = cell;
 		mirror.alignment = alignment;
 		mirror.state = mirror.HUNTING;
-		return addTwistedMirrorToLevel(mirror, cell);
+		boolean added = addTwistedMirrorToLevel(mirror, cell);
+		if (added && sprite instanceof AlienatedPrismaticGuardSprite) {
+			((AlienatedPrismaticGuardSprite) sprite).splitEffect(cell);
+		}
+		return added;
 	}
 
 	protected int findSplitCell() {
