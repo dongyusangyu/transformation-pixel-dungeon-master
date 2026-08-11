@@ -14,23 +14,36 @@ public final class TowerBossRewardGenerator {
     }
 
     public static MeleeWeapon createTierSixWeapon(long dungeonSeed, int depth, String bossId) {
-        Class<? extends MeleeWeapon> weaponClass = selectTierSixWeaponClass(dungeonSeed, depth, bossId);
-        return configureReward((MeleeWeapon) Reflection.newInstance(weaponClass));
+        Random.pushGenerator(rewardSeed(dungeonSeed, depth, bossId));
+        try {
+            Class<? extends MeleeWeapon> weaponClass = selectTierSixWeaponClassFromCurrentGenerator();
+            return configureReward((MeleeWeapon) Reflection.newInstance(weaponClass));
+        } finally {
+            Random.popGenerator();
+        }
     }
 
     @SuppressWarnings("unchecked")
     static Class<? extends MeleeWeapon> selectTierSixWeaponClass(
             long dungeonSeed, int depth, String bossId) {
-        long idHash = bossId == null ? 0L : bossId.hashCode();
-        long seed = TowerBossGenerator.mix64(dungeonSeed
-                ^ ((long) depth << 32) ^ idHash ^ REWARD_SALT);
-        Random.pushGenerator(seed);
+        Random.pushGenerator(rewardSeed(dungeonSeed, depth, bossId));
         try {
-            Class<?>[] pool = Generator.Category.WEP_T6.classes;
-            return (Class<? extends MeleeWeapon>) pool[Random.Int(pool.length)];
+            return selectTierSixWeaponClassFromCurrentGenerator();
         } finally {
             Random.popGenerator();
         }
+    }
+
+    private static long rewardSeed(long dungeonSeed, int depth, String bossId) {
+        long idHash = bossId == null ? 0L : bossId.hashCode();
+        return TowerBossGenerator.mix64(dungeonSeed
+                ^ ((long) depth << 32) ^ idHash ^ REWARD_SALT);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends MeleeWeapon> selectTierSixWeaponClassFromCurrentGenerator() {
+        Class<?>[] pool = Generator.Category.WEP_T6.classes;
+        return (Class<? extends MeleeWeapon>) pool[Random.Int(pool.length)];
     }
 
     static <T extends MeleeWeapon> T configureReward(T weapon) {

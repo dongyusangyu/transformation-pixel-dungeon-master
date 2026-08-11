@@ -208,9 +208,11 @@ public class TowerBestiaryCategoriesTest {
 		assertEquals("Pestilence Knight", defaults.getProperty(prefix + "name"));
 		assertTrue(defaults.getProperty(prefix + "desc", "").contains("Braziers"));
 		assertTrue(defaults.getProperty(prefix + "harvest", "").contains("Harvest"));
+		assertTrue(!defaults.getProperty("actors.buffs.tboss.terminalhealingpenalty.name", "").isEmpty());
 		assertEquals("瘟疫骑士", chinese.getProperty(prefix + "name"));
 		assertTrue(chinese.getProperty(prefix + "desc", "").contains("香炉"));
 		assertTrue(!chinese.getProperty(prefix + "pale_charge", "").isEmpty());
+		assertTrue(!chinese.getProperty("actors.buffs.tboss.terminalhealingpenalty.desc", "").isEmpty());
 	}
 
 	@Test

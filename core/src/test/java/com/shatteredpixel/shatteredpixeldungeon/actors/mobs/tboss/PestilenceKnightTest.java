@@ -1,12 +1,20 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class PestilenceKnightTest {
@@ -129,6 +137,77 @@ public class PestilenceKnightTest {
     }
 
     @Test
+    public void brazierTutorialFlagDoesNotCountAsASecondDiagnosis() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+
+        boss.setDiagnosisForTest(1 | (1 << 8));
+        assertFalse(boss.flaskDiagnosisBonusForTest());
+
+        boss.setDiagnosisForTest(2 | (1 << 8));
+        assertTrue(boss.flaskDiagnosisBonusForTest());
+    }
+
+    @Test
+    public void blockedChargeSideUsesSentinelInsteadOfCenterCell() {
+        assertEquals(-1, PestilenceKnight.chargeSideCellForTest(false, 42));
+        assertEquals(42, PestilenceKnight.chargeSideCellForTest(true, 42));
+    }
+
+    @Test
+    public void losingSightResetsOnlyTheConsecutiveDiagnosisCount() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.setDiagnosisForTest(2 | (1 << 8));
+
+        boss.resetDiagnosisStreakForTest();
+
+        assertFalse(boss.flaskDiagnosisBonusForTest());
+        assertEquals(1 << 8, boss.diagnosisForTest());
+    }
+
+    @Test
+    public void outbreakPrescriptionsDealDamageAndApplyTheirConfirmedEffects() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+
+        TestChar yellow = freshTarget();
+        boss.applyPrescriptionForTest(yellow, 0);
+        assertTrue(yellow.damageTaken >= 10 && yellow.damageTaken <= 16);
+        assertNotNull(yellow.buff(Weakness.class));
+        assertEquals(1, Infection.stacks(yellow));
+
+        TestChar red = freshTarget();
+        boss.applyPrescriptionForTest(red, 1);
+        assertTrue(red.damageTaken >= 10 && red.damageTaken <= 16);
+        assertNotNull(red.buff(Bleeding.class));
+
+        TestChar purple = freshTarget();
+        boss.applyPrescriptionForTest(purple, 2);
+        assertTrue(purple.damageTaken >= 8 && purple.damageTaken <= 14);
+        assertNotNull(purple.buff(Vertigo.class));
+    }
+
+    @Test
+    public void terminalDiagnosisUsesInfectionBandsAndFiniteHealingPenalty() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+
+        TestChar mild = freshTarget();
+        boss.applyTerminalDiagnosisForTest(mild, 1);
+        assertNotNull(mild.buff(Poison.class));
+
+        TestChar severe = freshTarget();
+        boss.applyTerminalDiagnosisForTest(severe, 3);
+        assertNotNull(severe.buff(Weakness.class));
+        assertNotNull(severe.buff(Vulnerable.class));
+
+        TestChar critical = freshTarget();
+        boss.applyTerminalDiagnosisForTest(critical, 5);
+        assertTrue(critical.damageTaken >= 25 && critical.damageTaken <= 40);
+        TerminalHealingPenalty penalty = critical.buff(TerminalHealingPenalty.class);
+        assertNotNull(penalty);
+        assertEquals(0.25f, penalty.incomingHealingReduction(), 0.001f);
+        assertTrue(penalty.cooldown() > 0f && penalty.cooldown() <= 3f);
+    }
+
+    @Test
     public void outbreakAndTerminalPanelsMatchPhaseRules() {
         PestilenceKnight boss = new PestilenceKnight(40);
         boss.setPhaseForTest(PestilenceKnight.Phase.OUTBREAK);
@@ -176,5 +255,25 @@ public class PestilenceKnightTest {
         PestilenceKnight restored = new PestilenceKnight(5);
         restored.restoreFromBundle(bundle);
         assertTrue(restored.rewardDroppedForTest());
+    }
+
+    private static TestChar freshTarget() {
+        TestChar target = new TestChar();
+        target.HT = target.HP = 100;
+        return target;
+    }
+
+    private static final class TestChar extends Char {
+        int damageTaken;
+
+        @Override
+        public void damage(int damage, Object source) {
+            damageTaken += damage;
+        }
+
+        @Override public int attackSkill(Char target) { return 0; }
+        @Override public int defenseSkill(Char enemy) { return 0; }
+        @Override public int drRoll() { return 0; }
+        @Override public float resist(Class effect) { return 1f; }
     }
 }

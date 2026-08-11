@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -23,6 +24,16 @@ public class InfectionTest {
             Infection.set(target, stacks);
             assertEquals((int) (100 * (1f - stacks * 0.08f)), target.heal(100));
         }
+    }
+
+    @Test
+    public void infectionExposesItsStackCountInTheBuffIndicator() {
+        TestChar target = freshTarget();
+        Infection.set(target, 2);
+
+        Infection infection = target.buff(Infection.class);
+        assertEquals(BuffIndicator.POISON, infection.icon());
+        assertEquals("2", infection.iconTextDisplay());
     }
 
     @Test
