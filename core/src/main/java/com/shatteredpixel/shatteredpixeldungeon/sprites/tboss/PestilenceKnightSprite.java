@@ -76,8 +76,13 @@ public class PestilenceKnightSprite extends MobSprite {
             case TERMINAL:
                 tint(0.30f, 0.05f, 0.42f, 0.24f);
                 if (terminalShadow == null || terminalShadow.parent == null) {
+                    stopTerminalShadow();
                     terminalShadow = bottomEmitter();
-                    terminalShadow.pour(ShadowParticle.UP, 0.18f);
+                    if (terminalShadow != null) terminalShadow.pour(ShadowParticle.UP, 0.18f);
+                }
+                if (terminalShadow != null) {
+                    terminalShadow.pos(x, y + height, width, 0);
+                    terminalShadow.visible = visible;
                 }
                 break;
             default:
@@ -88,7 +93,7 @@ public class PestilenceKnightSprite extends MobSprite {
     }
 
     private void stopTerminalShadow() {
-        if (terminalShadow != null) terminalShadow.on = false;
+        if (terminalShadow != null) terminalShadow.killAndErase();
         terminalShadow = null;
     }
 

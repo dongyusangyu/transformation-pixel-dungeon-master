@@ -186,6 +186,16 @@ public class PestilenceKnightTest {
     }
 
     @Test
+    public void immediateSkillsUseSpecificAnnouncementKeys() {
+        assertEquals("prescription_yellow", PestilenceKnight.prescriptionAnnouncementKeyForTest(0));
+        assertEquals("prescription_red", PestilenceKnight.prescriptionAnnouncementKeyForTest(1));
+        assertEquals("prescription_purple", PestilenceKnight.prescriptionAnnouncementKeyForTest(2));
+        assertEquals("diagnosis_mild", PestilenceKnight.diagnosisAnnouncementKeyForTest(1));
+        assertEquals("diagnosis_severe", PestilenceKnight.diagnosisAnnouncementKeyForTest(3));
+        assertEquals("diagnosis_critical", PestilenceKnight.diagnosisAnnouncementKeyForTest(5));
+    }
+
+    @Test
     public void terminalDiagnosisUsesInfectionBandsAndFiniteHealingPenalty() {
         PestilenceKnight boss = new PestilenceKnight(5);
 
