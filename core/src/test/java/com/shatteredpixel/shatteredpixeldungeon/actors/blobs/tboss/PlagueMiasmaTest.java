@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.BlobImmunity;
+import com.shatteredpixel.shatteredpixeldungeon.effects.BlobEmitter;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -10,10 +11,14 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 
 public class PlagueMiasmaTest {
 
@@ -62,6 +67,26 @@ public class PlagueMiasmaTest {
         String source = source("items/potions/PotionOfPurity.java");
         assertTrue(source.contains(
                 "affectedBlobs = new ArrayList<>(new BlobImmunity().immunities())"));
+    }
+
+    @Test
+    public void everyMiasmaDefinesVisibleDistinctGasAndAnInspectableDescription() throws Exception {
+        assertSame(PlagueMiasma.class,
+                PlagueMiasma.class.getMethod("use", BlobEmitter.class).getDeclaringClass());
+        assertSame(PlagueMiasma.class,
+                PlagueMiasma.class.getMethod("tileDesc").getDeclaringClass());
+
+        Method color = PlagueMiasma.class.getDeclaredMethod("particleColor");
+        color.setAccessible(true);
+        Set<Integer> colors = new HashSet<>();
+        colors.add((Integer) color.invoke(new IncubatingMiasma()));
+        colors.add((Integer) color.invoke(new OutbreakMiasma()));
+        colors.add((Integer) color.invoke(new PaleMiasma()));
+        assertEquals("each phase needs a readable, distinct gas color", 3, colors.size());
+
+        String source = source("actors/blobs/tboss/PlagueMiasma.java");
+        assertTrue(source.contains("emitter.pour"));
+        assertTrue(source.contains("Messages.get(this, \"desc\")"));
     }
 
     private static String source(String relative) throws Exception {

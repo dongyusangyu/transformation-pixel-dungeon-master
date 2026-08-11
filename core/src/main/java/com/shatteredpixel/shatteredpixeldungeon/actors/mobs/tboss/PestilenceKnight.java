@@ -260,13 +260,17 @@ public class PestilenceKnight extends TowerBoss {
         Hero hero = Dungeon.hero;
         enemy = hero;
         int distance = Dungeon.level.distance(pos, hero.pos);
+        int oldPos = pos;
         if (distance < min && distance > 1 && getFurther(hero.pos)) {
             spend(1f / speed());
+            moveSprite(oldPos, pos);
             finishBossAction();
             return true;
         }
+        oldPos = pos;
         if (distance > max && getCloser(hero.pos)) {
             spend(1f / speed());
+            moveSprite(oldPos, pos);
             finishBossAction();
             return true;
         }

@@ -64,6 +64,8 @@ public class PestilenceKnightSpriteAssetTest {
         assertTrue(sprite.contains("ShadowParticle.UP"));
         assertTrue(sprite.contains("tint(0.30f, 0.05f, 0.42f, 0.24f)"));
         assertTrue(boss.contains("spriteClass = PestilenceKnightSprite.class"));
+        assertEquals("both retreat and approach movement must synchronize the sprite",
+                2, occurrences(boss, "moveSprite(oldPos, pos)"));
     }
 
     private static Path spritePath() {
@@ -72,6 +74,16 @@ public class PestilenceKnightSpriteAssetTest {
 
     private static String read(Path path) throws IOException {
         return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+    }
+
+    private static int occurrences(String text, String needle) {
+        int count = 0;
+        int from = 0;
+        while ((from = text.indexOf(needle, from)) >= 0) {
+            count++;
+            from += needle.length();
+        }
+        return count;
     }
 
     private static Path coreDirectory() {
