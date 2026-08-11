@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.cave;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -183,7 +185,7 @@ public class BruteH extends MobHard implements PhysicalRangedAttack {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         if(rangedAttack){
             if(thrownLeft >=1){
                 Buff.affect(enemy, Cripple.class, Cripple.DURATION);
@@ -191,7 +193,7 @@ public class BruteH extends MobHard implements PhysicalRangedAttack {
                 Buff.affect(enemy, Bleeding.class).set(damage*0.8f);
             }
         }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     @Override

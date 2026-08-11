@@ -42,7 +42,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndBag;
 import com.watabou.noosa.audio.Sample;
-import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -186,11 +185,7 @@ public class ArcaneResin extends Item {
 				outQuantity +=Dungeon.hero.pointsInTalent(Talent.WAND_PRESERVATION);
 			}
 			try {
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					result.quantity(outQuantity+1);
-				}else{
-					result.quantity(outQuantity);
-				}
+				result.quantity(outQuantity + Talent.miracleAlchemyBonus(hero, result));
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

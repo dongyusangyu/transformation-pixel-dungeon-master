@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Pylon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Rat;
+import com.shatteredpixel.shatteredpixeldungeon.custom.dict.DictBook;
 import com.shatteredpixel.shatteredpixeldungeon.custom.seedfinder.SeedFindScene;
 import com.shatteredpixel.shatteredpixeldungeon.custom.seedfinder.SeedFinder;
 import com.shatteredpixel.shatteredpixeldungeon.items.EnergyCrystal;
@@ -131,12 +132,15 @@ public class WndJournal extends WndTabbed {
 	private NotesTab notesTab;
 	private CatalogTab catalogTab;
 	private BadgesTab badgesTab;
+	private DictionaryTab dictionaryTab;
 
 	private boolean guideLoaded;
 	private boolean notesLoaded;
 	private boolean catalogLoaded;
 	private boolean badgesLoaded;
+	private boolean dictionaryLoaded;
 	
+	public static final int DICTIONARY_TAB_INDEX = 5;
 	public static int last_index = 0;
 	private static WndJournal INSTANCE = null;
 	private static String inputtext = "";
@@ -169,6 +173,10 @@ public class WndJournal extends WndTabbed {
 		badgesTab = new BadgesTab();
 		add(badgesTab);
 		badgesTab.setRect(0, 0, width, height);
+
+		dictionaryTab = new DictionaryTab();
+		add(dictionaryTab);
+		dictionaryTab.setRect(0, 0, width, height);
 		
 		Tab[] tabs = {
 				new IconTab( Icons.JOURNAL.get() ) {
@@ -242,6 +250,21 @@ public class WndJournal extends WndTabbed {
 					protected String hoverText() {
 						return Messages.get(badgesTab, "title");
 					}
+				},
+				new IconTab( new ItemSprite(ItemSpriteSheet.GUIDE_PAGE, null) ) {
+					protected void select( boolean value ) {
+						super.select( value );
+						dictionaryTab.active = dictionaryTab.visible = value;
+						if (value) {
+							ensureDictionaryLoaded();
+							last_index = DICTIONARY_TAB_INDEX;
+						}
+					}
+
+					@Override
+					protected String hoverText() {
+						return Messages.get(dictionaryTab, "title");
+					}
 				}
 		};
 
@@ -251,8 +274,13 @@ public class WndJournal extends WndTabbed {
 		
 		layoutTabs();
 		
-		select(last_index);
+		select(Math.max(0, Math.min(last_index, tabs.length - 1)));
 		INSTANCE = this;
+	}
+
+	public static WndJournal dictionaryPage(){
+		last_index = DICTIONARY_TAB_INDEX;
+		return new WndJournal();
 	}
 
 	private void ensureGuideLoaded(){
@@ -283,6 +311,13 @@ public class WndJournal extends WndTabbed {
 		}
 	}
 
+	private void ensureDictionaryLoaded(){
+		if (!dictionaryLoaded){
+			dictionaryTab.updateList();
+			dictionaryLoaded = true;
+		}
+	}
+
 	@Override
 	public boolean onSignal(KeyEvent event) {
 		if (event.pressed && KeyBindings.getActionForKey( event ) == SPDAction.JOURNAL) {
@@ -300,7 +335,16 @@ public class WndJournal extends WndTabbed {
 		alchemyTab.layout();
 		notesTab.layout();
 		catalogTab.layout();
+		badgesTab.layout();
+		dictionaryTab.layout();
 
+	}
+
+	public static class DictionaryTab extends DictBook.DictTab {
+		@Override
+		public void layout() {
+			super.layout();
+		}
 	}
 	
 	public static class GuideTab extends Component {
@@ -357,7 +401,7 @@ public class WndJournal extends WndTabbed {
 	public static class AlchemyTab extends Component {
 		
 		private RedButton[] pageButtons;
-		private static final int NUM_BUTTONS = 9;
+		private static final int NUM_BUTTONS = 10;
 		
 		private static final int[] sprites = {
 				ItemSpriteSheet.SEED_HOLDER,
@@ -368,10 +412,12 @@ public class WndJournal extends WndTabbed {
 				ItemSpriteSheet.BOMB_HOLDER,
 				ItemSpriteSheet.MISSILE_HOLDER,
 				ItemSpriteSheet.ELIXIR_HOLDER,
-				ItemSpriteSheet.SPELL_HOLDER
+				ItemSpriteSheet.SPELL_HOLDER,
+				ItemSpriteSheet.WEAPON_HOLDER
 		};
 		
 		public static int currentPageIdx   = 0;
+		private static float[] scrollPositions = new float[NUM_BUTTONS];
 		
 		private IconTitle title;
 		private RenderedTextBlock body;
@@ -387,6 +433,7 @@ public class WndJournal extends WndTabbed {
 				pageButtons[i] = new RedButton( "" ){
 					@Override
 					protected void onClick() {
+						saveScrollPosition();
 						currentPageIdx = idx;
 						updateList();
 					}
@@ -413,34 +460,27 @@ public class WndJournal extends WndTabbed {
 		@Override
 		protected void layout() {
 			super.layout();
-			
-			if (width() >= 180){
-				float buttonWidth = width()/pageButtons.length;
-				for (int i = 0; i < NUM_BUTTONS; i++) {
-					pageButtons[i].setRect(x + i*buttonWidth, y, buttonWidth, ITEM_HEIGHT);
-					PixelScene.align(pageButtons[i]);
-				}
-			} else {
-				//for first row
-				float buttonWidth = width()/5;
-				float y = 0;
-				float x = 0;
-				for (int i = 0; i < NUM_BUTTONS; i++) {
-					pageButtons[i].setRect(this.x + x, this.y + y, buttonWidth, ITEM_HEIGHT);
-					PixelScene.align(pageButtons[i]);
-					x += buttonWidth;
-					if (i == 4){
-						y += ITEM_HEIGHT;
-						x = 0;
-						buttonWidth = width()/4;
-					}
-				}
+
+			int buttonsPerRow = width() >= 180 ? NUM_BUTTONS : 5;
+			float buttonWidth = width() / buttonsPerRow;
+			for (int i = 0; i < NUM_BUTTONS; i++) {
+				pageButtons[i].setRect(
+						x + (i % buttonsPerRow) * buttonWidth,
+						y + (i / buttonsPerRow) * ITEM_HEIGHT,
+						buttonWidth, ITEM_HEIGHT);
+				PixelScene.align(pageButtons[i]);
 			}
 			
 			list.setRect(x, pageButtons[NUM_BUTTONS-1].bottom() + 1, width,
 					height - pageButtons[NUM_BUTTONS-1].bottom() + y - 1);
 			
 			updateList();
+		}
+
+		private void saveScrollPosition() {
+			if (list != null && currentPageIdx >= 0 && currentPageIdx < scrollPositions.length) {
+				scrollPositions[currentPageIdx] = list.content().camera.scroll.y;
+			}
 		}
 		
 		public void updateList() {
@@ -499,9 +539,10 @@ public class WndJournal extends WndTabbed {
 				
 				w = 0;
 				while(!toAdd.isEmpty() && toAdd.get(0) != null
-						&& w + toAdd.get(0).width() <= width()){
-					toAddThisRow.add(toAdd.remove(0));
-					w += toAddThisRow.get(0).width();
+						&& (toAddThisRow.isEmpty() || w + toAdd.get(0).width() <= width())){
+					QuickRecipe next = toAdd.remove(0);
+					toAddThisRow.add(next);
+					w += next.width();
 				}
 				
 				float spacing = (width() - w)/(toAddThisRow.size() + 1);
@@ -535,9 +576,9 @@ public class WndJournal extends WndTabbed {
 				toAddThisRow.clear();
 			}
 			top -= 1;
-			content.setSize(width(), top);
+			content.setSize(width(), Math.max(top, list.height()));
 			list.setSize(list.width(), list.height());
-			list.scrollTo(0, 0);
+			list.scrollTo(0, scrollPositions[currentPageIdx]);
 		}
 	}
 	

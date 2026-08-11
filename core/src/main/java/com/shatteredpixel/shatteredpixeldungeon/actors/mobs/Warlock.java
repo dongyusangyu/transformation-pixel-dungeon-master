@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -116,7 +118,7 @@ public class Warlock extends Mob implements Callback, MagicalRangedAttack {
 					&& (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
 				dmg *= 0.5f;
 			}
-			enemy.damage( dmg, new DarkBolt() );
+			enemy.damage( dmg, new DarkBolt() , DamageTag.MAGICAL);
 			
 			if (enemy == hero && !enemy.isAlive()) {
 				Badges.validateDeathFromEnemyMagic();

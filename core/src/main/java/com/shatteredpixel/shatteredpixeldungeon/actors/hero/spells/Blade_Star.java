@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -111,7 +113,7 @@ public class Blade_Star extends TargetedClericSpell {
     private void affectChar( Char ch ){
         if (ch.alignment != Char.Alignment.ALLY && !(ch instanceof Hero)){
             int dmg = Random.Int(4,9);
-            ch.damage(dmg,this);
+            ch.damage(dmg,this, DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
             Buff.affect(ch,Cripple.class,3);
             if (ch.isAlive() && hero.subClass.is(HeroSubClass.PRIEST)){
 
@@ -169,7 +171,7 @@ public class Blade_Star extends TargetedClericSpell {
         private void affectChar( Char ch ){
             if (ch.alignment == Char.Alignment.ENEMY){
                 int dmg = Random.Int(4,9);
-                ch.damage(dmg,this);
+                ch.damage(dmg,this, DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
                 Buff.affect(ch,Cripple.class,3);
             }
         }

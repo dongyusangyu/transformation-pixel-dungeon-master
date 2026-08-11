@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -191,8 +193,8 @@ public class SpiritHawk extends ArmorAbility {
 		}
 
 		@Override
-		public int attackProc(Char enemy, int damage) {
-			damage = super.attackProc( enemy, damage );
+		public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+			damage = super.attackProc(enemy, damage, damageTags);
 			switch (Dungeon.hero.pointsInTalent(Talent.GO_FOR_THE_EYES)){
 				case 1:
 					Buff.prolong( enemy, Blindness.class, 2);

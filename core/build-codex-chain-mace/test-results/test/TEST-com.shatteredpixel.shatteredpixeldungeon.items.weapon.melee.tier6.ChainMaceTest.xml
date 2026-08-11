@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-08-09T11:03:56.321Z" hostname="PC" time="0.071">
+  <properties/>
+  <testcase name="returnStateLocksCommandsUntilFollowerReachesHero" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.002"/>
+  <testcase name="returnMovementInitializesFieldOfViewBeforePathfinding" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.002"/>
+  <testcase name="followerRejectsEveryBuffLikeCrystalSpire" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.036"/>
+  <testcase name="followerCannotReceiveAlignmentChangingOrAggressionEffects" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.001"/>
+  <testcase name="sourceQualifiesCommandsFromHeroAndReconcilesFloorChanges" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <testcase name="ballFollowerHasLocalizedNameAndDescription" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.012"/>
+  <testcase name="launchSoundAndHitShakeAreSeparated" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <testcase name="followerAndSpriteAreNestedInTheWeaponClass" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.001"/>
+  <testcase name="bossTransitionsPreserveDirectableAllies" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <testcase name="commandTargetRequiresVisibilityEnemyAndTrajectoryUnlessProjecting" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.009"/>
+  <testcase name="interruptedAnimationsRestoreAsSafeReturn" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.002"/>
+  <testcase name="sourcePersistsRealReturnAndSynchronizesFollowerPosition" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <testcase name="nearestTargetOrderUsesActorIdAsStableTieBreaker" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.001"/>
+  <testcase name="usesTierSixGreataxeDamageAndStrengthCurve" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.001"/>
+  <testcase name="restoredFollowerCanBeFoundBeforeActorInitialization" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <testcase name="followerIsNeutralAndInvulnerableToMonsterAttacks" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.002"/>
+  <testcase name="sourceInterceptsEquippedThrowAndUsesNormalVersusCertainHits" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <testcase name="sourceHandlesCrowdedSpawnAndValidatesWeaponOwnership" classname="com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMaceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

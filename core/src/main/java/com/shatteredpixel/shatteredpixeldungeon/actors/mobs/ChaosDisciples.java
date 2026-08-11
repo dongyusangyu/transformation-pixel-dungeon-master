@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -120,13 +122,13 @@ public abstract class ChaosDisciples extends Mob{
         return super.drRoll() + Random.NormalIntRange(5, 25);
     }
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         dmg=Math.min(100,dmg);
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())){
             lock.addTime(dmg*0.33f);
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
     }
 
 
@@ -153,19 +155,44 @@ public abstract class ChaosDisciples extends Mob{
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             if (Random.Int( 3 ) == 0) {
-                int i;
-                do {
-                    i = Random.Int(Dungeon.level.length());
-                } while (Dungeon.level.heroFOV[i]
-                        || Dungeon.level.solid[i]
-                        || Actor.findChar(i) != null
-                        || PathFinder.getStep(i, Dungeon.level.exit(), Dungeon.level.passable) == -1);
-                ScrollOfTeleportation.appear(this, i);
+                PathFinder.buildDistanceMap(Dungeon.level.exit(), Dungeon.level.passable);
+                boolean[] occupied = new boolean[Dungeon.level.length()];
+                for (Char ch : Actor.chars()) {
+                    if (ch.pos >= 0 && ch.pos < occupied.length) {
+                        occupied[ch.pos] = true;
+                    }
+                }
+                ArrayList<Integer> candidates = teleportCandidates(
+                        Dungeon.level.heroFOV,
+                        Dungeon.level.solid,
+                        occupied,
+                        PathFinder.distance);
+                if (!candidates.isEmpty()) {
+                    ScrollOfTeleportation.appear(
+                            this, candidates.get(Random.Int(candidates.size())));
+                }
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
+
+        static ArrayList<Integer> teleportCandidates(boolean[] heroFOV, boolean[] solid,
+                                                     boolean[] occupied, int[] distance) {
+            ArrayList<Integer> candidates = new ArrayList<>();
+            int length = Math.min(Math.min(heroFOV.length, solid.length),
+                    Math.min(occupied.length, distance.length));
+            for (int cell = 0; cell < length; cell++) {
+                if (!heroFOV[cell]
+                        && !solid[cell]
+                        && !occupied[cell]
+                        && distance[cell] != Integer.MAX_VALUE) {
+                    candidates.add(cell);
+                }
+            }
+            return candidates;
+        }
+
         public boolean doRangedAttack(Char enemy) {
             if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
                 sprite.zap( enemy.pos );
@@ -222,7 +249,7 @@ public abstract class ChaosDisciples extends Mob{
                         && (Char.hasProp(enemy, Property.BOSS) || Char.hasProp(enemy, Property.MINIBOSS))){
                     dmg *= 0.5f;
                 }
-                enemy.damage( dmg, new Warlock.DarkBolt() );
+                enemy.damage( dmg, new Warlock.DarkBolt() , DamageTag.MAGICAL);
 
             } else {
                 showRangedMiss(enemy);
@@ -262,7 +289,7 @@ public abstract class ChaosDisciples extends Mob{
                 Invisibility.dispel(this);
                 for (Char ch : affected) {
                     if (rangedHit(ch)) {
-                        ch.damage(Random.NormalIntRange(40, 50), new Eye.DeathGaze());
+                        ch.damage(Random.NormalIntRange(40, 50), new Eye.DeathGaze(), DamageTag.MAGICAL);
                         if (Dungeon.level.heroFOV[pos]) {
                             ch.sprite.flash();
                             CellEmitter.center(pos).burst(PurpleParticle.BURST, Random.IntRange(1, 2));
@@ -357,9 +384,9 @@ public abstract class ChaosDisciples extends Mob{
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             Buff.affect(this, Adrenaline.class,5);
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
         public String info(){
             String desc = description();
@@ -373,8 +400,8 @@ public abstract class ChaosDisciples extends Mob{
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             combo++;
             combotime+=5;
             damage=(int)(damage*(1+0.1f*combo));
@@ -432,19 +459,19 @@ public abstract class ChaosDisciples extends Mob{
             return super.drRoll() + Random.NormalIntRange(25, 50);
         }
         @Override
-        public void damage(int dmg, Object src) {
-            if ( AntiMagic.RESISTS.contains(src.getClass())){
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
+            if (DamageTag.of(damageTags).contains(DamageTag.MAGICAL)) {
                 dmg =(int)(dmg*0.3f);
             }
-            if(src.getClass() == Burning.class){
+            if (DamageTag.of(damageTags).contains(DamageTag.FIRE)) {
                 dmg*=5;
                 yell(Messages.get(this, "fire"));
             }
             dmg=Math.min(50,dmg);
             if(src==hero && Dungeon.level.distance(hero.pos,pos)>1 && dmg>10){
-                hero.damage((int)(dmg/2),this);
+                hero.damage((int)(dmg/2),this, DamageTag.PHYSICAL);
             }
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
 
 
@@ -453,8 +480,8 @@ public abstract class ChaosDisciples extends Mob{
             return Ballistica.MAGIC_BOLT;
         }
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if (Random.Int( 2 ) == 0) {
                 Buff.prolong( enemy, Cripple.class, Cripple.DURATION );
                 Buff.affect( enemy, Ooze.class).set(10);

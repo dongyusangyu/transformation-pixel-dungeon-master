@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.scrolls;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -65,7 +67,7 @@ public class ScrollOfRetribution extends Scroll {
 
 		for (Mob mob : targets){
 			//deals 10%HT, plus 0-90%HP based on scaling
-			mob.damage(Math.round(mob.HT/10f + (mob.HP * power * 0.225f)), this);
+			mob.damage(Math.round(mob.HT/10f + (mob.HP * power * 0.225f)), this, DamageTag.MAGICAL);
 			if (mob.isAlive()) {
 				Buff.prolong(mob, Blindness.class, Blindness.DURATION);
 			}

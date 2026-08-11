@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.city;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -91,7 +93,7 @@ public class WarlockH extends MobHard implements Callback, MagicalRangedAttack {
             }
 
             int dmg = Random.NormalIntRange( 12, 18 );
-            enemy.damage( dmg, new DarkBolt() );
+            enemy.damage( dmg, new DarkBolt() , DamageTag.MAGICAL);
 
             if (enemy == Dungeon.hero && !enemy.isAlive()) {
                 Dungeon.fail( getClass() );
@@ -104,7 +106,7 @@ public class WarlockH extends MobHard implements Callback, MagicalRangedAttack {
 
     private int hitsToDegrade = 0;
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
 
         ++hitsToDegrade;
 
@@ -125,7 +127,7 @@ public class WarlockH extends MobHard implements Callback, MagicalRangedAttack {
 
             hitsToDegrade = 0;
         }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     @Override

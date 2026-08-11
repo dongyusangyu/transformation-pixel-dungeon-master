@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
+import com.watabou.noosa.MovieClip;
 
 import org.junit.Test;
 
@@ -38,6 +39,18 @@ public class CorrosiveSwarmSpriteAssetTest {
 	}
 
 	@Test
+	public void burstUsesAnIndependentEffectClip() {
+		boolean found = false;
+		for (Class<?> nested : CorrosiveSwarmSprite.class.getDeclaredClasses()) {
+			if (nested.getSimpleName().equals("BurstEffect")
+					&& MovieClip.class.isAssignableFrom(nested)) {
+				found = true;
+			}
+		}
+		assertTrue(found);
+	}
+
+	@Test
 	public void spriteSheetHasSeventeenHardEdgedSixteenBySixteenFrames() throws IOException {
 		Path asset = coreDirectory().resolve("src/main/assets/sprites/corrosive_swarm.png");
 		assertTrue(Files.isRegularFile(asset));
@@ -63,6 +76,27 @@ public class CorrosiveSwarmSpriteAssetTest {
 			assertTrue("frame " + frame + " must not be empty", nonEmpty);
 		}
 		assertTrue("sprite palette must stay at or below 12 colors", visibleColors.size() <= 12);
+	}
+
+	@Test
+	public void gameplayFramesRetainOrdinarySwarmSilhouettes() throws IOException {
+		Path sprites = coreDirectory().resolve("src/main/assets/sprites");
+		BufferedImage ordinary = ImageIO.read(sprites.resolve("swarm.png").toFile());
+		BufferedImage corrosive = ImageIO.read(sprites.resolve("corrosive_swarm.png").toFile());
+
+		for (int frame = 0; frame < 15; frame++) {
+			for (int y = 0; y < FRAME_HEIGHT; y++) {
+				for (int localX = 0; localX < FRAME_WIDTH; localX++) {
+					int x = frame * FRAME_WIDTH + localX;
+					if ((ordinary.getRGB(x, y) >>> 24) > 0) {
+						assertEquals(
+								"frame " + frame + " must retain the ordinary Swarm silhouette",
+								255,
+								corrosive.getRGB(x, y) >>> 24);
+					}
+				}
+			}
+		}
 	}
 
 	@Test

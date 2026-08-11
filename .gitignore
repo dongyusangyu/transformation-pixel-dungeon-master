@@ -34,6 +34,16 @@ release/
 debug/
 capture/
 .codex-tmp/
+.codex-build-*/
+
+# Codex/Superpowers working files
+.superpowers/
+docs/superpowers/
+tools/*_test.init.gradle
+
+# Python bytecode caches
+__pycache__/
+*.py[cod]
 
 # Logs and temporary files
 *.log

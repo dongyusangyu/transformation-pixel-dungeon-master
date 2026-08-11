@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -171,6 +173,9 @@ public class RitualDagger extends MeleeWeapon {
                 break;
             case DAMAGE:
                 info += " " + Messages.get(Weapon.class, "stronger");
+                break;
+            case MAGIC:
+                info += " " + Messages.get(Weapon.class, "magical", weaponTier());
                 break;
             case NONE:
         }
@@ -391,7 +396,7 @@ public class RitualDagger extends MeleeWeapon {
 		Sample.INSTANCE.play(Assets.Sounds.CURSED);
 		GLog.w(Messages.get(this, "stab_self"));
 		Reason.loseReason(hero, 100);
-		hero.damage(1, this);
+		hero.damage(1, this, DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 		if (!hero.isAlive()) {
 			Dungeon.fail(this);
 			GLog.n(Messages.get(this, "ondeath"));

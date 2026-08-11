@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -132,8 +134,8 @@ public class TestRogueBoss extends Mob {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage) {
-        damage = super.attackProc(enemy, damage);
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
         RogueBoss.MomentumTime momentum = buff(RogueBoss.MomentumTime.class);
         if (momentum != null && momentum.left <= 0) {
             damage = (int)(damage * 1.33f);
@@ -150,7 +152,7 @@ public class TestRogueBoss extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char attacker = TestBossUtil.attackerToRetarget(this, src);
         if (attacker != null) {
             enemy = attacker;
@@ -177,7 +179,7 @@ public class TestRogueBoss extends Mob {
         boolean bleeding = HP * 2 <= HT;
         dmg = Math.min(25, dmg);
         int preHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         int dmgTaken = preHP - HP;
 
         if (phase == 0 && HP < HT / 2 && isAlive()) {
@@ -207,7 +209,7 @@ public class TestRogueBoss extends Mob {
         if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES)) {
             Buff.affect(victim, Grim.GrimTracker.class).maxChance = 1;
         }
-        victim.damage((int)(victim.HT * 0.9f), this);
+        victim.damage((int)(victim.HT * 0.9f), this, DamageTag.PHYSICAL);
         yell(Messages.get(this, "execute"));
         RogueBoss.AbsoluteInvisibility.dispel(this);
     }

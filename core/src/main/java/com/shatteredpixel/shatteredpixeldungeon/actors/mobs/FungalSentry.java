@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -79,9 +81,9 @@ public class FungalSentry extends Mob implements PhysicalRangedAttack {
 	//TODO if we want to allow them to be literally killed, probably should give them a heal if hero is out of FOV, or similar
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
 		Buff.affect(enemy, Poison.class).extend(6);
-		return super.attackProc(enemy, damage);
+		return super.attackProc(enemy, damage, damageTags);
 	}
 
 	@Override

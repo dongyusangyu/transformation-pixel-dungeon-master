@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -110,7 +112,7 @@ public class HeroicLeap extends ArmorAbility {
 								int damage = Hero.heroDamageIntRange(hero.pointsInTalent(Talent.BODY_SLAM), 4*hero.pointsInTalent(Talent.BODY_SLAM));
 								damage += Math.round(hero.drRoll()*0.25f*hero.pointsInTalent(Talent.BODY_SLAM));
 								damage -= mob.drRoll();
-								mob.damage(damage, hero);
+								mob.damage(damage, hero, DamageTag.PHYSICAL);
 							}
 							if (mob.pos == hero.pos + i && hero.hasTalent(Talent.IMPACT_WAVE)){
 								Ballistica trajectory = new Ballistica(mob.pos, mob.pos + i, Ballistica.MAGIC_BOLT);

@@ -40,7 +40,7 @@ public class Wayward extends Weapon.Enchantment {
 
 		if (attacker.buff(WaywardBuff.class) != null){
 			Buff.detach(attacker, WaywardBuff.class);
-		} else if (Random.Float() < procChance){
+		} else if (procChance(procChance)){
 			Buff.prolong(attacker, WaywardBuff.class, WaywardBuff.DURATION);
 		}
 

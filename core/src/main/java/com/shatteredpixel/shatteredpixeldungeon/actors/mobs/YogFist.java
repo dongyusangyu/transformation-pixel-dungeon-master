@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -140,9 +142,9 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		int preHP = HP;
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 		int dmgTaken = preHP - HP;
 
 		LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
@@ -317,7 +319,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 		}
 
 		@Override
-		public void damage(int dmg, Object src) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 			int grassCells = 0;
 			for (int i : PathFinder.NEIGHBOURS9) {
 				if (Dungeon.level.map[pos+i] == Terrain.FURROWED_GRASS
@@ -332,7 +334,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 				return;
 			}
 
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 		}
 
 		@Override
@@ -396,7 +398,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 		}
 
 		@Override
-		public void damage(int dmg, Object src) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 			if (!isInvulnerable(src.getClass())
 					&& !(src instanceof Bleeding)
 					&& buff(Sickle.HarvestBleedTracker.class) == null){
@@ -413,7 +415,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 				b.attachTo(this);
 				sprite.showStatus(CharSprite.WARNING, Messages.titleCase(b.name()) + " " + (int)b.level());
 			} else{
-				super.damage(dmg, src);
+				super.damage(dmg, src, damageTags);
 			}
 		}
 
@@ -425,8 +427,8 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 		}
 
 		@Override
-		public int attackProc( Char enemy, int damage ) {
-			damage = super.attackProc( enemy, damage );
+		public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+			damage = super.attackProc(enemy, damage, damageTags);
 
 			if (Random.Int( 2 ) == 0) {
 				Buff.affect( enemy, Ooze.class ).set( Ooze.DURATION );
@@ -457,7 +459,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 		}
 
 		@Override
-		public void damage(int dmg, Object src) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 			if (!isInvulnerable(src.getClass()) && !(src instanceof Viscosity.DeferedDamage)){
 				dmg = Math.round( dmg * resist( src.getClass() ));
 				if (dmg >= 0) {
@@ -465,7 +467,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 					sprite.showStatus(CharSprite.WARNING, Messages.get(Viscosity.class, "deferred", dmg));
 				}
 			} else{
-				super.damage(dmg, src);
+				super.damage(dmg, src, damageTags);
 			}
 		}
 
@@ -504,7 +506,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 			Char enemy = this.enemy;
 			if (rangedHit(enemy)) {
 
-				enemy.damage( Random.NormalIntRange(10, 20), new LightBeam() );
+				enemy.damage( Random.NormalIntRange(10, 20), new LightBeam() , DamageTag.MAGICAL);
 				Buff.prolong( enemy, Blindness.class, Blindness.DURATION/2f );
 
 				if (!enemy.isAlive() && enemy == Dungeon.hero) {
@@ -521,9 +523,9 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 		}
 
 		@Override
-		public void damage(int dmg, Object src) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 			int beforeHP = HP;
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 			if (isAlive() && beforeHP > HT/2 && HP < HT/2){
 				HP = HT/2;
 				Buff.prolong( Dungeon.hero, Blindness.class, Blindness.DURATION*1.5f );
@@ -570,7 +572,7 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 			Char enemy = this.enemy;
 			if (rangedHit(enemy)) {
 
-				enemy.damage( Random.NormalIntRange(10, 20), new DarkBolt() );
+				enemy.damage( Random.NormalIntRange(10, 20), new DarkBolt() , DamageTag.MAGICAL);
 
 				Light l = enemy.buff(Light.class);
 				if (l != null){
@@ -591,9 +593,9 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 		}
 
 		@Override
-		public void damage(int dmg, Object src) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 			int beforeHP = HP;
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 			if (isAlive() && beforeHP > HT/2 && HP < HT/2){
 				HP = HT/2;
 				Light l = Dungeon.hero.buff(Light.class);

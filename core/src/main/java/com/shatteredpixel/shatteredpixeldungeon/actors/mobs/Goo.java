@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.challenges;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
@@ -172,8 +174,8 @@ public class Goo extends Mob implements PhysicalRangedAttack {
 	}
 
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		if (Random.Int( 3 ) == 0) {
 			Buff.affect( enemy, Ooze.class ).set( Ooze.DURATION );
 			enemy.sprite.burst( 0x000000, 5 );
@@ -255,8 +257,9 @@ public class Goo extends Mob implements PhysicalRangedAttack {
 	}
 
 	@Override
-	public boolean attack( Char enemy, float dmgMulti, float dmgBonus, float accMulti ) {
-		boolean result = super.attack( enemy, dmgMulti, dmgBonus, accMulti );
+	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
+			DamageTag... damageTags) {
+		boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
 		if (pumpedUp > 0) {
 			pumpedUp = 0;
 			if (enemy == Dungeon.hero) {
@@ -286,7 +289,7 @@ public class Goo extends Mob implements PhysicalRangedAttack {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 
 
 		boolean bleeding = (HP*2 <= HT);
@@ -301,7 +304,7 @@ public class Goo extends Mob implements PhysicalRangedAttack {
             if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES))   lock.addTime(dmg);
             else                                                    lock.addTime(dmg*1.5f);
         }
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
         if (!BossHealthBar.isAssigned() && this.isAlive()){
             BossHealthBar.assignBoss( this );
             Dungeon.level.seal();

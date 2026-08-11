@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -106,7 +108,7 @@ public class HDKBuff {
                 } else {
                     Char ch = Actor.findChar(pos);
                     if(ch == Dungeon.hero){
-                        ch.damage(Dungeon.hero.HP / 2 + Random.NormalIntRange(10, 25), summon);
+                        ch.damage(Dungeon.hero.HP / 2 + Random.NormalIntRange(10, 25), summon, DamageTag.PHYSICAL);
                         if (!ch.isAlive()) {
                             Dungeon.fail(NewHardDK.class);
                         }

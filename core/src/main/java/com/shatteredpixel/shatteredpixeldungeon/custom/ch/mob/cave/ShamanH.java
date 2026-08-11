@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.cave;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -115,7 +117,7 @@ public abstract class ShamanH extends MobHard implements MagicalRangedAttack {
         if (rangedHit(enemy)) {
 
             int dmg = executeProc();
-            enemy.damage(dmg, new ShamanMagic());
+        enemy.damage(dmg, new ShamanMagic(), DamageTag.MAGICAL);
 
             if (!enemy.isAlive() && enemy == Dungeon.hero) {
                 Dungeon.fail(getClass());

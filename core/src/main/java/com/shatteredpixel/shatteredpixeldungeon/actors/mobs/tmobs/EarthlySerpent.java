@@ -27,10 +27,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.EarthlySerpentSprite;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -52,12 +55,13 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 	{
 		HP = HT = BASE_HT;
 		defenseSkill = 20;
+		spriteClass = EarthlySerpentSprite.class;
 
 		EXP = 13;
 		maxLvl = 30;
 
-		loot = null;
-		lootChance = 0f;
+		loot = Generator.Category.SEED;
+		lootChance = 1f;
 
 		immunities.add(CorrosiveGas.class);
 		immunities.add(Corrosion.class);
@@ -105,21 +109,23 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		if (source instanceof SerpentBomb) {
 			damage = normalizeBombDamage(damage, ((SerpentBomb) source).ownerId());
 		}
-		Char target = retaliationTarget();
-		boolean retaliates = isQualifyingMeleeSource(source, target);
-		int healthBefore = HP;
-
+        Char target = null;
+        if(source instanceof Char){
+            target = (Char)source;
+        }
+        int healthBefore = HP;
+        boolean retaliates = isQualifyingMeleeSource(source, target);
 		super.damage(damage, source, damageTags);
+        if(target != null){
+            int healthLost = Math.max(0, healthBefore - HP);
+            if (retaliates && healthLost > 0 && target != null && target.isAlive()) {
+                Buff.affect(target, Poison.class).extend(healthLost*0.1f);
+            }
+        }
 
-		int healthLost = Math.max(0, healthBefore - HP);
-		if (retaliates && healthLost > 0 && target != null && target.isAlive()) {
-			Buff.affect(target, Poison.class).extend(healthLost);
-		}
-	}
 
-	@Override
-	public float lootChance() {
-		return 0f;
+
+
 	}
 
 	@Override
@@ -148,6 +154,11 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 				&& target != null
 				&& Dungeon.level.distance(pos, target.pos) > 2
 				&& new Ballistica(pos, target.pos, rangedAttackBallisticaMode()).collisionPos == target.pos;
+	}
+
+	@Override
+	protected boolean canAttack(Char enemy) {
+		return canMeleeAttack(enemy) || canRangedAttack(enemy);
 	}
 
 	@Override
@@ -200,11 +211,11 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		if (Dungeon.level == null || Dungeon.level.blobs == null) {
 			return;
 		}
-		seedCorrosiveGas(pos, 5, 1);
+		seedCorrosiveGas(pos, 5, 1, CorrosiveGas.class);
 		for (int offset : PathFinder.NEIGHBOURS8) {
 			int cell = pos + offset;
 			if (validOpenCell(cell)) {
-				seedCorrosiveGas(cell, 2, 1);
+				seedCorrosiveGas(cell, 2, 1, CorrosiveGas.class);
 			}
 		}
 	}
@@ -214,18 +225,19 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 			return;
 		}
 		if (validOpenCell(target)) {
-			seedCorrosiveGas(target, 15, 8);
+			seedCorrosiveGas(target, 15, 8, EarthlySerpentSpitGas.class);
 		}
 		for (int offset : PathFinder.NEIGHBOURS8) {
 			int cell = target + offset;
 			if (validOpenCell(cell)) {
-				seedCorrosiveGas(cell, 5, 8);
+				seedCorrosiveGas(cell, 5, 8, EarthlySerpentSpitGas.class);
 			}
 		}
 	}
 
-	private void seedCorrosiveGas(int cell, int volume, int strength) {
-		Blob.seed(cell, volume, CorrosiveGas.class)
+	private <T extends CorrosiveGas> void seedCorrosiveGas(
+			int cell, int volume, int strength, Class<T> gasClass) {
+		Blob.seed(cell, volume, gasClass)
 				.setStrength(strength, EarthlySerpent.class);
 	}
 
@@ -237,7 +249,8 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 
 	protected boolean canPull(Char target) {
 		if (pullUsed || Dungeon.level == null || target == null
-				|| target.properties().contains(Property.IMMOVABLE)) {
+				|| target.properties().contains(Property.IMMOVABLE)
+				|| (Dungeon.hero != null && target != Dungeon.hero)) {
 			return false;
 		}
 		int distance = Dungeon.level.distance(pos, target.pos);
@@ -270,6 +283,9 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		}
 		if (target.sprite != null) {
 			Actor.add(new Pushing(target, from, landing));
+		}
+		if (sprite instanceof EarthlySerpentSprite) {
+			((EarthlySerpentSprite) sprite).pull(from);
 		}
 		if (Dungeon.hero != null) {
 			Dungeon.observe();
@@ -306,6 +322,9 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 	}
 
 	protected void explodeAt(int cell) {
+		if (sprite instanceof EarthlySerpentSprite) {
+			((EarthlySerpentSprite) sprite).warning(false);
+		}
 		new SerpentBomb(id()).explode(cell);
 	}
 
@@ -317,9 +336,7 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		return pendingExplosionCell;
 	}
 
-	protected Char retaliationTarget() {
-		return Dungeon.hero;
-	}
+
 
 	protected boolean isQualifyingMeleeSource(Object source, Char target) {
 		if (target instanceof Hero && source == target) {
@@ -401,6 +418,14 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 
 		int ownerId() {
 			return ownerId;
+		}
+	}
+
+	public static class EarthlySerpentSpitGas extends CorrosiveGas {
+
+		@Override
+		public String tileDesc() {
+			return Messages.get(CorrosiveGas.class, "desc");
 		}
 	}
 }

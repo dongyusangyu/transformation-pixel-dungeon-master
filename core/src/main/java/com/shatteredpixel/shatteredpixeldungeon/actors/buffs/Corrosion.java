@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -103,7 +105,7 @@ public class Corrosion extends Buff implements Hero.Doom {
 	@Override
 	public boolean act() {
 		if (target.isAlive()) {
-			target.damage((int)damage, this);
+			target.damage((int)damage, this, DamageTag.PHYSICAL, DamageTag.CORROSION);
 			if (damage < (Dungeon.scalingDepth()/2)+2) {
 				damage++;
 			} else {

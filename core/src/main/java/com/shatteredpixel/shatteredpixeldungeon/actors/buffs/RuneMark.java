@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -239,10 +241,10 @@ public class RuneMark extends Buff {
                 hero.heal(6);
             }
             if(enchantments.containsKey(Sweeping.class) && ch.alignment != Char.Alignment.ALLY){
-                ch.damage(num+5,hero);
+                ch.damage(num+5,hero, DamageTag.PHYSICAL);
             }
             if(unable==12 && ch.alignment != Char.Alignment.ALLY){
-                ch.damage(num+5,hero);
+                ch.damage(num+5,hero, DamageTag.PHYSICAL);
             }
             if(enchantments.containsKey(CorrosionEnchanted.class) && ch.alignment != Char.Alignment.ALLY){
                 Buff.affect(ch, Corrosion.class).set(num*2f, num, null);
@@ -260,7 +262,7 @@ public class RuneMark extends Buff {
             if(hero.pointsInTalent(Talent.RUNE_BLAST)>1 && lastWand!=null && wand!=lastWand){
                 dmg += 10;
             }
-            ch.damage(dmg, HolyWeapon.INSTANCE);
+            ch.damage(dmg, HolyWeapon.INSTANCE, DamageTag.MAGICAL);
 
             if(enchantments.containsKey(Kinetic.class) && !ch.isAlive()){
                 s+=6;

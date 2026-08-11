@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.city;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -58,23 +60,23 @@ public class GolemH extends MobHard {
     private int damageToElemental = 3;
 
     @Override
-    public int defenseProc(Char enemy, int damage){
+    public int defenseProc(Char enemy, int damage, DamageTag... damageTags){
         damageToElemental--;
         if (damageToElemental <= 0) {
             summonElemental();
         }
-        return super.defenseProc(enemy, damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
 
     @Override
-    public void damage(int damage, Object src) {
+    public void damage(int damage, Object src, DamageTag... damageTags) {
         if (src instanceof Wand) {
             damageToElemental--;
             if (damageToElemental <= 0) {
                 summonElemental();
             }
         }
-        super.damage(damage, src);
+        super.damage(damage, src, damageTags);
     }
 
     protected void summonElemental(){

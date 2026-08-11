@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -135,7 +137,7 @@ public class WandOfDisintegration extends DamageWand {
 				dmg*=1.2;
 			}
             dmg = Talent.onWandDamage(this,ch,dmg);
-			ch.damage( dmg, this );
+			ch.damage( dmg, this , DamageTag.MAGICAL);
 			ch.sprite.centerEmitter().burst( PurpleParticle.BURST, Random.IntRange( 1, 2 ) );
 			ch.sprite.flash();
 		}

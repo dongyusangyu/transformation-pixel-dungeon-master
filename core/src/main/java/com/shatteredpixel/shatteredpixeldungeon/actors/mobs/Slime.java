@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
@@ -55,7 +57,7 @@ public class Slime extends Mob {
 	}
 	
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		float scaleFactor = AscensionChallenge.statModifier(this);
 		float scaledDmg = dmg/scaleFactor;
 		if (scaledDmg >= 5){
@@ -63,7 +65,7 @@ public class Slime extends Mob {
 			scaledDmg = 4 + (float)(Math.sqrt(8*(scaledDmg - 4) + 1) - 1)/2;
 		}
 		dmg = (int)(scaledDmg*AscensionChallenge.statModifier(this));
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 	}
 
 	@Override

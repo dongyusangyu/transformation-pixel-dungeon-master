@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -224,7 +226,7 @@ public class Necromancer extends Mob {
 				//attempt to damage the blocker in addition to waiting
 				Char blocker = Actor.findChar(summoningPos);
 				if (blocker.alignment != alignment){
-					blocker.damage( Random.NormalIntRange(2, 10), new SummoningBlockDamage() );
+					blocker.damage( Random.NormalIntRange(2, 10), new SummoningBlockDamage() , DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 					if (blocker == Dungeon.hero && !blocker.isAlive()){
 						Badges.validateDeathFromEnemyMagic();
 						Dungeon.fail(this);

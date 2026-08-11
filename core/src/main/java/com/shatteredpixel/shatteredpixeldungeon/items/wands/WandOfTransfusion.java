@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -132,7 +134,7 @@ public class WandOfTransfusion extends DamageWand {
 				
 				//harms the undead
 				} else {
-					ch.damage(damageRoll(ch), this);
+					ch.damage(damageRoll(ch), this, DamageTag.MAGICAL);
 					ch.sprite.emitter().start(ShadowParticle.UP, 0.05f, 10 + buffedLvl());
 					Sample.INSTANCE.play(Assets.Sounds.BURNING);
 				}
@@ -146,7 +148,7 @@ public class WandOfTransfusion extends DamageWand {
 	//this wand costs health too
 	private void damageHero(int damage){
 		
-		curUser.damage(damage, this);
+		curUser.damage(damage, this, DamageTag.MAGICAL);
 
 		if (!curUser.isAlive()){
 			Badges.validateDeathFromFriendlyMagic();

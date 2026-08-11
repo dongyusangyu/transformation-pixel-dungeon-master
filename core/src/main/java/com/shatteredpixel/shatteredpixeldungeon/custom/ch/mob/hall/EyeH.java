@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.hall;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -11,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.MobHard;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
@@ -57,10 +60,18 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
 
         HUNTING = new Hunting();
 
-        loot = new Dewdrop();
-        lootChance = 1f;
-
         properties.add(Property.DEMONIC);
+    }
+
+    public EyeH() {
+        this(true);
+    }
+
+    protected EyeH(boolean initializeLoot) {
+        if (initializeLoot) {
+            loot = new Dewdrop();
+            lootChance = 1f;
+        }
     }
 
     @Override
@@ -82,9 +93,13 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
     protected int beamTarget = -1;
     protected int beamCooldown;
     public boolean beamCharged;
+    private transient boolean beamFiring;
 
     @Override
     protected boolean canAttack( Char enemy ) {
+        if (!canUseDeathGazeAgainst(enemy)) {
+            return super.canAttack(enemy);
+        }
 
         if (beamCooldown == 0) {
             Ballistica aim = new Ballistica(pos, enemy.pos, Ballistica.STOP_SOLID);
@@ -101,10 +116,18 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
     }
 
     @Override
+    public boolean canRangedAttack(Char target) {
+        return target != null
+                && canUseDeathGazeAgainst(target)
+                && beamCharged
+                && beamCooldown == 0
+                && beam != null;
+    }
+
+    @Override
     protected boolean act() {
         if (beamCharged && state != HUNTING){
-            beamCharged = false;
-            sprite.idle();
+            cancelDeathGazeCharge();
         }
         if (beam == null && beamTarget != -1) {
             beam = new Ballistica(pos, beamTarget, Ballistica.STOP_SOLID);
@@ -117,6 +140,10 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
 
     @Override
     protected boolean doAttack( Char enemy ) {
+        if (!canUseDeathGazeAgainst(enemy)) {
+            cancelDeathGazeCharge();
+            return super.doAttack(enemy);
+        }
 
         if (beamCooldown > 0) {
             return super.doAttack(enemy);
@@ -128,6 +155,9 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
         } else {
 
             spend( attackDelay() );
+            if (!beginDeathGaze()) {
+                return true;
+            }
 
             beam = new Ballistica(pos, beamTarget, Ballistica.STOP_SOLID);
             if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[beam.collisionPos] ) {
@@ -144,24 +174,58 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
 
     @Override
     public boolean doRangedAttack(Char enemy) {
+        if (!canUseDeathGazeAgainst(enemy)) {
+            cancelDeathGazeCharge();
+            spend(attackDelay());
+            return true;
+        }
         return doAttack(enemy);
     }
 
+    protected boolean canUseDeathGazeAgainst(Char target) {
+        return !soulMarkBlocksRangedAttack(target);
+    }
+
+    protected boolean validateDeathGazeCharge(Char target) {
+        if (RangedAttack.shouldInterruptCharge(beamCharged, canUseDeathGazeAgainst(target))) {
+            cancelDeathGazeCharge();
+            return false;
+        }
+        return beamCharged;
+    }
+
+    protected void cancelDeathGazeCharge() {
+        beamCharged = false;
+        beam = null;
+        beamTarget = -1;
+        if (sprite != null) sprite.idle();
+    }
+
     @Override
-    public void damage(int dmg, Object src) {
-        if (beamCharged) dmg /= 4;
-        super.damage(dmg, src);
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
+        if (beamCharged || beamFiring) dmg /= 4;
+        super.damage(dmg, src, damageTags);
     }
 
     //used so resistances can differentiate between melee and magical attacks
     public static class DeathGaze{}
 
-    public void deathGaze(){
-        if (!beamCharged || beamCooldown > 0 || beam == null)
-            return;
+    private boolean beginDeathGaze() {
+        if (!beamCharged || beamCooldown > 0 || beam == null) {
+            return false;
+        }
 
         beamCharged = false;
         beamCooldown = Random.IntRange(3, 5);
+        beamFiring = true;
+        return true;
+    }
+
+    public void deathGaze(){
+        if (!beamFiring && !beginDeathGaze())
+            return;
+
+        beamFiring = false;
 
         boolean terrainAffected = false;
 
@@ -187,7 +251,7 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
                     disintergrate((Hero) ch);
                 }
 
-                ch.damage( Random.NormalIntRange( 25, 40 ), new DeathGaze() );
+                ch.damage( Random.NormalIntRange( 25, 40 ), new DeathGaze() , DamageTag.MAGICAL);
 
                 if (Dungeon.level.heroFOV[pos]) {
                     ch.sprite.flash();
@@ -300,6 +364,7 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
     private static final String BEAM_TARGET     = "beamTarget";
     private static final String BEAM_COOLDOWN   = "beamCooldown";
     private static final String BEAM_CHARGED    = "beamCharged";
+    private static final String BEAM_FIRING     = "beamFiring";
 
     @Override
     public void storeInBundle(Bundle bundle) {
@@ -307,6 +372,7 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
         bundle.put( BEAM_TARGET, beamTarget);
         bundle.put( BEAM_COOLDOWN, beamCooldown );
         bundle.put( BEAM_CHARGED, beamCharged );
+        bundle.put( BEAM_FIRING, beamFiring );
     }
 
     @Override
@@ -314,8 +380,12 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
         super.restoreFromBundle(bundle);
         if (bundle.contains(BEAM_TARGET))
             beamTarget = bundle.getInt(BEAM_TARGET);
-        beamCooldown = bundle.getInt(BEAM_COOLDOWN);
-        beamCharged = bundle.getBoolean(BEAM_CHARGED);
+        boolean restoredBeamFiring = bundle.getBoolean(BEAM_FIRING);
+        beamCooldown = RangedAttack.restoredChargeCooldown(
+                bundle.getInt(BEAM_COOLDOWN), restoredBeamFiring);
+        beamCharged = RangedAttack.restoredCharge(
+                bundle.getBoolean(BEAM_CHARGED), restoredBeamFiring);
+        beamFiring = false;
     }
 
     {
@@ -347,7 +417,7 @@ public class  EyeH extends MobHard implements MagicalRangedAttack {
         @Override
         public boolean act(boolean enemyInFOV, boolean justAlerted) {
             //even if enemy isn't seen, attack them if the beam is charged
-            if (beamCharged && enemy != null && canAttack(enemy)) {
+            if (enemy != null && validateDeathGazeCharge(enemy) && canAttack(enemy)) {
                 enemySeen = enemyInFOV;
                 return doAttack(enemy);
             }

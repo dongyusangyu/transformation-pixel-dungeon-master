@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.hall;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 
@@ -17,7 +19,7 @@ public class EyeImage extends EyeH{
     }
 
     @Override
-    public void damage(int damage, Object src){
+    public void damage(int damage, Object src, DamageTag... damageTags){
 
     }
 

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -120,7 +122,7 @@ public class WandOfLightning extends DamageWand {
 				if(hero.hasTalent(Talent.WULEI_ZHENGFA)){
                     ch.heal((int)(damageRoll(ch) * multiplier*0.2));
 				}else{
-					ch.damage(Math.round(damageRoll(ch) * multiplier * 0.5f), this);
+					ch.damage(Math.round(damageRoll(ch) * multiplier * 0.5f), this, DamageTag.MAGICAL);
 					if (!curUser.isAlive()) {
 						Badges.validateDeathFromFriendlyMagic();
 						Dungeon.fail( this );
@@ -128,7 +130,7 @@ public class WandOfLightning extends DamageWand {
 					}
 				}
 			} else {
-				ch.damage(Math.round(damageRoll(ch) * multiplier), this);
+				ch.damage(Math.round(damageRoll(ch) * multiplier), this, DamageTag.MAGICAL);
 			}
 		}
 	}

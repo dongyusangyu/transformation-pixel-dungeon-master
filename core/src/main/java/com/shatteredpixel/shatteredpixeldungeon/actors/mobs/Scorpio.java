@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -75,8 +77,8 @@ public class Scorpio extends Mob implements PhysicalRangedAttack {
 	}
 	
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		if (Random.Int( 2 ) == 0) {
 			Buff.prolong( enemy, Cripple.class, Cripple.DURATION );
 		}

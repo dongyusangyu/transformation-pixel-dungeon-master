@@ -17,6 +17,13 @@ import static org.junit.Assert.assertTrue;
 public class WarriorBossTest {
 
 	@Test
+	public void specialCounterOnlyAdvancesWhenMobileAndAwake() {
+		assertEquals(6f, WarriorBoss.advanceSpecialCounter(5f, 0, false), 0f);
+		assertEquals(5f, WarriorBoss.advanceSpecialCounter(5f, 1, false), 0f);
+		assertEquals(5f, WarriorBoss.advanceSpecialCounter(5f, 0, true), 0f);
+	}
+
+	@Test
 	public void leapTargetTracksEnemyCurrentPosition() {
 		Char target = new Char() {
 			@Override
@@ -55,6 +62,15 @@ public class WarriorBossTest {
 		assertTrue(source.contains("resolveLeapImpact(dest)"));
 		assertTrue(source.indexOf("mob.damage(damage, this)")
 				< source.indexOf("leapThrowChar(mob"));
+	}
+
+	@Test
+	public void leapCooldownUsesControlledCounterRule() throws IOException {
+		String source = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/actors/mobs/WarriorBoss.java");
+
+		assertTrue(source.contains(
+				"leapCooldown = advanceSpecialCounter(leapCooldown, paralysed, state == SLEEPING);"));
 	}
 
 	private static String readCoreSource(String relativePath) throws IOException {

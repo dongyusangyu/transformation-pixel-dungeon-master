@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -74,9 +76,9 @@ public class GnollGuard extends Mob implements PhysicalRangedAttack {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (hasSapper()) dmg /= 4;
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 	}
 
 	@Override
@@ -89,8 +91,8 @@ public class GnollGuard extends Mob implements PhysicalRangedAttack {
 	}
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
-		int dmg = super.attackProc(enemy, damage);
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+		int dmg = super.attackProc(enemy, damage, damageTags);
 		if (enemy == Dungeon.hero && !Dungeon.level.adjacent(pos, enemy.pos) && dmg > 12){
 			GLog.n(Messages.get(this, "spear_warn"));
 		}

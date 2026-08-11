@@ -26,6 +26,7 @@ ENTRANCE = 16
 EXIT = 17
 WELL = 18
 PEDESTAL = 20
+ENTRANCE_SP = 22
 WATER = 32
 FLAT_WALL = 48
 FLAT_DOOR = 56
@@ -321,6 +322,22 @@ class ChineseHallDoorTest(unittest.TestCase):
                     len(set(variants)),
                     "closed, open, locked, and jade door states must remain distinct",
                 )
+
+
+class ChineseHallTowerStairTest(unittest.TestCase):
+    def test_tower_stairs_reverse_the_standard_dungeon_directions(self) -> None:
+        generator = load_generator()
+        atlas = generator.build_tileset()
+        sewers = Image.open(SEWERS_PATH).convert("RGBA")
+        pairs = (
+            (ENTRANCE, EXIT, generator.STONE_RAMP),
+            (EXIT, ENTRANCE, generator.STONE_RAMP),
+            (ENTRANCE_SP, EXIT, generator.WOOD_RAMP),
+        )
+        for target_index, source_index, ramp in pairs:
+            expected = generator.recolor_structure(tile(sewers, source_index), ramp)
+            with self.subTest(target=target_index, source=source_index):
+                self.assertEqual(digest(expected), digest(tile(atlas, target_index)))
 
     def test_exit_slots_are_not_reused_door_states(self) -> None:
         atlas = load_generator().build_tileset()

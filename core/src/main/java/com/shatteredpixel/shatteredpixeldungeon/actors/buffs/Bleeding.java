@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
@@ -102,7 +104,7 @@ public class Bleeding extends Buff {
 			
 			if (dmg > 0) {
 				
-				target.damage( dmg, this );
+				target.damage( dmg, this , DamageTag.PHYSICAL, DamageTag.BLEEDING);
 				if (target.sprite.visible) {
 					Splash.at( target.sprite.center(), -PointF.PI / 2, PointF.PI / 6,
 							target.sprite.blood(), Math.min( 10 * dmg / target.HT, 10 ) );

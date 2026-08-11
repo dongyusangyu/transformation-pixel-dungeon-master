@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -43,7 +45,7 @@ public class Blazing extends Weapon.Enchantment {
 		// lvl 1 - 50%
 		// lvl 2 - 60%
 		float procChance = (level+1f)/(level+3f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (procChance(procChance)) {
 
 			float powerMulti = Math.max(1f, procChance);
 
@@ -56,7 +58,7 @@ public class Blazing extends Weapon.Enchantment {
 				int burnDamage = Random.NormalIntRange( 1, 3 + Dungeon.scalingDepth()/4 );
 				burnDamage = Math.round(burnDamage * 0.67f * powerMulti);
 				if (burnDamage > 0) {
-					defender.damage(burnDamage, this);
+					defender.damage(burnDamage, this, DamageTag.PHYSICAL);
 				}
 			}
 			

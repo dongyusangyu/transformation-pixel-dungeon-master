@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -114,8 +116,8 @@ public class GooHard extends Boss{
     }
 
     @Override
-    public int attackProc( Char enemy, int damage ) {
-        damage = super.attackProc( enemy, damage );
+    public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
 
         if (pumpedUp > 0) {
             Camera.main.shake( 3, 0.2f );
@@ -127,9 +129,9 @@ public class GooHard extends Boss{
     }
 
     @Override
-    public int defenseProc(Char enemy, int damage){
+    public int defenseProc(Char enemy, int damage, DamageTag... damageTags){
         if(damage > 3) summonMiniGoo();
-        return super.defenseProc(enemy, damage);
+        return super.defenseProc(enemy, damage, damageTags);
     }
 
     private void summonMiniGoo(){
@@ -212,8 +214,9 @@ public class GooHard extends Boss{
     }
 
     @Override
-    public boolean attack( Char enemy, float dmgMulti, float dmgBonus, float accMulti ) {
-        boolean result = super.attack(  enemy, dmgMulti, dmgBonus, accMulti );
+    public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
+						  DamageTag... damageTags) {
+        boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
         pumpedUp = 0;
         return result;
     }
@@ -228,7 +231,7 @@ public class GooHard extends Boss{
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if (!BossHealthBar.isAssigned()){
             BossHealthBar.assignBoss( this );
         }
@@ -237,7 +240,7 @@ public class GooHard extends Boss{
             dmg = dmg * 3 / 2;
         }
         boolean bleeding = (HP*2 <= HT);
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         if ((HP*2 <= HT) && !bleeding){
             BossHealthBar.bleed(true);
             sprite.showStatus(CharSprite.NEGATIVE, Messages.get(this, "enraged"));

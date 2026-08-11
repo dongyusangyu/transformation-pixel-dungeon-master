@@ -13,7 +13,7 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.quiz;
 public final class QuizRun {
 
 	public interface AnswerRecorder {
-		void record(boolean correct);
+		void record(QuizQuestion question, boolean correct);
 	}
 
 	public enum State {
@@ -55,7 +55,7 @@ public final class QuizRun {
 		}
 
 		boolean correct = currentQuestion.isCorrect(selectedIndex);
-		recorder.record(correct);
+		recorder.record(currentQuestion, correct);
 		state = State.RESULT;
 		return new Answer(currentQuestion, correct);
 	}

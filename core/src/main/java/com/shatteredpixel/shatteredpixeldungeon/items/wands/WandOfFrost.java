@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.wands;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -108,7 +110,7 @@ public class WandOfFrost extends DamageWand {
 			}
 
 			wandProc(ch, chargesPerCast());
-			ch.damage(damage, this);
+			ch.damage(damage, this, DamageTag.MAGICAL);
 			Sample.INSTANCE.play( Assets.Sounds.HIT_MAGIC, 1, 1.1f * Random.Float(0.87f, 1.15f) );
 
 			if (ch.isAlive() && frost == null){

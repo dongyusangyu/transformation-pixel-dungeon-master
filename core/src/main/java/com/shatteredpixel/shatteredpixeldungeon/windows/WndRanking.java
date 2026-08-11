@@ -26,7 +26,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
-import com.shatteredpixel.shatteredpixeldungeon.QuickSlot;
 import com.shatteredpixel.shatteredpixeldungeon.RankingRestart;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
@@ -41,9 +40,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.HeroHallScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BadgesGrid;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BadgesList;
@@ -77,14 +79,19 @@ import java.util.Locale;
 public class WndRanking extends WndTabbed {
 
 	private static final int WIDTH			= 115;
-	private static final int HEIGHT			= 144;
+	private static final int HEIGHT			= 162;
 
 	private static WndRanking INSTANCE;
 
 	private String gameID;
 	private Rankings.Record record;
+	private boolean fromHeroHall;
 
 	public WndRanking( final Rankings.Record rec ) {
+		this(rec, false);
+	}
+
+	public WndRanking( final Rankings.Record rec, boolean fromHeroHall ) {
 
 		super();
 		resize( WIDTH, HEIGHT );
@@ -96,6 +103,7 @@ public class WndRanking extends WndTabbed {
 
 		this.gameID = rec.gameID;
 		this.record = rec;
+		this.fromHeroHall = fromHeroHall;
 		Badges.loadGlobal();
 		Rankings.INSTANCE.loadGameData( rec );
 		createControls();
@@ -301,7 +309,7 @@ public class WndRanking extends WndTabbed {
 				pos = statSlot(this, Messages.get(this, "alchemy"), num.format(Statistics.itemsCrafted), pos);
 			}
 
-			int buttontop = HEIGHT - 16;
+			int buttontop = HEIGHT - 16 - (record.newCycle ? 0 : 18);
 
 			if (Dungeon.hero != null && Dungeon.seed != -1 && !Dungeon.daily &&
 					(DeviceCompat.isDebug() || Badges.isUnlocked(Badges.Badge.VICTORY))){
@@ -332,6 +340,49 @@ public class WndRanking extends WndTabbed {
 				btnSeed.icon(icon);
 				btnSeed.setRect(0, buttontop, 115, 16);
 				add(btnSeed);
+			}
+
+			if (!record.newCycle) {
+				final RedButton heroHall = new RedButton(Messages.get(
+						this, fromHeroHall ? "remove_from_hero_hall" : "copy_to_hero_hall")) {
+					@Override
+					protected void onClick() {
+						super.onClick();
+						if (fromHeroHall) {
+							ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+									new ItemSprite(ItemSpriteSheet.CROWN, null),
+									Messages.get(StatsTab.this, "remove_title"),
+									Messages.get(StatsTab.this, "remove_desc"),
+									Messages.get(StatsTab.this, "remove_confirm"),
+									Messages.get(StatsTab.this, "remove_cancel")) {
+								@Override
+								protected void onSelect(int index) {
+									super.onSelect(index);
+									if (index == 0 && Rankings.INSTANCE.removeFromHeroHall(record)) {
+										WndRanking.this.hide();
+										ShatteredPixelDungeon.switchNoFade(HeroHallScene.class);
+									} else if (index == 0) {
+										ShatteredPixelDungeon.scene().addToFront(
+												new WndMessage(Messages.get(StatsTab.this, "hero_hall_save_failed")));
+									}
+								}
+							});
+						} else if (Rankings.INSTANCE.addToHeroHall(record)) {
+							text(Messages.get(StatsTab.this, "in_hero_hall"));
+							enable(false);
+						} else if (!Rankings.INSTANCE.isInHeroHall(record)) {
+							ShatteredPixelDungeon.scene().addToFront(
+									new WndMessage(Messages.get(StatsTab.this, "hero_hall_save_failed")));
+						}
+					}
+				};
+				heroHall.icon(new ItemSprite(ItemSpriteSheet.CROWN, null));
+				heroHall.setRect(0, HEIGHT - 16, WIDTH, 16);
+				if (!fromHeroHall && Rankings.INSTANCE.isInHeroHall(record)) {
+					heroHall.text(Messages.get(this, "in_hero_hall"));
+					heroHall.enable(false);
+				}
+				add(heroHall);
 			}
 
 		}
@@ -458,6 +509,7 @@ public class WndRanking extends WndTabbed {
 	}
 
 	private class ItemsTab extends Group {
+		private static final int MAX_ITEMS_PER_ROW = 4;
 
 		private float pos;
 
@@ -483,37 +535,23 @@ public class WndRanking extends WndTabbed {
 
 			pos = 0;
 
-			int slotsActive = 0;
-			for (int i = 0; i < QuickSlot.SIZE; i++){
-				if (Dungeon.quickslot.isNonePlaceholder(i)){
-					slotsActive++;
-				}
-			}
+			ArrayList<Item> displayItems = rankingDisplayItems(
+					stuff.backpack, Dungeon.quickslot.getItems());
+			int rows = (displayItems.size() + MAX_ITEMS_PER_ROW - 1) / MAX_ITEMS_PER_ROW;
+			float slotHeight = rows > 1 ? 20 : 23;
 
-			Trinket trinket = stuff.getItem(Trinket.class);
-			if (trinket != null){
-				slotsActive++;
-			}
+			for (int row = 0; row < rows; row++) {
+				int rowStart = row * MAX_ITEMS_PER_ROW;
+				int rowSize = Math.min(MAX_ITEMS_PER_ROW, displayItems.size() - rowStart);
+				float slotWidth = Math.min(28, (WIDTH - rowSize + 1) / (float) rowSize);
+				pos = 0;
 
-			float slotWidth = Math.min(28, ((WIDTH - slotsActive + 1) / (float)slotsActive));
-
-			for (int i = -1; i < QuickSlot.SIZE; i++){
-				Item item = null;
-				if (i == -1){
-					item = trinket;
-				} else if (Dungeon.quickslot.isNonePlaceholder(i)) {
-					item = Dungeon.quickslot.getItem(i);
-				}
-				if (item != null){
-					QuickSlotButton slot = new QuickSlotButton(item);
-
-					slot.setRect( pos, 120, slotWidth, 23 );
+				for (int column = 0; column < rowSize; column++) {
+					QuickSlotButton slot = new QuickSlotButton(displayItems.get(rowStart + column));
+					slot.setRect(pos, 120 + row * (slotHeight + 1), slotWidth, slotHeight);
 					PixelScene.align(slot);
-
 					add(slot);
-
 					pos += slotWidth + 1;
-
 				}
 			}
 		}
@@ -525,6 +563,27 @@ public class WndRanking extends WndTabbed {
 
 			pos += slot.height() + 1;
 		}
+	}
+
+	static ArrayList<Item> rankingDisplayItems(Iterable<Item> backpackItems, Item[] quickslotItems) {
+		ArrayList<Item> result = new ArrayList<>();
+
+		for (Item item : backpackItems) {
+			if (item instanceof Trinket) {
+				result.add(item);
+				if (result.size() == 2) {
+					break;
+				}
+			}
+		}
+
+		for (Item item : quickslotItems) {
+			if (item != null && item.quantity() > 0 && !result.contains(item)) {
+				result.add(item);
+			}
+		}
+
+		return result;
 	}
 
 	private class BadgesTab extends Group {
@@ -619,7 +678,8 @@ public class WndRanking extends WndTabbed {
 			scoreInfo.setPos(WIDTH - scoreInfo.width(), 10);
 			add(scoreInfo);
 
-			if (RankingRestart.isEligible(record) && GamesInProgress.firstEmpty() != -1) {
+			if (!fromHeroHall && RankingRestart.isEligible(record)
+					&& GamesInProgress.firstEmpty() != -1) {
 				RedButton restart = new RedButton(Messages.get(this, "restart")) {
 					@Override
 					protected void onClick() {

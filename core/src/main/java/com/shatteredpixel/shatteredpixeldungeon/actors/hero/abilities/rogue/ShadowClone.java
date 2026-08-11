@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -227,8 +229,8 @@ public class ShadowClone extends ArmorAbility {
 		}
 
 		@Override
-		public int attackProc( Char enemy, int damage ) {
-			damage = super.attackProc( enemy, damage );
+		public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+			damage = super.attackProc(enemy, damage, damageTags);
 			if (Random.Int(4) < Dungeon.hero.pointsInTalent(Talent.SHADOW_BLADE)
 					&& Dungeon.hero.belongings.weapon() != null){
 				return Dungeon.hero.belongings.weapon().proc( this, enemy, damage );
@@ -260,8 +262,8 @@ public class ShadowClone extends ArmorAbility {
 		}
 
 		@Override
-		public int defenseProc(Char enemy, int damage) {
-			damage = super.defenseProc(enemy, damage);
+		public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
+			damage = super.defenseProc(enemy, damage, damageTags);
 			if (Random.Int(4) < Dungeon.hero.pointsInTalent(Talent.CLONED_ARMOR)
 					&& Dungeon.hero.belongings.armor() != null){
 				return Dungeon.hero.belongings.armor().proc( enemy, this, damage );
@@ -271,12 +273,12 @@ public class ShadowClone extends ArmorAbility {
 		}
 
 		@Override
-		public void damage(int dmg, Object src) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 
 			//TODO improve this when I have proper damage source logic
 
 
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 		}
 
 		@Override

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.hall;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -61,7 +63,7 @@ public class RipperH extends MobHard {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
             int dist = RangeMap.manhattanDist(pos, enemy.pos);
             ConsistBleeding bleeding = Buff.affect(enemy, ConsistBleeding.class);
             if(bleeding != null) {
@@ -71,7 +73,7 @@ public class RipperH extends MobHard {
                     bleeding.detach();
                 }
             }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     public static class RipperHSprite extends RipperSprite{

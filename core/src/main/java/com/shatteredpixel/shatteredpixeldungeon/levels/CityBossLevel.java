@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GreatShoper;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.ImpShopkeeper;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.ShopBoss;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
@@ -398,7 +399,7 @@ public class CityBossLevel extends Level {
 				Buff.affect(c, GreatShoper.GoldCurse.class);
 			}else if(c instanceof ImpShopkeeper){
 
-			}else{
+			}else if (!(c instanceof DirectableAlly)){
 				c.die(null);
 			}
 		}

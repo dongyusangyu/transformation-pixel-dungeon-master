@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -230,14 +232,14 @@ public class TestDM300 extends DM300 {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char attacker = TestBossUtil.attackerToRetarget(this, src);
         if (attacker != null) {
             enemy = attacker;
             state = HUNTING;
             beckon(attacker.pos);
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
     }
 
     @Override

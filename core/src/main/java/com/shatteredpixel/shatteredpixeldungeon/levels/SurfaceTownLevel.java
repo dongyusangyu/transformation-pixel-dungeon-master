@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.TestStatue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Dongyusangyu;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DungeonDoctor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SurfaceShopkeeper;
@@ -51,6 +52,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWea
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.watabou.noosa.Game;
+import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
@@ -76,6 +82,8 @@ public class SurfaceTownLevel extends Level {
 
 	private static final int DUNGEON_DOCTOR_X = 22;
 	private static final int DUNGEON_DOCTOR_Y = 4;
+	private static final int TEST_STATUE_X = 27;
+	private static final int TEST_STATUE_Y = 30;
 
 	private static final int SHOP_LEFT = 33;
 	private static final int SHOP_TOP = 3;
@@ -310,6 +318,27 @@ public class SurfaceTownLevel extends Level {
 		if (transition.type == LevelTransition.Type.REGULAR_ENTRANCE) {
 			return false;
 		}
+		if (Dungeon.depth == 0 && Dungeon.branch == 0
+				&& transition.destDepth == 1 && transition.destBranch == TowerLevel.BRANCH) {
+			Game.runOnRenderThread(new Callback() {
+				@Override
+				public void call() {
+					GameScene.show(new WndOptions(
+							Messages.get(SurfaceTownLevel.class, "tower_entry_title"),
+							Messages.get(SurfaceTownLevel.class, "tower_entry_desc"),
+							Messages.get(SurfaceTownLevel.class, "tower_entry_enter"),
+							Messages.get(SurfaceTownLevel.class, "tower_entry_cancel")) {
+						@Override
+						protected void onSelect(int index) {
+							if (index == 0) {
+								SurfaceTownLevel.super.activateTransition(hero, transition);
+							}
+						}
+					});
+				}
+			});
+			return false;
+		}
 		return super.activateTransition(hero, transition);
 	}
 
@@ -329,6 +358,7 @@ public class SurfaceTownLevel extends Level {
 		boolean hasDongyusangyu = false;
 		boolean hasDungeonDoctor = false;
 		boolean hasShopkeeper = false;
+		boolean hasTestStatue = false;
 		for (Mob mob : mobs) {
 			if (mob instanceof Dongyusangyu) {
 				hasDongyusangyu = true;
@@ -338,6 +368,9 @@ public class SurfaceTownLevel extends Level {
 			}
 			if (mob instanceof DungeonDoctor) {
 				hasDungeonDoctor = true;
+			}
+			if (mob instanceof TestStatue) {
+				hasTestStatue = true;
 			}
 		}
 		if (!hasDongyusangyu) {
@@ -354,6 +387,11 @@ public class SurfaceTownLevel extends Level {
 			DungeonDoctor dungeonDoctor = new DungeonDoctor();
 			dungeonDoctor.pos = cell(DUNGEON_DOCTOR_X, DUNGEON_DOCTOR_Y);
 			mobs.add(dungeonDoctor);
+		}
+		if (!hasTestStatue) {
+			TestStatue testStatue = new TestStatue();
+			testStatue.pos = cell(TEST_STATUE_X, TEST_STATUE_Y);
+			mobs.add(testStatue);
 		}
 	}
 

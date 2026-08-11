@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.features;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -172,7 +174,7 @@ public class Chasm implements Hero.Doom {
 		//The lower the hero's HP, the more bleed and the less upfront damage.
 		//Hero has a 50% chance to bleed out at 66% HP, and begins to risk instant-death at 25%
 
-		hero.damage( Math.max( hero.HP / 2, Random.NormalIntRange( hero.HP / 2, hero.HT / 4 )), new Chasm() );
+		hero.damage( Math.max( hero.HP / 2, Random.NormalIntRange( hero.HP / 2, hero.HT / 4 )), new Chasm() , DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 	}
 
 	static boolean shouldApplyPotentialEnergy(boolean featherFallActive, boolean hasTalent) {

@@ -25,8 +25,10 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArcaneConfluence;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ArtifactRecharge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FocusedCasting;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -109,7 +111,7 @@ public class MagesStaff extends MeleeWeapon {
 	public ArrayList<String> actions(Hero hero) {
 		ArrayList<String> actions = super.actions( hero );
 		actions.add(AC_IMBUE);
-		if (wand!= null && wand.curCharges > 0) {
+		if (wand != null && wand.hasChargeForCast(hero)) {
 			actions.add( AC_ZAP );
 		}
 		return actions;
@@ -169,6 +171,13 @@ public class MagesStaff extends MeleeWeapon {
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
+		if (attacker instanceof Hero) {
+			Hero hero = (Hero) attacker;
+			FocusedCasting focusedCasting = hero.buff(FocusedCasting.class);
+			if (focusedCasting != null) focusedCasting.detach();
+			if (wand != null) ArcaneConfluence.start(hero);
+		}
+
 		if (attacker instanceof Hero && ((Hero) attacker).hasTalent(Talent.MYSTICAL_CHARGE)){
 			Hero hero = (Hero) attacker;
 			ArtifactRecharge.chargeArtifacts(hero, hero.pointsInTalent(Talent.MYSTICAL_CHARGE)/2f);
@@ -198,12 +207,22 @@ public class MagesStaff extends MeleeWeapon {
 	@Override
 	public int reachFactor(Char owner) {
 		int reach = super.reachFactor(owner);
+		if (owner instanceof Hero && ((Hero) owner).hasTalent(Talent.LONG_ARM)) {
+			Hero hero = (Hero) owner;
+			reach += longArmReachBonus(Math.max(0, hero.STR() - STRReq()),
+					hero.pointsInTalent(Talent.LONG_ARM));
+		}
 		if (owner instanceof Hero
 				&& wand instanceof WandOfDisintegration
 				&& ((Hero)owner).subClass.is(HeroSubClass.BATTLEMAGE)){
 			reach += Math.round(Wand.procChanceMultiplier(owner));
 		}
 		return reach;
+	}
+
+	public static int longArmReachBonus(int excessStrength, int points) {
+		if (points <= 0 || excessStrength <= 0) return 0;
+		return excessStrength / (9 - Math.min(points, 3));
 	}
 
 	@Override
@@ -315,6 +334,10 @@ public class MagesStaff extends MeleeWeapon {
 
 	public Class<?extends Wand> wandClass(){
 		return wand != null ? wand.getClass() : null;
+	}
+
+	public Wand wand() {
+		return wand;
 	}
 
 	@Override

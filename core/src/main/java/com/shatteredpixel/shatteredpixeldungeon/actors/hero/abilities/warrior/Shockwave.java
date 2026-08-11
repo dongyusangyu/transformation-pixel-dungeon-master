@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -136,13 +138,13 @@ public class Shockwave extends ArmorAbility {
 								if (Random.Int(10) < 3*hero.pointsInTalent(Talent.STRIKING_WAVE)){
 									boolean wasEnemy = ch.alignment == Char.Alignment.ENEMY
 											|| (ch instanceof Mimic && ch.alignment == Char.Alignment.NEUTRAL);
-									damage = hero.attackProc(ch, damage);
-									ch.damage(damage, hero);
+			damage = hero.attackProc(ch, damage, DamageTag.PHYSICAL);
+									ch.damage(damage, hero, DamageTag.PHYSICAL);
 									if (hero.subClass.is(HeroSubClass.GLADIATOR) && wasEnemy){
 										Buff.affect( hero, Combo.class ).hit( ch );
 									}
 								} else {
-									ch.damage(damage, hero);
+									ch.damage(damage, hero, DamageTag.PHYSICAL);
 								}
 								if (ch.isAlive()){
 									if (Random.Int(4) < hero.pointsInTalent(Talent.SHOCK_FORCE)){

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -331,7 +333,7 @@ public class AscensionChallenge extends Buff {
 		if (stacks >= 8 && !Dungeon.bossLevel()){
 			damageInc += (stacks-4)/4f;
 			if (damageInc >= 1){
-				target.damage((int)damageInc, this);
+				target.damage((int)damageInc, this, DamageTag.PHYSICAL, DamageTag.AMULET);
 				damageInc -= (int)damageInc;
 
 				if (target == Dungeon.hero && !target.isAlive()){

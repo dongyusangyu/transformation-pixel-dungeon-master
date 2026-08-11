@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import static jdk.javadoc.internal.doclets.toolkit.util.DocPath.parent;
@@ -205,7 +207,7 @@ public class SpiderJar extends ArmorAbility {
                     dmg -= ch.drRoll();
 
                     if (dmg > 0) {
-                        ch.damage(dmg, this);
+                        ch.damage(dmg, this, DamageTag.PHYSICAL);
                     }
                     if(hero.hasTalent(Talent.TEA_STAINS) && ch.isAlive()){
                         int r=Math.min(hero.pointsInTalent(Talent.TEA_STAINS),2);
@@ -344,7 +346,7 @@ public class SpiderJar extends ArmorAbility {
                     dmg -= ch.drRoll();
 
                     if (dmg > 0) {
-                        ch.damage(dmg, this);
+                        ch.damage(dmg, this, DamageTag.PHYSICAL);
                     }
                     if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero && ch.isAlive()){
                         Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));

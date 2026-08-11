@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -117,7 +119,7 @@ public class Skeleton extends Mob {
 
 				//apply DR twice (with 2 rolls for more consistency)
 				damage = Math.max( 0,  damage - (ch.drRoll() + ch.drRoll()) );
-				ch.damage( damage, this );
+				ch.damage( damage, this , DamageTag.PHYSICAL);
 				if (ch == Dungeon.hero && !ch.isAlive()) {
 					heroKilled = true;
 				}

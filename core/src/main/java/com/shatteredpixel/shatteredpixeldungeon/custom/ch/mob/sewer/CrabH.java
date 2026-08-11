@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.sewer;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -46,7 +48,7 @@ public class CrabH extends MobHard {
 
     private float deduced = 0;
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         Hunger h = enemy.buff(Hunger.class);
         if(h!=null){
             float reduce = -Random.Float(5f, 12f);
@@ -57,7 +59,7 @@ public class CrabH extends MobHard {
             }
             enemy.sprite.showStatus(0x505050, "%d", (int)reduce);
         }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     @Override

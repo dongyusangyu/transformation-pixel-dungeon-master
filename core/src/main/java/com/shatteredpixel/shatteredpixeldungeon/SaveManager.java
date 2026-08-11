@@ -401,7 +401,16 @@ public class SaveManager {
             FileUtils.bundleToFile(Badges.BADGES_FILE, bundle.getBundle(BADGES_KEY));
         }
         if (bundle.contains(RANKINGS_KEY)) {
-            FileUtils.bundleToFile(Rankings.RANKINGS_FILE, bundle.getBundle(RANKINGS_KEY));
+            Bundle cloudRankings = bundle.getBundle(RANKINGS_KEY);
+            if (FileUtils.fileExists(Rankings.RANKINGS_FILE)) {
+                try {
+                    Bundle localRankings = FileUtils.bundleFromFile(Rankings.RANKINGS_FILE);
+                    Rankings.preserveLocalHeroHall(localRankings, cloudRankings);
+                } catch (IOException ignored) {
+                    // A damaged local ranking file should not block a valid cloud restore.
+                }
+            }
+            FileUtils.bundleToFile(Rankings.RANKINGS_FILE, cloudRankings);
             Rankings.INSTANCE.records = null;
         }
         if (bundle.contains(JOURNAL_KEY)) {

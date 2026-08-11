@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 
@@ -71,8 +73,8 @@ public class Statue extends Mob {
 	public Statue() {
 		super();
 		
-		HP = HT = 15 + Dungeon.depth * 5;
-		defenseSkill = 4 + Dungeon.depth;
+		HP = HT = 15 + Dungeon.scalingDepth() * 5;
+		defenseSkill = 4 + Dungeon.scalingDepth();
 		//createWeapon( true );
 	}
 
@@ -115,7 +117,7 @@ public class Statue extends Mob {
 	
 	@Override
 	public int attackSkill( Char target ) {
-		return (int)((9 + Dungeon.depth) * weapon.accuracyFactor( this, target ));
+		return (int)((9 + Dungeon.scalingDepth()) * weapon.accuracyFactor( this, target ));
 	}
 	
 	@Override
@@ -130,7 +132,7 @@ public class Statue extends Mob {
 
 	@Override
 	public int drRoll() {
-		return super.drRoll() + Random.NormalIntRange(0, Dungeon.depth + weapon.defenseFactor(this));
+		return super.drRoll() + Random.NormalIntRange(0, Dungeon.scalingDepth() + weapon.defenseFactor(this));
 	}
 	
 	@Override
@@ -145,18 +147,18 @@ public class Statue extends Mob {
 	}
 
 	@Override
-	public void damage( int dmg, Object src ) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 
 		if (state == PASSIVE) {
 			state = HUNTING;
 		}
 		
-		super.damage( dmg, src );
+		super.damage(dmg, src, damageTags);
 	}
 	
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		damage = weapon.proc( this, enemy, damage );
 		if (!enemy.isAlive() && enemy == Dungeon.hero){
 			Dungeon.fail(this);

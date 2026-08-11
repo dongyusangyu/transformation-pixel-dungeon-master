@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -133,7 +135,7 @@ public class TenguHard extends Boss{
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if (!Dungeon.level.mobs.contains(this)){
             return;
         }
@@ -147,7 +149,7 @@ public class TenguHard extends Boss{
         int hpBracket = 20;
 
         int beforeHitHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         dmg = beforeHitHP - HP;
 
         //tengu cannot be hit through multiple brackets at a time
@@ -253,7 +255,7 @@ public class TenguHard extends Boss{
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         comboSinceJump ++;
         if(comboSinceJump == 7) GLog.w(Messages.get(this, "throw_warning"));
         if(comboSinceJump > 7){
@@ -610,11 +612,11 @@ public class TenguHard extends Boss{
                 if (PathFinder.distance[cell] < Integer.MAX_VALUE) {
                     Char ch = Actor.findChar(cell);
                     if (ch != null && !(ch instanceof TenguHard)) {
-                        int dmg = Random.NormalIntRange(5 + Dungeon.depth, 10 + Dungeon.depth * 2);
+                        int dmg = Random.NormalIntRange(5 + Dungeon.scalingDepth(), 10 + Dungeon.scalingDepth() * 2);
                         dmg -= ch.drRoll();
 
                         if (dmg > 0) {
-                            ch.damage(dmg, Bomb.class);
+                            ch.damage(dmg, Bomb.class, DamageTag.PHYSICAL);
                         }
 
                         if (ch == Dungeon.hero && !ch.isAlive()) {
@@ -959,7 +961,7 @@ public class TenguHard extends Boss{
                 Char ch = findChar(j);
                 if(ch != null){
                     if(ch.alignment != Alignment.ENEMY){
-                        ch.damage(Random.IntRange(6, 10), TenguHard.class);
+                        ch.damage(Random.IntRange(6, 10), TenguHard.class, DamageTag.PHYSICAL);
                         Buff.affect(ch, Cripple.class, 2f);
                         if (ch == Dungeon.hero && !ch.isAlive()) {
                             Dungeon.fail(getClass());

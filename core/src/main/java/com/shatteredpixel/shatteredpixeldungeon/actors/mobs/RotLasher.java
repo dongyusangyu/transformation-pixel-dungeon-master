@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -74,20 +76,20 @@ public class RotLasher extends Mob {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (src instanceof Burning) {
 			destroy();
 			sprite.die();
 		} else {
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 		}
 	}
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		Buff.affect( enemy, Cripple.class, 2f );
-		return super.attackProc(enemy, damage);
+		return super.attackProc(enemy, damage, damageTags);
 	}
 
 	@Override
@@ -141,7 +143,7 @@ public class RotLasher extends Mob {
 			return true;
 		}
 		if( c==hero && buff(ScrollOfSirensSong.Enthralled.class)!=null){
-			this.damage(114514,this);
+			this.damage(114514,this, DamageTag.PHYSICAL);
 		}
 		return super.interact(c);
 

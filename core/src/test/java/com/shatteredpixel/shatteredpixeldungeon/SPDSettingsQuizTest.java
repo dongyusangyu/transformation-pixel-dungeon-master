@@ -7,10 +7,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SPDSettingsQuizTest {
 
@@ -29,6 +34,9 @@ public class SPDSettingsQuizTest {
 						return proxy;
 					}
 					if (name.equals("getInteger")) {
+						return values.getOrDefault(args[0], args[1]);
+					}
+					if (name.equals("getString")) {
 						return values.getOrDefault(args[0], args[1]);
 					}
 					if (name.equals("contains")) {
@@ -98,5 +106,55 @@ public class SPDSettingsQuizTest {
 
 		assertEquals(Integer.MAX_VALUE, SPDSettings.quizAnswersTotal());
 		assertEquals(Integer.MAX_VALUE - 1, SPDSettings.quizAnswersCorrect());
+	}
+
+	@Test
+	public void correctQuestionIdsAreNormalizedAndDeduplicated() {
+		SPDSettings.recordCorrectQuizQuestion("Q200");
+		SPDSettings.recordCorrectQuizQuestion("Q001");
+		SPDSettings.recordCorrectQuizQuestion("Q001");
+
+		Set<String> expected = new LinkedHashSet<>(Arrays.asList("Q001", "Q200"));
+		assertEquals(expected, SPDSettings.quizCorrectQuestionIds());
+		assertEquals("Q001,Q200",
+				values.get(SPDSettings.KEY_QUIZ_CORRECT_QUESTION_IDS));
+	}
+
+	@Test
+	public void invalidStoredQuestionIdsAreIgnoredAndNormalized() {
+		values.put(SPDSettings.KEY_QUIZ_CORRECT_QUESTION_IDS,
+				"Q000,Q001,Q001,Q201,broken");
+
+		assertEquals(new LinkedHashSet<>(Arrays.asList("Q001")),
+				SPDSettings.quizCorrectQuestionIds());
+		assertEquals("Q001", values.get(SPDSettings.KEY_QUIZ_CORRECT_QUESTION_IDS));
+	}
+
+	@Test
+	public void correctQuestionIdsCannotBeModifiedByCallers() {
+		SPDSettings.recordCorrectQuizQuestion("Q001");
+		Set<String> ids = SPDSettings.quizCorrectQuestionIds();
+
+		try {
+			ids.add("Q002");
+			fail("expected an immutable question ID set");
+		} catch (UnsupportedOperationException expected) {
+			// Expected.
+		}
+
+		assertEquals(new LinkedHashSet<>(Arrays.asList("Q001")),
+				SPDSettings.quizCorrectQuestionIds());
+	}
+
+	@Test
+	public void resetCorrectQuestionsPreservesLifetimeStatistics() {
+		SPDSettings.recordQuizAnswer(true);
+		SPDSettings.recordCorrectQuizQuestion("Q001");
+
+		SPDSettings.resetCorrectQuizQuestions();
+
+		assertTrue(SPDSettings.quizCorrectQuestionIds().isEmpty());
+		assertEquals(1, SPDSettings.quizAnswersTotal());
+		assertEquals(1, SPDSettings.quizAnswersCorrect());
 	}
 }

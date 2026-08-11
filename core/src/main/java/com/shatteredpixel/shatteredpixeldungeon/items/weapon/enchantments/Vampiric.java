@@ -43,7 +43,7 @@ public class Vampiric extends Weapon.Enchantment {
 
 		healChance *= procChanceMultiplier(attacker);
 		
-		if (Random.Float() < healChance
+		if (procChance(healChance)
 				&& attacker.alignment != defender.alignment
 				&& (defender.alignment != Char.Alignment.NEUTRAL || defender instanceof Mimic)){
 

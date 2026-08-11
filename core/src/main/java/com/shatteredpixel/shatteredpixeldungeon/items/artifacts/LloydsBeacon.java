@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportat
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.PhaseShift;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
@@ -67,7 +68,10 @@ public class LloydsBeacon extends Artifact {
 	public static final String AC_RETURN	= "RETURN";
 	
 	public int returnDepth	= -1;
+	public int returnBranch	= 0;
 	public int returnPos;
+	private boolean returnMarkerValid;
+	private boolean returnMarkerReachable;
 	
 	{
 		image = ItemSpriteSheet.ARTIFACT_BEACON;
@@ -82,14 +86,21 @@ public class LloydsBeacon extends Artifact {
 	}
 	
 	private static final String DEPTH	= "depth";
+	private static final String BRANCH	= "branch";
 	private static final String POS		= "pos";
+	private static final String MARKER_VALID = "marker_valid";
+	private static final String MARKER_REACHABLE = "marker_reachable";
 	
 	@Override
 	public void storeInBundle( Bundle bundle ) {
 		super.storeInBundle( bundle );
 		bundle.put( DEPTH, returnDepth );
-		if (returnDepth != -1) {
+		if (hasReturnMarker()) {
+			refreshReturnMarkerReachability();
+			bundle.put( BRANCH, returnBranch );
 			bundle.put( POS, returnPos );
+			bundle.put( MARKER_VALID, true );
+			bundle.put( MARKER_REACHABLE, returnMarkerReachable );
 		}
 	}
 	
@@ -97,7 +108,35 @@ public class LloydsBeacon extends Artifact {
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle(bundle);
 		returnDepth	= bundle.getInt( DEPTH );
-		returnPos	= bundle.getInt( POS );
+		if (returnDepth != -1 && bundle.contains(BRANCH)
+				&& bundle.getBoolean(MARKER_VALID)) {
+			returnBranch = bundle.getInt(BRANCH);
+			returnPos = bundle.getInt(POS);
+			returnMarkerValid = Dungeon.returnTeleportMarkerLocationAllowed(returnDepth, returnBranch);
+			returnMarkerReachable = !bundle.contains(MARKER_REACHABLE)
+					|| bundle.getBoolean(MARKER_REACHABLE);
+		} else {
+			clearReturnMarker();
+		}
+	}
+
+	private boolean hasReturnMarker() {
+		return returnDepth != -1 && Dungeon.returnTeleportMarkerAllowed(
+				returnDepth, returnBranch, returnMarkerValid);
+	}
+
+	private void refreshReturnMarkerReachability() {
+		if (Dungeon.sameLocation(returnDepth, returnBranch, Dungeon.depth, Dungeon.branch)) {
+			returnMarkerReachable = Dungeon.returnTeleportPositionAllowed(returnPos);
+		}
+	}
+
+	private void clearReturnMarker() {
+		returnDepth = -1;
+		returnBranch = 0;
+		returnPos = 0;
+		returnMarkerValid = false;
+		returnMarkerReachable = false;
 	}
 	
 	@Override
@@ -107,7 +146,7 @@ public class LloydsBeacon extends Artifact {
 		if (isEquipped(hero) && charge > 0 && !cursed && hero.buff(MagicImmune.class) == null) {
             actions.add( AC_ZAP );
             actions.add( AC_SET );
-            if (returnDepth != -1) {
+			if (hasReturnMarker()) {
                 actions.add( AC_RETURN );
             }
         }else if(isEquipped(hero) && !cursed && hero.buff(MagicImmune.class) == null){
@@ -129,8 +168,12 @@ public class LloydsBeacon extends Artifact {
         }
 
 		if (AC_SET.equals(action) || AC_RETURN.equals(action)) {
-			
-			if (Dungeon.bossLevel() || !Dungeon.interfloorTeleportAllowed()) {
+			refreshReturnMarkerReachability();
+			boolean actionAllowed = AC_SET.equals(action)
+					? Dungeon.returnTeleportMarkerPlacementAllowed()
+					: hasReturnMarker() && Dungeon.returnTeleportAllowed(
+							returnDepth, returnBranch, returnPos, returnMarkerReachable);
+			if (!actionAllowed) {
 				GLog.w( Messages.get(this, "preventing") );
 				return;
 			}
@@ -150,7 +193,10 @@ public class LloydsBeacon extends Artifact {
 		} else if (AC_SET.equals(action)) {
 			Invisibility.dispel();
 			returnDepth = Dungeon.depth;
+			returnBranch = Dungeon.branch;
 			returnPos = hero.pos;
+			returnMarkerValid = true;
+			returnMarkerReachable = Dungeon.returnTeleportPositionAllowed(returnPos);
 			
 			hero.spend( LloydsBeacon.TIME_TO_USE );
 			hero.busy();
@@ -172,7 +218,7 @@ public class LloydsBeacon extends Artifact {
                 updateQuickslot();
 				Talent.onArtifactUsed(hero);
 
-                if (returnDepth == Dungeon.depth) {
+				if (Dungeon.sameLocation(returnDepth, returnBranch, Dungeon.depth, Dungeon.branch)) {
                     ScrollOfTeleportation.appear( hero, returnPos );
                     for(Mob m : Dungeon.level.mobs){
                         if (m.pos == hero.pos){
@@ -192,9 +238,10 @@ public class LloydsBeacon extends Artifact {
                     hero.spendAndNext( LloydsBeacon.TIME_TO_USE );
                 }else {
                     Level.beforeTransition();
-                    InterlevelScene.mode = InterlevelScene.Mode.RETURN;
-                    InterlevelScene.returnDepth = returnDepth;
-                    InterlevelScene.returnPos = returnPos;
+					InterlevelScene.mode = InterlevelScene.Mode.RETURN;
+					InterlevelScene.returnDepth = returnDepth;
+					InterlevelScene.returnBranch = returnBranch;
+					InterlevelScene.returnPos = returnPos;
                     Game.switchScene( InterlevelScene.class );
                 }
 			}
@@ -330,8 +377,10 @@ public class LloydsBeacon extends Artifact {
 				desc += "\n\n" + Messages.get(this, "desc_worn");
 			}
 		}
-		if (returnDepth != -1){
-			desc += "\n\n" + Messages.get(this, "desc_set", returnDepth);
+		if (hasReturnMarker()){
+			desc += "\n\n" + Messages.get(this,
+					returnBranch == TowerLevel.BRANCH ? "desc_set_tower" : "desc_set",
+					returnDepth);
 		}
 		return desc;
 	}
@@ -340,7 +389,7 @@ public class LloydsBeacon extends Artifact {
 	
 	@Override
 	public Glowing glowing() {
-		return returnDepth != -1 ? WHITE : null;
+		return hasReturnMarker() ? WHITE : null;
 	}
 
 	private void gainCharge(float amount, boolean announceFull) {

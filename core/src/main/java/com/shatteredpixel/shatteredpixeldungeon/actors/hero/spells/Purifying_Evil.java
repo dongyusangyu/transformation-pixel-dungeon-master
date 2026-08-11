@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -74,7 +76,7 @@ public class Purifying_Evil extends TargetedClericSpell{
             if(ch.properties().contains(Char.Property.BOSS)){
                 dmg/=2;
             }
-            ch.damage(dmg,new WandOfMagicMissile());
+            ch.damage(dmg,new WandOfMagicMissile(), DamageTag.MAGICAL);
 
         }
         if (ch.isAlive() && hero.subClass.is(HeroSubClass.PRIEST)){

@@ -188,6 +188,9 @@ public class MonkEnergy extends Buff implements ActionIndicator.Action {
 				}
 
 			}
+
+			enGainMulti += naturalWayBonus(hero.lvl,
+					hero.pointsInTalent(Talent.NATURAL_WAY));
 		}
 		energyGain *= enGainMulti;
 
@@ -199,6 +202,62 @@ public class MonkEnergy extends Buff implements ActionIndicator.Action {
 
 		if (energy >= 1 && cooldown == 0){
 			ActionIndicator.setAction(this);
+		}
+		BuffIndicator.refreshHero();
+	}
+
+	public static float naturalWayBonus(int heroLevel, int points) {
+		float perLevel;
+		float cap;
+		switch (points) {
+			case 1:
+				perLevel = 0.05f;
+				cap = 1f;
+				break;
+			case 2:
+				perLevel = 0.075f;
+				cap = 1.5f;
+				break;
+			case 3:
+				perLevel = 0.1f;
+				cap = 2f;
+				break;
+			default:
+				return 0f;
+		}
+		return Math.min(cap, Math.max(0, heroLevel) * perLevel);
+	}
+
+	public static int displayedEnergy(float energy) {
+		return Math.max(0, (int)Math.floor(energy));
+	}
+
+	public static float innerPeaceEvasionMultiplier(float energy, int points) {
+		if (points <= 0) return 1f;
+		float evasionPerPoint = 0.15f + 0.025f * (Math.min(3, points) - 1);
+		return 1f + displayedEnergy(energy) * evasionPerPoint;
+	}
+
+	public static int missingWeaponCharges(int charges, float partialCharge, float chargeUse) {
+		// Partial charge is hidden from the player and does not count for this talent.
+		return Math.max(0, (int)Math.ceil(chargeUse) - Math.max(0, charges));
+	}
+
+	public static int yinYangEnergyCost(int missingCharges, int points) {
+		if (missingCharges <= 0 || points <= 0) return 0;
+		return missingCharges * (4 - Math.min(3, points));
+	}
+
+	public static boolean canCoverWeaponChargeShortage(float energy, int missingCharges, int points) {
+		return displayedEnergy(energy) >= yinYangEnergyCost(missingCharges, points);
+	}
+
+	public void spendForYinYang(int missingCharges, int points) {
+		energy = Math.max(0f, energy - yinYangEnergyCost(missingCharges, points));
+		if (cooldown > 0 || energy < 1) {
+			ActionIndicator.clearAction(this);
+		} else {
+			ActionIndicator.refresh();
 		}
 		BuffIndicator.refreshHero();
 	}

@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Blin
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Blindweed;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Earthroot;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Fadeleaf;
@@ -67,8 +68,29 @@ public class HuntressBossLevel extends Level {
 	private static final int GATE_Y = 23;
 	private static final int BOSS_X = 15;
 	private static final int BOSS_Y = 5;
+	static final int MIN_OPENING_SPAWN_DISTANCE = 6;
+	static final int MAX_OPENING_SPAWN_DISTANCE = 9;
+	private static final int TRIGGER_SPAWN_BUFFER = 2;
 	private static final Rect ARENA = new Rect(3, 2, 28, 24);
 	private static final String STATE = "huntress_boss_state";
+	static final int COVER_CLUSTER_COUNT = 8;
+	static final int COVER_CELLS_PER_CLUSTER = 4;
+	private static final long COVER_SEED_SALT = 150032L;
+	private static final int COVER_LAYOUT_ATTEMPTS = 64;
+	private static final int[][] COVER_ANCHORS = {
+			{6, 6}, {11, 9}, {20, 6}, {24, 10},
+			{6, 15}, {11, 18}, {20, 15}, {24, 19}
+	};
+	private static final int[][][] COVER_SHAPES = {
+			{{0, 0}, {1, 0}, {0, 1}, {1, 1}},
+			{{0, 0}, {0, 1}, {0, 2}, {1, 2}},
+			{{0, 0}, {1, 0}, {2, 0}, {1, 1}},
+			{{0, 0}, {1, 0}, {1, 1}, {2, 1}},
+			{{0, 1}, {1, 1}, {1, 0}, {2, 0}},
+			{{0, 0}, {1, 0}, {2, 0}, {0, 1}},
+			{{0, 0}, {1, 0}, {2, 0}, {2, 1}},
+			{{0, 0}, {0, 1}, {1, 1}, {2, 1}}
+	};
 
 	@SuppressWarnings("unchecked")
 	private static final Class<? extends Plant.Seed>[] ARENA_SEEDS = new Class[]{
@@ -112,6 +134,7 @@ public class HuntressBossLevel extends Level {
 	}
 
 	private State state = State.START;
+	private List<Set<Integer>> coverClusters = new ArrayList<>();
 
 	{
 		color1 = 0x534f3e;
@@ -130,6 +153,232 @@ public class HuntressBossLevel extends Level {
 		return terrain == Terrain.EMPTY
 				|| terrain == Terrain.EMPTY_DECO
 				|| terrain == Terrain.FURROWED_GRASS;
+	}
+
+	static boolean isPreferredBossSpawnDistance(int distance) {
+		return distance >= MIN_OPENING_SPAWN_DISTANCE
+				&& distance <= MAX_OPENING_SPAWN_DISTANCE;
+	}
+
+	static int preferredRangeDeviation(int distance) {
+		if (distance < MIN_OPENING_SPAWN_DISTANCE) {
+			return MIN_OPENING_SPAWN_DISTANCE - distance;
+		}
+		if (distance > MAX_OPENING_SPAWN_DISTANCE) {
+			return distance - MAX_OPENING_SPAWN_DISTANCE;
+		}
+		return 0;
+	}
+
+	boolean isBasicBossSpawnCell(int cell) {
+		return isArenaCell(cell)
+				&& passable[cell]
+				&& isLegalVegetationTerrain(map[cell])
+				&& cell != entrance()
+				&& cell != exit()
+				&& cell != GATE_X + GATE_Y * width()
+				&& distance(cell, triggerCell()) > TRIGGER_SPAWN_BUFFER
+				&& Actor.findChar(cell) == null
+				&& plants.get(cell) == null
+				&& heaps.get(cell) == null;
+	}
+
+	boolean hasBossSpawnProjectileLine(int from, int target) {
+		return new Ballistica(from, target, Ballistica.PROJECTILE)
+				.collisionPos.intValue() == target;
+	}
+
+	ArrayList<Integer> strictBossSpawnCandidates(int heroPos) {
+		ArrayList<Integer> result = new ArrayList<>();
+		for (int cell = 0; cell < length(); cell++) {
+			if (isBasicBossSpawnCell(cell)
+					&& isPreferredBossSpawnDistance(distance(cell, heroPos))
+					&& hasBossSpawnProjectileLine(cell, heroPos)) {
+				result.add(cell);
+			}
+		}
+		return result;
+	}
+
+	int selectBossSpawnCell(int heroPos) {
+		ArrayList<Integer> strict = strictBossSpawnCandidates(heroPos);
+		if (!strict.isEmpty()) {
+			return Random.element(strict);
+		}
+
+		int fixed = BOSS_X + BOSS_Y * width();
+		if (isBasicBossSpawnCell(fixed)
+				&& hasBossSpawnProjectileLine(fixed, heroPos)) {
+			return fixed;
+		}
+
+		ArrayList<Integer> closestBallistic = new ArrayList<>();
+		ArrayList<Integer> safe = new ArrayList<>();
+		int bestDeviation = Integer.MAX_VALUE;
+		for (int cell = 0; cell < length(); cell++) {
+			if (!isBasicBossSpawnCell(cell)) {
+				continue;
+			}
+			safe.add(cell);
+			if (!hasBossSpawnProjectileLine(cell, heroPos)) {
+				continue;
+			}
+			int deviation = preferredRangeDeviation(distance(cell, heroPos));
+			if (deviation < bestDeviation) {
+				bestDeviation = deviation;
+				closestBallistic.clear();
+			}
+			if (deviation == bestDeviation) {
+				closestBallistic.add(cell);
+			}
+		}
+		if (!closestBallistic.isEmpty()) {
+			return Random.element(closestBallistic);
+		}
+		if (!safe.isEmpty()) {
+			return Random.element(safe);
+		}
+		throw new IllegalStateException("No safe Huntress boss opening spawn cell");
+	}
+
+	static List<Set<Integer>> coverClustersForSeed(long dungeonSeed) {
+		Random.pushGenerator(dungeonSeed + COVER_SEED_SALT);
+		try {
+			ArrayList<Set<Integer>> result = new ArrayList<>();
+			for (int i = 0; i < COVER_ANCHORS.length; i++) {
+				int[][] shape = COVER_SHAPES[Random.Int(COVER_SHAPES.length)];
+				LinkedHashSet<Integer> cluster = new LinkedHashSet<>();
+				for (int[] offset : shape) {
+					int x = COVER_ANCHORS[i][0] + offset[0];
+					int y = COVER_ANCHORS[i][1] + offset[1];
+					cluster.add(x + y * WIDTH);
+				}
+				result.add(cluster);
+			}
+			return result;
+		} finally {
+			Random.popGenerator();
+		}
+	}
+
+	static Set<Integer> coverCellsForSeed(long dungeonSeed) {
+		LinkedHashSet<Integer> result = new LinkedHashSet<>();
+		for (Set<Integer> cluster : coverClustersForSeed(dungeonSeed)) {
+			result.addAll(cluster);
+		}
+		return result;
+	}
+
+	List<Set<Integer>> coverClusters() {
+		ArrayList<Set<Integer>> copy = new ArrayList<>();
+		for (Set<Integer> cluster : coverClusters) {
+			copy.add(new LinkedHashSet<>(cluster));
+		}
+		return copy;
+	}
+
+	static boolean isOrthogonallyConnected(Set<Integer> cells) {
+		if (cells.isEmpty()) {
+			return false;
+		}
+		Set<Integer> visited = new HashSet<>();
+		ArrayList<Integer> pending = new ArrayList<>();
+		pending.add(cells.iterator().next());
+		while (!pending.isEmpty()) {
+			int cell = pending.remove(pending.size() - 1);
+			if (!visited.add(cell)) {
+				continue;
+			}
+			int x = cell % WIDTH;
+			int[] neighbours = {cell - WIDTH, cell + WIDTH, cell - 1, cell + 1};
+			for (int neighbour : neighbours) {
+				if ((neighbour == cell - 1 && x == 0)
+						|| (neighbour == cell + 1 && x == WIDTH - 1)) {
+					continue;
+				}
+				if (cells.contains(neighbour) && !visited.contains(neighbour)) {
+					pending.add(neighbour);
+				}
+			}
+		}
+		return visited.size() == cells.size();
+	}
+
+	boolean isReservedEncounterCell(int cell) {
+		int entrance = ENTRANCE_X + ENTRANCE_Y * width();
+		int exit = EXIT_X + EXIT_Y * width();
+		int trigger = TRIGGER_X + TRIGGER_Y * width();
+		int gate = GATE_X + GATE_Y * width();
+		int boss = BOSS_X + BOSS_Y * width();
+		return cell == entrance || cell == exit || cell == gate || cell == boss
+				|| distance(cell, trigger) <= 2;
+	}
+
+	boolean hasCriticalArenaPaths(Set<Integer> blockedCoverCells) {
+		boolean[] traversable = new boolean[length()];
+		for (int cell = 0; cell < length(); cell++) {
+			traversable[cell] = (Terrain.flags[map[cell]] & Terrain.PASSABLE) != 0
+					&& !blockedCoverCells.contains(cell);
+		}
+		int entrance = ENTRANCE_X + ENTRANCE_Y * width();
+		int exit = EXIT_X + EXIT_Y * width();
+		int trigger = TRIGGER_X + TRIGGER_Y * width();
+		int boss = BOSS_X + BOSS_Y * width();
+		PathFinder.buildDistanceMap(entrance, traversable);
+		boolean entrancePaths = PathFinder.distance[trigger] < Integer.MAX_VALUE
+				&& PathFinder.distance[exit] < Integer.MAX_VALUE;
+		PathFinder.buildDistanceMap(trigger, traversable);
+		return entrancePaths && PathFinder.distance[boss] < Integer.MAX_VALUE;
+	}
+
+	private boolean validCoverLayout(List<Set<Integer>> clusters) {
+		if (clusters.size() != COVER_CLUSTER_COUNT) {
+			return false;
+		}
+		Set<Integer> all = new HashSet<>();
+		for (Set<Integer> cluster : clusters) {
+			if (cluster.size() != COVER_CELLS_PER_CLUSTER
+					|| !isOrthogonallyConnected(cluster)) {
+				return false;
+			}
+			for (int cell : cluster) {
+				if (!isArenaCell(cell) || isReservedEncounterCell(cell)
+						|| (Terrain.flags[map[cell]] & Terrain.PASSABLE) == 0
+						|| !all.add(cell)) {
+					return false;
+				}
+			}
+		}
+		return all.size() == COVER_CLUSTER_COUNT * COVER_CELLS_PER_CLUSTER
+				&& hasCriticalArenaPaths(all);
+	}
+
+	private List<Set<Integer>> clustersUsingShape(int shapeIndex) {
+		ArrayList<Set<Integer>> result = new ArrayList<>();
+		for (int[] anchor : COVER_ANCHORS) {
+			LinkedHashSet<Integer> cluster = new LinkedHashSet<>();
+			for (int[] offset : COVER_SHAPES[shapeIndex]) {
+				cluster.add(anchor[0] + offset[0]
+						+ (anchor[1] + offset[1]) * WIDTH);
+			}
+			result.add(cluster);
+		}
+		return result;
+	}
+
+	private List<Set<Integer>> validatedCoverClusters(long dungeonSeed) {
+		for (int attempt = 0; attempt < COVER_LAYOUT_ATTEMPTS; attempt++) {
+			List<Set<Integer>> candidate = coverClustersForSeed(
+					dungeonSeed + attempt * 0x9E3779B9L);
+			if (validCoverLayout(candidate)) {
+				return candidate;
+			}
+		}
+		List<Set<Integer>> fallback = clustersUsingShape(0);
+		if (!validCoverLayout(fallback)) {
+			throw new IllegalStateException("Huntress arena fallback cover layout is invalid");
+		}
+		return fallback;
 	}
 
 	static WardenArenaAllocation allocateWardenArena(List<Integer> legalCells,
@@ -186,18 +435,19 @@ public class HuntressBossLevel extends Level {
 		Painter.fill(this, 13, 24, 5, 6, Terrain.EMPTY);
 		Painter.set(this, 15, 23, Terrain.EMPTY);
 
-		// Four small stone clusters provide hard cover against the sniper.
-		Painter.fill(this, 8, 8, 2, 2, Terrain.WALL);
-		Painter.fill(this, 21, 8, 2, 2, Terrain.WALL);
-		Painter.fill(this, 8, 16, 2, 2, Terrain.WALL);
-		Painter.fill(this, 21, 16, 2, 2, Terrain.WALL);
-
 		int entrance = ENTRANCE_X + ENTRANCE_Y * width();
 		int exit = EXIT_X + EXIT_Y * width();
 		Painter.set(this, entrance, Terrain.ENTRANCE);
 		Painter.set(this, exit, Terrain.EXIT);
 		transitions.add(new LevelTransition(this, entrance, LevelTransition.Type.REGULAR_ENTRANCE));
 		transitions.add(new LevelTransition(this, exit, LevelTransition.Type.REGULAR_EXIT));
+
+		coverClusters = validatedCoverClusters(Dungeon.seedForDepth(15, 0));
+		for (Set<Integer> cluster : coverClusters) {
+			for (int cell : cluster) {
+				Painter.set(this, cell, Terrain.WALL);
+			}
+		}
 
 		ArrayList<Integer> vegetation = vegetationCells();
 		Random.pushGenerator(Dungeon.seedForDepth(15, 0) + 150015L);
@@ -288,6 +538,10 @@ public class HuntressBossLevel extends Level {
 		if (ch == Dungeon.hero && state == State.START && triggersFightAt(ch.pos)) {
 			startFight();
 		}
+		completeOccupyCell(ch);
+	}
+
+	void completeOccupyCell(Char ch) {
 		super.occupyCell(ch);
 	}
 
@@ -296,7 +550,7 @@ public class HuntressBossLevel extends Level {
 			return;
 		}
 		state = State.INTRO;
-		super.seal();
+		sealEncounter();
 		Statistics.qualifiedForBossChallengeBadge = true;
 
 		int gate = GATE_X + GATE_Y * width();
@@ -328,28 +582,45 @@ public class HuntressBossLevel extends Level {
 		}
 
 		set(gate, Terrain.WALL, this);
-		GameScene.updateMap(gate);
-		Dungeon.observe();
+		afterOpeningGateClosed(gate);
 
-		HuntressBoss boss = new HuntressBoss();
-		boss.pos = BOSS_X + BOSS_Y * width();
-		if (Actor.findChar(boss.pos) != null || !passable[boss.pos]) {
-			boss.pos = randomArenaCell(null, -1);
-		}
+		HuntressBoss boss = createOpeningBoss();
+		boss.pos = selectBossSpawnCell(Dungeon.hero.pos);
 		boss.startEncounter();
-		GameScene.add(boss, 1f);
+		scheduleEncounterMob(boss, 1f);
 
 		for (int i = 0; i < HuntressBoss.hawksSpawnedAtFightStart(); i++) {
 			spawnHawk(boss);
 		}
 
 		state = State.FIGHT;
+		startFightMusic();
+	}
+
+	HuntressBoss createOpeningBoss() {
+		return new HuntressBoss();
+	}
+
+	void afterOpeningGateClosed(int gate) {
+		GameScene.updateMap(gate);
+		Dungeon.observe();
+	}
+
+	void scheduleEncounterMob(Mob mob, float delay) {
+		GameScene.add(mob, delay);
+	}
+
+	void startFightMusic() {
 		Game.runOnRenderThread(new Callback() {
 			@Override
 			public void call() {
 				Music.INSTANCE.play(Assets.Music.CAVES_BOSS, true);
 			}
 		});
+	}
+
+	void sealEncounter() {
+		super.seal();
 	}
 
 	public void onWardenPhase(HuntressBoss boss) {
@@ -372,7 +643,7 @@ public class HuntressBossLevel extends Level {
 			return;
 		}
 		hawk.aggro(Dungeon.hero);
-		GameScene.add(hawk, 1f);
+		scheduleEncounterMob(hawk, 1f);
 	}
 
 	private void populateWardenArena() {

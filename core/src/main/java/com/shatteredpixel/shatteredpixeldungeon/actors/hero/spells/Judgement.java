@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -73,7 +75,7 @@ public class Judgement extends ClericSpell {
 
 				for (Char ch : Actor.chars()){
 					if (ch.alignment != hero.alignment && Dungeon.level.heroFOV[ch.pos]){
-						ch.damage( Random.NormalIntRange(damageBase, 2*damageBase), Judgement.this);
+						ch.damage( Random.NormalIntRange(damageBase, 2*damageBase), Judgement.this, DamageTag.MAGICAL);
 						if (hero.subClass.is(HeroSubClass.PRIEST)){
 							Buff.affect(ch, GuidingLight.Illuminated.class);
 						}

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.bombs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -209,7 +211,7 @@ public class Bomb extends Item {
 
 
 				if (dmg > 0) {
-					ch.damage(dmg, this);
+					ch.damage(dmg, this, DamageTag.PHYSICAL);
 				}
 				if(hero != null && hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
 					Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));

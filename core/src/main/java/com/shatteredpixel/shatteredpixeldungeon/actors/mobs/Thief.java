@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -123,8 +125,8 @@ public class Thief extends Mob {
 	}
 
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		
 		if (alignment == Alignment.ENEMY && item == null
 				&& enemy instanceof Hero && steal( (Hero)enemy )) {
@@ -135,12 +137,12 @@ public class Thief extends Mob {
 	}
 
 	@Override
-	public int defenseProc(Char enemy, int damage) {
+	public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 		if (state == FLEEING) {
 			Dungeon.level.drop( new Gold(), pos ).sprite.drop();
 		}
 
-		return super.defenseProc(enemy, damage);
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	protected boolean steal( Hero hero ) {

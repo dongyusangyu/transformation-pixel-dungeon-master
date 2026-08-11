@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -135,7 +137,7 @@ public class Pylon extends Mob {
 	private void shockChar( Char ch ){
 		if (ch != null && !(ch instanceof DM300)){
 			ch.sprite.flash();
-			ch.damage(Random.NormalIntRange(10, 20), new Electricity());
+			ch.damage(Random.NormalIntRange(10, 20), new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 
 			if (ch == Dungeon.hero) {
 				Statistics.qualifiedForBossChallengeBadge = false;
@@ -196,7 +198,7 @@ public class Pylon extends Mob {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (dmg >= 15){
 			//takes 15/16/17/18/19/20 dmg at 15/17/20/24/29/36 incoming dmg
 			dmg = 14 + (int)(Math.sqrt(8*(dmg - 14) + 1) - 1)/2;
@@ -207,7 +209,7 @@ public class Pylon extends Mob {
 			if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES))   lock.addTime(dmg/2f);
 			else                                                    lock.addTime(dmg);
 		}
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 	}
 
 	@Override

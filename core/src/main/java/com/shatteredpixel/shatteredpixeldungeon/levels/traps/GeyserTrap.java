@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.traps;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -85,7 +87,7 @@ public class GeyserTrap extends Trap {
 					int dmg = Random.NormalIntRange(5 + scalingDepth(), 10 + scalingDepth()*2);
 					dmg *= 0.67f;
 					if (!ch.isImmune(GeyserTrap.class)){
-						ch.damage(dmg, this);
+						ch.damage(dmg, this, DamageTag.PHYSICAL, DamageTag.WATER);
 					}
 				}
 
@@ -133,7 +135,7 @@ public class GeyserTrap extends Trap {
 			if (Char.hasProp(ch, Char.Property.FIERY)){
 				int dmg = Random.NormalIntRange(5 + scalingDepth(), 10 + scalingDepth()*2);
 				if (!ch.isImmune(GeyserTrap.class)){
-					ch.damage(dmg, this);
+					ch.damage(dmg, this, DamageTag.PHYSICAL, DamageTag.WATER);
 				}
 			}
 

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.city;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -47,7 +49,7 @@ public class SeniorMonkH extends MonkH {
     protected int hitsForSkill = 0;
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
         ++hitsForSkill;
         if(enemy == Dungeon.hero && hitsForSkill>7){
             hitsForSkill = 0;
@@ -82,7 +84,7 @@ public class SeniorMonkH extends MonkH {
                 spend(attackDelay());
             }
         }
-        return super.attackProc(enemy, damage);
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     @Override

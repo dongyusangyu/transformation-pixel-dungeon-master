@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS_MINION;
@@ -66,18 +68,18 @@ public class RotHeart extends Mob {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		//TODO: when effect properties are done, change this to FIRE
 		if (src instanceof Burning) {
 			destroy();
 			sprite.die();
 		} else {
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 		}
 	}
 
 	@Override
-	public int defenseProc(Char enemy, int damage) {
+	public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 		//rot heart spreads less gas in enclosed spaces
 		int openNearby = 0;
 		for (int i : PathFinder.NEIGHBOURS8){
@@ -88,7 +90,7 @@ public class RotHeart extends Mob {
 
 		GameScene.add(Blob.seed(pos, 5 + 3*openNearby, ToxicGas.class));
 
-		return super.defenseProc(enemy, damage);
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	@Override

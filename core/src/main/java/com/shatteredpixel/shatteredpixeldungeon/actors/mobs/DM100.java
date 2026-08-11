@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -91,7 +93,7 @@ public class DM100 extends Mob implements Callback, MagicalRangedAttack {
 		if (rangedHit(enemy)) {
 			int dmg = Random.NormalIntRange(3, 10);
 			dmg = Math.round(dmg * AscensionChallenge.statModifier(this));
-			enemy.damage( dmg, new LightningBolt() );
+			enemy.damage( dmg, new LightningBolt() , DamageTag.MAGICAL);
 
 			if (enemy.sprite.visible) {
 				enemy.sprite.centerEmitter().burst(SparkParticle.FACTORY, 3);

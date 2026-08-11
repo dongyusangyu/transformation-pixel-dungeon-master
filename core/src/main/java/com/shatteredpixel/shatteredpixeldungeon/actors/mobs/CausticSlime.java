@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -42,13 +44,13 @@ public class CausticSlime extends Slime {
 	}
 	
 	@Override
-	public int attackProc( Char enemy, int damage ) {
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
 		if (Random.Int( 2 ) == 0) {
 			Buff.affect( enemy, Ooze.class ).set( Ooze.DURATION );
 			enemy.sprite.burst( 0x000000, 5 );
 		}
 		
-		return super.attackProc( enemy, damage );
+		return super.attackProc(enemy, damage, damageTags);
 	}
 	
 	@Override

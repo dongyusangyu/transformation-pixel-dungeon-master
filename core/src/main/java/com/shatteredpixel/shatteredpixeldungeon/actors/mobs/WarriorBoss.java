@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.level;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
@@ -78,6 +80,7 @@ public class WarriorBoss extends Mob {
         defenseSkill = 8;
         spriteClass = WarriorBossSprite.class;
         properties.add(Property.BOSS);
+        properties.add(Property.DEMONIC);
         SLEEPING     = new Sleeping();
         state = SLEEPING;
     }
@@ -130,7 +133,7 @@ public class WarriorBoss extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if (dmg > 0 ){
             Berserk berserk = Buff.affect(this, Berserk.class);
             berserk.damage(dmg);
@@ -146,7 +149,7 @@ public class WarriorBoss extends Mob {
             if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES))   lock.addTime(dmg);
             else                                                    lock.addTime(dmg*1.8f);
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         if (!BossHealthBar.isAssigned() && this.isAlive()){
             BossHealthBar.assignBoss( this );
             level.seal();
@@ -157,8 +160,8 @@ public class WarriorBoss extends Mob {
 
 
     @Override
-    public int attackProc( Char enemy, int damage ) {
-        damage = super.attackProc( enemy, damage );
+    public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+        damage = super.attackProc(enemy, damage, damageTags);
         Combo combo = Buff.affect(this, Combo.class);
         combo.hit(enemy);
         return damage;
@@ -222,8 +225,8 @@ public class WarriorBoss extends Mob {
             Buff.affect(this, ParryTracker.class,3);
             Buff.affect(this, Barrier.class).incShield(shield);
         }
-        if(enemy != null && state!= SLEEPING){
-            leapCooldown++;
+        if (enemy != null){
+            leapCooldown = advanceSpecialCounter(leapCooldown, paralysed, state == SLEEPING);
         }
         if(leapCooldown > 8 && enemy !=null && lastEnemyPos ==-1 && (HP<20 || level.distance(pos,enemy.pos)>1) && state!= SLEEPING){
             lastEnemyPos = currentLeapTarget(enemy);
@@ -281,6 +284,14 @@ public class WarriorBoss extends Mob {
 
     static int currentLeapTarget(Char enemy) {
         return enemy.pos;
+    }
+
+    static boolean canAdvanceSpecialCounter(int paralysed, boolean sleeping) {
+        return paralysed <= 0 && !sleeping;
+    }
+
+    static float advanceSpecialCounter(float current, int paralysed, boolean sleeping) {
+        return canAdvanceSpecialCounter(paralysed, sleeping) ? current + 1 : current;
     }
 
     private void markLeapTarget(int cell) {
@@ -412,7 +423,7 @@ public class WarriorBoss extends Mob {
         for (LeapImpactTarget target : targets) {
             Char mob = target.mob;
             int damage = 5 + damageRoll() * 2 - mob.drRoll();
-            mob.damage(damage, this);
+            mob.damage(damage, this, DamageTag.PHYSICAL);
             if (mob == hero && !mob.isAlive()) {
                 Dungeon.fail(this);
                 GLog.n(Messages.get(this, "kill"));
@@ -517,7 +528,7 @@ public class WarriorBoss extends Mob {
         }
 
         if (finalCollided && ch.isActive()) {
-            ch.damage(Random.NormalIntRange(finalDist, 2 * finalDist), new WandOfBlastWave.Knockback());
+            ch.damage(Random.NormalIntRange(finalDist, 2 * finalDist), new WandOfBlastWave.Knockback(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 			if (ch.isActive()) {
 				Paralysis.prolong(ch, Paralysis.class, 1 + finalDist / 2f);
 				showParalysisState(ch);

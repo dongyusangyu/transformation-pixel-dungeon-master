@@ -27,6 +27,14 @@ def digest(image: Image.Image) -> str:
     return hashlib.sha256(image.tobytes()).hexdigest()
 
 
+def foreground_mask(subject: Image.Image, background: Image.Image) -> tuple[bool, ...]:
+    return tuple(
+        subject.getpixel((x, y)) != background.getpixel((x, y))
+        for y in range(TILE_SIZE)
+        for x in range(TILE_SIZE)
+    )
+
+
 class GothicCastleTilesetTest(unittest.TestCase):
     def setUp(self) -> None:
         self.atlas = Image.open(ATLAS_PATH).convert("RGBA")
@@ -51,6 +59,23 @@ class GothicCastleTilesetTest(unittest.TestCase):
                 self.assertGreaterEqual(stats.stddev[0], 3.5)
             variants.append(digest(subject))
         self.assertEqual(3, len(set(variants)))
+
+    def test_tower_stairs_reverse_the_standard_halls_directions(self) -> None:
+        pairs = (
+            (16, 17, 0, 0),
+            (17, 16, 0, 0),
+            (22, 17, 4, 0),
+        )
+        for target_index, source_index, background_index, source_background_index in pairs:
+            actual = foreground_mask(
+                tile(self.atlas, target_index), tile(self.atlas, background_index)
+            )
+            expected = foreground_mask(
+                tile(self.reference, source_index),
+                tile(self.reference, source_background_index),
+            )
+            with self.subTest(target=target_index, source=source_index):
+                self.assertEqual(expected, actual)
 
     def test_water_texture_is_a_seamless_32_pixel_loop(self) -> None:
         water = Image.open(WATER_PATH).convert("RGBA")

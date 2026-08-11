@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.noosa.audio.Sample;
@@ -120,10 +121,11 @@ public abstract class Trap implements Bundlable {
 	}
 
 	//returns the depth value the trap should use for determining its power
-	//If the trap is part of the level, it should use the true depth
-	//If it's not part of the level (e.g. effect from reclaim trap), use scaling depth
+	//Level traps normally use true depth; tower and reclaimed traps use scaling depth.
 	protected int scalingDepth(){
-		return (reclaimed || Dungeon.level.traps.get(pos) != this) ? Dungeon.scalingDepth() : Dungeon.depth;
+		return (Dungeon.branch == TowerLevel.BRANCH
+				|| reclaimed
+				|| Dungeon.level.traps.get(pos) != this) ? Dungeon.scalingDepth() : Dungeon.depth;
 	}
 
 	public String name(){

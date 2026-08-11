@@ -93,9 +93,13 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SurfaceTownLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerStyleSchedule;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -111,7 +115,9 @@ import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
+import com.watabou.utils.Point;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 import com.watabou.utils.SparseArray;
 
 import java.io.IOException;
@@ -156,6 +162,7 @@ public class Dungeon {
 		SHAMAN_WAND,
 		DM200_EQUIP,
 		GOLEM_EQUIP,
+		ROAST_LAMB_WAND,
 
 		//containers
 		VELVET_POUCH,
@@ -231,6 +238,7 @@ public class Dungeon {
 
 	//keeps track of what levels the game should try to load instead of creating fresh
 	public static ArrayList<Integer> generatedLevels = new ArrayList<>();
+	private static final TowerStyleSchedule towerStyleSchedule = new TowerStyleSchedule();
 
 	public static int gold;
 	public static int energy;
@@ -305,6 +313,7 @@ public class Dungeon {
 		depth = 1;
 		branch = 0;
 		generatedLevels.clear();
+		towerStyleSchedule.reset();
 
 		gold = 0;
 		energy = 0;
@@ -367,6 +376,7 @@ public class Dungeon {
 		depth = 0;
 		branch = 0;
 		generatedLevels.clear();
+		towerStyleSchedule.reset();
 
 		gold = 0;
 		energy = 0;
@@ -422,7 +432,7 @@ public class Dungeon {
 		Level curriculumLevel;
 		Class<? extends Level> towerLevelClass = towerLevelClassForLocation(depth, branch);
 		if (towerLevelClass != null) {
-			level = new TowerLevel();
+			level = Reflection.newInstance(towerLevelClass);
 		} else if (TestArenaLevel.isLocation(depth, branch)
 				&& Dungeon.isChallenged(Challenges.TEST_MODE)) {
 			level = new TestArenaLevel();
@@ -577,11 +587,142 @@ public class Dungeon {
 	}
 
 	static Class<? extends Level> towerLevelClassForLocation(int depth, int branch) {
-		return branch == TowerLevel.BRANCH && depth >= 1 ? TowerLevel.class : null;
+		Class<? extends TowerLevel> styleClass = towerStyleLevelClassForLocation(depth, branch);
+		if (styleClass == null) {
+			return null;
+		}
+		return depth % TowerBossLevel.FLOORS_PER_BOSS == 0
+				? TowerBossLevel.class
+				: styleClass;
+	}
+
+	public static Class<? extends TowerLevel> towerStyleLevelClassForLocation(int depth, int branch) {
+		if (branch != TowerLevel.BRANCH || depth < 1) {
+			return null;
+		}
+		return towerStyleSchedule.levelClassForFloor(depth, seed).asSubclass(TowerLevel.class);
+	}
+
+	public static String towerTilesTexForLocation(int depth, int branch) {
+		if (branch != TowerLevel.BRANCH || depth < 1) {
+			return null;
+		}
+		return towerStyleSchedule.tilesTexForFloor(depth, seed);
+	}
+
+	public static String towerWaterTexForLocation(int depth, int branch) {
+		if (branch != TowerLevel.BRANCH || depth < 1) {
+			return null;
+		}
+		return towerStyleSchedule.waterTexForFloor(depth, seed);
 	}
 
 	public static int displayDepthForLocation(int depth, int branch) {
 		return branch == TowerLevel.BRANCH ? -depth : depth;
+	}
+
+	public static String displayDepthLabel(int depth, int branch) {
+		return branch == TowerLevel.BRANCH
+				? "T" + depth
+				: Integer.toString(depth);
+	}
+
+	public static boolean towerTransitionAllowed(int sourceDepth, int sourceBranch,
+			int targetDepth, int targetBranch) {
+		return sourceDepth != 1 || sourceBranch != TowerLevel.BRANCH
+				|| targetDepth != 0 || targetBranch != 0;
+	}
+
+	public static boolean returnTeleportLocationAllowed(int depth, int branch) {
+		int displayDepth = displayDepthForLocation(depth, branch);
+		return displayDepth <= -1 || (displayDepth >= 1 && displayDepth <= 25);
+	}
+
+	public static boolean returnTeleportMarkerLocationAllowed(int depth, int branch) {
+		return depth != 0 && (returnTeleportLocationAllowed(depth, branch) || branch != 0);
+	}
+
+	private static boolean returnTeleportInterfloorLocationAllowed(int depth, int branch) {
+		return returnTeleportLocationAllowed(depth, branch)
+				&& (branch == 0 || branch == TowerLevel.BRANCH);
+	}
+
+	public static boolean returnTeleportMarkerAllowed(int depth, int branch,
+			boolean markerWasSetOnAllowedFloor) {
+		return markerWasSetOnAllowedFloor && returnTeleportMarkerLocationAllowed(depth, branch);
+	}
+
+	public static boolean sameLocation(int firstDepth, int firstBranch,
+			int secondDepth, int secondBranch) {
+		return firstDepth == secondDepth && firstBranch == secondBranch;
+	}
+
+	static boolean returnTeleportRouteAllowed(int sourceDepth, int sourceBranch,
+			boolean sourceFloorLocked, boolean sourcePositionAllowed,
+			int targetDepth, int targetBranch, boolean targetPositionAllowed) {
+		boolean sameFloor = sameLocation(sourceDepth, sourceBranch, targetDepth, targetBranch);
+		boolean locationsAllowed = sameFloor
+				? returnTeleportMarkerLocationAllowed(sourceDepth, sourceBranch)
+						&& returnTeleportMarkerLocationAllowed(targetDepth, targetBranch)
+				: returnTeleportInterfloorLocationAllowed(sourceDepth, sourceBranch)
+						&& returnTeleportInterfloorLocationAllowed(targetDepth, targetBranch);
+		return locationsAllowed && sourcePositionAllowed && targetPositionAllowed
+				&& (sameFloor || !sourceFloorLocked);
+	}
+
+	public static boolean returnTeleportPositionAllowed(int pos) {
+		if (level == null || level.passable == null || level.avoid == null
+				|| level.transitions == null || pos < 0 || pos >= level.length()) {
+			return false;
+		}
+
+		boolean[] traversable = BArray.or(level.passable, level.avoid, null);
+		if (!traversable[pos]) {
+			return false;
+		}
+		if (level.locked && bossLevel()) {
+			return true;
+		}
+
+		PathFinder.buildDistanceMap(pos, traversable);
+		if (level instanceof RegularLevel) {
+			RegularLevel regularLevel = (RegularLevel) level;
+			for (Room room : regularLevel.rooms()) {
+				if (!(room instanceof StandardRoom) || room.isEntrance()) {
+					continue;
+				}
+				for (Point point : room.charPlaceablePoints(level)) {
+					int cell = level.pointToCell(point);
+					if (level.passable[cell] && !level.solid[cell] && !level.secret[cell]
+							&& cell != level.exit()
+							&& PathFinder.distance[cell] < Integer.MAX_VALUE) {
+						return true;
+					}
+				}
+			}
+		} else {
+			for (int cell = 0; cell < level.length(); cell++) {
+				if (level.passable[cell] && !level.secret[cell]
+						&& PathFinder.distance[cell] < Integer.MAX_VALUE) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean returnTeleportPositionsConnected(int source, int target) {
+		if (level == null || level.passable == null || level.avoid == null
+				|| source < 0 || source >= level.length()
+				|| target < 0 || target >= level.length()) {
+			return false;
+		}
+		boolean[] traversable = BArray.or(level.passable, level.avoid, null);
+		if (!traversable[source] || !traversable[target]) {
+			return false;
+		}
+		PathFinder.buildDistanceMap(target, traversable);
+		return PathFinder.distance[source] < Integer.MAX_VALUE;
 	}
 
 	static boolean huntressBossForSeed(long runSeed) {
@@ -630,27 +771,60 @@ public class Dungeon {
 		return depth == 5 || depth == 10 || depth == 15 || depth == 20 || depth == 25;
 	}
 
-	//value used for scaling of damage values and other effects.
-	//is usually the dungeon depth, but can be set to 26 when ascending
+	//Value used for scaling damage, effects, and depth-dependent combat stats.
+	//Uses 30 in the high tower and 26 while ascending the main dungeon.
 	public static int scalingDepth(){
-		if (Dungeon.hero != null && Dungeon.hero.buff(AscensionChallenge.class) != null){
+		if (branch == TowerLevel.BRANCH) {
+			return 30;
+		} else if (Dungeon.hero != null && Dungeon.hero.buff(AscensionChallenge.class) != null){
 			return 26;
-		} else if (branch == TowerLevel.BRANCH) {
-			return Math.min(25, 15 + Math.max(1, depth));
 		} else {
 			return depth;
 		}
 	}
 
+	private static boolean returnTeleportSameFloorSupported() {
+		return Dungeon.level != null
+				&& (Dungeon.hero == null || Dungeon.hero.belongings.getItem(Amulet.class) == null);
+	}
+
+	private static boolean returnTeleportInterfloorSupported() {
+		return returnTeleportSameFloorSupported()
+				&& (branch == 0 || branch == TowerLevel.BRANCH)
+				&& !(Dungeon.level instanceof MiningLevel)
+				&& !(Dungeon.level instanceof ExtractionRaidLevel)
+				&& !(Dungeon.level instanceof TestArenaLevel);
+	}
+
 	public static boolean interfloorTeleportAllowed(){
-		if (Dungeon.level.locked
-				|| Dungeon.level instanceof MiningLevel
-				|| Dungeon.level instanceof ExtractionRaidLevel
-				|| Dungeon.level instanceof TestArenaLevel
-				|| (Dungeon.hero != null && Dungeon.hero.belongings.getItem(Amulet.class) != null)){
+		return returnTeleportInterfloorSupported() && !Dungeon.level.locked;
+	}
+
+	public static boolean returnTeleportAllowed() {
+		return returnTeleportInterfloorLocationAllowed(depth, branch)
+				&& interfloorTeleportAllowed()
+				&& (hero == null || returnTeleportPositionAllowed(hero.pos));
+	}
+
+	public static boolean returnTeleportMarkerPlacementAllowed() {
+		return returnTeleportMarkerLocationAllowed(depth, branch)
+				&& returnTeleportSameFloorSupported();
+	}
+
+	public static boolean returnTeleportAllowed(int targetDepth, int targetBranch,
+			int targetPos, boolean targetPositionAllowed) {
+		if (hero == null) {
 			return false;
 		}
-		return true;
+		boolean sameFloor = sameLocation(depth, branch, targetDepth, targetBranch);
+		if (sameFloor) {
+			targetPositionAllowed = returnTeleportPositionAllowed(targetPos)
+					&& returnTeleportPositionsConnected(hero.pos, targetPos);
+		}
+		return (sameFloor ? returnTeleportSameFloorSupported() : returnTeleportInterfloorSupported())
+				&& returnTeleportRouteAllowed(
+						depth, branch, level.locked, returnTeleportPositionAllowed(hero.pos),
+						targetDepth, targetBranch, targetPositionAllowed);
 	}
 	
 	public static void switchLevel( final Level level, int pos ) {
@@ -806,6 +980,7 @@ public class Dungeon {
 	private static final String DEPTH		= "depth";
 	private static final String BRANCH		= "branch";
 	private static final String GENERATED_LEVELS    = "generated_levels";
+	private static final String TOWER_STYLE_SCHEDULE = "tower_style_schedule";
 	private static final String GOLD		= "gold";
 	private static final String ENERGY		= "energy";
 	private static final String TALENT_ITEM = "talent_item";
@@ -887,6 +1062,9 @@ public class Dungeon {
 				bundleArr[i] = generatedLevels.get(i);
 			}
 			bundle.put( GENERATED_LEVELS, bundleArr);
+			Bundle towerStyles = new Bundle();
+			towerStyleSchedule.storeInBundle(towerStyles);
+			bundle.put(TOWER_STYLE_SCHEDULE, towerStyles);
 			
 			Scroll.save( bundle );
 			Potion.save( bundle );
@@ -950,6 +1128,8 @@ public class Dungeon {
 		version = bundle.getInt( VERSION );
 
 		seed = bundle.contains( SEED ) ? bundle.getLong( SEED ) : DungeonSeed.randomSeed();
+		boolean restoredTowerStyles = towerStyleSchedule.restoreFromBundle(
+				bundle.getBundle(TOWER_STYLE_SCHEDULE), seed);
 		customSeedText = bundle.getString( CUSTOM_SEED );
 		daily = bundle.getBoolean( DAILY );
 		dailyReplay = bundle.getBoolean( DAILY_REPLAY );
@@ -1040,6 +1220,16 @@ public class Dungeon {
 		} else  {
 			for (int i = 1; i <= Statistics.deepestFloor; i++){
 				generatedLevels.add(i);
+			}
+		}
+		if (!restoredTowerStyles) {
+			for (int generatedLevel : generatedLevels) {
+				if (generatedLevel < -1000000000) {
+					int towerFloor = generatedLevel - Integer.MIN_VALUE;
+					if (towerFloor >= 1) {
+						towerStyleSchedule.preserveLegacyGeneratedFloor(towerFloor, seed);
+					}
+				}
 			}
 		}
 		if (bundle.contains(SKIN)){

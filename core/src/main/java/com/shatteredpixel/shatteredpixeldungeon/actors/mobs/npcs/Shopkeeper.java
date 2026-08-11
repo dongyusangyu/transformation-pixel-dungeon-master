@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth.genLowValueConsumable;
 import static com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth.genMidValueConsumable;
 
@@ -94,7 +96,7 @@ public class Shopkeeper extends NPC {
 	}
 	
 	@Override
-	public void damage( int dmg, Object src ) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		processHarm();
 	}
 	
@@ -209,7 +211,7 @@ public class Shopkeeper extends NPC {
 
 	//shopkeepers are greedy!
 	public static int sellPrice(Item item){
-		return sellPrice(item, Dungeon.depth);
+		return sellPrice(item, Dungeon.scalingDepth());
 	}
 
 	public static int sellPrice(Item item, int depth){

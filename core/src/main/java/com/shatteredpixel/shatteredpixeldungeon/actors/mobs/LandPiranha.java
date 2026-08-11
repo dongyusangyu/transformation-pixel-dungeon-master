@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -36,8 +38,8 @@ public class LandPiranha extends Mob{
     public LandPiranha() {
         super();
 
-        HP = HT = 10 + Dungeon.depth * 5;
-        defenseSkill = 10 + Dungeon.depth * 2;
+        HP = HT = 10 + Dungeon.scalingDepth() * 5;
+        defenseSkill = 10 + Dungeon.scalingDepth() * 2;
     }
     @Override
     public float speed() {
@@ -59,17 +61,17 @@ public class LandPiranha extends Mob{
     }
     @Override
     public int damageRoll() {
-        return Random.NormalIntRange( Dungeon.depth, 4 + Dungeon.depth * 2 );
+        return Random.NormalIntRange( Dungeon.scalingDepth(), 4 + Dungeon.scalingDepth() * 2 );
     }
 
     @Override
     public int attackSkill( Char target ) {
-        return 20 + Dungeon.depth * 2;
+        return 20 + Dungeon.scalingDepth() * 2;
     }
 
     @Override
     public int drRoll() {
-        return super.drRoll() + Random.NormalIntRange(0, Dungeon.depth);
+        return super.drRoll() + Random.NormalIntRange(0, Dungeon.scalingDepth());
     }
     @Override
     public void die( Object cause ) {
@@ -80,11 +82,11 @@ public class LandPiranha extends Mob{
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if(hero.hasTalent(Talent.FISHING_TIME)){
             dmg*=1.3;
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
     }
     public void dieOnLand(){
         die( null );

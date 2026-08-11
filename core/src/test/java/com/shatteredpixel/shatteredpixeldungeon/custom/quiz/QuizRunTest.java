@@ -16,17 +16,18 @@ public class QuizRunTest {
 
 	@Test
 	public void recordsEachPresentedQuestionOnlyOnceAndContinues() {
-		List<Boolean> recorded = new ArrayList<>();
+		List<String> recorded = new ArrayList<>();
 		QuizRun run = new QuizRun(new QuizSession(Arrays.asList(
 				question("q1", 0),
-				question("q2", 1)), new java.util.Random(7L)), recorded::add);
+				question("q2", 1)), new java.util.Random(7L)),
+				(question, correct) -> recorded.add(question.id() + ":" + correct));
 
 		QuizQuestion first = run.nextQuestion();
 		QuizRun.Answer firstAnswer = run.answer(first.correctIndex());
 
 		assertTrue(firstAnswer.correct());
 		assertEquals(first, firstAnswer.question());
-		assertEquals(Arrays.asList(true), recorded);
+		assertEquals(Arrays.asList(first.id() + ":true"), recorded);
 		assertTrue(run.hasNextQuestion());
 		assertEquals(QuizRun.State.RESULT, run.state());
 		assertIllegalState(() -> run.answer(first.correctIndex()));
@@ -36,31 +37,34 @@ public class QuizRunTest {
 		QuizRun.Answer secondAnswer = run.answer(wrongIndex);
 
 		assertFalse(secondAnswer.correct());
-		assertEquals(Arrays.asList(true, false), recorded);
+		assertEquals(Arrays.asList(
+				first.id() + ":true", second.id() + ":false"), recorded);
 		assertFalse(run.hasNextQuestion());
 		assertEquals(QuizRun.State.RESULT, run.state());
 	}
 
 	@Test
 	public void finishingStopsTheRunWithoutRecordingAnotherAnswer() {
-		List<Boolean> recorded = new ArrayList<>();
+		List<String> recorded = new ArrayList<>();
 		QuizRun run = new QuizRun(new QuizSession(Arrays.asList(
 				question("q1", 0),
-				question("q2", 1)), new java.util.Random(7L)), recorded::add);
+				question("q2", 1)), new java.util.Random(7L)),
+				(question, correct) -> recorded.add(question.id() + ":" + correct));
 
 		QuizQuestion first = run.nextQuestion();
 		run.answer(first.correctIndex());
 		run.finish();
 
 		assertEquals(QuizRun.State.FINISHED, run.state());
-		assertEquals(Arrays.asList(true), recorded);
+		assertEquals(Arrays.asList(first.id() + ":true"), recorded);
 		assertIllegalState(run::nextQuestion);
 	}
 
 	@Test
 	public void emptyRunCompletesWithoutRecording() {
-		List<Boolean> recorded = new ArrayList<>();
-		QuizRun run = new QuizRun(new QuizSession(new ArrayList<>()), recorded::add);
+		List<String> recorded = new ArrayList<>();
+		QuizRun run = new QuizRun(new QuizSession(new ArrayList<>()),
+				(question, correct) -> recorded.add(question.id() + ":" + correct));
 
 		assertNull(run.nextQuestion());
 		assertEquals(QuizRun.State.COMPLETE, run.state());
@@ -69,9 +73,10 @@ public class QuizRunTest {
 
 	@Test
 	public void invalidOptionDoesNotRecordOrConsumeQuestion() {
-		List<Boolean> recorded = new ArrayList<>();
+		List<String> recorded = new ArrayList<>();
 		QuizRun run = new QuizRun(new QuizSession(
-				Arrays.asList(question("q1", 0))), recorded::add);
+				Arrays.asList(question("q1", 0))),
+				(question, correct) -> recorded.add(question.id() + ":" + correct));
 
 		run.nextQuestion();
 		try {

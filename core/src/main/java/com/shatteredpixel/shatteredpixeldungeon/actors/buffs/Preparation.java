@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
@@ -114,7 +115,10 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 				int newDmg = attacker.damageRoll();
 				if (newDmg > dmg) dmg = newDmg;
 			}
-			return Math.round(dmg * (1f + baseDmgBonus));
+			int points = attacker instanceof Hero
+					? ((Hero) attacker).pointsInTalent(Talent.UNEXPECTED_STRIKE)
+					: 0;
+			return Math.round(dmg * (1f + Preparation.damageBonus(this, points)));
 		}
 		
 		public static AttackLevel getLvl(int turnsInvis){
@@ -127,6 +131,46 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 			}
 			return LVL_1;
 		}
+	}
+
+	private static final float[][] DAMAGE_BONUSES = {
+			{0.10f, 0.20f, 0.35f, 0.50f},
+			{0.15f, 0.25f, 0.45f, 0.60f},
+			{0.20f, 0.30f, 0.55f, 0.70f},
+			{0.25f, 0.35f, 0.65f, 0.80f}
+	};
+
+	private static final int[][] FINISHING_HASTE = {
+			{0, 0, 0, 0},
+			{1, 2, 4, 6},
+			{2, 3, 5, 7},
+			{3, 4, 6, 8}
+	};
+
+	private static final float[][] PERFECT_FINALE_CHARGE = {
+			{0f, 0f, 0f, 0f},
+			{1f, 1.5f, 3f, 4.5f},
+			{1.5f, 2f, 3.5f, 5f},
+			{2f, 2.5f, 4f, 5.5f}
+	};
+
+	public static float damageBonus(AttackLevel level, int talentPoints) {
+		int points = Math.max(0, Math.min(3, talentPoints));
+		return DAMAGE_BONUSES[points][level.ordinal()];
+	}
+
+	public static int finishingHasteDuration(int attackLevel, int talentPoints) {
+		if (talentPoints <= 0) return 0;
+		int points = Math.min(3, talentPoints);
+		int level = Math.max(1, Math.min(4, attackLevel));
+		return FINISHING_HASTE[points][level - 1];
+	}
+
+	public static float perfectFinaleCharge(int attackLevel, int talentPoints) {
+		if (talentPoints <= 0) return 0f;
+		int points = Math.min(3, talentPoints);
+		int level = Math.max(1, Math.min(4, attackLevel));
+		return PERFECT_FINALE_CHARGE[points][level - 1];
 	}
 	
 	private int turnsInvis = 0;
@@ -147,6 +191,15 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 	
 	@Override
 	public void detach() {
+		if (target instanceof Hero && turnsInvis > 0) {
+			Hero hero = (Hero) target;
+			int points = hero.pointsInTalent(Talent.CLOSING_STAGE);
+			int duration = finishingHasteDuration(attackLevel(), points);
+			int cap = finishingHasteDuration(4, points);
+			if (duration > 0) {
+				Buff.affect(hero, Haste.class).extendCapped(duration, cap);
+			}
+		}
 		super.detach();
 		ActionIndicator.clearAction(this);
 	}
@@ -161,6 +214,17 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 
 	public boolean canKO( Char defender ){
 		return !defender.isInvulnerable(target.getClass()) && AttackLevel.getLvl(turnsInvis).canKO(defender);
+	}
+
+	public void onAssassinationKill() {
+		if (target instanceof Hero) {
+			Hero hero = (Hero) target;
+			float charge = perfectFinaleCharge(
+					attackLevel(), hero.pointsInTalent(Talent.PERFECT_FINALE));
+			if (charge > 0f) {
+				ArtifactRecharge.chargeArtifacts(hero, charge);
+			}
+		}
 	}
 	
 	@Override
@@ -192,8 +256,11 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 		
 		AttackLevel lvl = AttackLevel.getLvl(turnsInvis);
 
+		int surprisePoints = target instanceof Hero
+				? ((Hero) target).pointsInTalent(Talent.UNEXPECTED_STRIKE)
+				: 0;
 		desc += "\n\n" + Messages.get(this, "desc_dmg",
-				(int)(lvl.baseDmgBonus*100),
+				(int)(damageBonus(lvl, surprisePoints)*100),
 				(int)(lvl.KOThreshold()*100),
 				(int)(lvl.KOThreshold()*20));
 		

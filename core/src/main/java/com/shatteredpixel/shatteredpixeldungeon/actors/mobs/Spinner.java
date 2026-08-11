@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
@@ -117,8 +119,8 @@ public class Spinner extends Mob {
 	}
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		if (Random.Int(2) == 0) {
 			int duration = Random.IntRange(7, 8);
 			//we only use half the ascension modifier here as total poison dmg doesn't scale linearly

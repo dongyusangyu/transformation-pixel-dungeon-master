@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS_MINION;
@@ -164,6 +166,10 @@ public abstract class Mob extends Char {
 	
 	public int EXP = 1;
 	public int maxLvl = Hero.MAX_LEVEL-1;
+
+	public boolean isVisibleEnemyForHero() {
+		return true;
+	}
 	
 	protected Char enemy;
 	protected int enemyID = -1; //used for save/restore
@@ -323,8 +329,8 @@ public abstract class Mob extends Char {
 	protected boolean intelligentAlly = false;
 
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		if(hero.pointsNegative(Talent.BAT_SERUM)>0 && !(this instanceof NPC)){
             heal((int)(damage*0.2f*hero.pointsNegative(Talent.BAT_SERUM)));
 
@@ -364,7 +370,7 @@ public abstract class Mob extends Char {
 
 		Dread dread = buff( Dread.class );
 		if (dread != null) {
-			Char source = (Char)Actor.findById( dread.object );
+			Char source = Actor.findCharById( dread.object );
 			if (source != null) {
 				return source;
 			}
@@ -372,7 +378,7 @@ public abstract class Mob extends Char {
 
 		Terror terror = buff( Terror.class );
 		if (terror != null) {
-			Char source = (Char)Actor.findById( terror.object );
+			Char source = Actor.findCharById( terror.object );
 			if (source != null) {
 				return source;
 			}
@@ -488,7 +494,7 @@ public abstract class Mob extends Char {
 			//do not target anything that's charming us
 			Charm charm = buff( Charm.class );
 			if (charm != null){
-				Char source = (Char)Actor.findById( charm.object );
+				Char source = Actor.findCharById( charm.object );
 				if (source != null && enemies.contains(source) && enemies.size() > 1){
 					enemies.remove(source);
 				}
@@ -577,7 +583,7 @@ public abstract class Mob extends Char {
 	protected boolean canAttack( Char enemy ) {
 		if (this instanceof RangedAttack) {
 			RangedAttack rangedAttack = (RangedAttack) this;
-			if (rangedAttack.canRangedAttack(enemy)) {
+			if (!soulMarkBlocksRangedAttack(enemy) && rangedAttack.canRangedAttack(enemy)) {
 				return true;
 			}
 			if (!rangedAttack.canMeleeAttack(enemy)) {
@@ -597,6 +603,14 @@ public abstract class Mob extends Char {
 			return true;
 		}
 		return false;
+	}
+
+	protected boolean soulMarkBlocksRangedAttack(Char target) {
+		return hero != null && SoulMark.blocksRangedAttack(
+				buff(SoulMark.class) != null,
+				Char.hasProp(this, Property.BOSS),
+				target == hero,
+				hero.pointsInTalent(Talent.MIND_IMPRISONMENT));
 	}
 
 	protected int phaseClawReachBonus() {
@@ -790,10 +804,17 @@ public abstract class Mob extends Char {
 	
 	private RangedAttack.Type pendingAttackType = RangedAttack.Type.MELEE;
 
+	@Override
+	protected DamageTag physicalAttackDeliveryTag() {
+		return pendingAttackType == RangedAttack.Type.RANGED_PHYSICAL
+				? DamageTag.RANGED
+				: DamageTag.MELEE;
+	}
+
 	protected boolean doAttack( Char enemy ) {
 		if (this instanceof RangedAttack) {
 			RangedAttack rangedAttack = (RangedAttack) this;
-			if (rangedAttack.canRangedAttack(enemy)) {
+			if (!soulMarkBlocksRangedAttack(enemy) && rangedAttack.canRangedAttack(enemy)) {
 				return rangedAttack.doRangedAttack(enemy);
 			}
 		}
@@ -879,7 +900,7 @@ public abstract class Mob extends Char {
 	}
 	
 	@Override
-	public int defenseProc( Char enemy, int damage ) {
+	public int defenseProc( Char enemy, int damage , DamageTag... damageTags) {
 		
 		if (enemy instanceof Hero
 				&& ((Hero) enemy).belongings.attackingWeapon() instanceof MissileWeapon){
@@ -927,14 +948,15 @@ public abstract class Mob extends Char {
 				Buff.affect(hero, Hunger.class).affectHunger(restoration* hero.pointsInTalent(Talent.SOUL_EATER)/3f);
 
 				if (hero.HP < hero.HT) {
-					int h = (int)Math.ceil(restoration * 0.4f);
+					int h = SoulMark.healingAmount(restoration, enemy == hero,
+							hero.pointsInTalent(Talent.FINE_TASTING));
                     hero.heal(h);
 
 				}
 			}
 		}
 
-		return super.defenseProc(enemy, damage);
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	@Override
@@ -985,7 +1007,7 @@ public abstract class Mob extends Char {
 	}
 
 	@Override
-	public void damage( int dmg, Object src ) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		Hero currentHero = hero;
 
 		if (!isInvulnerable(src.getClass())) {
@@ -1013,7 +1035,7 @@ public abstract class Mob extends Char {
 		if (currentHero != null && currentHero.hasTalent(Talent.QUICK_TOOL) && currentHero.heroClass!=HeroClass.DM400 && alignment==Alignment.ALLY){
 			dmg*=1-currentHero.pointsInTalent(Talent.QUICK_TOOL)*0.1f;
 		}
-		super.damage( dmg, src );
+		super.damage(dmg, src, damageTags);
 	}
 	
 	
@@ -1215,7 +1237,11 @@ public abstract class Mob extends Char {
 	}
 
 	public float lootChance(){
-		float lootChance = this.lootChance;
+		return adjustedLootChance(lootChance);
+	}
+
+	protected float adjustedLootChance(float baseChance){
+		float lootChance = baseChance;
 
 		float dropBonus = RingOfWealth.dropChanceMultiplier( hero );
 

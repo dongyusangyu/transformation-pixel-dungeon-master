@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -196,7 +198,7 @@ public class DM300Hard extends Boss{
     }
 
     @Override
-    public void damage(int damage, Object src){
+    public void damage(int damage, Object src, DamageTag... damageTags){
         if (!BossHealthBar.isAssigned()) {
             BossHealthBar.assignBoss(this);
             yell(Messages.get(this, "notice"));
@@ -204,7 +206,7 @@ public class DM300Hard extends Boss{
         if(buff(RageAndFire.class)!=null) damage = Math.round(damage*0.1f);
 
         int preHP = HP;
-        super.damage(damage, src);
+        super.damage(damage, src, damageTags);
         int postHP = HP;
         if(preHP>healthThreshold[phase] && postHP<=healthThreshold[phase]){
             HP = healthThreshold[phase];
@@ -429,7 +431,7 @@ public class DM300Hard extends Boss{
                                 if(ch.alignment != Alignment.ENEMY){
                                     int damage = Random.Int(14, 24);
                                     damage -= ch.drRoll();
-                                    ch.damage(damage, this);
+                                    ch.damage(damage, this, DamageTag.PHYSICAL);
                                     if(ch == Dungeon.hero && !ch.isAlive()){
                                         Dungeon.fail(this.getClass());
                                     }

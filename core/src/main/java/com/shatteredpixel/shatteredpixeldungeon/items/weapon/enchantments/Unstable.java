@@ -56,7 +56,18 @@ public class Unstable extends Weapon.Enchantment {
 			attacker.buff(Kinetic.ConservedDamage.class).detach();
 		}
 		
-		damage = Reflection.newInstance(Random.oneOf(randomEnchants)).proc( weapon, attacker, defender, damage );
+		Weapon.Enchantment randomEnchantment = Reflection.newInstance(Random.oneOf(randomEnchants));
+		boolean forceRandomEnchantment = isForcedProc();
+		if (forceRandomEnchantment) {
+			Weapon.Enchantment.forceProc(randomEnchantment);
+		}
+		try {
+			damage = randomEnchantment.proc(weapon, attacker, defender, damage);
+		} finally {
+			if (forceRandomEnchantment) {
+				Weapon.Enchantment.clearForcedProc(randomEnchantment);
+			}
+		}
 		
 		return damage + conservedDamage;
 	}

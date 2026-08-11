@@ -344,7 +344,21 @@ public abstract class Actor implements Bundlable {
 			return;
 		}
 
-		ids.put( actor.id(),  actor );
+		int actorID = actor.id();
+		nextID = Math.max(nextID, actorID + 1);
+		Actor existing = ids.get(actorID);
+		if (existing != null && existing != actor) {
+			// Character IDs are persisted by many effects, so a conflicting non-character moves.
+			if (actor instanceof Char && !(existing instanceof Char)) {
+				ids.remove(actorID);
+				assignNewID(existing);
+				ids.put(existing.id, existing);
+			} else {
+				assignNewID(actor);
+				actorID = actor.id;
+			}
+		}
+		ids.put(actorID, actor);
 
 		all.add( actor );
 		actor.time += time;
@@ -357,6 +371,12 @@ public abstract class Actor implements Bundlable {
 				add(buff);
 			}
 		}
+	}
+
+	private static void assignNewID(Actor actor) {
+		do {
+			actor.id = nextID++;
+		} while (ids.get(actor.id) != null);
 	}
 	
 	public static synchronized void remove( Actor actor ) {
@@ -416,6 +436,11 @@ public abstract class Actor implements Bundlable {
 
 	public static synchronized Actor findById( int id ) {
 		return ids.get( id );
+	}
+
+	public static synchronized Char findCharById( int id ) {
+		Actor actor = ids.get(id);
+		return actor instanceof Char ? (Char) actor : null;
 	}
 
 	public static synchronized HashSet<Actor> all() {

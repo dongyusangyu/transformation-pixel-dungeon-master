@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.badlogic.gdx.graphics.g3d.particles.influencers.ColorInfluencer;
@@ -42,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SmokeScreen;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AdrenalineSurge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AlternatingWeapons;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
@@ -88,6 +91,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RuneMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SoulMark;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SkilledParry;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Suffering;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.TimeStasis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
@@ -459,6 +464,8 @@ public class Hero extends Char {
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
 		HeroRandomizer.restoreFromBundle( bundle, this );
 		Talent.restoreTalentsFromBundle( bundle, this );
+		Combo combo = buff(Combo.class);
+		if (combo != null) combo.updateActionIndicator();
 		if(heroClass==HeroClass.DM400){
 			addProperties(Char.Property.INORGANIC);
 		}
@@ -737,8 +744,17 @@ public class Hero extends Char {
 	}
 	
 	@Override
-	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti) {
-		boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti);
+	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
+			DamageTag... damageTags) {
+		KindOfWeapon attackWeapon = belongings.attackingWeapon();
+		boolean primaryMeleeAttack = attackWeapon instanceof MeleeWeapon
+				&& attackWeapon == belongings.weapon()
+				&& buff(MonkEnergy.MonkAbility.UnarmedAbilityTracker.class) == null
+				&& !RingOfForce.fightingUnarmed(this);
+		boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
+		if (primaryMeleeAttack) {
+			AlternatingWeapons.recordPrimaryAttack(this, attackWeapon);
+		}
 		if (!(belongings.attackingWeapon() instanceof MissileWeapon)){
 			if (buff(Talent.PreciseAssaultTracker.class) != null){
 				buff(Talent.PreciseAssaultTracker.class).detach();
@@ -883,6 +899,9 @@ public class Hero extends Char {
 	
 	@Override
 	public int defenseSkill( Char enemy ) {
+		if (SkilledParry.blocks(this, enemy)) {
+			return INFINITE_EVASION;
+		}
 
 		if (buff(Combo.ParryTracker.class) != null){
 			if (canAttack(enemy) && !isCharmedBy(enemy)){
@@ -901,6 +920,11 @@ public class Hero extends Char {
 		}
 		
 		evasion *= RingOfEvasion.evasionMultiplier( this );
+		MonkEnergy monkEnergy = buff(MonkEnergy.class);
+		if (monkEnergy != null) {
+			evasion *= MonkEnergy.innerPeaceEvasionMultiplier(monkEnergy.energy,
+					pointsInTalent(Talent.INNER_PEACE));
+		}
 
 		if (buff(Talent.LiquidAgilEVATracker.class) != null){
 			if (pointsInTalent(Talent.LIQUID_AGILITY) == 1){
@@ -1220,6 +1244,13 @@ public class Hero extends Char {
 				}
 				dmg=damage+(int)(enemy.drRoll()*(0.5f+0.5f*pointsInTalent(Talent.SHADOW_KILLER)))+ringdmg;
 			}
+		}
+
+		AlternatingWeapons alternatingWeapons = buff(AlternatingWeapons.class);
+		if (alternatingWeapons != null
+				&& wep instanceof MeleeWeapon
+				&& !RingOfForce.fightingUnarmed(this)) {
+			dmg = Math.round(dmg * alternatingWeapons.damageMultiplier());
 		}
 
 		PhysicalEmpower emp = buff(PhysicalEmpower.class);
@@ -2182,8 +2213,8 @@ public class Hero extends Char {
 	}
 	
 	@Override
-	public int attackProc( final Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( final Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 
 
 		KindOfWeapon wep;
@@ -2193,7 +2224,7 @@ public class Hero extends Char {
 			wep = belongings.attackingWeapon();
 		}
 
-		damage = Talent.onAttackProc( this,this, enemy, damage );
+		damage = Talent.onAttackProc(this, this, enemy, damage, damageTags);
 		GoldIngot existing = Dungeon.hero.belongings.getItem(GoldIngot.class);
 		if (existing != null){
 			damage = (int)(damage * (1 + existing.level() * 0.075f));
@@ -2239,10 +2270,10 @@ public class Hero extends Char {
 			if (!wasEnemy || enemy.alignment == Alignment.ENEMY) {
 				if (buff(HolyWeapon.HolyWepBuff.class) != null) {
 					int dmg = (subClass.is(HeroSubClass.PALADIN)) ? 6 : 2;
-					enemy.damage(Math.round(dmg * Weapon.Enchantment.genericProcChanceMultiplier(this)), HolyWeapon.INSTANCE);
+					enemy.damage(Math.round(dmg * Weapon.Enchantment.genericProcChanceMultiplier(this)), HolyWeapon.INSTANCE, DamageTag.MAGICAL);
 				}
 				if (buff(Smite.SmiteTracker.class) != null) {
-					enemy.damage(Smite.bonusDmg(this, enemy), Smite.INSTANCE);
+					enemy.damage(Smite.bonusDmg(this, enemy), Smite.INSTANCE, DamageTag.MAGICAL);
 				}
 			}
 		}
@@ -2307,7 +2338,14 @@ public class Hero extends Char {
 	}
 	
 	@Override
-	public int defenseProc( Char enemy, int damage ) {
+	public int defenseProc( Char enemy, int damage , DamageTag... damageTags) {
+		if (enemy != null && DamageTag.of(damageTags).contains(DamageTag.PHYSICAL)) {
+			damage = SoulMark.reducePhysicalDamage(
+					damage,
+					enemy.buff(SoulMark.class) != null,
+					Char.hasProp(enemy, Property.BOSS),
+					pointsInTalent(Talent.MIND_IMPRISONMENT));
+		}
 		
 		if (damage > 0 && subClass.is(HeroSubClass.BERSERKER)){
 			Berserk berserk = Buff.affect(this, Berserk.class);
@@ -2352,8 +2390,8 @@ public class Hero extends Char {
 		if (rockArmor != null) {
 			damage = rockArmor.absorb(damage);
 		}
-		damage = Talent.onDefenseProc(enemy,damage );
-		return super.defenseProc( enemy, damage );
+		damage = Talent.onDefenseProc(enemy, damage, damageTags);
+		return super.defenseProc(enemy, damage, damageTags);
 	}
 
 	@Override
@@ -2388,8 +2426,9 @@ public class Hero extends Char {
 	}
 
 	@Override
-	public void damage( int dmg, Object src ) {
-		boolean unavoidable = Talent.isUnavoidableDamage(src);
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
+		boolean unavoidable = Arrays.asList(damageTags).contains(DamageTag.UNAVOIDABLE);
+		DamageTag[] resolvedDamageTags = damageTags;
 		if (!unavoidable && (buff(TimekeepersHourglass.timeStasis.class) != null
 				|| buff(TimeStasis.class) != null)) {
 			return;
@@ -2397,9 +2436,11 @@ public class Hero extends Char {
 
 		if(!unavoidable && !buffs(GreatShoper.GoldCurse.class).isEmpty() && !(src instanceof Viscosity.DeferedDamage)){
 			src = new Viscosity.DeferedDamage();
+			resolvedDamageTags = new DamageTag[]{DamageTag.DEFERRED};
 		}
         if(src instanceof DeferredScorpio){
             src = new Viscosity.DeferedDamage();
+			resolvedDamageTags = new DamageTag[]{DamageTag.DEFERRED};
         }
 
 
@@ -2438,7 +2479,7 @@ public class Hero extends Char {
 
 
 
-		dmg=Talent.onDamage(  dmg, src );
+		dmg = Talent.onDamage(dmg, src, resolvedDamageTags);
 		if(!unavoidable && hasTalent(Talent.KING_PROTECT) && pointsInTalent(Talent.KING_PROTECT)+1>=Random.Int(4) &&
 				!(src instanceof Viscosity.DeferedDamage) && !(src instanceof Hunger)){
 			processFriarReasonLoss(dmg, src, unavoidable);
@@ -2449,10 +2490,9 @@ public class Hero extends Char {
 			}
 			return ;
 		}
-        //TODO improve this when I have proper damage source logic
         int preHP = HP + shielding();
         if (src instanceof Hunger) preHP -= shielding();
-        super.damage( dmg, src );
+        super.damage(dmg, src, resolvedDamageTags);
 
 
 
@@ -2505,7 +2545,8 @@ public class Hero extends Char {
 				Notes.add(m.landmark());
 			}
 
-			if (fieldOfView[ m.pos ] && m.alignment == Alignment.ENEMY) {
+			if (fieldOfView[ m.pos ] && m.alignment == Alignment.ENEMY
+					&& m.isVisibleEnemyForHero()) {
 				visible.add(m);
 				if (!visibleEnemies.contains( m )) {
 					newMob = true;
@@ -3297,6 +3338,13 @@ public class Hero extends Char {
         }
 	}
 
+	@Override
+	protected DamageTag physicalAttackDeliveryTag() {
+		return belongings.attackingWeapon() instanceof MissileWeapon
+				? DamageTag.RANGED
+				: DamageTag.MELEE;
+	}
+
 	private int sealComboBonus() {
 		BrokenSeal.SealComboTracker tracker = buff(BrokenSeal.SealComboTracker.class);
 		if (tracker == null && subClass.is(HeroSubClass.GLADIATOR)
@@ -3518,11 +3566,11 @@ public class Hero extends Char {
 							
 						//unintentional trap detection scales from 40% at floor 0 to 30% at floor 25
 						} else if (Dungeon.level.map[curr] == Terrain.SECRET_TRAP) {
-							chance = 0.4f - (Dungeon.depth / 250f);
+							chance = 0.4f - (Dungeon.scalingDepth() / 250f);
 							
 						//unintentional door detection scales from 20% at floor 0 to 0% at floor 20
 						} else {
-							chance = 0.2f - (Dungeon.depth / 100f);
+							chance = 0.2f - (Dungeon.scalingDepth() / 100f);
 						}
 
 						//don't want to let the player search though hidden doors in tutorial

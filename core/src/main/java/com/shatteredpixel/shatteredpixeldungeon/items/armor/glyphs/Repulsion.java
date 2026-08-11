@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -59,7 +61,7 @@ public class Repulsion extends Armor.Glyph {
 					true,
 					this);
             if(defender==hero && hero.subClass.is(HeroSubClass.COMBATMASTER)){
-                attacker.damage(hero.lvl/2, new LifeLink());
+                attacker.damage(hero.lvl/2, new LifeLink(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
             }
 		}
 		

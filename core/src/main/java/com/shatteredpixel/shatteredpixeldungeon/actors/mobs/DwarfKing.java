@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
@@ -39,6 +41,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Doom;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LifeLink;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -332,6 +335,22 @@ public class DwarfKing extends Mob {
 		return super.act();
 	}
 
+	static boolean shouldResolveAttackSynchronously(int phase, boolean animationsEnabled) {
+		return phase == 3 && !animationsEnabled;
+	}
+
+	@Override
+	protected boolean doAttack(Char enemy) {
+		if (shouldResolveAttackSynchronously(phase, SPDSettings.charAnimations())) {
+			boolean hit = attack(enemy);
+			completePhysicalAttack(enemy, hit);
+			Invisibility.dispel(this);
+			spend(attackDelay());
+			return true;
+		}
+		return super.doAttack(enemy);
+	}
+
 	private boolean summonSubject( int delay ){
 		if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES)) {
 			//every 3rd summon is always a monk or warlock, otherwise ghoul
@@ -499,7 +518,7 @@ public class DwarfKing extends Mob {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		//hero counts as unarmed if they aren't attacking with a weapon and aren't benefiting from force
 		if (src == Dungeon.hero && (!RingOfForce.fightingUnarmed(Dungeon.hero) || Dungeon.hero.buff(RingOfForce.Force.class) != null)){
 			Statistics.qualifiedForBossChallengeBadge = false;
@@ -514,7 +533,7 @@ public class DwarfKing extends Mob {
 		}
 
 		if (isInvulnerable(src.getClass())){
-			super.damage(dmg, src);
+			super.damage(dmg, src, damageTags);
 			return;
 		} else if (phase == 3 && !(src instanceof Viscosity.DeferedDamage)){
 			if (dmg >= 0) {
@@ -534,7 +553,7 @@ public class DwarfKing extends Mob {
 			return;
 		}
 		int preHP = HP;
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 
 		LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
 		if (lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())){
@@ -777,12 +796,12 @@ public class DwarfKing extends Mob {
 					}
 				} else {
 					Char ch = Actor.findChar(pos);
-					ch.damage(Random.NormalIntRange(20, 40), this);
+					ch.damage(Random.NormalIntRange(20, 40), this, DamageTag.PHYSICAL);
 					if (((DwarfKing)target).phase == 2){
 						if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES)){
-							target.damage(target.HT/18, new KingDamager());
+							target.damage(target.HT/18, new KingDamager(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 						} else {
-							target.damage(target.HT/12, new KingDamager());
+							target.damage(target.HT/12, new KingDamager(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 						}
 					}
 					if (!ch.isAlive() && ch == Dungeon.hero) {
@@ -860,7 +879,7 @@ public class DwarfKing extends Mob {
 			for (Mob m : Dungeon.level.mobs){
 				if (m instanceof DwarfKing){
 					int damage = m.HT / (Dungeon.isChallenged(Challenges.STRONGER_BOSSES) ? 18 : 12);
-					m.damage(damage, this);
+					m.damage(damage, this, DamageTag.PHYSICAL);
 				}
 			}
 		}

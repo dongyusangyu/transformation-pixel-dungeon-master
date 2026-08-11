@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -80,7 +82,7 @@ public class GreatImp extends NPC {
     }
 
     @Override
-    public void damage( int dmg, Object src ) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         //do nothing
     }
     @Override

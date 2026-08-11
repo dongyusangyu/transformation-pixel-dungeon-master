@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Scorpio;
 import com.watabou.utils.Random;
@@ -31,8 +33,8 @@ public class DeferredScorpio extends Scorpio {
 	}
 
 	@Override
-	public int attackProc(Char enemy, int damage) {
-		damage = super.attackProc(enemy, damage);
+	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		float roll = Random.Float();
 		int armorDamage = roll < ARMOR_PIERCE_CHANCE ? enemy.drRoll() : 0;
 		return armorPierceDamage(damage, armorDamage, roll);

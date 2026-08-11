@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -157,7 +159,7 @@ public class Viscosity extends Glyph {
 			if (target.isAlive()) {
 
 				int damageThisTick = Math.max(1, (int)(damage*0.1f));
-				target.damage( damageThisTick, this );
+				target.damage( damageThisTick, this , DamageTag.PHYSICAL, DamageTag.DEFERRED);
 				if (target == Dungeon.hero && !target.isAlive()) {
 
 					Badges.validateDeathFromFriendlyMagic();

@@ -12,6 +12,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
@@ -46,9 +47,24 @@ public interface RangedAttack {
 
 	boolean doRangedAttack(Char target);
 
+	static boolean shouldInterruptCharge(boolean charged, boolean rangedAttackAllowed) {
+		return charged && !rangedAttackAllowed;
+	}
+
+	static boolean restoredCharge(boolean charged, boolean firing) {
+		return charged || firing;
+	}
+
+	static int restoredChargeCooldown(int cooldown, boolean firing) {
+		return firing ? 0 : cooldown;
+	}
+
 	default boolean rangedHit(Char target) {
 		Mob attacker = rangedAttackMob();
-		if (Char.hit(attacker, target, true)) {
+		DamageTag damageNature = rangedAttackType() == Type.RANGED_MAGIC
+				? DamageTag.MAGICAL
+				: DamageTag.PHYSICAL;
+		if (Char.hit(attacker, target, damageNature)) {
 			onRangedAttackHit(target);
 			return true;
 		}

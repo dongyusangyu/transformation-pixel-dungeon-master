@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.cave;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
@@ -97,7 +99,7 @@ public class BatH extends MobHard {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage){
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags){
 
         int reg = Math.min( damage , HT - HP );
 
@@ -106,7 +108,7 @@ public class BatH extends MobHard {
             sprite.emitter().burst( Speck.factory( Speck.HEALING ), 1 );
         }
 
-        return super.attackProc( enemy, damage );
+        return super.attackProc(enemy, damage, damageTags);
     }
 
     protected boolean near(int pa, int pb){

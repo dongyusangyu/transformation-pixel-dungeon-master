@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.custom.messages.M;
@@ -46,7 +48,7 @@ public class ConsistBleeding extends Buff{
         Wound.hit(target);
 
         damage *= Random.Float(1.7f, 2.1f);
-        target.damage((int)damage, this);
+        target.damage((int)damage, this, DamageTag.PHYSICAL, DamageTag.BLEEDING);
         if(target == Dungeon.hero && !target.isAlive()){
             Dungeon.fail(getClass());
             GLog.n(M.L(this, "burst_die"));
@@ -87,7 +89,7 @@ public class ConsistBleeding extends Buff{
     public boolean act(){
         spend(TICK);
         percentDamage += oneDamage();
-        target.damage((int)percentDamage, this);
+        target.damage((int)percentDamage, this, DamageTag.PHYSICAL, DamageTag.BLEEDING);
 
         if (target.sprite.visible) {
             Splash.at( target.sprite.center(), -PointF.PI / 2, PointF.PI / 6,

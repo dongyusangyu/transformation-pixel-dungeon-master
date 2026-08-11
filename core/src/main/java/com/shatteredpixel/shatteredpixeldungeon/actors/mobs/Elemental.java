@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS_MINION;
@@ -152,8 +154,8 @@ public abstract class Elemental extends Mob implements MagicalRangedAttack {
 	}
 	
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 		meleeProc( enemy, damage );
 		
 		return damage;
@@ -524,7 +526,7 @@ public abstract class Elemental extends Mob implements MagicalRangedAttack {
 			}
 			
 			for (Char ch : affected) {
-				ch.damage( Math.round( damage * 0.4f ), new Shocking() );
+				ch.damage( Math.round( damage * 0.4f ), new Shocking() , DamageTag.MAGICAL);
 				if (ch == Dungeon.hero && !ch.isAlive()){
 					Dungeon.fail(this);
 					GLog.n( Messages.capitalize(Messages.get(Char.class, "kill", name())) );

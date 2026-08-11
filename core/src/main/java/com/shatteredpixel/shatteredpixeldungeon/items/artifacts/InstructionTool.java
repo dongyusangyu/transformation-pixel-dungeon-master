@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -766,8 +768,8 @@ public class InstructionTool extends Artifact {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
             if(hero!=null && hero.hasTalent(Talent.BATTLE_UPGRADE)){
                 damage *= 1.075f+0.075f*hero.pointsInTalent(Talent.BATTLE_UPGRADE);
                 damage += (int)(enemy.drRoll()*0.8f/3*hero.pointsInTalent(Talent.BATTLE_UPGRADE));
@@ -789,8 +791,8 @@ public class InstructionTool extends Artifact {
         }
 
         @Override
-        public int defenseProc(Char enemy, int damage) {
-            damage = super.defenseProc(enemy, damage);
+        public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
+            damage = super.defenseProc(enemy, damage, damageTags);
             if(hero.pointsInTalent(Talent.SHINKAGE)>1){
                 Buff.affect(hero, Adrenaline.class,0.5f+0.5f*(int)(hero.pointsInTalent(Talent.SHINKAGE)/2));
             }
@@ -798,12 +800,12 @@ public class InstructionTool extends Artifact {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
 
             //TODO improve this when I have proper damage source logic
 
 
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
         @Override
         public void die( Object cause ) {

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -273,7 +275,7 @@ public class Reason extends Buff implements ActionIndicator.Action {
         //GLog.i(kaoyan+"");
         if(reason<=0 && target.buff(TimekeepersHourglass.timeStasis.class) == null && (target.buff(Suffering.Fear.class)!=null || target.buff(Suffering.Despair.class)!=null  || target.buff(Suffering.Paranoia.class)!=null || target.buff(Suffering.Ecstasy.class)!=null )){
             target.HP=1;
-            target.damage(999999, this);
+            target.damage(999999, this, DamageTag.PHYSICAL);
             if (!target.isAlive()) {
                 Dungeon.fail( this );
                 GLog.n( Messages.get(this, "die") );

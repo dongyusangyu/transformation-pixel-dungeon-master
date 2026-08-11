@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.slime;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Actor.TICK;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -76,7 +78,7 @@ public class MadSlime extends ArmorAbility {
             GLog.w(Messages.get(this, "strong_target"));
             return;
         }else{
-            c.damage(1314,hero);
+            c.damage(1314,hero, DamageTag.PHYSICAL);
         }
 
 

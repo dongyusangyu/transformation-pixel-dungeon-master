@@ -744,12 +744,12 @@ def build_tileset() -> Image.Image:
     for index in range(24):
         replace_tile(atlas, floors.get(index, floors[0]), index)
     # Preserve the project's established stair silhouettes and only change material.
-    replace_tile(atlas, recolor_structure(tile(sewers, 16), STONE_RAMP), 16)
-    replace_tile(atlas, recolor_structure(tile(sewers, 17), STONE_RAMP), 17)
+    replace_tile(atlas, recolor_structure(tile(sewers, 17), STONE_RAMP), 16)
+    replace_tile(atlas, recolor_structure(tile(sewers, 16), STONE_RAMP), 17)
     paste_tile(atlas, sewers, 18, 18)
     paste_tile(atlas, sewers, 19, 19)
     replace_tile(atlas, draw_pedestal(floors[0]), 20)
-    replace_tile(atlas, recolor_structure(tile(sewers, 22), WOOD_RAMP), 22)
+    replace_tile(atlas, recolor_structure(tile(sewers, 17), WOOD_RAMP), 22)
 
     chasm_edges = ("plain", "brick", "wood", "wall", "water", "plain", "brick", "wood")
     for offset, edge in enumerate(chasm_edges):

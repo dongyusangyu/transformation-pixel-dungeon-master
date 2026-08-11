@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -154,7 +156,7 @@ public abstract class SpellCaster extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         //immune to damage when inactive
         if (alignment == Alignment.NEUTRAL){
             return;
@@ -163,7 +165,7 @@ public abstract class SpellCaster extends Mob {
         if (dmg >= 20){
             dmg = 20 + (int)(Math.sqrt(8*(dmg - 14) + 1) - 1)/2;
         }
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
     }
 
     @Override
@@ -222,7 +224,7 @@ public abstract class SpellCaster extends Mob {
         if(ch.buff(Marked.class)!=null){
             damage = Math.round(damage*(1f+modifier*1.15f));
         }
-        ch.damage(damage, src);
+        ch.damage(damage, src, DamageTag.PHYSICAL);
         if(ch == Dungeon.hero && !ch.isAlive()){
             Dungeon.fail(src.getClass());
         }

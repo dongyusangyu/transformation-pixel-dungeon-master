@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.bombs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -84,7 +86,7 @@ public class ArcaneBomb extends Bomb {
 		for (Char ch : affected){
 			//pierces armor, and damage in 5x5 instead of 3x3
 			int damage = Math.round(Random.NormalIntRange( 4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth() ));
-			ch.damage(damage, this);
+			ch.damage(damage, this, DamageTag.MAGICAL);
 			if (ch == Dungeon.hero && !ch.isAlive()){
 				Badges.validateDeathFromFriendlyMagic();
 				Dungeon.fail(this);

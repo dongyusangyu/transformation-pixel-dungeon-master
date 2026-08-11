@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.bombs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -74,7 +76,7 @@ public class HolyBomb extends Bomb {
 				
 				//bomb deals an additional 50% damage to unholy enemies
 				int damage = Math.round(Random.NormalIntRange( Dungeon.scalingDepth()+4, 12 + 3*Dungeon.scalingDepth() ) * 0.5f);
-				ch.damage(damage, new HolyDamage());
+				ch.damage(damage, new HolyDamage(), DamageTag.MAGICAL);
 			}
 		}
 		

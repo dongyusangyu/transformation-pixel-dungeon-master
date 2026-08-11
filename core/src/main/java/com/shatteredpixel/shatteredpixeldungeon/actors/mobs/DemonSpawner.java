@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -140,9 +142,9 @@ public class DemonSpawner extends Mob {
 				}
 
 				spawnCooldown += 60;
-				if (Dungeon.depth > 21){
+				if (Dungeon.scalingDepth() > 21){
 					//60/53.33/46.67/40 turns to spawn on floor 21/22/23/24
-					spawnCooldown -= Math.min(20, (Dungeon.depth-21)*6.67);
+					spawnCooldown -= Math.min(20, (Dungeon.scalingDepth()-21)*6.67);
 				}
 			}
 		}
@@ -151,14 +153,14 @@ public class DemonSpawner extends Mob {
 	}
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (dmg >= 20){
 			//takes 20/21/22/23/24/25/26/27/28/29/30 dmg
 			// at   20/22/25/29/34/40/47/55/64/74/85 incoming dmg
 			dmg = 19 + (int)(Math.sqrt(8*(dmg - 19) + 1) - 1)/2;
 		}
 		spawnCooldown -= dmg;
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 	}
 
 	@Override

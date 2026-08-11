@@ -189,6 +189,11 @@ public class BuffIndicator extends Component {
     public  static  final  int HOLYPRAER=128;
     public  static  final  int DELAYEDSATISFACTION=129;
     public  static  final  int MINIBOSS=130;
+	public static final int ARCANE_CONFLUENCE = 132;
+	public static final int FOCUSED_CASTING = 133;
+	public static final int SKILLED_PARRY = 134;
+	public static final int SKILLED_PARRY_COOLDOWN = 135;
+	public static final int ALTERNATING_WEAPONS = 136;
 
 
 

@@ -27,7 +27,6 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfMastery;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfLullaby;
@@ -42,7 +41,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTerror;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTransmutation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
-import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
@@ -148,11 +146,7 @@ public abstract class ExoticScroll extends Scroll {
 			}
 			try {
 				Item result = Reflection.newInstance(regToExo.get(ingredients.get(0).getClass()));
-				if(hero!=null && hero.pointsInTalent(Talent.MIRACLE_ALCHEMY)> Random.Int(5)){
-					result.quantity(2);
-				}else{
-					result.quantity(1);
-				}
+				result.quantity(1 + Talent.miracleAlchemyBonus(hero, result));
 				return result;
 			} catch (Exception e) {
 				ShatteredPixelDungeon.reportException( e );

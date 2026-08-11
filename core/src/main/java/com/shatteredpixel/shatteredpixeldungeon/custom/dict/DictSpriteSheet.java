@@ -31,6 +31,10 @@ public class DictSpriteSheet {
                 return new Image(Assets.Environment.TILES_CITY, 16, 48, 16, 16);
             case AREA_HALL:
                 return new Image(Assets.Environment.TILES_HALLS, 16, 48, 16, 16);
+            case AREA_SURFACE:
+                return new Image(Assets.Environment.TILES_SURFACE_LUSH, 16, 48, 16, 16);
+            case AREA_TOWER:
+                return new Image(Assets.Environment.TILES_CHINESE_HALL, 16, 48, 16, 16);
 
             case BOSS_CHAPTER1:
                 return new Image(Assets.Sprites.GOO, 60, 0, 20, 14);
@@ -243,6 +247,8 @@ public class DictSpriteSheet {
     public static final int AREA_CAVE       = 2 + 10000;
     public static final int AREA_CITY       = 3 + 10000;
     public static final int AREA_HALL       = 4 + 10000;
+    public static final int AREA_SURFACE    = 5 + 10000;
+    public static final int AREA_TOWER      = 6 + 10000;
     public static final int LOCKED_FLOOR    = 11 + 10000;
     public static final int CHASM           = 12 + 10000;
 

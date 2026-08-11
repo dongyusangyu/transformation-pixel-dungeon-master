@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -98,15 +100,15 @@ public class Sunray extends TargetedClericSpell {
 
 			if (Char.hasProp(ch, Char.Property.UNDEAD) || Char.hasProp(ch, Char.Property.DEMONIC)){
 				if (hero.pointsInTalent(Talent.SUNRAY) == 2) {
-					ch.damage(12, Sunray.this);
+					ch.damage(12, Sunray.this, DamageTag.MAGICAL);
 				} else {
-					ch.damage(8, Sunray.this);
+					ch.damage(8, Sunray.this, DamageTag.MAGICAL);
 				}
 			} else {
 				if (hero.pointsInTalent(Talent.SUNRAY) == 2) {
-					ch.damage(Random.NormalIntRange(6, 12), Sunray.this);
+					ch.damage(Random.NormalIntRange(6, 12), Sunray.this, DamageTag.MAGICAL);
 				} else {
-					ch.damage(Random.NormalIntRange(4, 8), Sunray.this);
+					ch.damage(Random.NormalIntRange(4, 8), Sunray.this, DamageTag.MAGICAL);
 				}
 			}
 

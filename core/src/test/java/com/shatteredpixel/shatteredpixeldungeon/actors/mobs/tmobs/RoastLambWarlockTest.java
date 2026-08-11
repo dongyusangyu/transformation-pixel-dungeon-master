@@ -4,11 +4,17 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RangedAttack;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfFlock;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -21,13 +27,91 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class RoastLambWarlockTest {
 
 	@Test
+	public void mutuallyExclusiveLootKeepsStoneChanceAndHalvesWandChanceAfterDrops() {
+		int previousCount = Dungeon.LimitedDrops.ROAST_LAMB_WAND.count;
+		try {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = 0;
+			LootWarlock wandWarlock = new LootWarlock(0f);
+			assertEquals(1f / 20f + 1f / 6f, wandWarlock.lootChance(), 0.000001f);
+			wandWarlock.createLoot();
+			assertSame(WandOfFireblast.class, wandWarlock.selectedLoot);
+			assertEquals(1, Dungeon.LimitedDrops.ROAST_LAMB_WAND.count);
+			assertEquals(1f / 40f + 1f / 6f, wandWarlock.lootChance(), 0.000001f);
+
+			LootWarlock stoneWarlock = new LootWarlock(1f);
+			stoneWarlock.createLoot();
+			assertSame(StoneOfFlock.class, stoneWarlock.selectedLoot);
+			assertEquals(1, Dungeon.LimitedDrops.ROAST_LAMB_WAND.count);
+		} finally {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = previousCount;
+		}
+	}
+
+	@Test
+	public void wandDropCountSurvivesLimitedDropsSaveAndLoad() {
+		Bundle previousDrops = new Bundle();
+		Dungeon.LimitedDrops.store(previousDrops);
+		try {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = 3;
+			Bundle savedDrops = new Bundle();
+			Dungeon.LimitedDrops.store(savedDrops);
+
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = 0;
+			Dungeon.LimitedDrops.restore(savedDrops);
+
+			assertEquals(3, Dungeon.LimitedDrops.ROAST_LAMB_WAND.count);
+			LootWarlock warlock = new LootWarlock(1f);
+			assertEquals((1f / 20f) / 8f + 1f / 6f,
+					warlock.lootChance(), 0.000001f);
+		} finally {
+			Dungeon.LimitedDrops.restore(previousDrops);
+		}
+	}
+
+	@Test
+	public void failedWandCreationDoesNotReduceFutureDropChance() {
+		int previousCount = Dungeon.LimitedDrops.ROAST_LAMB_WAND.count;
+		try {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = 0;
+			LootWarlock warlock = new LootWarlock(0f, true);
+
+			assertNull(warlock.createLoot());
+			assertEquals(0, Dungeon.LimitedDrops.ROAST_LAMB_WAND.count);
+			assertEquals(1f / 20f + 1f / 6f, warlock.lootChance(), 0.000001f);
+		} finally {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = previousCount;
+		}
+	}
+
+	@Test
+	public void wandSelectionChangesAtExactConditionalProbability() {
+		int previousCount = Dungeon.LimitedDrops.ROAST_LAMB_WAND.count;
+		try {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = 0;
+			float threshold = (1f / 20f) / (1f / 20f + 1f / 6f);
+			LootWarlock below = new LootWarlock(threshold - 0.000001f);
+			below.createLoot();
+			assertSame(WandOfFireblast.class, below.selectedLoot);
+
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = 0;
+			LootWarlock above = new LootWarlock(threshold + 0.000001f);
+			above.createLoot();
+			assertSame(StoneOfFlock.class, above.selectedLoot);
+		} finally {
+			Dungeon.LimitedDrops.ROAST_LAMB_WAND.count = previousCount;
+		}
+	}
+
+	@Test
 	public void baseStatsMatchSpecification() {
-		RoastLambWarlock warlock = new RoastLambWarlock();
+		TestWarlock warlock = new TestWarlock();
 
 		assertEquals(150, warlock.HT);
 		assertEquals(150, warlock.HP);
@@ -36,7 +120,7 @@ public class RoastLambWarlockTest {
 		assertEquals(13, warlock.EXP);
 		assertEquals(30, warlock.maxLvl);
 		assertEquals(RangedAttack.Type.RANGED_MAGIC, warlock.rangedAttackType());
-		assertEquals(0f, warlock.lootChance(), 0f);
+		assertEquals(1f / 20f + 1f / 6f, warlock.lootChance(), 0.000001f);
 	}
 
 	@Test
@@ -139,6 +223,69 @@ public class RoastLambWarlockTest {
 		} finally {
 			Dungeon.level = previousLevel;
 		}
+	}
+
+	@Test
+	public void visibleTargetIsFlockedOnceBeforeRepeatedFireblasts() {
+		Level previousLevel = Dungeon.level;
+		try {
+			Dungeon.level = openLevel(15, 9);
+			TestWarlock warlock = new TestWarlock();
+			warlock.pos = 64;
+			Gnoll target = new Gnoll();
+			target.pos = 68;
+			warlock.setVisibleForTest(target.pos);
+
+			assertTrue(warlock.attackTargetForTest(target));
+			assertEquals(-1, warlock.fireblastTargetCell);
+			assertEquals(0, warlock.fireblastCastCount);
+			assertFalse(warlock.needsFlockForTest(target));
+			assertFalse(warlock.physicalAttackCalled);
+
+			assertTrue(warlock.attackTargetForTest(target));
+			assertEquals(target.pos, warlock.fireblastTargetCell);
+			assertEquals(1, warlock.fireblastCastCount);
+			assertFalse(warlock.needsFlockForTest(target));
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
+	public void flockedVisibleTargetInRangeIgnoresBlockedBallistica() {
+		Level previousLevel = Dungeon.level;
+		Actor.clear();
+		try {
+			Dungeon.level = openLevel(15, 9);
+			TestWarlock warlock = new TestWarlock();
+			warlock.pos = 64;
+			Gnoll target = new Gnoll();
+			target.pos = 68;
+			Sheep blocker = new Sheep();
+			blocker.pos = 65;
+			Actor.add(warlock);
+			Actor.add(target);
+			Actor.add(blocker);
+			warlock.markFlockedForTest(target);
+			warlock.setVisibleForTest(target.pos);
+
+			assertFalse(new Ballistica(warlock.pos, target.pos,
+					Ballistica.MAGIC_BOLT).collisionPos == target.pos);
+			assertTrue(warlock.canRangedAttackForTest(target));
+			assertTrue(warlock.rangedAttackForTest(target));
+			assertEquals(target.pos, warlock.fireblastTargetCell);
+		} finally {
+			Actor.clear();
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
+	public void warlockIsImmuneToFireAndBurning() {
+		RoastLambWarlock warlock = new RoastLambWarlock();
+
+		assertTrue(warlock.isImmune(Fire.class));
+		assertTrue(warlock.isImmune(Burning.class));
 	}
 
 	@Test
@@ -275,6 +422,7 @@ public class RoastLambWarlockTest {
 		private final List<Float> spawnedLifespans = new ArrayList<>();
 		private boolean physicalAttackCalled;
 		private int fireblastTargetCell = -1;
+		private int fireblastCastCount;
 		private boolean forceAnimatedCast;
 		private int animatedTargetCell = -1;
 
@@ -322,6 +470,11 @@ public class RoastLambWarlockTest {
 			return canRangedAttack(target);
 		}
 
+		private void setVisibleForTest(int cell) {
+			fieldOfView = new boolean[Dungeon.level.length()];
+			fieldOfView[cell] = true;
+		}
+
 		private void completeCastForTest() {
 			onCastComplete();
 		}
@@ -356,6 +509,50 @@ public class RoastLambWarlockTest {
 		@Override
 		protected void castFireblast(int targetCell) {
 			fireblastTargetCell = targetCell;
+			fireblastCastCount++;
+		}
+
+		@Override
+		protected float adjustedLootChance(float baseChance) {
+			return baseChance;
+		}
+	}
+
+	private static final class LootWarlock extends RoastLambWarlock {
+
+		private final float roll;
+		private final boolean failWandCreation;
+		private Class<? extends Item> selectedLoot;
+
+		private LootWarlock(float roll) {
+			this(roll, false);
+		}
+
+		private LootWarlock(float roll, boolean failWandCreation) {
+			this.roll = roll;
+			this.failWandCreation = failWandCreation;
+		}
+
+		@Override
+		protected float lootSelectionRoll() {
+			return roll;
+		}
+
+		@Override
+		protected float adjustedLootChance(float baseChance) {
+			return baseChance;
+		}
+
+		@Override
+		protected Item createWandLoot() {
+			selectedLoot = WandOfFireblast.class;
+			return failWandCreation ? null : new Item();
+		}
+
+		@Override
+		protected Item createFlockStoneLoot() {
+			selectedLoot = StoneOfFlock.class;
+			return new Item();
 		}
 	}
 

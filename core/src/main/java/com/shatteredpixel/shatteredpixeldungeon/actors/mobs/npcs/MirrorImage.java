@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 
@@ -172,8 +174,8 @@ public class MirrorImage extends NPC {
 	}
 
 	@Override
-	public int attackProc( Char enemy, int damage ) {
-		damage = super.attackProc( enemy, damage );
+	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+		damage = super.attackProc(enemy, damage, damageTags);
 
 		MirrorInvis buff = buff(MirrorInvis.class);
 		if (buff != null){
@@ -200,7 +202,7 @@ public class MirrorImage extends NPC {
 			if (!wasEnemy || enemy.alignment == Alignment.ENEMY) {
 				if (hero.buff(HolyWeapon.HolyWepBuff.class) != null) {
 					int dmg = hero.subClass.is(HeroSubClass.PALADIN) ? 6 : 2;
-					enemy.damage(Math.round(dmg * Weapon.Enchantment.genericProcChanceMultiplier(this)), HolyWeapon.INSTANCE);
+					enemy.damage(Math.round(dmg * Weapon.Enchantment.genericProcChanceMultiplier(this)), HolyWeapon.INSTANCE, DamageTag.MAGICAL);
 				}
 			}
 			return damage;

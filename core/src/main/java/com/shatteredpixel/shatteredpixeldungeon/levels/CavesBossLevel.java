@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Bones;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
@@ -872,7 +874,7 @@ public class CavesBossLevel extends Level {
 							}
 
 							Sample.INSTANCE.play( Assets.Sounds.LIGHTNING );
-							ch.damage( Random.NormalIntRange(6, 12), new Electricity());
+							ch.damage( Random.NormalIntRange(6, 12), new Electricity(), DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 							ch.sprite.flash();
 
 							if (ch == Dungeon.hero){

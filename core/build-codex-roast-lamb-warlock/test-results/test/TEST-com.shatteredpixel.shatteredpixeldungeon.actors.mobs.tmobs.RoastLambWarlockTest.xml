@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-08-09T11:31:38.523Z" hostname="PC" time="0.082">
+  <properties/>
+  <testcase name="blockedFlockStillRecordsTarget" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.046"/>
+  <testcase name="fireblastAppliesMagicalDamageBurningAndFourTurnCripple" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.009"/>
+  <testcase name="laterRangedAttackCastsFireblastAtMarkedTarget" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="mutuallyExclusiveLootKeepsStoneChanceAndHalvesWandChanceAfterDrops" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.002"/>
+  <testcase name="wandDropCountSurvivesLimitedDropsSaveAndLoad" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.004"/>
+  <testcase name="eachWarlockCanFlockTheSameTargetOnce" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="fireblastTargetingStopsAtSevenTiles" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.01"/>
+  <testcase name="flockedVisibleTargetInRangeIgnoresBlockedBallistica" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="fireblastMatchesFixedTwoChargeShapeAndDamage" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.001"/>
+  <testcase name="wandSelectionChangesAtExactConditionalProbability" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="warlockIsImmuneToFireAndBurning" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="firstAttackOnlyFlocksAndDoesNotUsePhysicalAttack" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="flockUsesOnlyEmptyAdjacentNonPitCellsAndSixTurnSheep" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.002"/>
+  <testcase name="flockRecordSurvivesSaveAndLoad" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.003"/>
+  <testcase name="visibleCastsWaitForAnimationCallbackBeforeApplyingEffects" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="visibleTargetIsFlockedOnceBeforeRepeatedFireblasts" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.001"/>
+  <testcase name="meleeDamageAndArmorStayInsideRanges" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="failedWandCreationDoesNotReduceFutureDropChance" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.0"/>
+  <testcase name="completeFireConeHitsTargetsSeedsFireAndExcludesCaster" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.002"/>
+  <testcase name="baseStatsMatchSpecification" classname="com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlockTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

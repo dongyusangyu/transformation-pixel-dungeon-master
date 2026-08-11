@@ -25,6 +25,24 @@ public class TalentCatalogSubclassPoolTest {
         assertTrue(catalog.contains(Talent.COMBO_FOCUS));
         assertTrue(catalog.contains(Talent.RELENTLESS_COMBAT));
         assertTrue(catalog.contains(Talent.COMBO_MASTERY));
+        assertTrue(catalog.contains(Talent.LONG_ARM));
+        assertTrue(catalog.contains(Talent.ARCANE_CONFLUENCE));
+        assertTrue(catalog.contains(Talent.FOCUSED_CASTING));
+        assertTrue(catalog.contains(Talent.FINE_TASTING));
+        assertTrue(catalog.contains(Talent.BONE_DEEP));
+        assertTrue(catalog.contains(Talent.MIND_IMPRISONMENT));
+        assertTrue(catalog.contains(Talent.UNEXPECTED_STRIKE));
+        assertTrue(catalog.contains(Talent.CLOSING_STAGE));
+        assertTrue(catalog.contains(Talent.PERFECT_FINALE));
+        assertTrue(catalog.contains(Talent.FREERUNNER_AFTERIMAGE));
+        assertTrue(catalog.contains(Talent.MOMENTUM_RESERVE));
+        assertTrue(catalog.contains(Talent.WARMUP_PREPARATION));
+		assertTrue(catalog.contains(Talent.WEAPON_ABILITY_MASTER));
+		assertTrue(catalog.contains(Talent.SKILLED_PARRY));
+		assertTrue(catalog.contains(Talent.ALTERNATING_WEAPONS));
+		assertTrue(catalog.contains(Talent.NATURAL_WAY));
+		assertTrue(catalog.contains(Talent.INNER_PEACE));
+		assertTrue(catalog.contains(Talent.YIN_YANG_BALANCE));
     }
 
     @Test

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -64,7 +66,7 @@ public class Sweeping extends Weapon.Enchantment {
         for (Char ch : targets) {
             //横扫攻击
             int sweepingdmg = (int) Math.ceil(damage * (1f+level) / ( 10f+level));
-            ch.damage(sweepingdmg, attacker);
+            ch.damage(sweepingdmg, attacker, DamageTag.PHYSICAL);
         }
 
         return damage;

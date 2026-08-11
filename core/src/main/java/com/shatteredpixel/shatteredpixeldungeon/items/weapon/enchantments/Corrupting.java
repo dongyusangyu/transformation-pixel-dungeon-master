@@ -46,7 +46,7 @@ public class Corrupting extends Weapon.Enchantment {
 		// lvl 2 ~ 26%
 		float procChance = (level+5f)/(level+25f) * procChanceMultiplier(attacker);
 		if (damage >= defender.HP
-				&& Random.Float() < procChance
+				&& procChance(procChance)
 				&& !defender.isImmune(Corruption.class)
 				&& defender.buff(Corruption.class) == null
 				&& defender instanceof Mob

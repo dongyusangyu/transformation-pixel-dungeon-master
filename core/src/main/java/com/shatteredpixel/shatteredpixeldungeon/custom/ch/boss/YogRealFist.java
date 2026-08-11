@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -227,8 +229,8 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public int attackProc(Char enemy, int damage) {
-            return super.attackProc(enemy, damage);
+        public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+            return super.attackProc(enemy, damage, damageTags);
         }
     }
 
@@ -275,7 +277,7 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             int grassCells = 0;
             for (int i : PathFinder.NEIGHBOURS9) {
                 if (Dungeon.level.map[pos+i] == Terrain.FURROWED_GRASS
@@ -285,14 +287,14 @@ public abstract class YogRealFist extends Mob {
             }
             if (grassCells > 0) dmg = Math.round(dmg * (6-grassCells)/6f);
 
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
         }
 
         @Override
         protected void zap() {
             spend( 1f );
 
-            if (hit( this, enemy, true )) {
+		if (hit(this, enemy, DamageTag.MAGICAL)) {
 
                 Buff.affect( enemy, Roots.class, 3f );
 
@@ -354,7 +356,7 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             if (!isInvulnerable(src.getClass()) && !(src instanceof Bleeding)){
                 if (dmg < 0){
                     return;
@@ -368,7 +370,7 @@ public abstract class YogRealFist extends Mob {
                 b.attachTo(this);
                 sprite.showStatus(CharSprite.WARNING, b.name() + " " + (int)b.level());
             } else{
-                super.damage(dmg, src);
+                super.damage(dmg, src, damageTags);
             }
         }
 
@@ -379,8 +381,8 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public int attackProc( Char enemy, int damage ) {
-            damage = super.attackProc( enemy, damage );
+        public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
+            damage = super.attackProc(enemy, damage, damageTags);
 
             if (Random.Int( 2 ) == 0) {
                 Buff.affect( enemy, Ooze.class ).set( Ooze.DURATION );
@@ -416,14 +418,14 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             if (!isInvulnerable(src.getClass()) && !(src instanceof Viscosity.DeferedDamage)){
                 if (dmg >= 0) {
                     Buff.affect(this, Viscosity.DeferedDamage.class).prolong(dmg);
                     sprite.showStatus(CharSprite.WARNING, Messages.get(Viscosity.class, "deferred", dmg));
                 }
             } else{
-                super.damage(dmg, src);
+                super.damage(dmg, src, damageTags);
             }
         }
 
@@ -456,9 +458,9 @@ public abstract class YogRealFist extends Mob {
         protected void zap() {
             spend( 1f );
 
-            if (hit( this, enemy, true )) {
+		if (hit(this, enemy, DamageTag.MAGICAL)) {
 
-                enemy.damage( Random.NormalIntRange(10, 20), new LightRay() );
+                enemy.damage( Random.NormalIntRange(10, 20), new LightRay() , DamageTag.PHYSICAL);
                 Buff.prolong( enemy, Blindness.class, Blindness.DURATION/2f );
 
                 if (!enemy.isAlive() && enemy == Dungeon.hero) {
@@ -474,9 +476,9 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             int beforeHP = HP;
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
             if (isAlive() && beforeHP > HT/2 && HP < HT/2){
                 HP = HT/2;
                 Buff.prolong( Dungeon.hero, Blindness.class, Blindness.DURATION*1.5f );
@@ -520,9 +522,9 @@ public abstract class YogRealFist extends Mob {
         protected void zap() {
             spend( 1f );
 
-            if (hit( this, enemy, true )) {
+		if (hit(this, enemy, DamageTag.MAGICAL)) {
 
-                enemy.damage( Random.NormalIntRange(10, 20), new DarkBolt() );
+                enemy.damage( Random.NormalIntRange(10, 20), new DarkBolt() , DamageTag.MAGICAL);
 
                 Light l = enemy.buff(Light.class);
                 if (l != null){
@@ -542,9 +544,9 @@ public abstract class YogRealFist extends Mob {
         }
 
         @Override
-        public void damage(int dmg, Object src) {
+        public void damage(int dmg, Object src, DamageTag... damageTags) {
             int beforeHP = HP;
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
             if (isAlive() && beforeHP > HT/2 && HP < HT/2){
                 HP = HT/2;
                 Light l = Dungeon.hero.buff(Light.class);

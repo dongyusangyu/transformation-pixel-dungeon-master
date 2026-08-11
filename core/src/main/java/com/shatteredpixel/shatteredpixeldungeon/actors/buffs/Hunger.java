@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -106,7 +108,7 @@ public class Hunger extends Buff implements Hero.Doom {
                         if(hero.buff(Reason.class)!=null){
                             Reason.loseReason(target,2);
                         }
-						target.damage( (int)partialDamage, this);
+						target.damage( (int)partialDamage, this, DamageTag.PHYSICAL, DamageTag.HUNGER);
 						if(hero.pointsNegative(Talent.MALNUTRITION)==2){
 							Buff.affect(hero, Hex.class,10);
 							Buff.affect(hero, Weakness.class,10);
@@ -167,7 +169,7 @@ public class Hunger extends Buff implements Hero.Doom {
 						if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
 							hungerDamage += Math.round(0.5f*hero.pointsNegative(Talent.UNBEAR_HUNGER)*hungerDamage);
 						}
-						hero.damage( hungerDamage, this );
+						hero.damage( hungerDamage, this , DamageTag.PHYSICAL, DamageTag.HUNGER);
                         if(heroClassIs(HeroClass.FRIAR)){
                             Reason.loseReason(target,2);
                         }
@@ -265,7 +267,7 @@ public class Hunger extends Buff implements Hero.Doom {
                 if(hero.buff(Reason.class)!=null){
                     Reason.loseReason(target,2);
                 }
-				target.damage( (int)partialDamage, this );
+				target.damage( (int)partialDamage, this , DamageTag.PHYSICAL, DamageTag.HUNGER);
 				partialDamage -= (int)partialDamage;
 
 			}
@@ -289,7 +291,7 @@ public class Hunger extends Buff implements Hero.Doom {
 			if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
 				hungerDamage += Math.round(0.5f*hero.pointsNegative(Talent.UNBEAR_HUNGER)*hungerDamage);
 			}
-			target.damage( hungerDamage, this );
+			target.damage( hungerDamage, this , DamageTag.PHYSICAL, DamageTag.HUNGER);
             if(hero.buff(Reason.class)!=null){
                 Reason.loseReason(target,2);
             }

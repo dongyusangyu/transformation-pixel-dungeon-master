@@ -77,6 +77,7 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestDwa
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestGoo;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestGreatDemon;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestGreatShoper;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestHuntressBoss;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestRogueBoss;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestTengu;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestWarriorBoss;
@@ -164,7 +165,7 @@ public class MobPlacer extends TestItem {
                                 }
                                 if (m instanceof Mimic) {
                                     ((Mimic)m).items = null;
-                                    ((Mimic)m).setLevel(Dungeon.depth);
+                                    ((Mimic)m).setLevel(Dungeon.scalingDepth());
                                     if (m instanceof CrystalMimic) {
                                         ((CrystalMimic)m).items = new ArrayList<>();
                                         ((CrystalMimic)m).items.add(Generator.random());
@@ -564,6 +565,7 @@ public class MobPlacer extends TestItem {
         TEST_DWARF_KING(TestDwarfKing.class, DictSpriteSheet.SENIOR),
         TEST_WARRIOR_BOSS(TestWarriorBoss.class, DictSpriteSheet.STATUE),
         TEST_ROGUE_BOSS(TestRogueBoss.class, DictSpriteSheet.BANDIT),
+        TEST_HUNTRESS_BOSS(TestHuntressBoss.class, DictSpriteSheet.GNOLL_DARTER),
         TEST_GREAT_DEMON(TestGreatDemon.class, DictSpriteSheet.RIPPER),
         TEST_GREAT_SHOPER(TestGreatShoper.class, DictSpriteSheet.MIMIC_GOLDEN);
 

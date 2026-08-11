@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.prison;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -61,7 +63,7 @@ public class SkeletonH extends MobHard {
                 int damage = Math.round(Random.NormalIntRange(6, 12));
                 damage = Math.round( damage * AscensionChallenge.statModifier(this));
                 damage = Math.max( 0,  damage - (ch.drRoll() + ch.drRoll()) );
-                ch.damage( damage, this );
+                ch.damage( damage, this , DamageTag.PHYSICAL);
                 if (ch == Dungeon.hero && !ch.isAlive()) {
                     heroKilled = true;
                 }

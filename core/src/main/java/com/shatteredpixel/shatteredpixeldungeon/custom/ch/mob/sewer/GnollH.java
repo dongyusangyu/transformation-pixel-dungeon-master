@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.sewer;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -75,7 +77,7 @@ public class GnollH extends MobHard implements PhysicalRangedAttack {
     }
 
     @Override
-    public void damage(int damage, Object src){
+    public void damage(int damage, Object src, DamageTag... damageTags){
         if(enemySeen && enemy!=null) {
             for (Mob m: Dungeon.level.mobs.toArray(new Mob[0])){
                 if(m instanceof GnollH && Dungeon.level.distance(pos, m.pos)<9){
@@ -83,7 +85,7 @@ public class GnollH extends MobHard implements PhysicalRangedAttack {
                 }
             }
         }
-        super.damage(damage, src);
+        super.damage(damage, src, damageTags);
     }
 
     @Override

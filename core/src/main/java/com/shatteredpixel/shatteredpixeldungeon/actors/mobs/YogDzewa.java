@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS;
 import static com.shatteredpixel.shatteredpixeldungeon.actors.Char.Property.BOSS_MINION;
@@ -252,9 +254,9 @@ public class YogDzewa extends Mob implements MagicalRangedAttack {
 
 					if (rangedHit(ch)) {
 						if (Dungeon.isChallenged(Challenges.STRONGER_BOSSES)) {
-							ch.damage(Random.NormalIntRange(30, 50), new Eye.DeathGaze());
+							ch.damage(Random.NormalIntRange(30, 50), new Eye.DeathGaze(), DamageTag.MAGICAL);
 						} else {
-							ch.damage(Random.NormalIntRange(20, 30), new Eye.DeathGaze());
+							ch.damage(Random.NormalIntRange(20, 30), new Eye.DeathGaze(), DamageTag.MAGICAL);
 						}
 						if (Dungeon.level.heroFOV[pos]) {
 							ch.sprite.flash();
@@ -423,10 +425,10 @@ public class YogDzewa extends Mob implements MagicalRangedAttack {
 	}
 
 	@Override
-	public void damage( int dmg, Object src ) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 
 		int preHP = HP;
-		super.damage( dmg, src );
+		super.damage(dmg, src, damageTags);
 
 		if (phase == 0 || findFist() != null) return;
 

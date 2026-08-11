@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.hall;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
@@ -56,8 +58,8 @@ public class ScorpioH extends MobHard implements PhysicalRangedAttack {
     }
 
     @Override
-    public int attackProc(Char enemy, int damage) {
-        int d = super.attackProc(enemy, damage);
+    public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+        int d = super.attackProc(enemy, damage, damageTags);
         if (Random.Int( 2 ) == 0) {
             Buff.prolong( enemy, Cripple.class, Cripple.DURATION );
         }

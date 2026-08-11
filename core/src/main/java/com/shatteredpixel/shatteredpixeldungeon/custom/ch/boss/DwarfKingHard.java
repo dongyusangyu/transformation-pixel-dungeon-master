@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.boss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -410,9 +412,9 @@ public class DwarfKingHard extends Boss{
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         if (isInvulnerable(src.getClass())){
-            super.damage(dmg, src);
+            super.damage(dmg, src, damageTags);
             return;
         } else if (phase == 3 && !(src instanceof Viscosity.DeferedDamage)){
 
@@ -430,7 +432,7 @@ public class DwarfKingHard extends Boss{
             return;
         }
         int preHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
 
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (lock != null && !isImmune(src.getClass())) lock.addTime(dmg/3);
@@ -583,11 +585,11 @@ public class DwarfKingHard extends Boss{
             maxLvl = -8848;
         }
         @Override
-        public int attackProc(Char enemy, int damage){
+        public int attackProc(Char enemy, int damage, DamageTag... damageTags){
             if(Random.Int(10)==0) {
                 Buff.affect(enemy, Degrade.class, 2f);
             }
-            return super.attackProc(enemy, damage);
+            return super.attackProc(enemy, damage, damageTags);
         }
         @Override
         public int damageRoll(){
@@ -649,9 +651,9 @@ public class DwarfKingHard extends Boss{
                     }
                 } else {
                     Char ch = Actor.findChar(pos);
-                    ch.damage(Random.NormalIntRange(20, 40), summon);
+                    ch.damage(Random.NormalIntRange(20, 40), summon, DamageTag.PHYSICAL);
                     if (((DwarfKingHard)target).phase == 2){
-                        target.damage(12, new KingDamager());
+                        target.damage(12, new KingDamager(), DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
                     }
                 }
 
@@ -717,7 +719,7 @@ public class DwarfKingHard extends Boss{
             super.detach();
             for (Mob m : Dungeon.level.mobs){
                 if (m instanceof DwarfKingHard){
-                    m.damage(30, this);
+                    m.damage(30, this, DamageTag.PHYSICAL);
                 }
             }
         }
@@ -833,7 +835,7 @@ public class DwarfKingHard extends Boss{
                         Char ch = findChar(i+m.pos);
                         if(ch != null){
                             if(ch.alignment != Alignment.ENEMY){
-                                ch.damage(Random.IntRange(25, 36), m);
+                                ch.damage(Random.IntRange(25, 36), m, DamageTag.PHYSICAL);
                                 if(ch == Dungeon.hero && !ch.isAlive()){
                                     Dungeon.fail(getClass());
                                 }

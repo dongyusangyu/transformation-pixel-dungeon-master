@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -46,7 +48,7 @@ public class Shocking extends Weapon.Enchantment {
 
 		// flat 33% proc chance, effect scales with level via damage dealt
 		float procChance = (1/3f) * procChanceMultiplier(attacker);
-		if (Random.Float() < procChance) {
+		if (procChance(procChance)) {
 
 			float powerMulti = Math.max(1f, procChance);
 			
@@ -58,7 +60,7 @@ public class Shocking extends Weapon.Enchantment {
 			affected.remove(defender); //defender isn't hurt by lightning
 			for (Char ch : affected) {
 				if (ch.alignment != attacker.alignment) {
-					ch.damage(Math.round(damage * 0.5f * powerMulti), this);
+					ch.damage(Math.round(damage * 0.5f * powerMulti), this, DamageTag.PHYSICAL);
 				}
 			}
 

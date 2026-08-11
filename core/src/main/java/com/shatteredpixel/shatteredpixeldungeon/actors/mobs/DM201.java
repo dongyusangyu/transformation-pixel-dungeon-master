@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -55,14 +57,14 @@ public class DM201 extends DM200 {
 	private boolean threatened = false;
 
 	@Override
-	public void damage(int dmg, Object src) {
+	public void damage(int dmg, Object src, DamageTag... damageTags) {
 		if (!(src instanceof Corruption)) {
 			if ((src instanceof Char && !Dungeon.level.adjacent(pos, ((Char) src).pos))
 					|| enemy == null || !Dungeon.level.adjacent(pos, enemy.pos)) {
 				threatened = true;
 			}
 		}
-		super.damage(dmg, src);
+		super.damage(dmg, src, damageTags);
 	}
 
 	public void onZapComplete(){

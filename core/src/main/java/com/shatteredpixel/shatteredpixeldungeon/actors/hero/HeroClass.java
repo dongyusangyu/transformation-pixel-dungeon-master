@@ -914,7 +914,7 @@ public enum HeroClass {
 			case DUELIST:
 				return 3;
 			case CLERIC:
-				return 3;
+				return 4;
 			case FREEMAN:
 				return 3;
 			case SLIMEGIRL:

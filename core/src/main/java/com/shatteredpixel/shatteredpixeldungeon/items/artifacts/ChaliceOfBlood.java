@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
@@ -165,7 +167,7 @@ public class ChaliceOfBlood extends Artifact {
 			hero.sprite.emitter().burst( ShadowParticle.CURSE, 4+(damage/10) );
 		}
 
-		hero.damage(damage, this);
+		hero.damage(damage, this, DamageTag.PHYSICAL);
 
 		if (!hero.isAlive()) {
 			Badges.validateDeathFromFriendlyMagic();

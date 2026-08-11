@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -117,7 +119,7 @@ public class TestDwarfKing extends Mob {
     }
 
     @Override
-    public void damage(int dmg, Object src) {
+    public void damage(int dmg, Object src, DamageTag... damageTags) {
         Char attacker = TestBossUtil.attackerToRetarget(this, src);
         if (attacker != null) {
             enemy = attacker;
@@ -125,7 +127,7 @@ public class TestDwarfKing extends Mob {
             beckon(attacker.pos);
         }
         int preHP = HP;
-        super.damage(dmg, src);
+        super.damage(dmg, src, damageTags);
         int dmgTaken = preHP - HP;
         LockedFloor lock = Dungeon.hero.buff(LockedFloor.class);
         if (dmgTaken > 0 && lock != null && !isImmune(src.getClass()) && !isInvulnerable(src.getClass())) {

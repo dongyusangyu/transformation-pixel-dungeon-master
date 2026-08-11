@@ -13,27 +13,36 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
-final class TowerMobRules {
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 
-	private static final float CAMOUFLAGE_GNOLL_END = 0.2f;
-	private static final float CORROSIVE_SWARM_END = 0.4f;
+final class TowerMobRules {
 
 	private TowerMobRules() {
 	}
 
-	static Selection select(int towerFloor, float roll) {
-		if (roll < CAMOUFLAGE_GNOLL_END) {
-			return Selection.CAMOUFLAGE_GNOLL;
-		}
-		if (roll < CORROSIVE_SWARM_END) {
-			return Selection.CORROSIVE_SWARM;
-		}
-		return Selection.DEFAULT_POOL;
+	static Selection select(float roll) {
+		Selection[] selections = Selection.values();
+		int index = (int) (roll * selections.length);
+		index = Math.max(0, Math.min(index, selections.length - 1));
+		return selections[index];
+	}
+
+	static Mob prepareNaturalSpawn(Mob mob) {
+		mob.state = mob.WANDERING;
+		return mob;
 	}
 
 	enum Selection {
 		CAMOUFLAGE_GNOLL,
 		CORROSIVE_SWARM,
-		DEFAULT_POOL
+		CORPSE,
+		EARTHLY_SERPENT,
+		ROAST_LAMB_WARLOCK,
+		MECHANICAL_FIST,
+		MIMIC_CROCODILE,
+		OBSCURA,
+		ALIENATED_PRISMATIC_GUARD,
+		SOUL_COLLECTOR,
+		HEAVY_CRABIFICATION
 	}
 }

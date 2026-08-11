@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.TestStatue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Dongyusangyu;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DungeonDoctor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SurfaceShopkeeper;
@@ -171,19 +172,23 @@ public class SurfaceTownLevelDongyusangyuTest {
 
 		level.create();
 
-		assertEquals(3, level.mobs.size());
+		assertEquals(4, level.mobs.size());
 		Mob dongyusangyu = findMob(level, Dongyusangyu.class);
 		Mob dungeonDoctor = findMob(level, DungeonDoctor.class);
 		Mob shopkeeper = findMob(level, SurfaceShopkeeper.class);
+		Mob testStatue = findMob(level, TestStatue.class);
 		assertTrue(dongyusangyu != null);
 		assertTrue(dungeonDoctor != null);
 		assertTrue(shopkeeper != null);
+		assertTrue(testStatue != null);
 		assertEquals(cell(level, 7, 26), dongyusangyu.pos);
 		assertEquals(cell(level, 22, 4), dungeonDoctor.pos);
 		assertEquals(cell(level, 38, 7), shopkeeper.pos);
+		assertEquals(cell(level, 27, 30), testStatue.pos);
 		assertEquals(Terrain.EMPTY_SP, level.map[dongyusangyu.pos]);
 		assertEquals(Terrain.EMPTY_SP, level.map[dungeonDoctor.pos]);
 		assertEquals(Terrain.EMPTY_SP, level.map[shopkeeper.pos]);
+		assertEquals(Terrain.EMPTY_DECO, level.map[testStatue.pos]);
 		assertFalse(dongyusangyu.pos / level.width() == shopkeeper.pos / level.width());
 	}
 
@@ -194,10 +199,11 @@ public class SurfaceTownLevelDongyusangyuTest {
 
 		level.createMobs();
 
-		assertEquals(3, level.mobs.size());
+		assertEquals(4, level.mobs.size());
 		assertEquals(1, countMobs(level, DungeonDoctor.class));
 		assertEquals(1, countMobs(level, Dongyusangyu.class));
 		assertEquals(1, countMobs(level, SurfaceShopkeeper.class));
+		assertEquals(1, countMobs(level, TestStatue.class));
 	}
 
 	@Test

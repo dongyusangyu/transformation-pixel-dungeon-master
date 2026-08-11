@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.blobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -97,7 +99,7 @@ public class Electricity extends Blob {
 							Buff.prolong( ch, Paralysis.class, cur[cell]);
 						}
 						if (cur[cell] % 2 == 1) {
-							ch.damage(Math.round(Random.Float(2 + Dungeon.scalingDepth() / 5f)), this);
+							ch.damage(Math.round(Random.Float(2 + Dungeon.scalingDepth() / 5f)), this, DamageTag.PHYSICAL, DamageTag.ELECTRIC);
 							if (!ch.isAlive() && ch == hero){
 								Dungeon.fail( this );
 								GLog.n( Messages.get(this, "ondeath") );

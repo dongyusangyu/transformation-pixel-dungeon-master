@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -191,7 +193,7 @@ public class Feint extends ArmorAbility {
 		}
 
 		@Override
-		public void damage( int dmg, Object src ) {
+		public void damage(int dmg, Object src, DamageTag... damageTags) {
 
 		}
 

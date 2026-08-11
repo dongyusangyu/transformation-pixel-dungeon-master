@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.prison;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -95,11 +97,11 @@ public class DM100H extends MobHard implements Callback, MagicalRangedAttack {
     }
 
     @Override
-    public void damage(int damage, Object src){
+    public void damage(int damage, Object src, DamageTag... damageTags){
         if(buff(LightningPrediction.class)!=null){
             damage = 1;
         }
-        super.damage(damage, src);
+        super.damage(damage, src, damageTags);
     }
 
     @Override
@@ -180,7 +182,7 @@ public class DM100H extends MobHard implements Callback, MagicalRangedAttack {
                 Sample.INSTANCE.play( Assets.Sounds.LIGHTNING, 1.5f);
                 boolean alive = aim.isAlive();
 
-                aim.damage(Random.Int(25, 35), new SkyLightning());
+                aim.damage(Random.Int(25, 35), new SkyLightning(), DamageTag.MAGICAL);
                 aim.sprite.centerEmitter().burst( SparkParticle.FACTORY, 32 );
                 aim.sprite.flash();
 
@@ -263,7 +265,7 @@ public class DM100H extends MobHard implements Callback, MagicalRangedAttack {
             if (rangedHit(enemy)) {
                 int dmg = Random.NormalIntRange(3, 10);
                 dmg = Math.round(dmg * AscensionChallenge.statModifier(this));
-                enemy.damage( dmg, new DM100H.LightningBolt() );
+                enemy.damage( dmg, new DM100H.LightningBolt() , DamageTag.MAGICAL);
 
                 if (enemy.sprite.visible) {
                     enemy.sprite.centerEmitter().burst(SparkParticle.FACTORY, 3);

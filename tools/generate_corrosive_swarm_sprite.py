@@ -1,4 +1,4 @@
-"""Generate the hand-authored 16x16 Corrosive Swarm sprite sheet."""
+"""Recolor the ordinary Swarm and add Corrosive Swarm details and burst frames."""
 
 from pathlib import Path
 
@@ -22,6 +22,20 @@ PALETTE = {
     "acid_dark": (82, 103, 35, 255),
     "acid": (158, 186, 57, 255),
 }
+
+SOURCE_RAMPS = (
+    ((0, 0, 0), "outline"),
+    ((19, 19, 19), "outline"),
+    ((126, 31, 20), "shadow"),
+    ((179, 89, 71), "body"),
+    ((255, 113, 92), "body_light"),
+    ((255, 191, 178), "core"),
+    ((38, 92, 55), "wing_dark"),
+    ((98, 153, 118), "wing"),
+    ((67, 163, 98), "acid_dark"),
+    ((104, 255, 152), "acid"),
+    ((236, 247, 244), "wing"),
+)
 
 
 def frame():
@@ -247,13 +261,73 @@ def burst_frame(stage):
     return image
 
 
-def build_frames():
-    return (
-        [hover_frame(index) for index in range(6)]
-        + [attack_frame(index) for index in range(4)]
-        + [death_frame(index) for index in range(5)]
-        + [burst_frame(index) for index in range(2)]
+def closest_palette_name(red, green, blue):
+    source, name = min(
+        SOURCE_RAMPS,
+        key=lambda item: sum(
+            (channel - reference) ** 2
+            for channel, reference in zip((red, green, blue), item[0])
+        ),
     )
+    return name
+
+
+def recolor_source_frame(source, index):
+    original = source.crop(
+        (index * FRAME_WIDTH, 0, (index + 1) * FRAME_WIDTH, FRAME_HEIGHT)
+    ).convert("RGBA")
+    result = frame()
+    source_pixels = original.load()
+    result_pixels = result.load()
+    for y in range(FRAME_HEIGHT):
+        for x in range(FRAME_WIDTH):
+            red, green, blue, alpha = source_pixels[x, y]
+            if alpha > 0:
+                result_pixels[x, y] = PALETTE[
+                    closest_palette_name(red, green, blue)
+                ]
+
+    add_corrosive_details(result, index)
+    return result
+
+
+def add_corrosive_details(image, index):
+    alpha_box = image.getchannel("A").getbbox()
+    if alpha_box is None:
+        return
+
+    left, top, right, bottom = alpha_box
+    center_x = (left + right - 1) // 2
+    center_y = (top + bottom - 1) // 2
+    draw = ImageDraw.Draw(image)
+
+    if index < 10:
+        point(draw, "core", center_x, center_y)
+        point(draw, "shadow", center_x - 1, center_y)
+        point(draw, "amber", min(FRAME_WIDTH - 1, center_x + 2), center_y)
+        point(draw, "acid_dark", max(0, left - 1), min(FRAME_HEIGHT - 1, bottom - 1))
+        point(draw, "acid", min(FRAME_WIDTH - 1, right), min(FRAME_HEIGHT - 1, bottom))
+    else:
+        death_stage = index - 10
+        if death_stage < 3:
+            point(draw, "core", center_x, center_y)
+        point(draw, "acid_dark", max(0, left - 1), min(FRAME_HEIGHT - 1, bottom))
+        point(
+            draw,
+            "acid",
+            min(FRAME_WIDTH - 1, right + death_stage // 2),
+            min(FRAME_HEIGHT - 1, bottom + 1),
+        )
+
+
+def build_frames(root):
+    source_path = root / "core/src/main/assets/sprites/swarm.png"
+    with Image.open(source_path) as source:
+        source = source.convert("RGBA")
+        if source.size != (FRAME_WIDTH * 16, FRAME_HEIGHT):
+            raise ValueError(f"unexpected ordinary Swarm sheet size: {source.size}")
+        inherited = [recolor_source_frame(source, index) for index in range(15)]
+    return inherited + [burst_frame(index) for index in range(2)]
 
 
 def main():
@@ -263,7 +337,7 @@ def main():
     asset_path.parent.mkdir(parents=True, exist_ok=True)
     preview_path.parent.mkdir(parents=True, exist_ok=True)
 
-    frames = build_frames()
+    frames = build_frames(root)
     assert len(frames) == FRAME_COUNT
     sheet = Image.new("RGBA", (FRAME_WIDTH * FRAME_COUNT, FRAME_HEIGHT))
     for index, sprite_frame in enumerate(frames):

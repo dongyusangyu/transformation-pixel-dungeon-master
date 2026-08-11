@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -141,7 +143,7 @@ public class SpectralNecromancer extends Necromancer {
 
 				Char blocker = Actor.findChar(summoningPos);
 				if (blocker.alignment != alignment){
-					blocker.damage( Random.NormalIntRange(2, 10), new SummoningBlockDamage() );
+					blocker.damage( Random.NormalIntRange(2, 10), new SummoningBlockDamage() , DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
 					if (blocker == Dungeon.hero && !blocker.isAlive()){
 						Badges.validateDeathFromEnemyMagic();
 						Dungeon.fail(this);
