@@ -99,6 +99,58 @@ public class PestilenceArenaControllerTest {
     }
 
     @Test
+    public void preludeUsesTwentyThousandPaleMiasmaAndKeepsSafeRouteClear() {
+        FakeArena arena = new FakeArena(generateMap(29L));
+        PestilenceArenaController controller = new PestilenceArenaController();
+
+        assertTrue(controller.beginPrelude(arena, TowerBossLayout.cell(14, 10), 29L));
+        assertTrue(controller.preludeStarted());
+        assertEquals(20_000, PestilenceArenaController.PRELUDE_MIASMA_AMOUNT);
+
+        Set<Integer> flooded = new HashSet<>();
+        for (int cell : controller.preludeMiasmaCells(arena)) flooded.add(cell);
+        for (int cell : controller.safeRoute()) assertFalse(flooded.contains(cell));
+        assertFalse(flooded.contains(controller.purifierCell()));
+
+        int eligible = 0;
+        for (int cell = 0; cell < arena.length(); cell++) {
+            if (arena.isArenaCell(cell) && arena.passableBeforeFixture(cell)) eligible++;
+        }
+        assertTrue(flooded.size() > eligible / 2);
+    }
+
+    @Test
+    public void firstPreludeActivationStartsBossAndLaterActivationDamagesIt() {
+        FakeArena arena = new FakeArena(generateMap(31L));
+        PestilenceArenaController controller = new PestilenceArenaController();
+        assertTrue(controller.beginPrelude(arena, TowerBossLayout.cell(14, 10), 31L));
+
+        assertEquals(PestilenceArenaController.ActivationResult.START_BOSS,
+                controller.activateForEncounter(arena, controller.purifierCell(), false));
+        assertEquals(100, PestilenceArenaController.PURIFIER_BOSS_DAMAGE);
+
+        controller.resetBrazierCooldowns();
+        assertEquals(PestilenceArenaController.ActivationResult.DAMAGE_BOSS,
+                controller.activateForEncounter(arena, controller.purifierCell(), true));
+    }
+
+    @Test
+    public void preludeStateSurvivesBundleRoundTrip() {
+        FakeArena arena = new FakeArena(generateMap(37L));
+        PestilenceArenaController controller = new PestilenceArenaController();
+        assertTrue(controller.beginPrelude(arena, TowerBossLayout.cell(14, 10), 37L));
+
+        Bundle bundle = new Bundle();
+        controller.storeInBundle(bundle);
+        PestilenceArenaController restored = new PestilenceArenaController();
+        restored.restoreFromBundle(bundle);
+
+        assertTrue(restored.preludeStarted());
+        assertArrayEquals(controller.safeRoute(), restored.safeRoute());
+        assertEquals(controller.bossCell(), restored.bossCell());
+    }
+
+    @Test
     public void relocationIsDeterministicAndDoesNotNeedGlobalRandom() {
         FakeArena firstArena = new FakeArena(generateMap(23L));
         FakeArena secondArena = new FakeArena(generateMap(23L));

@@ -123,10 +123,10 @@ public class TowerBossLevelTest {
 		int[] map = generateMap();
 		int arenaCell = cell(14, 29);
 
-		assertFalse(TowerBossLayout.shouldStartEncounter(false, true, cell(14, 30)));
-		assertFalse(TowerBossLayout.shouldStartEncounter(false, false, arenaCell));
-		assertFalse(TowerBossLayout.shouldStartEncounter(true, true, arenaCell));
-		assertTrue(TowerBossLayout.shouldStartEncounter(false, true, arenaCell));
+		assertFalse(TowerBossLayout.shouldBeginPrelude(false, true, cell(14, 30)));
+		assertFalse(TowerBossLayout.shouldBeginPrelude(false, false, arenaCell));
+		assertFalse(TowerBossLayout.shouldBeginPrelude(true, true, arenaCell));
+		assertTrue(TowerBossLayout.shouldBeginPrelude(false, true, arenaCell));
 
 		TowerBossLayout.sealArena(map);
 		assertEquals(Terrain.WALL, map[TowerBossLayout.SAFE_GATE]);

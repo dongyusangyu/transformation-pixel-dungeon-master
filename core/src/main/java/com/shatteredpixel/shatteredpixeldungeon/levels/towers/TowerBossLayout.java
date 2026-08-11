@@ -113,8 +113,8 @@ final class TowerBossLayout {
 				&& y >= ARENA_TOP && y < ARENA_TOP + ARENA_SIZE;
 	}
 
-	static boolean shouldStartEncounter(boolean bossSpawned, boolean hero, int cell) {
-		return !bossSpawned && hero && isArenaCell(cell);
+	static boolean shouldBeginPrelude(boolean encounterBegun, boolean hero, int cell) {
+		return !encounterBegun && hero && isArenaCell(cell);
 	}
 
 	static void sealArena(int[] map) {
