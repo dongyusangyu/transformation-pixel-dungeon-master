@@ -109,6 +109,20 @@ public class PestilenceArenaControllerTest {
         assertEquals(4, arena.installed.size());
     }
 
+    @Test
+    public void brazierCooldownUsesBossTurnsAndCanBeResetAfterHarvest() {
+        PestilenceArenaController controller = new PestilenceArenaController();
+        controller.putOnCooldown(1, 12);
+
+        controller.onHeroTurnStarted(null);
+        assertEquals(12, controller.cooldownAt(1));
+        controller.advanceBossTurn();
+        assertEquals(11, controller.cooldownAt(1));
+
+        controller.resetBrazierCooldowns();
+        assertEquals(0, controller.cooldownAt(1));
+    }
+
     private static int[] generateMap(long seed) {
         Random.pushGenerator(seed);
         try {
