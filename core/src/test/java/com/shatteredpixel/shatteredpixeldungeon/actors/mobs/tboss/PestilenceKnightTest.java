@@ -68,4 +68,48 @@ public class PestilenceKnightTest {
         assertEquals(PestilenceKnight.Phase.INCUBATION, restored.phaseForTest());
         assertEquals(PestilenceKnight.HarvestState.NONE, restored.harvestForTest());
     }
+
+    @Test
+    public void firstLockCannotBeCrossedAndImmediatelyArmsInvulnerability() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.HP = 1100;
+
+        assertEquals(50, boss.capFinalDamageForTest(500));
+        assertEquals(PestilenceKnight.HarvestState.ARMED, boss.harvestForTest());
+        assertEquals(0, boss.capFinalDamageForTest(20));
+        assertTrue(boss.isInvulnerable(Object.class));
+    }
+
+    @Test
+    public void harvestChannelsOneActionThenHealsAndChangesPhase() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.HP = 1050;
+        boss.armHarvestForTest();
+
+        boss.advanceHarvestForTest(40);
+        assertEquals(PestilenceKnight.HarvestState.CHANNELING, boss.harvestForTest());
+        assertEquals(1050, boss.HP);
+
+        boss.advanceHarvestForTest(40);
+        assertEquals(PestilenceKnight.HarvestState.NONE, boss.harvestForTest());
+        assertEquals(PestilenceKnight.Phase.OUTBREAK, boss.phaseForTest());
+        assertEquals(1250, boss.HP);
+    }
+
+    @Test
+    public void eachLockTriggersOnlyOnceEvenAfterHealingAboveIt() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.HP = 1050;
+        boss.armHarvestForTest();
+        boss.advanceHarvestForTest(0);
+        boss.advanceHarvestForTest(0);
+
+        boss.HP = 1400;
+        assertEquals(150, boss.capFinalDamageForTest(150));
+        assertEquals(PestilenceKnight.HarvestState.NONE, boss.harvestForTest());
+
+        boss.HP = 550;
+        assertEquals(25, boss.capFinalDamageForTest(100));
+        assertEquals(PestilenceKnight.HarvestState.ARMED, boss.harvestForTest());
+    }
 }
