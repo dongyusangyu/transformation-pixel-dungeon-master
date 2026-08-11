@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 
 /**
  * Incremental implementation shell registered by the tower boss generator.
@@ -18,6 +19,11 @@ public class PestilenceKnight extends TowerBoss {
     @Override
     public String towerBossId() {
         return TowerBossGenerator.PESTILENCE_KNIGHT_ID;
+    }
+
+    @Override
+    public boolean prepareArena(TowerBossLevel level, int spawnCell) {
+        return level.preparePestilenceArena(spawnCell);
     }
 
     @Override

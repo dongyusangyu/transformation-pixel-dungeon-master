@@ -35,7 +35,9 @@ import java.util.ArrayList;
 public class TowerBossLevel extends TowerLevel {
 
 	public static final int FLOORS_PER_BOSS = 5;
+	private static final String PESTILENCE_ARENA = "pestilence_arena";
 	private final TowerBossEncounter encounter = new TowerBossEncounter();
+	private PestilenceArenaController pestilenceArena;
 
 	@Override
 	public String tilesTex() {
@@ -148,6 +150,15 @@ public class TowerBossLevel extends TowerLevel {
 		encounter.onBossDefeated(boss, encounterHost());
 	}
 
+	public boolean preparePestilenceArena(int bossCell) {
+		if (pestilenceArena == null) pestilenceArena = new PestilenceArenaController();
+		return pestilenceArena.prepare(this, bossCell);
+	}
+
+	public PestilenceArenaController pestilenceArenaController() {
+		return pestilenceArena;
+	}
+
 	String selectedBossId() {
 		return encounter.selectedBossId();
 	}
@@ -245,11 +256,14 @@ public class TowerBossLevel extends TowerLevel {
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		encounter.storeInBundle(bundle);
+		if (pestilenceArena != null) bundle.put(PESTILENCE_ARENA, pestilenceArena);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
+		pestilenceArena = bundle.contains(PESTILENCE_ARENA)
+				? (PestilenceArenaController) bundle.get(PESTILENCE_ARENA) : null;
 		boolean exitUnlocked = map[TowerBossLayout.EXIT_GATE] == Terrain.UNLOCKED_EXIT;
 		encounter.restoreFromBundle(bundle, Dungeon.seed, Dungeon.depth, Dungeon.branch,
 				locked, hasRestoredTowerBoss(), exitUnlocked);
