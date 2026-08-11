@@ -18,17 +18,23 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.PestilenceKnightSprite;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
@@ -42,6 +48,7 @@ public class PestilenceKnight extends TowerBoss {
 
     public static final int KNOCKBACK_DISTANCE = 1;
     public static final int FINAL_DAMAGE_CAP = 150;
+    private static final int PLAGUE_FLASK_IMPACT_COLOR = 0x9EAD48;
 
     static final String PLAGUE_FLASK = "plague_flask";
     static final String QUARANTINE = "quarantine";
@@ -84,6 +91,7 @@ public class PestilenceKnight extends TowerBoss {
     private transient boolean waitingForAttackCompletion;
     private transient boolean restoringFromBundle;
     private transient Boolean forcedTenacityRoll;
+    private transient int plagueFlaskVisualIndex;
 
     public PestilenceKnight() {
         this(Dungeon.depth);
@@ -230,7 +238,8 @@ public class PestilenceKnight extends TowerBoss {
         switch (phase) {
             case INCUBATION:
                 if (cooldowns[FLASK_CD] == 0) {
-                    return telegraphSkill(PLAGUE_FLASK, squareAround(predictedHeroCell()));
+                    int target = predictedHeroCell();
+                    return telegraphSkill(PLAGUE_FLASK, squareAround(target), target);
                 }
                 return maintainRangeOrMelee(4, 6);
             case OUTBREAK:
@@ -286,15 +295,49 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean telegraphSkill(String skill, int[] cells) {
+        return telegraphSkill(skill, cells, -1);
+    }
+
+    private boolean telegraphSkill(String skill, int[] cells, int projectileTarget) {
         if (cells == null || cells.length == 0) return completeBaseAction();
         pendingSkill = skill;
         pendingCells = cells;
         announceSkill(skill);
         showTelegraph(cells, skill.equals(PALE_CHARGE) ? 0xD8D8D8 : 0x88AA33);
         if (sprite instanceof PestilenceKnightSprite) ((PestilenceKnightSprite) sprite).cast();
+        if (PLAGUE_FLASK.equals(skill)) launchPlagueFlask(projectileTarget);
         spend(TICK);
         finishBossAction();
         return true;
+    }
+
+    private void launchPlagueFlask(final int target) {
+        if (Dungeon.level == null || target < 0 || target >= Dungeon.level.length()
+                || sprite == null || sprite.parent == null) return;
+        final Level level = Dungeon.level;
+        Item flask = new Item();
+        flask.image = plagueFlaskImage(plagueFlaskVisualIndex++);
+        ((MissileSprite) sprite.parent.recycle(MissileSprite.class)).reset(sprite, target, flask,
+                new Callback() {
+                    @Override
+                    public void call() {
+                        if (Dungeon.level == level) {
+                            Splash.at(target, PLAGUE_FLASK_IMPACT_COLOR, 6);
+                        }
+                    }
+                });
+    }
+
+    private static int plagueFlaskImage(int index) {
+        switch (plagueFlaskPaletteIndex(index)) {
+            case 0: return ItemSpriteSheet.POTION_JADE;
+            case 1: return ItemSpriteSheet.POTION_GOLDEN;
+            default: return ItemSpriteSheet.POTION_BISTRE;
+        }
+    }
+
+    private static int plagueFlaskPaletteIndex(int index) {
+        return Math.floorMod(index, 3);
     }
 
     private boolean resolvePendingSkill(boolean diagnosedBeforeAction) {
@@ -736,6 +779,8 @@ public class PestilenceKnight extends TowerBoss {
     static String diagnosisAnnouncementKeyForTest(int stacks) {
         return diagnosisAnnouncementKey(stacks);
     }
+    static int plagueFlaskPaletteIndexForTest(int index) { return plagueFlaskPaletteIndex(index); }
+    static int plagueFlaskImpactColorForTest() { return PLAGUE_FLASK_IMPACT_COLOR; }
 
     private void ensureTerminalEntered() {
         if (terminalEntered) return;
