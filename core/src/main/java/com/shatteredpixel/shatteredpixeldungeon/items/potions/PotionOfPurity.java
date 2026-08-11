@@ -24,6 +24,9 @@ package com.shatteredpixel.shatteredpixeldungeon.items.potions;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.BlobImmunity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
@@ -49,7 +52,10 @@ public class PotionOfPurity extends Potion {
 	{
 		icon = ItemSpriteSheet.Icons.POTION_PURITY;
 		
-		affectedBlobs = new ArrayList<>(new BlobImmunity().immunities());
+		affectedBlobs = new ArrayList<>();
+		affectedBlobs.add(IncubatingMiasma.class);
+		affectedBlobs.add(OutbreakMiasma.class);
+		affectedBlobs.add(PaleMiasma.class);
 	}
 
 	@Override

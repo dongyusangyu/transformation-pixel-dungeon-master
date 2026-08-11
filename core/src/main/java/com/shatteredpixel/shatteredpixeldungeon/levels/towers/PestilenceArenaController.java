@@ -2,6 +2,15 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PurifyingIncense;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -23,6 +32,8 @@ public class PestilenceArenaController implements Bundlable {
     private static final String BRAZIER_CELLS = "brazier_cells";
     private static final String COOLDOWNS = "cooldowns";
     private static final String PREPARED_HERO_CELL = "prepared_hero_cell";
+    private static final String WATER_CELL = "water_cell";
+    private static final String WATER_TURNS = "water_turns";
 
     private static final int BRAZIER_COUNT = 4;
     private static final int MIN_BRAZIER_DISTANCE = 6;
@@ -46,6 +57,8 @@ public class PestilenceArenaController implements Bundlable {
     private int[] brazierCells = new int[0];
     private int[] cooldowns = new int[BRAZIER_COUNT];
     private int preparedHeroCell = -1;
+    private int waterCell = -1;
+    private int waterTurns;
 
     public boolean prepare(TowerBossLevel level, int bossCell) {
         long seed = TowerBossGenerator.mix64(Dungeon.seed
@@ -206,18 +219,89 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     public void onHeroTurnStarted(Hero hero) {
+        if (hero == null || Dungeon.level == null) return;
+        int brazier = brazierIndex(hero.pos);
+        preparedHeroCell = brazier >= 0 && cooldowns[brazier] == 0 ? hero.pos : -1;
+
+        Class<? extends Blob> miasma = activeMiasmaAt(hero.pos);
+        if (miasma == null || hero.isImmune(miasma)) {
+            waterCell = -1;
+            waterTurns = 0;
+            return;
+        }
+        if (Dungeon.level.water[hero.pos]) {
+            if (waterCell != hero.pos) {
+                waterCell = hero.pos;
+                waterTurns = 1;
+            } else {
+                waterTurns++;
+            }
+            if ((waterTurns & 1) != 0) return;
+        } else {
+            waterCell = -1;
+            waterTurns = 0;
+        }
+        Infection.addStacks(hero, 1);
+        if (miasma == OutbreakMiasma.class) {
+            Buff.affect(hero, Poison.class).set(3f);
+        } else if (miasma == PaleMiasma.class) {
+            Buff.prolong(hero, Slow.class, 2f);
+        }
+    }
+
+    public void onHeroWaited(Hero hero) {
+        if (hero == null || hero.pos != preparedHeroCell) return;
+        int index = brazierIndex(hero.pos);
+        if (index < 0 || cooldowns[index] > 0) return;
+        activateBrazier(hero, index);
+    }
+
+    public void onHeroConsumableUsed(Hero hero, Item item) {
+        // Pestilence reacts to committed consumables once its combat state is installed.
+    }
+
+    public void advanceBossTurn() {
         for (int i = 0; i < cooldowns.length; i++) {
             if (cooldowns[i] > 0) cooldowns[i]--;
         }
     }
 
-    public void onHeroWaited(Hero hero) {
-        // Activation is added with the plague blobs; retain the committed wait cell now.
-        preparedHeroCell = hero == null ? -1 : hero.pos;
+    public void resetBrazierCooldowns() {
+        Arrays.fill(cooldowns, 0);
     }
 
-    public void onHeroConsumableUsed(Hero hero, Item item) {
-        // Pestilence reacts to committed consumables once its combat state is installed.
+    private int brazierIndex(int cell) {
+        for (int i = 0; i < brazierCells.length; i++) if (brazierCells[i] == cell) return i;
+        return -1;
+    }
+
+    private static Class<? extends Blob> activeMiasmaAt(int cell) {
+        if (Blob.volumeAt(cell, PaleMiasma.class) > 0) return PaleMiasma.class;
+        if (Blob.volumeAt(cell, OutbreakMiasma.class) > 0) return OutbreakMiasma.class;
+        if (Blob.volumeAt(cell, IncubatingMiasma.class) > 0) return IncubatingMiasma.class;
+        return null;
+    }
+
+    private void activateBrazier(Hero hero, int index) {
+        int center = brazierCells[index];
+        int width = Dungeon.level.width();
+        for (int cell = 0; cell < Dungeon.level.length(); cell++) {
+            int dx = Math.abs(cell % width - center % width);
+            int dy = Math.abs(cell / width - center / width);
+            if (Math.max(dx, dy) > 3) continue;
+            clearAt(cell, IncubatingMiasma.class);
+            clearAt(cell, OutbreakMiasma.class);
+            clearAt(cell, PaleMiasma.class);
+            if (!Dungeon.level.solid[cell]) Blob.seed(cell, 3, PurifyingIncense.class);
+        }
+        Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
+        cooldowns[index] = 12;
+        preparedHeroCell = -1;
+    }
+
+    private static void clearAt(int cell, Class<? extends Blob> type) {
+        Blob blob = Dungeon.level.blobs.get(type);
+        if (blob != null) blob.clear(cell);
     }
 
     @Override
@@ -226,6 +310,8 @@ public class PestilenceArenaController implements Bundlable {
         bundle.put(BRAZIER_CELLS, brazierCells);
         bundle.put(COOLDOWNS, cooldowns);
         bundle.put(PREPARED_HERO_CELL, preparedHeroCell);
+        bundle.put(WATER_CELL, waterCell);
+        bundle.put(WATER_TURNS, waterTurns);
     }
 
     @Override
@@ -240,11 +326,15 @@ public class PestilenceArenaController implements Bundlable {
             for (int i = 0; i < cooldowns.length; i++) cooldowns[i] = Math.max(0, cooldowns[i]);
             preparedHeroCell = bundle.contains(PREPARED_HERO_CELL)
                     ? bundle.getInt(PREPARED_HERO_CELL) : -1;
+            waterCell = bundle.contains(WATER_CELL) ? bundle.getInt(WATER_CELL) : -1;
+            waterTurns = Math.max(0, bundle.getInt(WATER_TURNS));
         } else {
             prepared = false;
             brazierCells = new int[0];
             cooldowns = new int[BRAZIER_COUNT];
             preparedHeroCell = -1;
+            waterCell = -1;
+            waterTurns = 0;
         }
     }
 
