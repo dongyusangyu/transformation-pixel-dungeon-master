@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
@@ -177,10 +178,9 @@ public class PestilenceKnight extends TowerBoss {
     protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
         if (harvest != HarvestState.NONE) return 0;
         int adjusted = super.modifyFinalDamage(damage, source, tags);
-        if (phase == Phase.OUTBREAK && Dungeon.level != null && pos >= 0
-                && Blob.volumeAt(pos, OutbreakMiasma.class) > 0) {
-            adjusted = Math.round(adjusted * 0.8f);
-        }
+        boolean standingInOutbreak = Dungeon.level != null && pos >= 0
+                && Blob.volumeAt(pos, OutbreakMiasma.class) > 0;
+        adjusted = applyOutbreakReduction(adjusted, source, standingInOutbreak);
         int capped = Math.min(FINAL_DAMAGE_CAP, adjusted);
         int lock = nextUnfinishedLockHP();
         if (lock < 0) return capped;
@@ -190,6 +190,14 @@ public class PestilenceKnight extends TowerBoss {
             return untilLock;
         }
         return capped;
+    }
+
+    private int applyOutbreakReduction(int damage, Object source, boolean standingInOutbreak) {
+        if (phase == Phase.OUTBREAK && standingInOutbreak
+                && !(source instanceof PestilenceArenaController)) {
+            return Math.round(damage * 0.8f);
+        }
+        return damage;
     }
 
     @Override
@@ -781,6 +789,9 @@ public class PestilenceKnight extends TowerBoss {
     void finishBossActionForTest() { finishBossAction(); }
     void setPhaseForTest(Phase value) { phase = value; if (value == Phase.TERMINAL) ensureTerminalEntered(); }
     int outbreakReductionForTest(int value) { return Math.round(value * 0.8f); }
+    int applyOutbreakReductionForTest(int value, Object source, boolean standingInOutbreak) {
+        return applyOutbreakReduction(value, source, standingInOutbreak);
+    }
     void forceTenacityRollForTest(boolean value) { forcedTenacityRoll = value; }
     boolean acceptNegativeForTest() { return !rollTenacity(); }
     boolean rewardDroppedForTest() { return rewardDropped; }
