@@ -32,6 +32,16 @@ public class PlagueMiasmaTest {
     }
 
     @Test
+    public void firstTwoPhasesSpreadButTerminalMiasmaDoesNot() {
+        assertTrue(new IncubatingMiasma() instanceof SpreadingPlagueMiasma);
+        assertTrue(new OutbreakMiasma() instanceof SpreadingPlagueMiasma);
+        assertFalse(((Object) new PaleMiasma()) instanceof SpreadingPlagueMiasma);
+        assertEquals(20, SpreadingPlagueMiasma.SPREAD_AMOUNT);
+        assertEquals(2, ((SpreadingPlagueMiasma) new IncubatingMiasma()).spreadInterval());
+        assertEquals(1, ((SpreadingPlagueMiasma) new OutbreakMiasma()).spreadInterval());
+    }
+
+    @Test
     public void outbreakLocalEvolutionStateSurvivesBundle() {
         OutbreakMiasma original = new OutbreakMiasma();
         Bundle first = new Bundle();
@@ -43,6 +53,21 @@ public class PlagueMiasmaTest {
         restored.storeInBundle(second);
 
         assertEquals(first.getBoolean("spread_parity"), second.getBoolean("spread_parity"));
+        assertEquals(first.getLong("rng_state"), second.getLong("rng_state"));
+    }
+
+    @Test
+    public void incubationSpreadStateAlsoSurvivesBundle() {
+        IncubatingMiasma original = new IncubatingMiasma();
+        Bundle first = new Bundle();
+        original.storeInBundle(first);
+
+        IncubatingMiasma restored = new IncubatingMiasma();
+        restored.restoreFromBundle(first);
+        Bundle second = new Bundle();
+        restored.storeInBundle(second);
+
+        assertEquals(first.getInt("spread_clock"), second.getInt("spread_clock"));
         assertEquals(first.getLong("rng_state"), second.getLong("rng_state"));
     }
 
