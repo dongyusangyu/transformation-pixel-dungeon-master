@@ -13,11 +13,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.utils.Bundle;
@@ -555,6 +558,56 @@ public class PestilenceKnight extends TowerBoss {
         }
     }
 
+    @Override
+    public void die(Object cause) {
+        if (!rewardDropped) {
+            // Commit before constructing or dropping anything so re-entrant death callbacks cannot duplicate loot.
+            rewardDropped = true;
+            dropBossRewards();
+        }
+        cleanupPestilenceEncounter();
+        super.die(cause);
+    }
+
+    private void dropBossRewards() {
+        if (Dungeon.level == null) return;
+        PotionOfPurity purity = new PotionOfPurity();
+        purity.identify(false);
+        Dungeon.level.drop(purity, pos).sprite.drop(pos);
+        Dungeon.level.drop(TowerBossRewardGenerator.createTierSixWeapon(
+                Dungeon.seed, Dungeon.depth, towerBossId()), pos).sprite.drop(pos);
+    }
+
+    private void cleanupPestilenceEncounter() {
+        harvest = HarvestState.NONE;
+        pendingSkill = "";
+        pendingCells = new int[0];
+        processionSteps = 0;
+        if (Dungeon.level != null) {
+            clearBlob(IncubatingMiasma.class);
+            clearBlob(OutbreakMiasma.class);
+            clearBlob(PaleMiasma.class);
+            clearBlob(PurifyingIncense.class);
+        }
+        if (Dungeon.hero != null) {
+            int stacks = Infection.stacks(Dungeon.hero);
+            if (stacks > 0) {
+                Buff.prolong(Dungeon.hero, PostPlagueFatigue.class, stacks * 10f);
+                Infection.clear(Dungeon.hero);
+            }
+        }
+        if (Dungeon.level instanceof TowerBossLevel) {
+            com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController arena =
+                    ((TowerBossLevel) Dungeon.level).pestilenceArenaController();
+            if (arena != null) arena.finishEncounter();
+        }
+    }
+
+    private static void clearBlob(Class<? extends Blob> type) {
+        Blob blob = Dungeon.level.blobs.get(type);
+        if (blob != null) blob.fullyClear();
+    }
+
     float activeDamageMultiplier() { return 1f + 0.03f * growth; }
     int damageRollMinForTest() { return Math.round(20 * activeDamageMultiplier()); }
     int damageRollMaxForTest() { return Math.round(30 * activeDamageMultiplier()); }
@@ -585,6 +638,8 @@ public class PestilenceKnight extends TowerBoss {
     int outbreakReductionForTest(int value) { return Math.round(value * 0.8f); }
     void forceTenacityRollForTest(boolean value) { forcedTenacityRoll = value; }
     boolean acceptNegativeForTest() { return !rollTenacity(); }
+    boolean rewardDroppedForTest() { return rewardDropped; }
+    void markRewardDroppedForTest() { rewardDropped = true; }
 
     private void ensureTerminalEntered() {
         if (terminalEntered) return;
