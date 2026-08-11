@@ -212,6 +212,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.LifeLinkSpell
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.ShieldOfLight;
 
 public abstract class Char extends Actor {
+
+	public interface HealingModifier {
+		float incomingHealingReduction();
+		default void afterIncomingHealing(int requested, int actual) {}
+	}
 	
 	public int pos = 0;
 	
@@ -784,14 +789,26 @@ public abstract class Char extends Actor {
         return heal(h,true);
     }
     public int heal(int h,boolean visual){
-        int trueHeal = Math.min(h,HT-HP);
-        int outHeal = h-trueHeal;
+        float reduction = 0f;
+        for (Buff buff : buffs()) {
+            if (buff instanceof HealingModifier) {
+                reduction += ((HealingModifier) buff).incomingHealingReduction();
+            }
+        }
+        int modifiedHeal = Math.max(0, (int)(h * (1f - Math.min(0.95f, reduction))));
+        int trueHeal = Math.min(modifiedHeal,HT-HP);
+        int outHeal = modifiedHeal-trueHeal;
         if(this.buff(Virtue.Firm.class)!=null && outHeal>0){
             Buff.affect(this, Virtue.VirtueBarrier.class).incShield(outHeal);
         }
         //GLog.i(""+outHeal);
         HP+=trueHeal;
         if(visual && trueHeal>0 && sprite!=null) sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(trueHeal), FloatingText.HEALING);
+        for (Buff buff : buffs()) {
+            if (buff instanceof HealingModifier) {
+                ((HealingModifier) buff).afterIncomingHealing(h, trueHeal);
+            }
+        }
         return trueHeal;
     }
 
