@@ -81,12 +81,12 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 
 	@Override
 	public int defenseSkill(Char enemy) {
-		float defense = 20f * evasionRingMultiplier();
+		float defense = 20f;
 		Armor armor = replica.armor();
 		if (armor != null) {
 			defense = armor.evasionFactor(this, defense);
 		}
-		return Math.round(defense);
+		return Math.round(defense * evasionRingMultiplier());
 	}
 
 	protected float evasionRingMultiplier() {
@@ -158,10 +158,15 @@ public abstract class HeroReplicaMob extends Mob implements DeceptiveHeroTarget,
 
 	@Override
 	public int defenseProc(Char enemy, int damage, DamageTag... tags) {
+		damage = processBaseDefenseProc(enemy, damage, tags);
 		Armor armor = replica.armor();
 		if (armor != null) {
 			damage = armor.proc(enemy, this, damage);
 		}
+		return damage;
+	}
+
+	protected int processBaseDefenseProc(Char enemy, int damage, DamageTag... tags) {
 		return super.defenseProc(enemy, damage, tags);
 	}
 
