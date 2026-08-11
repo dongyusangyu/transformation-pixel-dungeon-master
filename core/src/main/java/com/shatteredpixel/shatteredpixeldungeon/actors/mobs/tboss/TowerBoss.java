@@ -1,0 +1,25 @@
+package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
+
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
+
+/** Common marker and lifecycle surface for bosses selected by a tower boss level. */
+public abstract class TowerBoss extends Mob {
+
+    /** Marker for private boss state buffs which must not be treated as external debuffs. */
+    public interface InternalState {
+    }
+
+    public abstract String towerBossId();
+
+    public void prepareArena(TowerBossLevel level, int spawnCell) {
+    }
+
+    public void cleanupArena(TowerBossLevel level) {
+    }
+
+    protected boolean isInternalState(Buff buff) {
+        return buff instanceof InternalState;
+    }
+}
