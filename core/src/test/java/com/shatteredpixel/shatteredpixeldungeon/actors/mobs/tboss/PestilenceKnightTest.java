@@ -9,7 +9,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -156,18 +155,12 @@ public class PestilenceKnightTest {
     }
 
     @Test
-    public void laterPhaseMiasmaUsesPhaseColoredPotionProjectiles() {
-        assertEquals(ItemSpriteSheet.POTION_JADE,
-                PestilenceKnight.miasmaProjectileImageForTest("quarantine"));
+    public void laterPhaseMiasmaUsesPhaseColoredProjectileSplashes() {
         assertEquals(0x63D13F,
                 PestilenceKnight.miasmaProjectileColorForTest("quarantine"));
 
-        assertEquals(ItemSpriteSheet.POTION_SILVER,
-                PestilenceKnight.miasmaProjectileImageForTest("pale_charge"));
         assertEquals(0xC8C3E8,
                 PestilenceKnight.miasmaProjectileColorForTest("pale_charge"));
-        assertEquals(ItemSpriteSheet.POTION_SILVER,
-                PestilenceKnight.miasmaProjectileImageForTest("doom_procession"));
         assertEquals(0xC8C3E8,
                 PestilenceKnight.miasmaProjectileColorForTest("doom_procession"));
     }
