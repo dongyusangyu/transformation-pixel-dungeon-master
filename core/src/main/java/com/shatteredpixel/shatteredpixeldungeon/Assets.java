@@ -407,6 +407,7 @@ public class Assets {
 		public static final String WILD_DREAD = "sprites/wild_dread.png";
 		public static final String NECRO    = "sprites/necromancer.png";
 		public static final String SOUL_COLLECTOR = "sprites/soul_collector.png";
+		public static final String PESTILENCE_KNIGHT = "sprites/pestilence_knight.png";
 		public static final String GHOUL    = "sprites/ghoul.png";
 		public static final String RIPPER   = "sprites/ripper.png";
 		public static final String SPAWNER  = "sprites/spawner.png";

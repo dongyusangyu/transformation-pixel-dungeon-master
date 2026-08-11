@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.PowerfulWraith;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TwistedMirror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.WildDread;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 
 import org.junit.Test;
 
@@ -68,7 +69,8 @@ public class TowerBestiaryCategoriesTest {
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(WildDread.class));
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(TwistedMirror.class));
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(PowerfulWraith.class));
-		assertTrue(Bestiary.TOWER_BOSSES.entities().isEmpty());
+		assertEquals(Arrays.asList(PestilenceKnight.class),
+				new ArrayList<>(Bestiary.TOWER_BOSSES.entities()));
 	}
 
 	@Test
@@ -195,6 +197,20 @@ public class TowerBestiaryCategoriesTest {
 		assertTrue(defaults.getProperty(prefix + "desc").contains("corrosive mist"));
 		assertEquals("尘世巨蟒", chinese.getProperty(prefix + "name"));
 		assertTrue(chinese.getProperty(prefix + "desc").contains("酸雾"));
+	}
+
+	@Test
+	public void pestilenceKnightMessagesExistInDefaultAndChinese() throws IOException {
+		Properties defaults = loadActorMessages("actors.properties");
+		Properties chinese = loadActorMessages("actors_zh.properties");
+		String prefix = "actors.mobs.tboss.pestilenceknight.";
+
+		assertEquals("Pestilence Knight", defaults.getProperty(prefix + "name"));
+		assertTrue(defaults.getProperty(prefix + "desc", "").contains("Braziers"));
+		assertTrue(defaults.getProperty(prefix + "harvest", "").contains("Harvest"));
+		assertEquals("瘟疫骑士", chinese.getProperty(prefix + "name"));
+		assertTrue(chinese.getProperty(prefix + "desc", "").contains("香炉"));
+		assertTrue(!chinese.getProperty(prefix + "pale_charge", "").isEmpty());
 	}
 
 	@Test
