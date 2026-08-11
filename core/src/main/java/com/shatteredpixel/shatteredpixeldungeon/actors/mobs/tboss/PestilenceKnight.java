@@ -852,7 +852,6 @@ public class PestilenceKnight extends TowerBoss {
     }
     static int plagueFlaskPaletteIndexForTest(int index) { return plagueFlaskPaletteIndex(index); }
     static int plagueFlaskImpactColorForTest() { return PLAGUE_FLASK_IMPACT_COLOR; }
-    static int miasmaProjectileImageForTest(String skill) { return miasmaProjectileImage(skill); }
     static int miasmaProjectileColorForTest(String skill) {
         return miasmaProjectileImpactColor(skill);
     }
