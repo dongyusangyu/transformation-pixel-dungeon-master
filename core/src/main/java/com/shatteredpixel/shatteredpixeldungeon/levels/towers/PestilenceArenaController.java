@@ -13,6 +13,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -257,7 +260,32 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     public void onHeroConsumableUsed(Hero hero, Item item) {
-        // Pestilence reacts to committed consumables once its combat state is installed.
+        if (hero == null || item == null || Dungeon.level == null) return;
+        if ((item instanceof Potion || item instanceof Food || item instanceof Scroll)
+                && Blob.volumeAt(hero.pos, OutbreakMiasma.class) > 0) {
+            Infection.addStacks(hero, 1);
+        }
+    }
+
+    /** Returns the cell of the nearest ready brazier, or -1 when none is available. */
+    public int nearestReadyBrazier(int origin) {
+        int bestCell = -1;
+        int bestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < brazierCells.length; i++) {
+            if (cooldowns[i] > 0) continue;
+            int distance = Dungeon.level == null
+                    ? Math.abs(brazierCells[i] - origin)
+                    : Dungeon.level.distance(origin, brazierCells[i]);
+            if (distance < bestDistance || distance == bestDistance && brazierCells[i] < bestCell) {
+                bestDistance = distance;
+                bestCell = brazierCells[i];
+            }
+        }
+        return bestCell;
+    }
+
+    public boolean isBrazierCell(int cell) {
+        return brazierIndex(cell) >= 0;
     }
 
     public void advanceBossTurn() {

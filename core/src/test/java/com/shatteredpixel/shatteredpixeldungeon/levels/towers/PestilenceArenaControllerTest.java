@@ -123,6 +123,20 @@ public class PestilenceArenaControllerTest {
         assertEquals(0, controller.cooldownAt(1));
     }
 
+    @Test
+    public void nearestReadyBrazierSkipsFixturesOnCooldown() {
+        FakeArena arena = new FakeArena(generateMap(19L));
+        PestilenceArenaController controller = new PestilenceArenaController();
+        assertTrue(controller.prepare(arena, TowerBossLayout.cell(14, 10), 19L));
+        int[] cells = controller.brazierCells();
+        for (int i = 0; i < cells.length; i++) controller.putOnCooldown(i, 12);
+        controller.putOnCooldown(2, 0);
+
+        assertEquals(cells[2], controller.nearestReadyBrazier(TowerBossLayout.cell(14, 29)));
+        assertTrue(controller.isBrazierCell(cells[2]));
+        assertFalse(controller.isBrazierCell(TowerBossLayout.cell(14, 17)));
+    }
+
     private static int[] generateMap(long seed) {
         Random.pushGenerator(seed);
         try {
