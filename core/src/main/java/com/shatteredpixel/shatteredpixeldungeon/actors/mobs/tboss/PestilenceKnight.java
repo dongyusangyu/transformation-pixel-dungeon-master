@@ -3,6 +3,9 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
@@ -121,7 +124,88 @@ public class PestilenceKnight extends TowerBoss {
 
     @Override
     protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
-        return Math.min(FINAL_DAMAGE_CAP, super.modifyFinalDamage(damage, source, tags));
+        if (harvest != HarvestState.NONE) return 0;
+        int capped = Math.min(FINAL_DAMAGE_CAP, super.modifyFinalDamage(damage, source, tags));
+        int lock = nextUnfinishedLockHP();
+        if (lock < 0) return capped;
+        int untilLock = Math.max(0, HP - lock);
+        if (capped >= untilLock) {
+            harvest = HarvestState.ARMED;
+            return untilLock;
+        }
+        return capped;
+    }
+
+    @Override
+    public boolean isInvulnerable(Class effect) {
+        return harvest != HarvestState.NONE || super.isInvulnerable(effect);
+    }
+
+    @Override
+    protected boolean act() {
+        if (harvest != HarvestState.NONE && paralysed <= 0 && state != SLEEPING) {
+            advanceHarvest(currentHarvestBlobCells());
+            spend(TICK);
+            advanceArenaBossTurn();
+            return true;
+        }
+        boolean completed = super.act();
+        if (completed) advanceArenaBossTurn();
+        return completed;
+    }
+
+    private int nextUnfinishedLockHP() {
+        if ((phaseLocks & 1) == 0) return Math.round(HT * 0.70f);
+        if ((phaseLocks & 2) == 0) return Math.round(HT * 0.35f);
+        return -1;
+    }
+
+    private int currentHarvestBlobCells() {
+        if (Dungeon.level == null) return 0;
+        Class<? extends Blob> type = phase == Phase.INCUBATION
+                ? IncubatingMiasma.class : OutbreakMiasma.class;
+        Blob blob = Dungeon.level.blobs.get(type);
+        if (blob == null || blob.cur == null) return 0;
+        int count = 0;
+        for (int value : blob.cur) if (value > 0) count++;
+        return count;
+    }
+
+    private void advanceHarvest(int blobCells) {
+        if (harvest == HarvestState.ARMED) {
+            harvest = HarvestState.CHANNELING;
+            return;
+        }
+        if (harvest != HarvestState.CHANNELING) return;
+        heal(Math.min(200, Math.max(0, blobCells) * 8));
+        clearHarvestMiasma();
+        if ((phaseLocks & 1) == 0) {
+            phaseLocks |= 1;
+            phase = Phase.OUTBREAK;
+        } else {
+            phaseLocks |= 2;
+            phase = Phase.TERMINAL;
+            if (Dungeon.level instanceof TowerBossLevel
+                    && ((TowerBossLevel) Dungeon.level).pestilenceArenaController() != null) {
+                ((TowerBossLevel) Dungeon.level).pestilenceArenaController().resetBrazierCooldowns();
+            }
+        }
+        harvest = HarvestState.NONE;
+    }
+
+    private void clearHarvestMiasma() {
+        if (Dungeon.level == null) return;
+        Class<? extends Blob> type = phase == Phase.INCUBATION
+                ? IncubatingMiasma.class : OutbreakMiasma.class;
+        Blob blob = Dungeon.level.blobs.get(type);
+        if (blob != null) blob.fullyClear();
+    }
+
+    private void advanceArenaBossTurn() {
+        if (Dungeon.level instanceof TowerBossLevel
+                && ((TowerBossLevel) Dungeon.level).pestilenceArenaController() != null) {
+            ((TowerBossLevel) Dungeon.level).pestilenceArenaController().advanceBossTurn();
+        }
     }
 
     float activeDamageMultiplier() { return 1f + 0.03f * growth; }
@@ -133,6 +217,8 @@ public class PestilenceKnight extends TowerBoss {
     int growthForTest() { return growth; }
     Phase phaseForTest() { return phase; }
     HarvestState harvestForTest() { return harvest; }
+    void armHarvestForTest() { harvest = HarvestState.ARMED; }
+    void advanceHarvestForTest(int blobCells) { advanceHarvest(blobCells); }
 
     @Override
     public void storeInBundle(Bundle bundle) {
