@@ -52,6 +52,8 @@ public class PestilenceKnight extends TowerBoss {
     public static final int KNOCKBACK_DISTANCE = 1;
     public static final int FINAL_DAMAGE_CAP = 150;
     private static final int PLAGUE_FLASK_IMPACT_COLOR = 0x9EAD48;
+    private static final int OUTBREAK_MIASMA_IMPACT_COLOR = 0x63D13F;
+    private static final int PALE_MIASMA_IMPACT_COLOR = 0xC8C3E8;
     private static final int PURPLE_PRESCRIPTION_COLOR = 0x9A55D6;
 
     static final String PLAGUE_FLASK = "plague_flask";
@@ -306,7 +308,7 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean telegraphSkill(String skill, int[] cells) {
-        return telegraphSkill(skill, cells, -1);
+        return telegraphSkill(skill, cells, miasmaProjectileTarget(cells));
     }
 
     private boolean telegraphSkill(String skill, int[] cells, int projectileTarget) {
@@ -316,24 +318,28 @@ public class PestilenceKnight extends TowerBoss {
         announceSkill(skill);
         showTelegraph(cells, skill.equals(PALE_CHARGE) ? 0xD8D8D8 : 0x88AA33);
         if (sprite instanceof PestilenceKnightSprite) ((PestilenceKnightSprite) sprite).cast();
-        if (PLAGUE_FLASK.equals(skill)) launchPlagueFlask(projectileTarget);
+        launchMiasmaProjectile(skill, projectileTarget);
         spend(TICK);
         finishBossAction();
         return true;
     }
 
-    private void launchPlagueFlask(final int target) {
+    private void launchMiasmaProjectile(final String skill, final int target) {
         if (Dungeon.level == null || target < 0 || target >= Dungeon.level.length()
                 || sprite == null || sprite.parent == null) return;
+        int image = miasmaProjectileImage(skill);
+        final int impactColor = miasmaProjectileImpactColor(skill);
+        if (PLAGUE_FLASK.equals(skill)) image = plagueFlaskImage(plagueFlaskVisualIndex++);
+        if (image < 0 || impactColor < 0) return;
         final Level level = Dungeon.level;
         Item flask = new Item();
-        flask.image = plagueFlaskImage(plagueFlaskVisualIndex++);
+        flask.image = image;
         ((MissileSprite) sprite.parent.recycle(MissileSprite.class)).reset(sprite, target, flask,
                 new Callback() {
                     @Override
                     public void call() {
                         if (Dungeon.level == level) {
-                            Splash.at(target, PLAGUE_FLASK_IMPACT_COLOR, 6);
+                            Splash.at(target, impactColor, 6);
                         }
                     }
                 });
@@ -349,6 +355,35 @@ public class PestilenceKnight extends TowerBoss {
 
     private static int plagueFlaskPaletteIndex(int index) {
         return Math.floorMod(index, 3);
+    }
+
+    private static int miasmaProjectileImage(String skill) {
+        if (QUARANTINE.equals(skill)) return ItemSpriteSheet.POTION_JADE;
+        if (PALE_CHARGE.equals(skill) || DOOM_PROCESSION.equals(skill)) {
+            return ItemSpriteSheet.POTION_SILVER;
+        }
+        return -1;
+    }
+
+    private static int miasmaProjectileImpactColor(String skill) {
+        if (PLAGUE_FLASK.equals(skill)) return PLAGUE_FLASK_IMPACT_COLOR;
+        if (QUARANTINE.equals(skill)) return OUTBREAK_MIASMA_IMPACT_COLOR;
+        if (PALE_CHARGE.equals(skill) || DOOM_PROCESSION.equals(skill)) {
+            return PALE_MIASMA_IMPACT_COLOR;
+        }
+        return -1;
+    }
+
+    private static int miasmaProjectileTarget(int[] cells) {
+        if (cells == null || cells.length == 0) return -1;
+        int middle = cells.length / 2;
+        for (int offset = 0; offset < cells.length; offset++) {
+            int right = middle + offset;
+            if (right < cells.length && cells[right] >= 0) return cells[right];
+            int left = middle - offset - 1;
+            if (left >= 0 && cells[left] >= 0) return cells[left];
+        }
+        return -1;
     }
 
     private boolean resolvePendingSkill(boolean diagnosedBeforeAction) {
@@ -375,6 +410,8 @@ public class PestilenceKnight extends TowerBoss {
                 pendingSkill = DOOM_PROCESSION;
                 pendingCells = processionCells(processionSteps);
                 showTelegraph(pendingCells, 0x6B557C);
+                launchMiasmaProjectile(DOOM_PROCESSION,
+                        miasmaProjectileTarget(pendingCells));
             } else {
                 processionSteps = 0;
                 cooldowns[QUARANTINE_CD] = 8;
@@ -815,6 +852,11 @@ public class PestilenceKnight extends TowerBoss {
     }
     static int plagueFlaskPaletteIndexForTest(int index) { return plagueFlaskPaletteIndex(index); }
     static int plagueFlaskImpactColorForTest() { return PLAGUE_FLASK_IMPACT_COLOR; }
+    static int miasmaProjectileImageForTest(String skill) { return miasmaProjectileImage(skill); }
+    static int miasmaProjectileColorForTest(String skill) {
+        return miasmaProjectileImpactColor(skill);
+    }
+    static int miasmaProjectileTargetForTest(int[] cells) { return miasmaProjectileTarget(cells); }
 
     private void ensureTerminalEntered() {
         if (terminalEntered) return;

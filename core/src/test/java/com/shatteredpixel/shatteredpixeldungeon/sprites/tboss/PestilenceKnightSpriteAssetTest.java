@@ -80,8 +80,20 @@ public class PestilenceKnightSpriteAssetTest {
         assertTrue(boss.contains("ItemSpriteSheet.POTION_BISTRE"));
         assertTrue("the bottle should fly to the warning area's center",
                 boss.contains("reset(sprite, target, flask"));
-        assertTrue("the bottle should splash in the incubating miasma color",
-                boss.contains("Splash.at(target, PLAGUE_FLASK_IMPACT_COLOR"));
+        assertTrue("the bottle should splash in its phase-matched miasma color",
+                boss.contains("Splash.at(target, impactColor"));
+        assertTrue("phase two miasma should use a jade potion projectile",
+                boss.contains("QUARANTINE.equals(skill)) return ItemSpriteSheet.POTION_JADE"));
+        assertTrue("phase three miasma should use a silver potion projectile",
+                boss.contains("return ItemSpriteSheet.POTION_SILVER"));
+        assertTrue("phase two projectile splash should match outbreak miasma",
+                boss.contains("OUTBREAK_MIASMA_IMPACT_COLOR = 0x63D13F"));
+        assertTrue("phase three projectile splash should match pale miasma",
+                boss.contains("PALE_MIASMA_IMPACT_COLOR = 0xC8C3E8"));
+        assertTrue("all telegraphed miasma skills should launch their bottle",
+                boss.contains("launchMiasmaProjectile(skill, projectileTarget)"));
+        assertTrue("every later doom procession wave should launch another bottle",
+                boss.contains("launchMiasmaProjectile(DOOM_PROCESSION"));
         assertTrue("harvest should explain the invulnerable channel",
                 boss.contains("announceSkill(\"harvest\")"));
         assertTrue("infection rupture needs visible status feedback",
