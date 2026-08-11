@@ -95,6 +95,9 @@ public class Food extends Item {
 			eatSFX();
 			
 			hero.spend( eatingTime() );
+			if (Dungeon.level != null) {
+				Dungeon.level.onHeroConsumableUsed(hero, this);
+			}
 
 			Talent.onFoodEaten(hero, energy, this);
 			

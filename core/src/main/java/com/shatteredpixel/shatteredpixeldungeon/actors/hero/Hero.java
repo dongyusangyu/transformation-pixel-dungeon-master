@@ -1528,6 +1528,7 @@ public class Hero extends Char {
 		}
 		
 		if (!ready) {
+			Dungeon.level.onHeroTurnStarted(this);
 
 			//do a full observe (including fog update) if not resting.
 			if (!resting || buff(MindVision.class) != null || buff(Awareness.class) != null) {
@@ -1558,6 +1559,7 @@ public class Hero extends Char {
 			
 			if (resting) {
 				spendConstant( TIME_TO_REST );
+				Dungeon.level.onHeroWaited(this);
 
 				if(hasTalent(Talent.GET_UP)){
 					Buff.affect(this, Talent.NoSleep.class);
@@ -2187,6 +2189,7 @@ public class Hero extends Char {
 	public void rest( boolean fullRest ) {
 		AgentMinDatasetRecorder.onWait(fullRest);
 		spendAndNextConstant( TIME_TO_REST );
+		Dungeon.level.onHeroWaited(this);
 		if(pointsNegative(Talent.LIFE_SPORT)>0){
 			damage(pointsNegative(Talent.LIFE_SPORT),Talent.LIFE_SPORT);
 			if (!this.isAlive()) {

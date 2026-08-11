@@ -593,6 +593,15 @@ public abstract class Level implements Bundlable {
 	}
 
 	//returns true if we immediately transition, false otherwise
+	public void onHeroTurnStarted(Hero hero) {
+	}
+
+	public void onHeroWaited(Hero hero) {
+	}
+
+	public void onHeroConsumableUsed(Hero hero, Item item) {
+	}
+
 	public boolean activateTransition(Hero hero, LevelTransition transition){
 		if (locked){
 			return false;

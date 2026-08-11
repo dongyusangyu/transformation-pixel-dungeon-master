@@ -2,6 +2,8 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -201,6 +203,21 @@ public class PestilenceArenaController implements Bundlable {
 
     public int preparedHeroCell() {
         return preparedHeroCell;
+    }
+
+    public void onHeroTurnStarted(Hero hero) {
+        for (int i = 0; i < cooldowns.length; i++) {
+            if (cooldowns[i] > 0) cooldowns[i]--;
+        }
+    }
+
+    public void onHeroWaited(Hero hero) {
+        // Activation is added with the plague blobs; retain the committed wait cell now.
+        preparedHeroCell = hero == null ? -1 : hero.pos;
+    }
+
+    public void onHeroConsumableUsed(Hero hero, Item item) {
+        // Pestilence reacts to committed consumables once its combat state is installed.
     }
 
     @Override

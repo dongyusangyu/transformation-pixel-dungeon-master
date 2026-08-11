@@ -19,7 +19,9 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -157,6 +159,27 @@ public class TowerBossLevel extends TowerLevel {
 
 	public PestilenceArenaController pestilenceArenaController() {
 		return pestilenceArena;
+	}
+
+	@Override
+	public void onHeroTurnStarted(Hero hero) {
+		if (pestilenceArena != null && !encounter.bossEncounterDefeated()) {
+			pestilenceArena.onHeroTurnStarted(hero);
+		}
+	}
+
+	@Override
+	public void onHeroWaited(Hero hero) {
+		if (pestilenceArena != null && !encounter.bossEncounterDefeated()) {
+			pestilenceArena.onHeroWaited(hero);
+		}
+	}
+
+	@Override
+	public void onHeroConsumableUsed(Hero hero, Item item) {
+		if (pestilenceArena != null && !encounter.bossEncounterDefeated()) {
+			pestilenceArena.onHeroConsumableUsed(hero, item);
+		}
 	}
 
 	String selectedBossId() {
