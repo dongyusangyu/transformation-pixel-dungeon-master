@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -245,6 +246,16 @@ public class PestilenceKnightTest {
         assertEquals(1f, boss.attackDelay(), 0.001f);
         assertEquals(8, boss.drRollMinForTest());
         assertEquals(21, boss.drRollMaxForTest());
+    }
+
+    @Test
+    public void purifierDamageBypassesOutbreakMiasmaReduction() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.setPhaseForTest(PestilenceKnight.Phase.OUTBREAK);
+
+        assertEquals(80, boss.applyOutbreakReductionForTest(100, new Object(), true));
+        assertEquals(100, boss.applyOutbreakReductionForTest(
+                100, new PestilenceArenaController(), true));
     }
 
     @Test
