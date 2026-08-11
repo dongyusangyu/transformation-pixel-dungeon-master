@@ -1,11 +1,15 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 
 /** Stack-based plague carried by the hero during the Pestilence encounter. */
@@ -13,6 +17,7 @@ public class Infection extends Buff implements Char.HealingModifier {
 
     public static final int MAX_STACKS = 5;
     public static final float HEALING_REDUCTION_PER_STACK = 0.08f;
+    private static final int INFECTION_BURST_COLOR = 0xFF718F3A;
 
     private static final String STACKS = "stacks";
     private static final String THIRD_THRESHOLD_ARMED = "third_threshold_armed";
@@ -70,11 +75,20 @@ public class Infection extends Buff implements Char.HealingModifier {
             Buff.prolong(target, Hex.class, 4f);
         }
         if (stacks >= MAX_STACKS) {
+            showRuptureFeedback();
             target.damage(25, Infection.class);
             Buff.prolong(target, Vulnerable.class, 4f);
             stacks = 3;
             thirdThresholdArmed = true;
         }
+    }
+
+    private void showRuptureFeedback() {
+        if (target.sprite != null) {
+            target.sprite.showStatus(CharSprite.NEGATIVE, Messages.get(this, "rupture"));
+            target.sprite.burst(INFECTION_BURST_COLOR, 8);
+        }
+        if (target == Dungeon.hero) GLog.w(Messages.get(this, "rupture_log"));
     }
 
     @Override

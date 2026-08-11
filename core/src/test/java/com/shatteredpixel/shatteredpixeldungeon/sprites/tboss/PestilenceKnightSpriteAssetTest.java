@@ -54,6 +54,7 @@ public class PestilenceKnightSpriteAssetTest {
         String assets = read(root.resolve("Assets.java"));
         String sprite = read(root.resolve("sprites/tboss/PestilenceKnightSprite.java"));
         String boss = read(root.resolve("actors/mobs/tboss/PestilenceKnight.java"));
+        String infection = read(root.resolve("actors/buffs/tboss/Infection.java"));
 
         assertTrue(assets.contains("PESTILENCE_KNIGHT = \"sprites/pestilence_knight.png\""));
         assertTrue(sprite.contains("idle.frames(film, 0, 1, 2, 1)"));
@@ -63,7 +64,19 @@ public class PestilenceKnightSpriteAssetTest {
         assertTrue(sprite.contains("die.frames(film, 13, 14, 15, 16)"));
         assertTrue(sprite.contains("ShadowParticle.UP"));
         assertTrue(sprite.contains("tint(0.30f, 0.05f, 0.42f, 0.24f)"));
+        assertTrue("terminal particles must follow the moving boss",
+                sprite.contains("terminalShadow.pos(x, y + height, width, 0)"));
+        assertTrue("terminal particles must be erased immediately when the effect ends",
+                sprite.contains("terminalShadow.killAndErase()"));
         assertTrue(boss.contains("spriteClass = PestilenceKnightSprite.class"));
+        assertTrue("telegraphed skills should announce their names before resolving",
+                boss.contains("announceSkill(skill)"));
+        assertTrue("harvest should explain the invulnerable channel",
+                boss.contains("announceSkill(\"harvest\")"));
+        assertTrue("infection rupture needs visible status feedback",
+                infection.contains("Messages.get(this, \"rupture\")"));
+        assertTrue("infection rupture needs a distinct particle burst",
+                infection.contains("target.sprite.burst(INFECTION_BURST_COLOR"));
         assertEquals("both retreat and approach movement must synchronize the sprite",
                 2, occurrences(boss, "moveSprite(oldPos, pos)"));
     }

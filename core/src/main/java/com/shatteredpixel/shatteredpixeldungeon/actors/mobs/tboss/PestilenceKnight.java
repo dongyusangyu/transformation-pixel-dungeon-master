@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.PestilenceKnightSprite;
@@ -288,6 +289,7 @@ public class PestilenceKnight extends TowerBoss {
         if (cells == null || cells.length == 0) return completeBaseAction();
         pendingSkill = skill;
         pendingCells = cells;
+        announceSkill(skill);
         showTelegraph(cells, skill.equals(PALE_CHARGE) ? 0xD8D8D8 : 0x88AA33);
         if (sprite instanceof PestilenceKnightSprite) ((PestilenceKnightSprite) sprite).cast();
         spend(TICK);
@@ -330,7 +332,9 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean castPrescription() {
-        applyPrescription(Dungeon.hero, prescriptionIndex++ % 3);
+        int prescription = prescriptionIndex++ % 3;
+        announceSkill(prescriptionAnnouncementKey(prescription));
+        applyPrescription(Dungeon.hero, prescription);
         cooldowns[PRESCRIPTION_CD] = 5;
         spend(TICK);
         finishBossAction();
@@ -356,7 +360,9 @@ public class PestilenceKnight extends TowerBoss {
     }
 
     private boolean castTerminalDiagnosis() {
-        applyTerminalDiagnosis(Dungeon.hero, Infection.stacks(Dungeon.hero));
+        int stacks = Infection.stacks(Dungeon.hero);
+        announceSkill(diagnosisAnnouncementKey(stacks));
+        applyTerminalDiagnosis(Dungeon.hero, stacks);
         cooldowns[PRESCRIPTION_CD] = 6;
         spend(TICK);
         finishBossAction();
@@ -568,20 +574,25 @@ public class PestilenceKnight extends TowerBoss {
     private void advanceHarvest(int blobCells) {
         if (harvest == HarvestState.ARMED) {
             harvest = HarvestState.CHANNELING;
+            announceSkill("harvest");
             if (sprite instanceof PestilenceKnightSprite) {
                 ((PestilenceKnightSprite) sprite).harvest();
             }
             return;
         }
         if (harvest != HarvestState.CHANNELING) return;
+        int oldHP = HP;
         heal(Math.min(200, Math.max(0, blobCells) * 8));
+        int restored = HP - oldHP;
         clearHarvestMiasma();
         if ((phaseLocks & 1) == 0) {
             phaseLocks |= 1;
             phase = Phase.OUTBREAK;
+            announceSkill("phase_outbreak", restored);
         } else {
             phaseLocks |= 2;
             phase = Phase.TERMINAL;
+            announceSkill("phase_terminal", restored);
             ensureTerminalEntered();
             if (Dungeon.level instanceof TowerBossLevel
                     && ((TowerBossLevel) Dungeon.level).pestilenceArenaController() != null) {
@@ -589,6 +600,24 @@ public class PestilenceKnight extends TowerBoss {
             }
         }
         harvest = HarvestState.NONE;
+    }
+
+    private void announceSkill(String key, Object... args) {
+        if (sprite != null) yell(Messages.get(this, key, args));
+    }
+
+    private static String prescriptionAnnouncementKey(int index) {
+        switch (Math.floorMod(index, 3)) {
+            case 0: return "prescription_yellow";
+            case 1: return "prescription_red";
+            default: return "prescription_purple";
+        }
+    }
+
+    private static String diagnosisAnnouncementKey(int stacks) {
+        if (stacks <= 1) return "diagnosis_mild";
+        if (stacks <= 3) return "diagnosis_severe";
+        return "diagnosis_critical";
     }
 
     private void clearHarvestMiasma() {
@@ -700,6 +729,12 @@ public class PestilenceKnight extends TowerBoss {
     void applyPrescriptionForTest(Char target, int index) { applyPrescription(target, index); }
     void applyTerminalDiagnosisForTest(Char target, int stacks) {
         applyTerminalDiagnosis(target, stacks);
+    }
+    static String prescriptionAnnouncementKeyForTest(int index) {
+        return prescriptionAnnouncementKey(index);
+    }
+    static String diagnosisAnnouncementKeyForTest(int stacks) {
+        return diagnosisAnnouncementKey(stacks);
     }
 
     private void ensureTerminalEntered() {
