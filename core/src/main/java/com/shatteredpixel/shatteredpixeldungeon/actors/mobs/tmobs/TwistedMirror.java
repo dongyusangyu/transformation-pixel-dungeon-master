@@ -1,11 +1,14 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.TwistedMirrorSprite;
 
 /** Independent hostile offspring split from an alienated prismatic guard. */
 public class TwistedMirror extends HeroReplicaMob {
 
 	{
+		spriteClass = TwistedMirrorSprite.class;
+
 		HP = HT = 1;
 		defenseSkill = 20;
 
