@@ -15,7 +15,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SurfaceShopkeeper;
 import com.shatteredpixel.shatteredpixeldungeon.custom.treasurehunt.TreasureHuntRecords;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
@@ -249,7 +248,7 @@ public final class ExtractionRaidRun {
 			Catalog.countUses(Gold.class, bonus);
 		}
 		ExtractionRaidLevel.clearRaidKeys();
-		recordMerchantPurchaseCycleSettlement(true, false);
+		recordExtractionRaidSettlement(true, false);
 		finishSession(hero, session);
 
 		if (bonus > 0) {
@@ -274,7 +273,7 @@ public final class ExtractionRaidRun {
 			hero.HP = Math.max(1, hero.HT / 4);
 			PotionOfHealing.cure(hero);
 		}
-		recordMerchantPurchaseCycleSettlement(false, died);
+		recordExtractionRaidSettlement(false, died);
 		finishSession(hero, session);
 		GLog.w(Messages.get(
 				ExtractionRaidRun.class, "failure", raidLootLost, suppliesLost));
@@ -282,12 +281,11 @@ public final class ExtractionRaidRun {
 		return true;
 	}
 
-	static void recordMerchantPurchaseCycleSettlement(boolean successful, boolean died) {
+	static void recordExtractionRaidSettlement(boolean successful, boolean died) {
 		if (!successful && !died) {
 			return;
 		}
 		TreasureHuntRecords.recordExtractionRaidSettlement();
-		SurfaceShopkeeper.syncCurrentMerchantPurchaseLimits();
 	}
 
 	private static void finishSession(Hero hero, RaidSession session) {

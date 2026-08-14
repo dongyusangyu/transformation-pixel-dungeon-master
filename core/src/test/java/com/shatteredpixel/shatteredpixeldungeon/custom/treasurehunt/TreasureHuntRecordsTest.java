@@ -105,25 +105,22 @@ public class TreasureHuntRecordsTest {
 	}
 
 	@Test
-	public void purchaseLimitCycleAdvancesEveryFiveExtractionRaidSettlements() {
+	public void extractionRaidSettlementCountTracksEverySettlement() {
 		for (int settlement = 0; settlement < 4; settlement++) {
 			TreasureHuntRecords.recordExtractionRaidSettlement();
 		}
 
 		assertEquals(4, TreasureHuntRecords.extractionRaidSettlements());
-		assertEquals(0, TreasureHuntRecords.purchaseLimitCycle());
 
 		TreasureHuntRecords.recordExtractionRaidSettlement();
 
 		assertEquals(5, TreasureHuntRecords.extractionRaidSettlements());
-		assertEquals(1, TreasureHuntRecords.purchaseLimitCycle());
 
 		for (int settlement = 0; settlement < 5; settlement++) {
 			TreasureHuntRecords.recordExtractionRaidSettlement();
 		}
 
 		assertEquals(10, TreasureHuntRecords.extractionRaidSettlements());
-		assertEquals(2, TreasureHuntRecords.purchaseLimitCycle());
 	}
 
 	@Test
@@ -138,7 +135,6 @@ public class TreasureHuntRecordsTest {
 		TreasureHuntRecords.restoreFromBundle(bundle);
 
 		assertEquals(7, TreasureHuntRecords.extractionRaidSettlements());
-		assertEquals(1, TreasureHuntRecords.purchaseLimitCycle());
 	}
 
 	@Test
@@ -152,7 +148,6 @@ public class TreasureHuntRecordsTest {
 		assertFalse(TreasureHuntRecords.canClaimTenStepReward());
 		assertEquals(0, TreasureHuntRecords.endlessGamesPlayed());
 		assertEquals(0, TreasureHuntRecords.extractionRaidSettlements());
-		assertEquals(0, TreasureHuntRecords.purchaseLimitCycle());
 		assertArrayEquals(new int[0], TreasureHuntRecords.topScores());
 	}
 }

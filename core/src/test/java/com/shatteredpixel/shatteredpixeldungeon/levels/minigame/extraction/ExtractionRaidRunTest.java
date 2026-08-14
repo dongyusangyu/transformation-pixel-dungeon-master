@@ -108,16 +108,16 @@ public class ExtractionRaidRunTest {
 	}
 
 	@Test
-	public void onlySuccessfulExtractionAndDeathAdvanceMerchantPurchaseCycle() throws IOException {
+	public void onlySuccessfulExtractionAndDeathAdvanceRaidSettlementStats() throws IOException {
 		TreasureHuntRecords.reset();
 
-		ExtractionRaidRun.recordMerchantPurchaseCycleSettlement(true, false);
+		ExtractionRaidRun.recordExtractionRaidSettlement(true, false);
 		assertEquals(1, TreasureHuntRecords.extractionRaidSettlements());
 
-		ExtractionRaidRun.recordMerchantPurchaseCycleSettlement(false, true);
+		ExtractionRaidRun.recordExtractionRaidSettlement(false, true);
 		assertEquals(2, TreasureHuntRecords.extractionRaidSettlements());
 
-		ExtractionRaidRun.recordMerchantPurchaseCycleSettlement(false, false);
+		ExtractionRaidRun.recordExtractionRaidSettlement(false, false);
 		assertEquals(2, TreasureHuntRecords.extractionRaidSettlements());
 
 		String treasureHuntWindow = readCoreSource(

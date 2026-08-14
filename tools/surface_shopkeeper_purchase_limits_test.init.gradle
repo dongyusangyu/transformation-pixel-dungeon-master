@@ -1,0 +1,11 @@
+allprojects {
+	afterEvaluate { project ->
+		if (project.path == ":core" && project.plugins.hasPlugin("java")) {
+			project.sourceSets.test.java.setIncludes([
+					"**/SurfaceShopkeeperTest.java",
+					"**/ExtractionRaidRunTest.java",
+					"**/TreasureHuntRecordsTest.java"
+			])
+		}
+	}
+}

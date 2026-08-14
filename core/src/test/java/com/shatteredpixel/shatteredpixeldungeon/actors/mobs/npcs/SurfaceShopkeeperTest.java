@@ -87,44 +87,37 @@ public class SurfaceShopkeeperTest {
 	}
 
 	@Test
-	public void fifthSettlementClearsEveryQueryPurchaseLimit() {
+	public void extractionRaidSettlementsNeverRefreshQueryPurchaseLimits() {
 		SurfaceShopkeeper merchant = new SurfaceShopkeeper();
 		merchant.recordQueryPurchase(PotionOfHealing.class, 5);
 		merchant.recordQueryPurchase(SmallRation.class, 3);
 
-		for (int settlement = 0; settlement < 4; settlement++) {
+		for (int settlement = 0; settlement < 12; settlement++) {
 			TreasureHuntRecords.recordExtractionRaidSettlement();
 		}
 
-		assertFalse(merchant.canPurchase(PotionOfHealing.class, 1));
+		assertEquals(5, merchant.purchasedCount(PotionOfHealing.class));
 		assertEquals(3, merchant.purchasedCount(SmallRation.class));
-
-		TreasureHuntRecords.recordExtractionRaidSettlement();
-		merchant.syncPurchaseLimitCycle();
-
-		assertEquals(0, merchant.purchasedCount(PotionOfHealing.class));
-		assertEquals(0, merchant.purchasedCount(SmallRation.class));
-		assertTrue(merchant.canPurchase(PotionOfHealing.class, 5));
+		assertFalse(merchant.canPurchase(PotionOfHealing.class, 1));
+		assertTrue(merchant.canPurchase(SmallRation.class, 2));
+		assertFalse(merchant.canPurchase(SmallRation.class, 3));
 	}
 
 	@Test
-	public void purchaseLimitCycleSurvivesMerchantSave() {
-		SurfaceShopkeeper original = new SurfaceShopkeeper();
-		original.recordQueryPurchase(ScrollOfExtraction.class, 2);
-		for (int settlement = 0; settlement < 4; settlement++) {
+	public void legacyPurchaseCycleFieldCannotRefreshRestoredLimits() {
+		Bundle legacyBundle = new Bundle();
+		legacyBundle.put("query_classes", new String[]{ScrollOfExtraction.class.getName()});
+		legacyBundle.put("query_counts", new int[]{2});
+		legacyBundle.put("query_cycle", 0);
+		for (int settlement = 0; settlement < 10; settlement++) {
 			TreasureHuntRecords.recordExtractionRaidSettlement();
 		}
 
-		Bundle bundle = new Bundle();
-		original.storeInBundle(bundle);
 		SurfaceShopkeeper restored = new SurfaceShopkeeper();
-		restored.restoreFromBundle(bundle);
+		restored.restoreFromBundle(legacyBundle);
 
 		assertEquals(2, restored.purchasedCount(ScrollOfExtraction.class));
-
-		TreasureHuntRecords.recordExtractionRaidSettlement();
-
-		assertEquals(0, restored.purchasedCount(ScrollOfExtraction.class));
-		assertTrue(restored.canPurchase(ScrollOfExtraction.class, 5));
+		assertTrue(restored.canPurchase(ScrollOfExtraction.class, 3));
+		assertFalse(restored.canPurchase(ScrollOfExtraction.class, 4));
 	}
 }
