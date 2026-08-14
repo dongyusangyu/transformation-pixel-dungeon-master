@@ -17,7 +17,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.custom.treasurehunt.TreasureHuntRecords;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -105,7 +104,6 @@ public class SurfaceShopkeeper extends Shopkeeper {
 	}
 
 	private final HashMap<String, Integer> queryPurchases = new HashMap<>();
-	private int purchaseLimitCycle = TreasureHuntRecords.purchaseLimitCycle();
 
 	@SuppressWarnings("unchecked")
 	private static void addGeneratorCategory(LinkedHashSet<Class<? extends Item>> result,
@@ -201,7 +199,6 @@ public class SurfaceShopkeeper extends Shopkeeper {
 	}
 
 	public int purchasedCount(Class<? extends Item> itemClass) {
-		syncPurchaseLimitCycle();
 		Integer count = queryPurchases.get(itemClass.getName());
 		return count == null ? 0 : count;
 	}
@@ -211,28 +208,8 @@ public class SurfaceShopkeeper extends Shopkeeper {
 	}
 
 	public void recordQueryPurchase(Class<? extends Item> itemClass, int quantity) {
-		syncPurchaseLimitCycle();
 		queryPurchases.put(itemClass.getName(),
 				Math.min(QUERY_LIMIT, purchasedCount(itemClass) + quantity));
-	}
-
-	public void syncPurchaseLimitCycle() {
-		int currentCycle = TreasureHuntRecords.purchaseLimitCycle();
-		if (currentCycle != purchaseLimitCycle) {
-			queryPurchases.clear();
-			purchaseLimitCycle = currentCycle;
-		}
-	}
-
-	public static void syncCurrentMerchantPurchaseLimits() {
-		if (Dungeon.level == null || Dungeon.level.mobs == null) {
-			return;
-		}
-		for (com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob mob : Dungeon.level.mobs) {
-			if (mob instanceof SurfaceShopkeeper) {
-				((SurfaceShopkeeper) mob).syncPurchaseLimitCycle();
-			}
-		}
 	}
 
 	@Override
@@ -240,7 +217,6 @@ public class SurfaceShopkeeper extends Shopkeeper {
 		if (c != Dungeon.hero) {
 			return true;
 		}
-		syncPurchaseLimitCycle();
 		Game.runOnRenderThread(new Callback() {
 			@Override
 			public void call() {
@@ -429,12 +405,10 @@ public class SurfaceShopkeeper extends Shopkeeper {
 
 	private static final String QUERY_CLASSES = "query_classes";
 	private static final String QUERY_COUNTS = "query_counts";
-	private static final String QUERY_CYCLE = "query_cycle";
 
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
-		syncPurchaseLimitCycle();
 		String[] classes = new String[queryPurchases.size()];
 		int[] counts = new int[queryPurchases.size()];
 		int i = 0;
@@ -445,16 +419,12 @@ public class SurfaceShopkeeper extends Shopkeeper {
 		}
 		bundle.put(QUERY_CLASSES, classes);
 		bundle.put(QUERY_COUNTS, counts);
-		bundle.put(QUERY_CYCLE, purchaseLimitCycle);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		queryPurchases.clear();
-		purchaseLimitCycle = bundle.contains(QUERY_CYCLE)
-				? Math.max(0, bundle.getInt(QUERY_CYCLE))
-				: TreasureHuntRecords.purchaseLimitCycle();
 		String[] classes = bundle.getStringArray(QUERY_CLASSES);
 		int[] counts = bundle.getIntArray(QUERY_COUNTS);
 		for (int i = 0; i < Math.min(classes.length, counts.length); i++) {
@@ -462,6 +432,5 @@ public class SurfaceShopkeeper extends Shopkeeper {
 				queryPurchases.put(classes[i], Math.min(QUERY_LIMIT, counts[i]));
 			}
 		}
-		syncPurchaseLimitCycle();
 	}
 }

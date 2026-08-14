@@ -28,7 +28,6 @@ import java.util.Arrays;
 public final class TreasureHuntRecords {
 
 	private static final int MAX_RANKED_SCORES = 5;
-	private static final int SETTLEMENTS_PER_PURCHASE_CYCLE = 5;
 
 	private static final String RECORDS = "treasure_hunt_records";
 	private static final String TEN_STEP_STARTED = "ten_step_started";
@@ -154,10 +153,6 @@ public final class TreasureHuntRecords {
 
 	public static int extractionRaidSettlements() {
 		return extractionRaidSettlements;
-	}
-
-	public static int purchaseLimitCycle() {
-		return extractionRaidSettlements / SETTLEMENTS_PER_PURCHASE_CYCLE;
 	}
 
 	public static void storeInBundle(Bundle bundle) {
