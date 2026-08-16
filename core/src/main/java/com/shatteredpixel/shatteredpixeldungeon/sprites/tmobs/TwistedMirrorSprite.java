@@ -2,17 +2,13 @@ package com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MirrorSprite;
 import com.watabou.noosa.MovieClip.Animation;
-import com.watabou.noosa.particles.Emitter;
 
 /** Half-transparent violet afterimage which still follows the live hero appearance. */
 public class TwistedMirrorSprite extends MirrorSprite {
 
 	private static final float MIRROR_ALPHA = 0.52f;
-
-	private Emitter afterimage;
 
 	public TwistedMirrorSprite() {
 		super();
@@ -29,7 +25,6 @@ public class TwistedMirrorSprite extends MirrorSprite {
 	@Override
 	public void link(Char ch) {
 		super.link(ch);
-		startAfterimage();
 		applyReplicaFilter();
 	}
 
@@ -45,24 +40,6 @@ public class TwistedMirrorSprite extends MirrorSprite {
 		applyReplicaFilter();
 	}
 
-	@Override
-	public void update() {
-		super.update();
-		if (afterimage != null) {
-			afterimage.pos(x + 1f, y, width, height);
-			afterimage.visible = visible && !isState(State.INVISIBLE);
-		}
-	}
-
-	@Override
-	public void destroy() {
-		if (afterimage != null) {
-			afterimage.on = false;
-			afterimage = null;
-		}
-		super.destroy();
-	}
-
 	protected void applyReplicaFilter() {
 		tint(0.025f, 0.01f, 0.06f, 0.80f);
 		boolean invisible = isState(State.INVISIBLE);
@@ -74,13 +51,4 @@ public class TwistedMirrorSprite extends MirrorSprite {
 		}
 	}
 
-	private void startAfterimage() {
-		if (afterimage == null) {
-			afterimage = emitter();
-			if (afterimage != null) {
-				afterimage.pos(x + 1f, y, width, height);
-				afterimage.pour(ShadowParticle.CURSE, 0.18f);
-			}
-		}
-	}
 }

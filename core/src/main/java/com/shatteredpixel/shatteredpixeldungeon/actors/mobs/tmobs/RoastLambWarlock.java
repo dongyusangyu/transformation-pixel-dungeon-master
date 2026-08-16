@@ -73,6 +73,9 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 
 		loot = null;
 		lootChance = 0f;
+		properties.add(Property.UNDEAD);
+		properties.add(Property.FIERY);
+
 		immunities.add(Fire.class);
 		immunities.add(Burning.class);
 	}

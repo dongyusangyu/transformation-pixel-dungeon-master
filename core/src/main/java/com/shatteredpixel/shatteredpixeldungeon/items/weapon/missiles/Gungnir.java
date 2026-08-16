@@ -72,16 +72,20 @@ public class Gungnir extends MissileWeapon {
 
 	@Override
 	public int defaultQuantity() {
-		return 1;
+		return 3;
 	}
 
 	@Override
 	public void execute(Hero hero, String action) {
-		if (AC_THROW.equals(action) && !canThrowWithCurrentHP(hero.HP)) {
-			GLog.w(Messages.get(this, "not_enough_health"));
-			QuickSlotButton.cancel();
-			InventoryPane.cancelTargeting();
-			return;
+		if (AC_THROW.equals(action)) {
+			if (!canThrowWithCurrentHP(hero.HP)) {
+				usesTargeting = false;
+				GLog.w(Messages.get(this, "not_enough_health"));
+				QuickSlotButton.cancel();
+				InventoryPane.cancelTargeting();
+				return;
+			}
+			usesTargeting = true;
 		}
 		super.execute(hero, action);
 	}
@@ -89,15 +93,12 @@ public class Gungnir extends MissileWeapon {
 	@Override
 	public void doThrow(Hero hero) {
 		if (!canThrowWithCurrentHP(hero.HP)) {
+			usesTargeting = false;
 			GLog.w(Messages.get(this, "not_enough_health"));
 			QuickSlotButton.cancel();
 			InventoryPane.cancelTargeting();
 			return;
 		}
-
-		int lifeCost = lifeCostForCurrentHP(hero.HP);
-		hero.HP -= lifeCost;
-		hero.sprite.showStatus(CharSprite.NEGATIVE, Integer.toString(lifeCost));
 		super.doThrow(hero);
 	}
 
@@ -108,6 +109,12 @@ public class Gungnir extends MissileWeapon {
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
+		if (attacker instanceof Hero) {
+			Hero hero = (Hero) attacker;
+			int lifeCost = lifeCostForCurrentHP(hero.HP);
+			hero.HP -= lifeCost;
+			hero.sprite.showStatus(CharSprite.NEGATIVE, Integer.toString(lifeCost));
+		}
 		wasBleedingBeforeHit = defender.buff(Bleeding.class) != null;
 		bleedingTargetID = wasBleedingBeforeHit ? defender.id() : 0;
 		Buff.affect(defender, Bleeding.class).set(bleedForDamage(damage));
@@ -116,7 +123,10 @@ public class Gungnir extends MissileWeapon {
 
 	@Override
 	protected void rangedHit(Char enemy, int cell) {
-		recoverToHero();
+		decrementDurability();
+		if (durability > 0) {
+			recoverToHero();
+		}
 		clearBleedingKillTracking();
 	}
 

@@ -36,6 +36,10 @@ import com.watabou.utils.PathFinder;
 import java.util.ArrayList;
 
 public class StoneOfFlock extends Runestone {
+
+	public static int sheepLifespan(int depth, int branch) {
+		return Dungeon.bossLevel(depth, branch) ? 20 : 8;
+	}
 	
 	{
 		image = ItemSpriteSheet.STONE_FLOCK;
@@ -57,7 +61,7 @@ public class StoneOfFlock extends Runestone {
 					&& Actor.findChar(i) == null
 					&& !(Dungeon.level.pit[i])) {
 				Sheep sheep = new Sheep();
-				sheep.initialize(8);
+				sheep.initialize(sheepLifespan(Dungeon.depth, Dungeon.branch));
 				sheep.pos = i;
 				GameScene.add(sheep);
 				Dungeon.level.occupyCell(sheep);

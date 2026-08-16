@@ -10,16 +10,22 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
 /** Stack-based plague carried by the hero during the Pestilence encounter. */
 public class Infection extends Buff implements Char.HealingModifier {
 
     public static final int MAX_STACKS = 5;
+    public static final int DECAY_TURNS = 10;
     public static final float HEALING_REDUCTION_PER_STACK = 0.08f;
+    public static final int DEFAULT_ICON_COLOR = -1;
+    public static final int WARNING_ICON_COLOR = 0xFFFF00;
+    public static final int DANGER_ICON_COLOR = 0xFF0000;
     private static final int INFECTION_BURST_COLOR = 0xFF718F3A;
 
     private static final String STACKS = "stacks";
+    private static final String DECAY_SCHEDULED = "decay_scheduled";
     private static final String THIRD_THRESHOLD_ARMED = "third_threshold_armed";
     private static final String POTION_RELIEF_PENDING = "potion_relief_pending";
 
@@ -43,7 +49,11 @@ public class Infection extends Buff implements Char.HealingModifier {
             clear(target);
             return;
         }
-        Infection infection = Buff.affect(target, Infection.class);
+        Infection infection = target.buff(Infection.class);
+        if (infection == null) {
+            infection = Buff.affect(target, Infection.class);
+            infection.spend(DECAY_TURNS);
+        }
         infection.applyStacks(clamped);
     }
 
@@ -59,6 +69,11 @@ public class Infection extends Buff implements Char.HealingModifier {
             infection.detach();
         }
     }
+    @Override
+    public String desc(){
+        return Messages.get(this,"desc",stacks);
+    }
+    public float iconFadePercent() { return Math.max(0, (5-stacks) / 5f); }
 
     public static void markHealingPotionRelief(Char target) {
         Infection infection = target.buff(Infection.class);
@@ -91,6 +106,9 @@ public class Infection extends Buff implements Char.HealingModifier {
         if (target == Dungeon.hero) GLog.w(Messages.get(this, "rupture_log"));
     }
 
+
+
+
     @Override
     public float incomingHealingReduction() {
         return stacks * HEALING_REDUCTION_PER_STACK;
@@ -99,6 +117,30 @@ public class Infection extends Buff implements Char.HealingModifier {
     @Override
     public int icon() {
         return BuffIndicator.POISON;
+    }
+
+    @Override
+    public void tintIcon(Image icon) {
+        icon.resetColor();
+        int color = iconColorForStacks(stacks);
+        if (color != DEFAULT_ICON_COLOR) icon.hardlight(color);
+    }
+
+    public static int iconColorForStacks(int stacks) {
+        if (stacks >= 4) return DANGER_ICON_COLOR;
+        if (stacks > 2) return WARNING_ICON_COLOR;
+        return DEFAULT_ICON_COLOR;
+    }
+
+    @Override
+    public boolean act() {
+        if (target == null || !target.isAlive()) {
+            detach();
+            return true;
+        }
+        set(target, stacks - 1);
+        if (target.buff(Infection.class) == this) spend(DECAY_TURNS);
+        return true;
     }
 
     @Override
@@ -117,6 +159,7 @@ public class Infection extends Buff implements Char.HealingModifier {
     public void storeInBundle(Bundle bundle) {
         super.storeInBundle(bundle);
         bundle.put(STACKS, stacks);
+        bundle.put(DECAY_SCHEDULED, true);
         bundle.put(THIRD_THRESHOLD_ARMED, thirdThresholdArmed);
         bundle.put(POTION_RELIEF_PENDING, potionReliefPending);
     }
@@ -125,11 +168,16 @@ public class Infection extends Buff implements Char.HealingModifier {
     public void restoreFromBundle(Bundle bundle) {
         super.restoreFromBundle(bundle);
         stacks = Math.max(0, Math.min(MAX_STACKS, bundle.getInt(STACKS)));
+        if (!bundle.contains(DECAY_SCHEDULED)) {
+            timeToNow();
+            spend(DECAY_TURNS);
+        }
         thirdThresholdArmed = bundle.getBoolean(THIRD_THRESHOLD_ARMED) && stacks >= 3;
         potionReliefPending = bundle.getBoolean(POTION_RELIEF_PENDING) && stacks > 0;
     }
 
     int stacksForTest() { return stacks; }
+    void decayOneIntervalForTest() { act(); }
     boolean thirdThresholdArmedForTest() { return thirdThresholdArmed; }
     boolean potionReliefPendingForTest() { return potionReliefPending; }
 }

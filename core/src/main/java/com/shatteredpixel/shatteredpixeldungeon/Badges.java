@@ -1303,7 +1303,7 @@ public class Badges {
 		displayBadge( badge );
 	}
 
-	public static void validateHighScore( int score ){
+	public static void validateHighScore( double score ){
 		Badge badge = null;
 		if (score >= 5000) {
 			badge = Badge.HIGH_SCORE_1;

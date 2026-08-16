@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.RankingRestart;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
@@ -265,7 +266,10 @@ public class WndRanking extends WndTabbed {
 				else
 					pos = statSlot(this, Messages.get(this, "str"), Integer.toString(Dungeon.hero.STR), pos);
 				pos = statSlot(this, Messages.get(this, "duration"), num.format((int) Statistics.duration), pos);
-				if (Statistics.highestAscent == 0) {
+				if (Dungeon.newCycle) {
+					pos = statSlot(this, Messages.get(this, "depth"),
+							Dungeon.displayDepthLabel(Statistics.deepestTowerFloor, TowerLevel.BRANCH), pos);
+				} else if (Statistics.highestAscent == 0) {
 					pos = statSlot(this, Messages.get(this, "depth"), num.format(Statistics.deepestFloor), pos);
 				} else {
 					pos = statSlot(this, Messages.get(this, "ascent"), num.format(Statistics.highestAscent), pos);

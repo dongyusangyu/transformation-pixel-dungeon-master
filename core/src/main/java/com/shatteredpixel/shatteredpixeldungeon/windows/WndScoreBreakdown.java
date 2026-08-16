@@ -48,28 +48,29 @@ public class WndScoreBreakdown extends Window {
 		float pos = title.bottom()+2;
 
 		NumberFormat num = NumberFormat.getInstance(Messages.locale());
+		boolean showLimits = !Dungeon.newCycle;
 		if (Dungeon.initialVersion > ShatteredPixelDungeon.v1_2_3) {
 			pos = statSlot(this, Messages.get(this, "progress_title"),
-					num.format(Statistics.progressScore), pos, Statistics.progressScore >= 50_000);
+					num.format(Statistics.progressScore), pos, showLimits && Statistics.progressScore >= 50_000);
 			pos = addInfo(this, Messages.get(this, "progress_desc"), pos);
 			pos = statSlot(this, Messages.get(this, "treasure_title"),
-					num.format(Statistics.treasureScore), pos, Statistics.treasureScore >= 20_000);
+					num.format(Statistics.treasureScore), pos, showLimits && Statistics.treasureScore >= 20_000);
 			pos = addInfo(this, Messages.get(this, "treasure_desc"), pos);
 			pos = statSlot(this, Messages.get(this, "explore_title"),
-					num.format(Statistics.exploreScore), pos, Statistics.exploreScore >= 20_000);
+					num.format(Statistics.exploreScore), pos, showLimits && Statistics.exploreScore >= 20_000);
 			pos = addInfo(this, Messages.get(this, "explore_desc"), pos);
 			pos = statSlot(this, Messages.get(this, "bosses_title"),
-					num.format(Statistics.totalBossScore), pos, Statistics.totalBossScore >= 15_000);
+					num.format(Statistics.totalBossScore), pos, showLimits && Statistics.totalBossScore >= 15_000);
 			pos = addInfo(this, Messages.get(this, "bosses_desc"), pos);
 			pos = statSlot(this, Messages.get(this, "quests_title"),
-					num.format(Statistics.totalQuestScore), pos, Statistics.totalQuestScore >= 10_000);
+					num.format(Statistics.totalQuestScore), pos, showLimits && Statistics.totalQuestScore >= 10_000);
 			pos = addInfo(this, Messages.get(this, "quests_desc"), pos);
 		} else {
 			pos = statSlot(this, Messages.get(this, "progress_title"),
-					num.format(Statistics.progressScore), pos, Statistics.progressScore >= 78_000);
+					num.format(Statistics.progressScore), pos, showLimits && Statistics.progressScore >= 78_000);
 			pos = addInfo(this, Messages.get(this, "progress_desc"), pos);
 			pos = statSlot(this, Messages.get(this, "treasure_title"),
-					num.format(Statistics.treasureScore), pos, Statistics.treasureScore >= 30_000);
+					num.format(Statistics.treasureScore), pos, showLimits && Statistics.treasureScore >= 30_000);
 			pos = addInfo(this, Messages.get(this, "treasure_desc_old"), pos);
 		}
 

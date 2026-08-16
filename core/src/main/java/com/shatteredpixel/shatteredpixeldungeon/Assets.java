@@ -31,6 +31,7 @@ public class Assets {
 		public static final String SPECKS       = "effects/specks.png";
 		public static final String SPELL_ICONS  = "effects/spell_icons.png";
 		public static final String TEXT_ICONS   = "effects/text_icons.png";
+		public static final String DEATH_KNIGHT_SLASH = "effects/death_knight_slash.png";
 	}
 
 	public static class Environment {
@@ -180,6 +181,9 @@ public class Assets {
 		public static final String HALLS_TENSE          = "music/halls_tense.ogg";
 		public static final String HALLS_BOSS           = "music/halls_boss.ogg";
 		public static final String HALLS_BOSS_FINALE    = "music/halls_boss_finale.ogg";
+		public static final String PESTILENCE_BOSS      = "music/pestilence_boss.ogg";
+		public static final String DEATH_KNIGHT_BOSS    = "music/death_knight_boss.ogg";
+		public static final String TOWER                = "music/tower.ogg";
 		public static final String BACKS1_1    = "music/combat_area.ogg";
 		public static final String BACKS1_2    = "music/chuboss.ogg";
 		public static final String BACKS2    = "music/Oh-Boss.ogg";
@@ -402,12 +406,15 @@ public class Assets {
 		public static final String SNAKE    = "sprites/snake.png";
 		public static final String MIMIC_CROCODILE = "sprites/mimic_crocodile.png";
 		public static final String HEAVY_CRABIFICATION = "sprites/heavy_crabification.png";
+		public static final String MARSH_SLIME = "sprites/marsh_slime.png";
+		public static final String RUNE_SPINNER = "sprites/rune_spinner.png";
 		public static final String EARTHLY_SERPENT = "sprites/earthly_serpent.png";
 		public static final String OBSCURA = "sprites/obscura.png";
 		public static final String WILD_DREAD = "sprites/wild_dread.png";
 		public static final String NECRO    = "sprites/necromancer.png";
 		public static final String SOUL_COLLECTOR = "sprites/soul_collector.png";
 		public static final String PESTILENCE_KNIGHT = "sprites/pestilence_knight.png";
+		public static final String DEATH_KNIGHT = "sprites/death_knight.png";
 		public static final String GHOUL    = "sprites/ghoul.png";
 		public static final String RIPPER   = "sprites/ripper.png";
 		public static final String SPAWNER  = "sprites/spawner.png";

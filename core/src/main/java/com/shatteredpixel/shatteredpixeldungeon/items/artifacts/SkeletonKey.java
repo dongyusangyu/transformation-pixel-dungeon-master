@@ -580,6 +580,7 @@ public class SkeletonKey extends Artifact {
 		}
 
 		public void setupKeysForDepth(){
+			if (Dungeon.branch != 0 || Dungeon.depth < 0 || Dungeon.depth >= ironKeysNeeded.length) return;
 			ironKeysNeeded[Dungeon.depth] = 0;
 			goldenKeysNeeded[Dungeon.depth] = 0;
 			crystalKeysNeeded[Dungeon.depth] = 0;
@@ -603,12 +604,14 @@ public class SkeletonKey extends Artifact {
 
 		//used if a level was reset, e.g. via unblessed ankh vs. boss
 		public void clearDepth(){
+			if (Dungeon.branch != 0 || Dungeon.depth < 0 || Dungeon.depth >= ironKeysNeeded.length) return;
 			ironKeysNeeded[Dungeon.depth] = -1;
 			goldenKeysNeeded[Dungeon.depth] = -1;
 			crystalKeysNeeded[Dungeon.depth] = -1;
 		}
 
 		public void processIronLockOpened(){
+			if (Dungeon.branch != 0 || Dungeon.depth < 0 || Dungeon.depth >= ironKeysNeeded.length) return;
 			if (ironKeysNeeded[Dungeon.depth] == -1){
 				setupKeysForDepth();
 			}
@@ -617,6 +620,7 @@ public class SkeletonKey extends Artifact {
 		}
 
 		public void processGoldLockOpened(){
+			if (Dungeon.branch != 0 || Dungeon.depth < 0 || Dungeon.depth >= goldenKeysNeeded.length) return;
 			if (goldenKeysNeeded[Dungeon.depth] == -1){
 				setupKeysForDepth();
 			}
@@ -625,6 +629,7 @@ public class SkeletonKey extends Artifact {
 		}
 
 		public void processCrystalLockOpened(){
+			if (Dungeon.branch != 0 || Dungeon.depth < 0 || Dungeon.depth >= crystalKeysNeeded.length) return;
 			if (crystalKeysNeeded[Dungeon.depth] == -1){
 				setupKeysForDepth();
 			}
@@ -633,6 +638,7 @@ public class SkeletonKey extends Artifact {
 		}
 
 		public void processExcessKeys(){
+			if (Dungeon.branch != 0 || Dungeon.depth < 0 || Dungeon.depth >= ironKeysNeeded.length) return;
 			int keysNeeded = ironKeysNeeded[Dungeon.depth];
 			boolean removed = false;
 			if (keysNeeded >= 0) {

@@ -14,14 +14,15 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.Key;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfExtraction;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 
 final class TowerGenerationRules {
-	static final Class<? extends Item> GUARANTEED_FLOOR_ITEM = ScrollOfMetamorphosis.class;
 	static final Class<? extends Item> GUARANTEED_SHOP_ITEM = ScrollOfExtraction.class;
+	static final Class<? extends Item> METAMORPHOSIS_ITEM = ScrollOfMetamorphosis.class;
 
 	private TowerGenerationRules() {
 	}
@@ -40,15 +41,26 @@ final class TowerGenerationRules {
 
 	static boolean isForbiddenNaturalItemClass(Class<? extends Item> itemClass) {
 		return PotionOfStrength.class.isAssignableFrom(itemClass)
-				|| ScrollOfUpgrade.class.isAssignableFrom(itemClass);
-	}
-
-	static Item guaranteedFloorItem() {
-		return new ScrollOfMetamorphosis();
+				|| ScrollOfUpgrade.class.isAssignableFrom(itemClass)
+				|| ScrollOfMetamorphosis.class.isAssignableFrom(itemClass);
 	}
 
 	static Item guaranteedShopItem() {
 		return new ScrollOfExtraction();
+	}
+
+	static Item guaranteedShopMetamorphosis() {
+		return new ScrollOfMetamorphosis();
+	}
+
+	static Item prepareFloorSpawn(Item item, int towerFloor) {
+		if (isForbiddenNaturalItem(item)) {
+			return null;
+		}
+		if (item instanceof Key) {
+			((Key) item).depth = towerFloor;
+		}
+		return item;
 	}
 
 }

@@ -19,18 +19,18 @@ import static org.junit.Assert.assertTrue;
 public class PestilenceKnightSpriteAssetTest {
 
     @Test
-    public void sheetContainsSeventeenHardEdgedSixteenPixelFrames() throws IOException {
+    public void sheetContainsSeventeenHardEdgedThirtyTwoPixelFrames() throws IOException {
         BufferedImage image = ImageIO.read(spritePath().toFile());
         assertNotNull(image);
-        assertEquals(272, image.getWidth());
-        assertEquals(16, image.getHeight());
+        assertEquals(544, image.getWidth());
+        assertEquals(32, image.getHeight());
         assertTrue(image.getColorModel().hasAlpha());
 
         Set<Integer> palette = new HashSet<>();
         for (int frame = 0; frame < 17; frame++) {
             int visible = 0;
-            for (int y = 0; y < 16; y++) {
-                for (int x = frame * 16; x < frame * 16 + 16; x++) {
+            for (int y = 0; y < 32; y++) {
+                for (int x = frame * 32; x < frame * 32 + 32; x++) {
                     int argb = image.getRGB(x, y);
                     int alpha = argb >>> 24;
                     assertTrue("semi-transparent pixel in frame " + frame,
@@ -43,9 +43,9 @@ public class PestilenceKnightSpriteAssetTest {
                     }
                 }
             }
-            assertTrue("empty animation frame " + frame, visible >= 8);
+            assertTrue("under-drawn animation frame " + frame, visible >= 24);
         }
-        assertTrue("16px boss palette should stay disciplined", palette.size() <= 12);
+        assertTrue("32px boss palette should stay disciplined", palette.size() <= 18);
     }
 
     @Test
@@ -57,6 +57,8 @@ public class PestilenceKnightSpriteAssetTest {
         String infection = read(root.resolve("actors/buffs/tboss/Infection.java"));
 
         assertTrue(assets.contains("PESTILENCE_KNIGHT = \"sprites/pestilence_knight.png\""));
+        assertTrue("boss frames must use the approved 32px film",
+                sprite.contains("new TextureFilm(texture, 32, 32)"));
         assertTrue(sprite.contains("idle.frames(film, 0, 1, 2, 1)"));
         assertTrue(sprite.contains("run.frames(film, 3, 4, 5, 6)"));
         assertTrue(sprite.contains("attack.frames(film, 7, 8, 9)"));
@@ -100,8 +102,6 @@ public class PestilenceKnightSpriteAssetTest {
                 infection.contains("Messages.get(this, \"rupture\")"));
         assertTrue("infection rupture needs a distinct particle burst",
                 infection.contains("target.sprite.burst(INFECTION_BURST_COLOR"));
-        assertTrue("purple prescription needs a visible purple projectile",
-                boss.contains("MagicMissile.SHAMAN_PURPLE"));
         assertTrue("purple prescription needs a distinct impact splash",
                 boss.contains("Splash.at(target.pos, PURPLE_PRESCRIPTION_COLOR"));
         assertTrue("purple prescription needs curse particles on the target",
@@ -111,12 +111,32 @@ public class PestilenceKnightSpriteAssetTest {
     }
 
     @Test
-    public void purifierTextExplainsInstantGlobalClearRelocationAndBossDamage() throws IOException {
+    public void outbreakPrescriptionsUseZapPotionProjectilesAndRangedHitResolution()
+            throws IOException {
+        Path root = coreDirectory().resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon");
+        String boss = read(root.resolve("actors/mobs/tboss/PestilenceKnight.java"));
+        String sprite = read(root.resolve("sprites/tboss/PestilenceKnightSprite.java"));
+
+        assertTrue(boss.contains("return doRangedAttack(Dungeon.hero)"));
+        assertTrue(boss.contains("Dungeon.level.distance(pos, target.pos) <= viewDistance"));
+        assertTrue(boss.contains("if (rangedHit(target))"));
+        assertTrue(boss.contains("DamageTag.MAGICAL, DamageTag.RANGED"));
+        assertTrue(boss.contains("prescriptionPotionImage(Random.Int(12))"));
+        assertTrue(sprite.contains("void throwPrescription"));
+        assertTrue(sprite.contains("super.zap(cell)"));
+        assertTrue(sprite.contains("recycle(MissileSprite.class)"));
+        assertTrue(sprite.contains("reset(this, cell, flask, callback)"));
+        assertTrue(sprite.contains("if (anim == zap)"));
+        assertTrue(sprite.contains("idle()"));
+    }
+
+    @Test
+    public void purifierMechanicsRemainInDetailedTowerReference() throws IOException {
         Path messages = coreDirectory().resolve("src/main/assets/messages");
         String levels = read(messages.resolve("levels/levels.properties"));
         String levelsZh = read(messages.resolve("levels/levels_zh.properties"));
-        String actors = read(messages.resolve("actors/actors.properties"));
-        String actorsZh = read(messages.resolve("actors/actors_zh.properties"));
+        String custom = read(messages.resolve("custom/custom.properties"));
+        String customZh = read(messages.resolve("custom/custom_zh.properties"));
 
         assertTrue(levels.contains("plague purifier"));
         assertTrue(levels.contains("instantly clears all plague miasma"));
@@ -126,8 +146,12 @@ public class PestilenceKnightSpriteAssetTest {
         assertTrue(levelsZh.contains("立即清除全图所有瘟疫瘴气"));
         assertTrue(levelsZh.contains("100点伤害"));
         assertTrue(levelsZh.contains("转移"));
-        assertTrue(actors.contains("mobile purifier"));
-        assertTrue(actorsZh.contains("移动净化器"));
+        assertTrue(custom.contains("custom.dict.dict.tower_pestilence_knight_d"));
+        assertTrue(custom.contains("mobile purifier"));
+        assertTrue(custom.contains("instantly clears all plague miasma"));
+        assertTrue(custom.contains("_100_ damage"));
+        assertTrue(custom.contains("relocates"));
+        assertTrue(customZh.contains("custom.dict.dict.tower_pestilence_knight_d"));
     }
 
     private static Path spritePath() {

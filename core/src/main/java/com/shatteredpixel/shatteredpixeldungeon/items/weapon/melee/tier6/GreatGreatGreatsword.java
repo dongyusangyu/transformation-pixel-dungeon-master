@@ -14,6 +14,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatsword;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 
 public class GreatGreatGreatsword extends Greatsword {
@@ -22,5 +23,10 @@ public class GreatGreatGreatsword extends Greatsword {
 		image = EXItemSpriteSheet.GREAT_GREAT_GREATSWORD;
 		tier = 6;
 		RCH = 3;
+	}
+
+	@Override
+	public String statsInfo() {
+		return Messages.get(this, "stats_desc");
 	}
 }

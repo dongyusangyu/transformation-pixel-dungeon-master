@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -237,16 +238,23 @@ abstract public class KindOfWeapon extends EquipableItem {
 	abstract public int min(int lvl);
 	abstract public int max(int lvl);
 
+	protected int heroDamageRangeRoll(int min, int max) {
+		return heroDamageRangeRoll(Dungeon.hero, min, max);
+	}
+
+	protected int heroDamageRangeRoll(Hero hero, int min, int max) {
+		SpearShield spearShield = hero.belongings.getItem(SpearShield.class);
+		if (spearShield != null) {
+			int adjustedMin = spearShield.changeDmgMin(min, max);
+			int adjustedMax = spearShield.changeDmgMax(min, max);
+			return Hero.heroDamageIntRange(adjustedMin, adjustedMax);
+		}
+		return Hero.heroDamageIntRange(min, max);
+	}
+
 	public int damageRoll( Char owner ) {
 		if (owner instanceof Hero){
-			//Spsh1
-			//GLog.i("("+min()+"-"+max()+")");
-			SpearShield spsh = Dungeon.hero.belongings.getItem(SpearShield.class);
-			if (spsh != null) {
-				//GLog.i("--->("+spsh.changeDmgMin(min(),max())+"-"+spsh.changeDmgMax(min(),max())+")");
-				return Hero.heroDamageIntRange(spsh.changeDmgMin(min(),max()), spsh.changeDmgMax(min(),max()));
-			}
-			return Hero.heroDamageIntRange(min(), max());
+			return heroDamageRangeRoll((Hero) owner, min(), max());
 		} else {
 			return Random.NormalIntRange(min(), max());
 		}
@@ -290,6 +298,11 @@ abstract public class KindOfWeapon extends EquipableItem {
 	
 	public int proc( Char attacker, Char defender, int damage ) {
 		return damage;
+	}
+
+	public void onAttackResolved(Hero attacker, Char defender, boolean hit,
+	                             int damageDealt, DamageTag... damageTags) {
+		// Default implementation intentionally does nothing.
 	}
 
 	public void hitSound( float pitch ){

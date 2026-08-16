@@ -171,10 +171,11 @@ public class GamesInProgress {
 		info.subClass = Dungeon.hero.subClass;
 		info.armorTier = Dungeon.hero.tier();
 
-		info.goldCollected = Statistics.goldCollected;
-		info.maxDepth = Statistics.deepestFloor;
-		info.skin=Dungeon.skin;
 		info.newCycle = Dungeon.newCycle;
+		info.newCycleSourceGameID = Dungeon.newCycleSourceGameID;
+		info.goldCollected = Statistics.goldCollected;
+		info.maxDepth = info.newCycle ? Statistics.deepestTowerFloor : Statistics.deepestFloor;
+		info.skin=Dungeon.skin;
 
 		slotStates.put( slot, info );
 	}
@@ -185,6 +186,20 @@ public class GamesInProgress {
 
 	public static void delete( int slot ) {
 		slotStates.put( slot, null );
+	}
+
+	static boolean hasSaveBoundTo(String sourceGameID) {
+		if (sourceGameID == null || sourceGameID.isEmpty()) {
+			return false;
+		}
+		for (int slot = 1; slot <= MAX_SLOTS; slot++) {
+			Info info = check(slot);
+			if (info != null && info.newCycle
+					&& sourceGameID.equals(info.newCycleSourceGameID)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -232,10 +247,11 @@ public class GamesInProgress {
 		public HeroSubClass subClass;
 		public int armorTier;
 
-		public int goldCollected;
+		public long goldCollected;
 		public int maxDepth;
 		public int skin;
 		public boolean newCycle;
+		public String newCycleSourceGameID;
 	}
 
 	public static final Comparator<GamesInProgress.Info> levelComparator = new Comparator<GamesInProgress.Info>() {

@@ -338,6 +338,10 @@ public class Notes {
 			return key.getClass();
 		}
 
+		public int branch() {
+			return key.branch;
+		}
+
 		@Override
 		protected int order() {
 			return 1000 + Generator.Category.order(key);
@@ -628,6 +632,14 @@ public class Notes {
 			return k.quantity();
 		} else {
 			return 0;
+		}
+	}
+
+	public static void migrateLegacyKeys(int depth, int branch) {
+		for (Record rec : records) {
+			if (rec instanceof KeyRecord) {
+				((KeyRecord) rec).key.migrateLegacyLocation(depth, branch);
+			}
 		}
 	}
 

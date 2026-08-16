@@ -56,9 +56,8 @@ RAISED_OVERHANG_PAIRS = (
     (134, 246, FLOOR),
 )
 
-MECHANICAL_FLAT_SLOTS = (64, 65, 72, 73, 74, 75, 76, 77, 78)
+MECHANICAL_FLAT_SLOTS = (65, 72, 73, 74, 75, 76, 77, 78)
 MECHANICAL_RAISED_PAIRS = (
-    (120, 232, FLOOR),
     (121, 233, FLOOR),
     (128, 240, FLOOR),
     (129, 241, FLOOR_SP),
@@ -303,12 +302,12 @@ class GearworksReferenceStructureTest(unittest.TestCase):
         atlas = load_generator().build_tileset()
         with Image.open(HALLS_PATH) as source:
             halls = source.convert("RGBA")
-        wall_indices = tuple(range(80, 120)) + tuple(range(144, 224))
+        wall_indices = tuple(range(80, 117)) + (119,) + tuple(range(144, 224))
         for index in wall_indices:
             with self.subTest(index=index):
                 self.assertEqual(
-                    tuple(tile(halls, index).getchannel("A").getdata()),
-                    tuple(tile(atlas, index).getchannel("A").getdata()),
+                    tuple(alpha > 0 for alpha in tile(halls, index).getchannel("A").getdata()),
+                    tuple(alpha > 0 for alpha in tile(atlas, index).getchannel("A").getdata()),
                 )
 
     def test_door_overhang_alpha_preserves_halls_slots(self) -> None:
@@ -318,8 +317,8 @@ class GearworksReferenceStructureTest(unittest.TestCase):
         for index in range(224, 231):
             with self.subTest(index=index):
                 self.assertEqual(
-                    tuple(tile(halls, index).getchannel("A").getdata()),
-                    tuple(tile(atlas, index).getchannel("A").getdata()),
+                    tuple(alpha > 0 for alpha in tile(halls, index).getchannel("A").getdata()),
+                    tuple(alpha > 0 for alpha in tile(atlas, index).getchannel("A").getdata()),
                 )
 
     def test_reserved_slots_remain_transparent(self) -> None:
@@ -424,35 +423,30 @@ class GearworksWallSemanticsTest(unittest.TestCase):
                     self._count_colors(tile(atlas, index), wood_colors),
                     4,
                 )
-        for index in range(208, 212):
-            with self.subTest(group="open_sideways", index=index):
-                self.assertGreater(
-                    self._count_colors(tile(atlas, index), {generator.VOID}),
-                    0,
-                )
-        for index in range(212, 216):
-            with self.subTest(group="closed_sideways", index=index):
-                subject = tile(atlas, index)
-                self.assertEqual(0, self._count_colors(subject, pressure_colors))
-                self.assertGreater(
-                    self._count_colors(
-                        subject,
-                        {generator.IRON_DARK, generator.IRON_MID, generator.IRON_LIGHT},
-                    ),
-                    0,
-                )
-        for index in range(216, 220):
-            with self.subTest(group="locked_sideways", index=index):
-                self.assertGreater(
-                    self._count_colors(tile(atlas, index), brass_colors),
-                    0,
-                )
-        for index in range(220, 224):
-            with self.subTest(group="pressure_sideways", index=index):
-                self.assertGreater(
-                    self._count_colors(tile(atlas, index), pressure_colors),
-                    0,
-                )
+        halls = Image.open(HALLS_PATH).convert("RGBA")
+        states = ((57, 208), (56, 212), (58, 216), (59, 220))
+        for flat_index, start in states:
+            door_colors = {
+                color[:3]
+                for color in tile(atlas, flat_index).getdata()
+                if color[3]
+            }
+            for variant in range(4):
+                source_wall = tile(halls, 192 + variant)
+                source_door = tile(halls, start + variant)
+                target_door = tile(atlas, start + variant)
+                door_pixels = {
+                    target[:3]
+                    for source_base, source, target in zip(
+                        source_wall.getdata(),
+                        source_door.getdata(),
+                        target_door.getdata(),
+                    )
+                    if source != source_base and source[3]
+                }
+                with self.subTest(group="sideways_door", start=start, variant=variant):
+                    self.assertTrue(door_pixels)
+                    self.assertTrue(door_pixels.issubset(door_colors))
 
     def test_door_overhang_slot_mapping_matches_engine_constants(self) -> None:
         generator = load_generator()

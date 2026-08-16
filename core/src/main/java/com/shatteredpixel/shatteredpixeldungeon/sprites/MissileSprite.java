@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.HeavyBoomerang;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Javelin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Kunai;
@@ -137,6 +138,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 
 		ANGULAR_SPEEDS.put(GreatShoperSprite.MissileGold.class,   0);
 		ANGULAR_SPEEDS.put(Tatteki.Tamaru.class,   0);
+        ANGULAR_SPEEDS.put(Gungnir.class,   0);
 
 		//720 is default
 

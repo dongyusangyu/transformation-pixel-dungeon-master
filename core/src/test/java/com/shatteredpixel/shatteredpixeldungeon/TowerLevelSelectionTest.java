@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
+import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.AstralLibraryLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.FrostArchiveLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.GothicCastleLevel;
@@ -138,6 +139,14 @@ public class TowerLevelSelectionTest {
 	}
 
 	@Test
+	public void fallingMovesDownTheTowerInsteadOfUpIt() {
+		assertEquals(2, Dungeon.fallDepthForLocation(3, TowerLevel.BRANCH));
+		assertEquals(1, Dungeon.fallDepthForLocation(2, TowerLevel.BRANCH));
+		assertEquals(1, Dungeon.fallDepthForLocation(1, TowerLevel.BRANCH));
+		assertEquals(4, Dungeon.fallDepthForLocation(3, 0));
+	}
+
+	@Test
 	public void towerEntryIsOneWayFromTheSurface() {
 		assertFalse(Dungeon.towerTransitionAllowed(1, TowerLevel.BRANCH, 0, 0));
 		assertTrue(Dungeon.towerTransitionAllowed(0, 0, 1, TowerLevel.BRANCH));
@@ -145,6 +154,24 @@ public class TowerLevelSelectionTest {
 				1, TowerLevel.BRANCH));
 		assertTrue(Dungeon.towerTransitionAllowed(1, TowerLevel.BRANCH,
 				2, TowerLevel.BRANCH));
+	}
+
+	@Test
+	public void towerFloorsCanContinuePastTheMainDungeonEnd() {
+		assertTrue(Dungeon.levelTransitionAllowed(
+				26, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_EXIT));
+		assertTrue(Dungeon.levelTransitionAllowed(
+				1_000_001, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_EXIT));
+	}
+
+	@Test
+	public void mainDungeonKeepsItsExistingEndFloorRule() {
+		assertFalse(Dungeon.levelTransitionAllowed(
+				26, 0, LevelTransition.Type.REGULAR_EXIT));
+		assertTrue(Dungeon.levelTransitionAllowed(
+				26, 0, LevelTransition.Type.REGULAR_ENTRANCE));
+		assertFalse(Dungeon.levelTransitionAllowed(
+				26, 1, LevelTransition.Type.REGULAR_EXIT));
 	}
 
 	@Test
@@ -200,7 +227,7 @@ public class TowerLevelSelectionTest {
 	}
 
 	@Test
-	public void towerFloorsAreNeverMainDungeonBossFloors() {
+	public void towerBossFloorsJoinTheSharedBossFloorClassification() {
 		int originalDepth = Dungeon.depth;
 		int originalBranch = Dungeon.branch;
 		try {
@@ -208,10 +235,16 @@ public class TowerLevelSelectionTest {
 			Dungeon.depth = 5;
 			assertTrue(Dungeon.bossLevel());
 
-			Dungeon.branch = 3;
+			Dungeon.branch = TowerLevel.BRANCH;
+			assertTrue(Dungeon.bossLevel());
+			Dungeon.depth = 6;
 			assertFalse(Dungeon.bossLevel());
 			Dungeon.depth = 10;
-			assertFalse(Dungeon.bossLevel());
+			assertTrue(Dungeon.bossLevel());
+
+			assertTrue(Dungeon.bossLevel(15, TowerLevel.BRANCH));
+			assertFalse(Dungeon.bossLevel(14, TowerLevel.BRANCH));
+			assertFalse(Dungeon.bossLevel(5, 2));
 		} finally {
 			Dungeon.depth = originalDepth;
 			Dungeon.branch = originalBranch;

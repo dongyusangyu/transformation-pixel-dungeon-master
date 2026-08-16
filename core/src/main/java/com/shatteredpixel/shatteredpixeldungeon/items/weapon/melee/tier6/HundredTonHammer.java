@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -230,14 +231,16 @@ public class HundredTonHammer extends MeleeWeapon {
 	public int proc(Char attacker, Char defender, int damage) {
 		int result = super.proc(attacker, defender, damage);
 		if (!defender.isAlive() || defender.alignment != Char.Alignment.ENEMY) return result;
+        if(Random.Int(3)==0){
+            Ballistica trajectory = new Ballistica(attacker.pos, defender.pos,
+                    Ballistica.STOP_TARGET);
+            trajectory = new Ballistica(trajectory.collisionPos,
+                    trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
+            // Start innate knockback before any Elastic pushes queued by super.proc.
+            WandOfBlastWave.throwCharImmediately(defender, trajectory,
+                    normalKnockbackDistance(buffedLvl()), true, false, this, null);
+        }
 
-		Ballistica trajectory = new Ballistica(attacker.pos, defender.pos,
-				Ballistica.STOP_TARGET);
-		trajectory = new Ballistica(trajectory.collisionPos,
-				trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
-		// Start innate knockback before any Elastic pushes queued by super.proc.
-		WandOfBlastWave.throwCharImmediately(defender, trajectory,
-				normalKnockbackDistance(buffedLvl()), true, false, this, null);
 		return result;
 	}
 }

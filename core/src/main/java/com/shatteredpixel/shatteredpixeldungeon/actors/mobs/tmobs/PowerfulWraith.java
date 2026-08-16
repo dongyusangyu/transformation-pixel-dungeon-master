@@ -35,7 +35,7 @@ public class PowerfulWraith extends Wraith {
 	@Override
 	protected boolean act() {
 		if (isAlive() && HP < HT) {
-			HP = Math.min(HT, HP + 10);
+			heal(1);
 		}
 		return performBaseAct();
 	}

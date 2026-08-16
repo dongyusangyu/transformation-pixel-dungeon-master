@@ -60,7 +60,7 @@ public class ShieldHalo extends Halo {
 			}
 		}
 		
-		if (visible = target.visible) {
+		if (visible = target.areVisualEffectsVisible()) {
 			PointF p = target.center();
 			point( p.x, p.y );
 		}

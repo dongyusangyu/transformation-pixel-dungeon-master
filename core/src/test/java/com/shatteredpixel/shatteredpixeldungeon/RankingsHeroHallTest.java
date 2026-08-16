@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import org.junit.Test;
 
 import com.watabou.utils.Bundle;
@@ -22,7 +23,7 @@ public class RankingsHeroHallTest {
 		assertEquals(1, hall.size());
 		assertNotSame(normal, hall.get(0));
 		assertEquals(normal.gameID, hall.get(0).gameID);
-		assertEquals(normal.score, hall.get(0).score);
+		assertEquals(normal.score, hall.get(0).score, 0d);
 		assertFalse(Rankings.copyToHeroHall(hall, normal));
 		assertFalse(Rankings.copyToHeroHall(hall, record(200, true, "cycle")));
 	}
@@ -79,6 +80,7 @@ public class RankingsHeroHallTest {
 	private Rankings.Record record(int score, boolean newCycle, String gameID) {
 		Rankings.Record record = new Rankings.Record();
 		record.score = score;
+		record.heroClass = HeroClass.WARRIOR;
 		record.newCycle = newCycle;
 		record.customSeed = "";
 		record.gameID = gameID;

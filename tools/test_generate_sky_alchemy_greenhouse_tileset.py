@@ -140,7 +140,7 @@ class SkyAlchemyGreenhouseSemanticTest(unittest.TestCase):
             self.assertGreaterEqual(green_pixels(tile(self.atlas, index)), 5)
 
     def test_glass_brass_and_alchemy_accents_are_present(self) -> None:
-        for index in (FLAT_WALL, FLAT_WALL_DECO, FLAT_ALCHEMY, FLAT_STATUE):
+        for index in (FLAT_WALL, FLAT_WALL_DECO, FLAT_STATUE, FLAT_REGION_DECO):
             subject = tile(self.atlas, index)
             self.assertGreaterEqual(cyan_pixels(subject), 5, index)
             self.assertGreaterEqual(warm_pixels(subject), 4, index)

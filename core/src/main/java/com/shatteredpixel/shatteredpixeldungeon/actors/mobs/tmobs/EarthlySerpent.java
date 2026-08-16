@@ -24,21 +24,17 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RangedAttack;
-import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
-import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
-import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.EarthlySerpentSprite;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
-public class EarthlySerpent extends Mob implements RangedAttack {
+public class EarthlySerpent extends Mob {
 
 	private static final int BASE_HT = 240;
 	private static final int MAX_HT = BASE_HT * 2;
@@ -49,8 +45,6 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 	private int meleeDamageDealt;
 	private float regenerationProgress;
 	private float lastRegenerationTime = Float.NaN;
-	private boolean pullUsed;
-	private int pendingExplosionCell = -1;
 
 	{
 		HP = HT = BASE_HT;
@@ -62,6 +56,9 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 
 		loot = Generator.Category.SEED;
 		lootChance = 1f;
+
+		properties.add(Property.ACIDIC);
+		properties.add(Property.LARGE);
 
 		immunities.add(CorrosiveGas.class);
 		immunities.add(Corrosion.class);
@@ -106,9 +103,6 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 
 	@Override
 	public void damage(int damage, Object source, DamageTag... damageTags) {
-		if (source instanceof SerpentBomb) {
-			damage = normalizeBombDamage(damage, ((SerpentBomb) source).ownerId());
-		}
         Char target = null;
         if(source instanceof Char){
             target = (Char)source;
@@ -128,7 +122,6 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 
 	}
 
-	@Override
 	public boolean canMeleeAttack(Char target) {
 		if (Dungeon.level == null || target == null
 				|| Dungeon.level.distance(pos, target.pos) > 2) {
@@ -139,45 +132,8 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 	}
 
 	@Override
-	public Type rangedAttackType() {
-		return Type.RANGED_MAGIC;
-	}
-
-	@Override
-	public int rangedAttackBallisticaMode() {
-		return Ballistica.PROJECTILE;
-	}
-
-	@Override
-	public boolean canRangedAttack(Char target) {
-		return Dungeon.level != null
-				&& target != null
-				&& Dungeon.level.distance(pos, target.pos) > 2
-				&& new Ballistica(pos, target.pos, rangedAttackBallisticaMode()).collisionPos == target.pos;
-	}
-
-	@Override
 	protected boolean canAttack(Char enemy) {
-		return canMeleeAttack(enemy) || canRangedAttack(enemy);
-	}
-
-	@Override
-	protected boolean doAttack(Char enemy) {
-		if (canPull(enemy) && performPull(enemy)) {
-			spend(attackDelay());
-			return true;
-		}
-		return super.doAttack(enemy);
-	}
-
-	@Override
-	public boolean doRangedAttack(Char target) {
-		spitAt(target.pos);
-		if (sprite != null) {
-			sprite.zap(target.pos);
-		}
-		spend(attackDelay());
-		return true;
+		return canMeleeAttack(enemy);
 	}
 
 	protected float growthMultiplier() {
@@ -220,25 +176,11 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		}
 	}
 
-	protected void spitAt(int target) {
-		if (Dungeon.level == null || Dungeon.level.blobs == null) {
-			return;
-		}
-		if (validOpenCell(target)) {
-			seedCorrosiveGas(target, 15, 8, EarthlySerpentSpitGas.class);
-		}
-		for (int offset : PathFinder.NEIGHBOURS8) {
-			int cell = target + offset;
-			if (validOpenCell(cell)) {
-				seedCorrosiveGas(cell, 5, 8, EarthlySerpentSpitGas.class);
-			}
-		}
-	}
-
 	private <T extends CorrosiveGas> void seedCorrosiveGas(
 			int cell, int volume, int strength, Class<T> gasClass) {
-		Blob.seed(cell, volume, gasClass)
-				.setStrength(strength, EarthlySerpent.class);
+		T gas = Blob.seed(cell, volume, gasClass);
+		gas.setStrength(strength, EarthlySerpent.class);
+		GameScene.add(gas);
 	}
 
 	private boolean validOpenCell(int cell) {
@@ -246,97 +188,6 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 				&& !Dungeon.level.solid[cell]
 				&& (Dungeon.level.passable[cell] || Dungeon.level.avoid[cell]);
 	}
-
-	protected boolean canPull(Char target) {
-		if (pullUsed || Dungeon.level == null || target == null
-				|| target.properties().contains(Property.IMMOVABLE)
-				|| (Dungeon.hero != null && target != Dungeon.hero)) {
-			return false;
-		}
-		int distance = Dungeon.level.distance(pos, target.pos);
-		if (distance < 3 || distance > 4) {
-			return false;
-		}
-		Ballistica path = new Ballistica(pos, target.pos, Ballistica.PROJECTILE);
-		return path.collisionPos == target.pos && findPullLanding(target) != -1;
-	}
-
-	protected boolean performPull(Char target) {
-		if (!canPull(target)) {
-			return false;
-		}
-		int landing = findPullLanding(target);
-		if (landing == -1) {
-			return false;
-		}
-
-		int from = target.pos;
-		pullUsed = true;
-		pendingExplosionCell = landing;
-		target.pos = landing;
-		if (Dungeon.hero != null) {
-			Dungeon.level.occupyCell(target);
-		}
-
-		if (target instanceof Hero) {
-			((Hero) target).interrupt();
-		}
-		if (target.sprite != null) {
-			Actor.add(new Pushing(target, from, landing));
-		}
-		if (sprite instanceof EarthlySerpentSprite) {
-			((EarthlySerpentSprite) sprite).pull(from);
-		}
-		if (Dungeon.hero != null) {
-			Dungeon.observe();
-			GameScene.updateFog();
-		}
-		return true;
-	}
-
-	private int findPullLanding(Char target) {
-		int best = -1;
-		float bestDistance = Float.MAX_VALUE;
-		for (int offset : PathFinder.NEIGHBOURS8) {
-			int cell = pos + offset;
-			if (!validOpenCell(cell) || Actor.findChar(cell) != null) {
-				continue;
-			}
-			float distance = Dungeon.level.trueDistance(cell, target.pos);
-			if (distance < bestDistance) {
-				best = cell;
-				bestDistance = distance;
-			}
-		}
-		return best;
-	}
-
-	protected boolean resolvePendingExplosion() {
-		if (pendingExplosionCell == -1) {
-			return false;
-		}
-		int cell = pendingExplosionCell;
-		pendingExplosionCell = -1;
-		explodeAt(cell);
-		return true;
-	}
-
-	protected void explodeAt(int cell) {
-		if (sprite instanceof EarthlySerpentSprite) {
-			((EarthlySerpentSprite) sprite).warning(false);
-		}
-		new SerpentBomb(id()).explode(cell);
-	}
-
-	protected boolean pullUsed() {
-		return pullUsed;
-	}
-
-	protected int pendingExplosionCell() {
-		return pendingExplosionCell;
-	}
-
-
 
 	protected boolean isQualifyingMeleeSource(Object source, Char target) {
 		if (target instanceof Hero && source == target) {
@@ -353,10 +204,6 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		return weaponType != null && MeleeWeapon.class.isAssignableFrom(weaponType);
 	}
 
-	protected int normalizeBombDamage(int damage, int ownerId) {
-		return ownerId == id() ? 0 : damage;
-	}
-
 	@Override
 	protected boolean act() {
 		float now = Actor.now();
@@ -367,25 +214,17 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 			lastRegenerationTime = now;
 		}
 		emitAura();
-		if (resolvePendingExplosion()) {
-			spend(attackDelay());
-			return true;
-		}
 		return super.act();
 	}
 
 	private static final String MELEE_DAMAGE_DEALT = "melee_damage_dealt";
 	private static final String REGENERATION_PROGRESS = "regeneration_progress";
-	private static final String PULL_USED = "pull_used";
-	private static final String PENDING_EXPLOSION_CELL = "pending_explosion_cell";
 
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(MELEE_DAMAGE_DEALT, meleeDamageDealt);
 		bundle.put(REGENERATION_PROGRESS, regenerationProgress);
-		bundle.put(PULL_USED, pullUsed);
-		bundle.put(PENDING_EXPLOSION_CELL, pendingExplosionCell);
 	}
 
 	@Override
@@ -393,39 +232,9 @@ public class EarthlySerpent extends Mob implements RangedAttack {
 		super.restoreFromBundle(bundle);
 		meleeDamageDealt = Math.min(MAX_GROWTH_DAMAGE, bundle.getInt(MELEE_DAMAGE_DEALT));
 		regenerationProgress = Math.max(0f, bundle.getFloat(REGENERATION_PROGRESS));
-		pullUsed = bundle.getBoolean(PULL_USED);
-		pendingExplosionCell = bundle.contains(PENDING_EXPLOSION_CELL)
-				? bundle.getInt(PENDING_EXPLOSION_CELL)
-				: -1;
 		HT = Math.min(MAX_HT, BASE_HT + meleeDamageDealt * 2);
 		HP = Math.min(HP, HT);
 		lastRegenerationTime = Float.NaN;
 	}
 
-	@Override
-	public void die(Object cause) {
-		pendingExplosionCell = -1;
-		super.die(cause);
-	}
-
-	static final class SerpentBomb extends Bomb {
-
-		private final int ownerId;
-
-		SerpentBomb(int ownerId) {
-			this.ownerId = ownerId;
-		}
-
-		int ownerId() {
-			return ownerId;
-		}
-	}
-
-	public static class EarthlySerpentSpitGas extends CorrosiveGas {
-
-		@Override
-		public String tileDesc() {
-			return Messages.get(CorrosiveGas.class, "desc");
-		}
-	}
 }

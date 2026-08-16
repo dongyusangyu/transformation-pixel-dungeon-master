@@ -26,7 +26,6 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja.Deco
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhysicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
@@ -62,7 +61,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
-import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
@@ -635,7 +633,7 @@ public class InstructionTool extends Artifact {
 
     private static final String CUR_SEED_EFFECT = "cur_seed_effect";
 
-    public static class Drone extends DirectableAlly implements PhysicalRangedAttack {
+    public static class Drone extends DirectableAlly {
 
         {
             spriteClass = DronesSprite.DroneSprite.class;
@@ -672,16 +670,6 @@ public class InstructionTool extends Artifact {
                 return defenseSkill; //equal to base hero attack skill
             }
 
-        }
-
-        @Override
-        public boolean doRangedAttack(Char enemy) {
-            return doPhysicalRangedAttack(enemy, true);
-        }
-
-        @Override
-        public int rangedAttackBallisticaMode() {
-            return Ballistica.MAGIC_BOLT;
         }
 
         public Drone(){

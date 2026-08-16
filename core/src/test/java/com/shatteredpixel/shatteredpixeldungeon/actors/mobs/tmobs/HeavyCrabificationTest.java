@@ -5,8 +5,12 @@ import static org.junit.Assert.assertTrue;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisintegrationTrap;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -50,7 +54,7 @@ public class HeavyCrabificationTest {
 	}
 
 	@Test
-	public void onlyAmbushOrFlankDamagePassesAndItIsHalvedAfterArmor() {
+	public void frontCharAndDirectMagicAreBlockedButOtherSourcesPass() {
 		TestCrab crab = new TestCrab();
 		TestAttacker front = new TestAttacker();
 		TestAttacker flanker = new TestAttacker();
@@ -59,8 +63,23 @@ public class HeavyCrabificationTest {
 		crab.damage(11, front, DamageTag.PHYSICAL, DamageTag.MELEE);
 		assertEquals(-1, crab.acceptedDamage);
 
-		crab.damage(11, new Object());
+		crab.damage(11, new Object(), DamageTag.MAGICAL);
 		assertEquals(-1, crab.acceptedDamage);
+
+		crab.damage(11, new Object(), DamageTag.PHYSICAL);
+		assertEquals(11, crab.acceptedDamage);
+
+		crab.acceptedDamage = -1;
+		crab.damage(11, new DisintegrationTrap(), DamageTag.MAGICAL);
+		assertEquals(11, crab.acceptedDamage);
+
+		crab.acceptedDamage = -1;
+		crab.damage(11, new ToxicGas(), DamageTag.MAGICAL, DamageTag.TOXIC);
+		assertEquals(11, crab.acceptedDamage);
+
+		crab.acceptedDamage = -1;
+		crab.damage(11, new Poison(), DamageTag.MAGICAL, DamageTag.POISON);
+		assertEquals(11, crab.acceptedDamage);
 
 		crab.damage(11, flanker, DamageTag.PHYSICAL, DamageTag.MELEE);
 		assertEquals(6, crab.acceptedDamage);
@@ -69,6 +88,17 @@ public class HeavyCrabificationTest {
 		crab.forceAmbush = true;
 		crab.damage(1, front, DamageTag.PHYSICAL, DamageTag.MELEE);
 		assertEquals(1, crab.acceptedDamage);
+	}
+
+	@Test
+	public void corruptionPeriodicDamageBypassesShellAtFullValue() {
+		TestCrab crab = new TestCrab();
+		TestAttacker front = new TestAttacker();
+		crab.guardAgainst(front);
+
+		crab.damage(2, new Corruption(), DamageTag.PHYSICAL, DamageTag.CORRUPTION);
+
+		assertEquals(2, crab.acceptedDamage);
 	}
 
 	@Test

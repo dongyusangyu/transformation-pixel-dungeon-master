@@ -856,6 +856,10 @@ public abstract class Level implements Bundlable {
 				|| (Char.hasProp(ch, Char.Property.LARGE) && !openSpace[cell]));
 		return cell;
 	}
+
+	public boolean isBossTeleportPositionAllowed(int pos) {
+		return pos >= 0 && pos < length();
+	}
 	
 	public void addItemToSpawn( Item item ) {
 		if (item.getClass()==Food.class && Random.Int(10) <3 && Dungeon.isChallenged(Challenges.NO_FOOD) && Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)){
@@ -1369,7 +1373,27 @@ public abstract class Level implements Bundlable {
 
 	private static boolean[] modifiableBlocking;
 
+	private void markNeighbourhood(boolean[] array, int center) {
+		if (array == null || array.length != length() || center < 0 || center >= length()) {
+			return;
+		}
+		int centerX = center % width();
+		int centerY = center / width();
+		for (int y = Math.max(0, centerY - 1); y <= Math.min(height() - 1, centerY + 1); y++) {
+			for (int x = Math.max(0, centerX - 1); x <= Math.min(width() - 1, centerX + 1); x++) {
+				array[x + y * width()] = true;
+			}
+		}
+	}
+
 	public void updateFieldOfView( Char c, boolean[] fieldOfView ) {
+		if (c == null || fieldOfView == null || fieldOfView.length != length()
+				|| c.pos < 0 || c.pos >= length()) {
+			if (fieldOfView != null && fieldOfView.length == length()) {
+				BArray.setFalse(fieldOfView);
+			}
+			return;
+		}
 
 		int cx = c.pos % width();
 		int cy = c.pos / width();
@@ -1477,10 +1501,11 @@ public abstract class Level implements Bundlable {
 			int range = 1+(Dungeon.hero.pointsInTalent(Talent.EAGLE_EYE)-2);
 			for (Mob mob : mobs) {
 				int p = mob.pos;
+				if (p < 0 || p >= length()) {
+					continue;
+				}
 				if (!fieldOfView[p] && distance(c.pos, p) <= range) {
-					for (int i : PathFinder.NEIGHBOURS9) {
-						fieldOfView[mob.pos + i] = true;
-					}
+					markNeighbourhood(fieldOfView, p);
 				}
 			}
 		}
@@ -1500,9 +1525,7 @@ public abstract class Level implements Bundlable {
 					if (mob instanceof Mimic && mob.alignment == Char.Alignment.NEUTRAL&& ((Mimic) mob).stealthy()){
 						continue;
 					}
-					for (int i : PathFinder.NEIGHBOURS9) {
-						heroMindFov[mob.pos + i] = true;
-					}
+					markNeighbourhood(heroMindFov, mob.pos);
 				}
 			} else {
 
@@ -1527,10 +1550,11 @@ public abstract class Level implements Bundlable {
 							continue;
 						}
 						int p = mob.pos;
+						if (p < 0 || p >= length()) {
+							continue;
+						}
 						if (!fieldOfView[p] && (distance(c.pos, p) <= mindVisRange || (ally != null && distance(ally.pos, p) <= mindVisRange))) {
-							for (int i : PathFinder.NEIGHBOURS9) {
-								heroMindFov[mob.pos + i] = true;
-							}
+							markNeighbourhood(heroMindFov, p);
 						}
 					}
 				}
@@ -1538,14 +1562,7 @@ public abstract class Level implements Bundlable {
 
 			if (c.buff( Awareness.class ) != null) {
 				for (Heap heap : heaps.valueList()) {
-					int p = heap.pos;
-					for (int i : PathFinder.NEIGHBOURS9){
-						if(p+i<length()){
-							heroMindFov[p+i] = true;
-						}else{
-							heap.destroy();
-						}
-					}
+					markNeighbourhood(heroMindFov, heap.pos);
 				}
 			}
 
@@ -1555,15 +1572,18 @@ public abstract class Level implements Bundlable {
 					continue;
 				}
 				int p = ch.pos;
-				for (int i : PathFinder.NEIGHBOURS9) heroMindFov[p+i] = true;
+				markNeighbourhood(heroMindFov, p);
 			}
 
 			for (TalismanOfForesight.HeapAwareness h : c.buffs(TalismanOfForesight.HeapAwareness.class)){
 				if (Dungeon.depth != h.depth || Dungeon.branch != h.branch) continue;
-				for (int i : PathFinder.NEIGHBOURS9) heroMindFov[h.pos+i] = true;
+				markNeighbourhood(heroMindFov, h.pos);
 			}
 
 			for (Mob m : mobs){
+				if (m.pos < 0 || m.pos >= length()) {
+					continue;
+				}
 				if (m instanceof WandOfWarding.Ward
 						|| m instanceof WandOfRegrowth.Lotus
 						|| m instanceof SpiritHawk.HawkAlly
@@ -1575,18 +1595,21 @@ public abstract class Level implements Bundlable {
 					}
 					BArray.or(heroMindFov, m.fieldOfView, heroMindFov);
 				}else if((m instanceof InstructionTool.Drone && Dungeon.droneVison) || m instanceof SlimeMucus){
-					if(m.pos!=-1)heroMindFov[m.pos]=true;
+					if(m.pos >= 0 && m.pos < length())heroMindFov[m.pos]=true;
 
 				}
 			}
 
 			for (RevealedArea a : c.buffs(RevealedArea.class)){
 				if (Dungeon.depth != a.depth || Dungeon.branch != a.branch) continue;
-				for (int i : PathFinder.NEIGHBOURS9) heroMindFov[a.pos+i] = true;
+				markNeighbourhood(heroMindFov, a.pos);
 			}
 
 			//set mind vision chars
 			for (Mob mob : mobs) {
+				if (mob.pos < 0 || mob.pos >= length()) {
+					continue;
+				}
 				if (heroMindFov[mob.pos] && !fieldOfView[mob.pos]){
 					Dungeon.hero.mindVisionEnemies.add(mob);
 				}

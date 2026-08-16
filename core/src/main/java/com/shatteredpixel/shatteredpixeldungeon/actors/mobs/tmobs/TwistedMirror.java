@@ -1,5 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.TwistedMirrorSprite;
 
@@ -17,6 +21,11 @@ public class TwistedMirror extends HeroReplicaMob {
 
 		alignment = Alignment.ENEMY;
 		state = HUNTING;
+		properties.add(Property.INORGANIC);
+		immunities.add(ToxicGas.class);
+		immunities.add(CorrosiveGas.class);
+		immunities.add(Burning.class);
+		immunities.add(AllyBuff.class);
 
 		loot = null;
 		lootChance = 0f;

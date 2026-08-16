@@ -147,7 +147,7 @@ class FrostArchiveSemanticTest(unittest.TestCase):
             self.assertGreaterEqual(ice_pixels(tile(self.atlas, index)), 8)
 
     def test_walls_and_machinery_mix_ice_metal_and_amber_status_lights(self) -> None:
-        for index in (FLAT_WALL, FLAT_WALL_DECO, FLAT_ALCHEMY, FLAT_STATUE):
+        for index in (FLAT_WALL, FLAT_WALL_DECO, FLAT_STATUE, FLAT_REGION_DECO_ALT):
             subject = tile(self.atlas, index)
             self.assertGreaterEqual(ice_pixels(subject), 5, index)
             self.assertGreaterEqual(amber_pixels(subject), 2, index)

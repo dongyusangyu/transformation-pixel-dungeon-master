@@ -40,7 +40,8 @@ public class ExplosiveTrap extends Trap {
 	public void activate() {
 
 		for( int i : PathFinder.NEIGHBOURS9) {
-			if (Actor.findChar(pos+i) instanceof Mob){
+			int p = pos + i;
+			if (Actor.findChar(p) instanceof Mob){
 				Buff.prolong(Actor.findChar(pos+i), Trap.HazardAssistTracker.class, HazardAssistTracker.DURATION);
 			}
 		}

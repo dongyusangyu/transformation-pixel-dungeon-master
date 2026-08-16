@@ -13,6 +13,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Patch;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.utils.Random;
@@ -115,6 +116,31 @@ final class TowerBossLayout {
 
 	static boolean shouldBeginPrelude(boolean encounterBegun, boolean hero, int cell) {
 		return !encounterBegun && hero && isArenaCell(cell);
+	}
+
+	static boolean shouldRelocateAlly(Char.Alignment alignment, int cell) {
+		return alignment == Char.Alignment.ALLY && !isArenaCell(cell);
+	}
+
+	static boolean shouldRelocateCreature(int cell) {
+		return !isArenaCell(cell);
+	}
+
+	static boolean isLegalAllyDestination(int cell, boolean passable, boolean openSpace,
+			boolean large, int reservedCell, boolean occupied) {
+		return isArenaCell(cell) && passable && (!large || openSpace)
+				&& cell != reservedCell && !occupied;
+	}
+
+	static boolean isLegalCreatureDestination(int cell, boolean passable, boolean openSpace,
+			boolean large, int reservedCell, boolean occupied) {
+		return isArenaCell(cell) && passable && (!large || openSpace)
+				&& cell != reservedCell && !occupied;
+	}
+
+	static boolean isLegalTeleportDestination(int cell, boolean passable, boolean openSpace,
+			boolean large, boolean occupied) {
+		return isArenaCell(cell) && passable && (!large || openSpace) && !occupied;
 	}
 
 	static void sealArena(int[] map) {

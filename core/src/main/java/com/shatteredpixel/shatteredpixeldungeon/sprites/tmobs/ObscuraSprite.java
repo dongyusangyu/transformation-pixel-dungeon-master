@@ -26,18 +26,18 @@ public class ObscuraSprite extends MobSprite {
 		idle = new Animation(2, true);
 		idle.frames(frames, 0, 1);
 
-		run = new Animation(10, true);
-		run.frames(frames, 2, 3, 4, 5);
+		run = new Animation(12, true);
+		run.frames(frames, 0, 1, 2, 3,4);
 
 		attack = new Animation(12, false);
-		attack.frames(frames, 6, 7, 8);
+		attack.frames(frames, 0, 5, 6,7);
 
-		summon = new Animation(12, false);
-		summon.frames(frames, 9, 10, 11, 12);
+		summon = new Animation(5, false);
+		summon.frames(frames, 0, 8, 9, 10,11);
 		zap = summon;
 
-		die = new Animation(12, false);
-		die.frames(frames, 13, 14, 15, 16);
+		die = new Animation(5, false);
+		die.frames(frames, 0, 12, 13, 14,15);
 
 		play(idle);
 	}

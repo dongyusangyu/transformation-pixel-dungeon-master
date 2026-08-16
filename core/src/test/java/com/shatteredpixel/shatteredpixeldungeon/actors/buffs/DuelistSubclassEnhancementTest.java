@@ -52,6 +52,10 @@ public class DuelistSubclassEnhancementTest {
 		assertEquals(3f, SkilledParry.duration(2), 0.0001f);
 		assertEquals(4f, SkilledParry.duration(3), 0.0001f);
 		assertEquals(30f, SkilledParryCooldown.DURATION, 0.0001f);
+		assertTrue(SkilledParry.canTrigger(null));
+		SkilledParryCooldown cooldown = new SkilledParryCooldown();
+		cooldown.ability = Object.class;
+		assertFalse(SkilledParry.canTrigger(cooldown));
 		assertTrue(SkilledParryCooldown.isDifferentAbility(null, Object.class));
 		assertFalse(SkilledParryCooldown.isDifferentAbility(Object.class, Object.class));
 		assertTrue(SkilledParryCooldown.isDifferentAbility(Object.class, String.class));

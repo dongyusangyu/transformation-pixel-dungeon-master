@@ -24,10 +24,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -77,7 +80,20 @@ public class ChainMace extends MeleeWeapon {
 
 	@Override
 	public int max(int lvl) {
-		return 50 + 7 * lvl;
+		return 20 + 7 * lvl;
+	}
+
+	public int throwDamageForRoll(int meleeRoll) {
+		return damageRoll(curUser) * 2;
+	}
+
+	static int heroDamageForImpact(int impactDamage) {
+		return Math.max(0, impactDamage) / 4;
+	}
+
+	private int rollThrowDamage() {
+		int meleeRoll = augment.damageFactor(Hero.heroDamageIntRange(min(), max()));
+		return throwDamageForRoll(meleeRoll);
 	}
 
 	@Override
@@ -100,7 +116,11 @@ public class ChainMace extends MeleeWeapon {
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc");
+		if (levelKnown) {
+			return Messages.get(this, "ability_desc",
+					augment.damageFactor(min()), augment.damageFactor(max()));
+		}
+		return Messages.get(this, "typical_ability_desc", min(0), max(0));
 	}
 
 	@Override
@@ -154,15 +174,19 @@ public class ChainMace extends MeleeWeapon {
 		}
 
 		BallFollower ball = ensureFollower(user);
-		Char target = validEnemyAt(user, dst);
 		if (ball == null || !ball.isAlive()) {
 			GLog.w(Messages.get(this, "no_follower"));
 		} else if (!commandState.canDispatch()) {
 			GLog.w(Messages.get(this, "follower_busy"));
-		} else if (target == null) {
+		} else if (Dungeon.level.distance(ball.pos, user.pos) != 1) {
+			GLog.w(Messages.get(this, "need_near_hero"));
+		} else if (!inertialThrowPathAllowed(ball.pos, user.pos, dst,
+				hasEnchant(Projecting.class, user))) {
+			GLog.w(Messages.get(this, "wrong_path"));
+		} else if (!validThrowDestination(user, ball, dst)) {
 			GLog.w(Messages.get(this, "invalid_target"));
 		} else {
-			dispatchSingleAttack(user, ball, target);
+			dispatchThrow(user, ball, dst);
 		}
 	}
 
@@ -193,47 +217,57 @@ public class ChainMace extends MeleeWeapon {
 		dispatchAbilityStep(hero, ball, targets, 0, ball.pos, commandToken);
 	}
 
-	private void dispatchSingleAttack(final Hero hero, final BallFollower ball,
-			final Char target) {
+    @Override
+    protected int baseChargeUse(Hero hero, Char target) {
+        return 2;
+    }
+
+	private void dispatchThrow(final Hero hero, final BallFollower ball,
+			final int destination) {
 		commandState.beginSingleAttack();
 		commandLevel = Dungeon.level;
 		final int commandToken = beginCommand();
 		hero.busy();
 		playLaunchFeedback();
 		final int from = ball.pos;
-		jumpRapidly(ball, from, target.pos, new Callback() {
+		jumpRapidly(ball, from, destination, new Callback() {
 			@Override
 			public void call() {
 				if (!isCommandValid(hero, ball, commandToken)) {
 					abortCommand(hero, ball, false, commandToken);
 					return;
 				}
-				landFollower(ball, target.pos);
-				KindOfWeapon previous = hero.belongings.thrownWeapon;
-				boolean hit = false;
-				float attackDelay;
-				try {
-					hero.belongings.thrownWeapon = ChainMace.this;
-					if (isVisibleEnemy(hero, target)) {
-						hit = hero.attack(target);
-					}
-					attackDelay = hero.attackDelay();
-				} finally {
-					hero.belongings.thrownWeapon = previous;
-				}
+				landFollower(ball, destination);
+				dealThrowImpact(hero, ball, destination);
 				Invisibility.dispel();
-				if (hit) {
-					Sample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.9f);
-					playHitFeedback();
-				}
 				commandState.beginReturn();
 				ball.returning = true;
 				ball.followHero();
 				commandLevel = null;
 				activeCommandToken = 0;
-				hero.spendAndNext(attackDelay);
+				hero.spendAndNext(hero.attackDelay());
 			}
 		});
+	}
+
+	static int impactDamageFor(boolean hero, int impactDamage) {
+		return hero ? heroDamageForImpact(impactDamage) : Math.max(0, impactDamage);
+	}
+
+	private void dealThrowImpact(Hero hero, BallFollower ball, int cell) {
+		int impactDamage = rollThrowDamage();
+		WandOfBlastWave.BlastWave.blast(cell);
+		CellEmitter.get(cell).burst(Speck.factory(Speck.DUST), 8);
+		Sample.INSTANCE.play(Assets.Sounds.ROCKS);
+		playHitFeedback();
+
+		for (Char ch : new ArrayList<>(Actor.chars())) {
+			if (ch == ball || !ch.isAlive()) continue;
+			if (Dungeon.level.distance(ch.pos, cell) <= 1) {
+				int dealt = impactDamageFor(ch == hero, impactDamage);
+				if (dealt > 0) ch.damage(dealt, ball);
+			}
+		}
 	}
 
 	private void dispatchAbilityStep(final Hero hero, final BallFollower ball,
@@ -383,11 +417,15 @@ public class ChainMace extends MeleeWeapon {
 		PixelScene.shake(2, 0.25f);
 	}
 
-	private Char validEnemyAt(Hero hero, int cell) {
-		if (Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length()
-				|| !Dungeon.level.heroFOV[cell]) return null;
-		Char target = Actor.findChar(cell);
-		return isCommandTarget(hero, target) ? target : null;
+	private boolean validThrowDestination(Hero hero, BallFollower ball, int dst) {
+		if (Dungeon.level == null || dst < 0 || dst >= Dungeon.level.length()) return false;
+		boolean projecting = hasEnchant(Projecting.class, hero);
+		boolean visible = Dungeon.level.heroFOV[dst];
+		boolean open = !Dungeon.level.solid[dst] && !Dungeon.level.pit[dst];
+		boolean clear = new Ballistica(ball.pos, dst,
+				Ballistica.STOP_TARGET | Ballistica.STOP_SOLID).collisionPos == dst;
+		boolean geometry = inertialThrowPathAllowed(ball.pos, hero.pos, dst, projecting);
+		return throwDestinationAllowed(visible, open, clear, geometry, projecting);
 	}
 
 	private boolean isVisibleEnemy(Hero hero, Char target) {
@@ -453,10 +491,33 @@ public class ChainMace extends MeleeWeapon {
 		return ordered;
 	}
 
+	private boolean inertialThrowPathAllowed(int ball, int hero, int target, boolean projecting) {
+		if (Dungeon.level == null || ball < 0 || ball >= Dungeon.level.length()
+				|| hero < 0 || hero >= Dungeon.level.length()
+				|| target < 0 || target >= Dungeon.level.length()
+				|| ball == hero || hero == target || ball == target) {
+			return false;
+		}
+		int pathFlags = Ballistica.STOP_TARGET;
+		if (!projecting) pathFlags |= Ballistica.STOP_SOLID;
+		Ballistica trajectory = new Ballistica(ball, target, pathFlags);
+		return trajectory.collisionPos == target && trajectory.path.contains(hero);
+	}
+
 	private static int gridDistance(int first, int second, int width) {
 		int dx = Math.abs(first % width - second % width);
 		int dy = Math.abs(first / width - second / width);
 		return Math.max(dx, dy);
+	}
+
+	static boolean throwDestinationAllowed(boolean visible, boolean open,
+			boolean clearTrajectory, boolean inertialGeometry) {
+		return throwDestinationAllowed(visible, open, clearTrajectory, inertialGeometry, false);
+	}
+
+	static boolean throwDestinationAllowed(boolean visible, boolean open,
+			boolean clearTrajectory, boolean inertialGeometry, boolean projecting) {
+		return visible && open && (projecting || clearTrajectory) && inertialGeometry;
 	}
 
 	private BallFollower getFollower() {
@@ -680,7 +741,11 @@ public class ChainMace extends MeleeWeapon {
 
 		@Override
 		public float speed() {
-			return 4f;
+			return movementSpeed(returning, owner == null ? 1f : owner.speed());
+		}
+
+		static float movementSpeed(boolean returning, float ownerSpeed) {
+			return returning ? 3f : Math.max(0.01f, ownerSpeed);
 		}
 
 		@Override
@@ -785,6 +850,11 @@ public class ChainMace extends MeleeWeapon {
 		@Override
 		public boolean isInvulnerable(Class effect) {
 			return true;
+		}
+
+		@Override
+		public void die(Object cause) {
+			// Linked-weapon lifecycle removes this actor explicitly through destroy().
 		}
 
 		@Override

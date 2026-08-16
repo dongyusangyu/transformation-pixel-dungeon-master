@@ -204,9 +204,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Whip;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.AuxiliaryCore;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMace;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.DemonTailWhip;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.HundredTonHammer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
@@ -535,9 +537,11 @@ public class Generator {
 					PalermoSword.class,
 					MercuryBlade.class,
 					AuxiliaryCore.class,
-					HundredTonHammer.class
+					HundredTonHammer.class,
+					DemonTailWhip.class,
+					OracleTerminal.class
 			};
-			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1};
+			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 			WEP_T6.probs = WEP_T6.defaultProbs.clone();
 			
 			//see Generator.randomArmor
@@ -910,6 +914,32 @@ public class Generator {
 	public static Item randomUsingDefaults(){
 		return randomUsingDefaults(Random.chances( effectiveProbs(defaultCatProbs) ));
 	}
+
+	public static Class<?> randomClassUsingDefaultsExcluding(
+			Category cat, Class<?>... excludedClasses) {
+		float[] defaults = cat.defaultProbsTotal != null
+				? cat.defaultProbsTotal
+				: cat.defaultProbs;
+		if (defaults == null || defaults.length != cat.classes.length) {
+			throw new IllegalArgumentException("Category has no default class probabilities: " + cat);
+		}
+
+		float[] available = effectiveProbs(defaults.clone());
+		for (int i = 0; i < cat.classes.length; i++) {
+			for (Class<?> excluded : excludedClasses) {
+				if (excluded.isAssignableFrom(cat.classes[i])) {
+					available[i] = 0f;
+					break;
+				}
+			}
+		}
+
+		int selected = Random.chances(available);
+		if (selected < 0) {
+			throw new IllegalStateException("No eligible classes available in category: " + cat);
+		}
+		return cat.classes[selected];
+	}
 	
 	public static Item random( Category cat ) {
 		switch (cat) {
@@ -1046,6 +1076,11 @@ public class Generator {
 			Category.MIS_T5,
 			Category.MIS_T6
 	};
+
+	public static Category weaponTransmutationCategory(boolean missile, int tier) {
+		int transmutationTier = Math.min(tier, 5);
+		return (missile ? misTiers : wepTiers)[transmutationTier - 1];
+	}
 
 	private static int availableMissileTier(int requestedTier) {
 		int tier = Math.min(requestedTier, misTiers.length - 1);

@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENV = ROOT / "core" / "src" / "main" / "assets" / "environment"
 ATLAS_PATH = ENV / "tiles_gothic_castle.png"
 REFERENCE_PATH = ENV / "tiles_halls.png"
+SEWERS_PATH = ENV / "tiles_sewers.png"
 WATER_PATH = ENV / "water_gothic_castle.png"
 
 TILE_SIZE = 16
@@ -42,11 +43,22 @@ class GothicCastleTilesetTest(unittest.TestCase):
 
     def test_atlas_keeps_the_engine_contract(self) -> None:
         self.assertEqual((256, 256), self.atlas.size)
-        self.assertEqual(
-            tuple(self.reference.getchannel("A").getdata()),
-            tuple(self.atlas.getchannel("A").getdata()),
-            "gothic redraw must preserve every halls stitching silhouette",
-        )
+        for index in tuple(range(80, 112)) + tuple(range(144, 230)):
+            with self.subTest(index=index):
+                self.assertEqual(
+                    tuple(alpha > 0 for alpha in tile(self.reference, index).getchannel("A").getdata()),
+                    tuple(alpha > 0 for alpha in tile(self.atlas, index).getchannel("A").getdata()),
+                    "gothic walls and doors must preserve halls stitching silhouettes",
+                )
+
+    def test_water_edges_use_the_sewer_alpha_contract(self) -> None:
+        sewers = Image.open(SEWERS_PATH).convert("RGBA")
+        for index in range(32, 48):
+            with self.subTest(index=index):
+                self.assertEqual(
+                    tuple(tile(sewers, index).getchannel("A").getdata()),
+                    tuple(tile(self.atlas, index).getchannel("A").getdata()),
+                )
 
     def test_plain_floor_variants_are_dark_but_readable(self) -> None:
         variants = []

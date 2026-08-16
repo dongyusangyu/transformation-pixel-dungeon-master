@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.dict;
 
+import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 import java.util.Collection;
@@ -226,6 +227,27 @@ public enum DictionaryJournal {
         MOBS.d.put("mob_gnoll_guard",       DictSpriteSheet.GNOLL_GUARD);
         MOBS.d.put("mob_gnoll_sapper",      DictSpriteSheet.GNOLL_SAPPER);
 
+        //tower
+        MOBS.d.put("tower_chapter",                    DictSpriteSheet.AREA_TOWER);
+        MOBS.d.put("tower_camouflage_gnoll",           DictSpriteSheet.TOWER_CAMOUFLAGE_GNOLL);
+        MOBS.d.put("tower_corrosive_swarm",            DictSpriteSheet.TOWER_CORROSIVE_SWARM);
+        MOBS.d.put("tower_corpse",                     DictSpriteSheet.TOWER_CORPSE);
+        MOBS.d.put("tower_earthly_serpent",            DictSpriteSheet.TOWER_EARTHLY_SERPENT);
+        MOBS.d.put("tower_roast_lamb_warlock",         DictSpriteSheet.TOWER_ROAST_LAMB_WARLOCK);
+        MOBS.d.put("tower_mechanical_fist",            DictSpriteSheet.TOWER_MECHANICAL_FIST);
+        MOBS.d.put("tower_mimic_crocodile",            DictSpriteSheet.TOWER_MIMIC_CROCODILE);
+        MOBS.d.put("tower_obscura",                    DictSpriteSheet.TOWER_OBSCURA);
+        MOBS.d.put("tower_wild_dread",                 DictSpriteSheet.TOWER_WILD_DREAD);
+        MOBS.d.put("tower_alienated_prismatic_guard",  DictSpriteSheet.TOWER_ALIENATED_PRISMATIC_GUARD);
+        MOBS.d.put("tower_twisted_mirror",             DictSpriteSheet.TOWER_TWISTED_MIRROR);
+        MOBS.d.put("tower_soul_collector",             DictSpriteSheet.TOWER_SOUL_COLLECTOR);
+        MOBS.d.put("tower_powerful_wraith",            DictSpriteSheet.TOWER_POWERFUL_WRAITH);
+        MOBS.d.put("tower_heavy_crabification",        DictSpriteSheet.TOWER_HEAVY_CRABIFICATION);
+        MOBS.d.put("tower_marsh_slime",                DictSpriteSheet.TOWER_MARSH_SLIME);
+        MOBS.d.put("tower_rune_spinner",               DictSpriteSheet.TOWER_RUNE_SPINNER);
+        MOBS.d.put("tower_pestilence_knight",          DictSpriteSheet.TOWER_PESTILENCE_KNIGHT);
+        MOBS.d.put("tower_death_knight",               DictSpriteSheet.TOWER_DEATH_KNIGHT);
+
 
         //ring
         RINGS.d.put("ring_accuracy",        ItemSpriteSheet.RING_AGATE);
@@ -297,6 +319,16 @@ public enum DictionaryJournal {
         WEAPONS.d.put("melee_greatshield",  ItemSpriteSheet.GREATSHIELD);
         WEAPONS.d.put("melee_gauntlet",     ItemSpriteSheet.GAUNTLETS);
         WEAPONS.d.put("melee_steelwhip",    ItemSpriteSheet.STEEL_WHIP);
+        WEAPONS.d.put("melee_greatgreatgreatsword", EXItemSpriteSheet.GREAT_GREAT_GREATSWORD);
+        WEAPONS.d.put("melee_sakurablossomblade",  EXItemSpriteSheet.SAKURA_BLOSSOM);
+        WEAPONS.d.put("melee_chainmace",           EXItemSpriteSheet.CHAIN_MACE);
+        WEAPONS.d.put("melee_twohandedgreatsword", EXItemSpriteSheet.TWO_HANDED_GREATSWORD);
+        WEAPONS.d.put("melee_palermosword",        EXItemSpriteSheet.PALERMO_SWORD);
+        WEAPONS.d.put("melee_hundredtonhammer",    EXItemSpriteSheet.HUNDRED_TON_HAMMER);
+        WEAPONS.d.put("melee_oracleterminal",      EXItemSpriteSheet.ORACLE_TERMINAL);
+        WEAPONS.d.put("melee_demontailwhip",       EXItemSpriteSheet.DEMON_TAIL_WHIP);
+        WEAPONS.d.put("melee_mercuryblade",        EXItemSpriteSheet.MERCURY_BLADE);
+        WEAPONS.d.put("melee_auxiliarycore",       EXItemSpriteSheet.AUXILIARY_CORE);
         //duelist ability
         WEAPONS.d.put("duelist_ability",    ItemSpriteSheet.WEAPON_HOLDER);
         //ench & curse
@@ -327,6 +359,7 @@ public enum DictionaryJournal {
         WEAPONS.d.put("missile_axe",        ItemSpriteSheet.TOMAHAWK);
         WEAPONS.d.put("missile_hammer",     ItemSpriteSheet.THROWING_HAMMER);
         WEAPONS.d.put("missile_trident",    ItemSpriteSheet.TRIDENT);
+        WEAPONS.d.put("missile_gungnir",    EXItemSpriteSheet.GUNGNIR);
         WEAPONS.d.put("missile_cube",       ItemSpriteSheet.FORCE_CUBE);
         WEAPONS.d.put("missile_spiritbow",  ItemSpriteSheet.SPIRIT_BOW);
         WEAPONS.d.put("missile_tatteki",  ItemSpriteSheet.TATTEKI);
@@ -376,7 +409,6 @@ public enum DictionaryJournal {
         DOCUMENTS.d.put("info_spawn",       DictSpriteSheet.SPAWNER);
         DOCUMENTS.d.put("info_shop",        ItemSpriteSheet.GOLD);
         DOCUMENTS.d.put("info_surface",     DictSpriteSheet.AREA_SURFACE);
-        DOCUMENTS.d.put("info_tower",       DictSpriteSheet.AREA_TOWER);
         DOCUMENTS.d.put("info_feeling",     DictSpriteSheet.AREA_HALL);
         DOCUMENTS.d.put("info_chasm",       DictSpriteSheet.CHASM);
         DOCUMENTS.d.put("info_lck_floor",   DictSpriteSheet.LOCKED_FLOOR);
@@ -388,6 +420,7 @@ public enum DictionaryJournal {
         DOCUMENTS.d.put("quest_blacksmith", DictSpriteSheet.BLACKSMITH);
         DOCUMENTS.d.put("quest_blacksmith1", DictSpriteSheet.CRYSTAL_SPIRE);
         DOCUMENTS.d.put("misc_random_mode",   DictSpriteSheet.RANDOM_MODE);
+        DOCUMENTS.d.put("info_tower",       DictSpriteSheet.AREA_TOWER);
 //        DOCUMENTS.d.put("quest_imp",        DictSpriteSheet.IMP);
 
         //unclassified

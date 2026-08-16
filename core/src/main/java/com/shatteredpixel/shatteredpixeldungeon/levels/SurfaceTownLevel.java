@@ -36,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
@@ -277,9 +278,9 @@ public class SurfaceTownLevel extends Level {
 			}
 		}
 
-		map[cell(MANOR_DOOR_X, MANOR_DOOR_Y)] = Terrain.LOCKED_DOOR;
+		map[cell(MANOR_DOOR_X, MANOR_DOOR_Y)] = Terrain.DOOR;
 		// A non-wall tile behind the door is required for the front-facing locked-door visual.
-		map[cell(MANOR_DOOR_X, MANOR_DOOR_Y - 1)] = Terrain.EMPTY_SP;
+		//map[cell(MANOR_DOOR_X, MANOR_DOOR_Y - 1)] = Terrain.EMPTY_SP;
 		map[cell(MANOR_STAIR_X, MANOR_STAIR_Y)] = Terrain.ENTRANCE;
 
 		map[cell(MANOR_LEFT + 3, bottom - 2)] = Terrain.STATUE_SP;
@@ -486,6 +487,11 @@ public class SurfaceTownLevel extends Level {
 		items.add(new Torch());
 		items.add(new Torch());
 		items.add(new Stylus());
+		items.add(new ScrollOfSublimation().type("GOO"));
+		items.add(new ScrollOfSublimation().type("TENGU"));
+		items.add(new ScrollOfSublimation().type("DM300"));
+		items.add(new ScrollOfSublimation().type("DWARFKING"));
+		items.add(new ScrollOfSublimation().type("YOG"));
 
 		Random.shuffle(items);
 		return items;

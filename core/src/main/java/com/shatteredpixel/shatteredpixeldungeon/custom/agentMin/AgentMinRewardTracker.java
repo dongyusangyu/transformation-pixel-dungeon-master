@@ -430,7 +430,7 @@ public class AgentMinRewardTracker {
 		}
 	}
 
-	public static void writeEpisodeEndLog(boolean win, int rankingScore) {
+	public static void writeEpisodeEndLog(boolean win, double rankingScore) {
 		if (!AgentMinBridgeConfig.ENABLED) {
 			return;
 		}
@@ -452,7 +452,9 @@ public class AgentMinRewardTracker {
 				parent.mkdirs();
 			}
 			DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.ROOT);
-			int maxDepth = Math.max(Statistics.deepestFloor, Dungeon.depth);
+			int maxDepth = Dungeon.newCycle
+					? Math.max(Statistics.deepestTowerFloor, Dungeon.depth)
+					: Math.max(Statistics.deepestFloor, Dungeon.depth);
 			FileWriter writer = new FileWriter(file, true);
 			writer.write(format.format(new Date()) + "=episodeReward=" + episodeReward
 					+ ",maxDepth=" + maxDepth

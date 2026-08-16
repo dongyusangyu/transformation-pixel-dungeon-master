@@ -8,8 +8,10 @@ from PIL import Image, ImageDraw
 
 try:
     from tools import generate_astral_library_tileset as base
+    from tools.tower_tileset_semantics import normalize_tower_tileset
 except ImportError:
     import generate_astral_library_tileset as base
+    from tower_tileset_semantics import normalize_tower_tileset
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -363,20 +365,30 @@ def draw_crystal_underhang(exhausted: bool = False, alt: bool = False) -> Image.
 
 def draw_frozen_specimen(background: Image.Image, body_only: bool = False, core: bool = False) -> Image.Image:
     image, draw = local_draw(background)
-    draw.rectangle((4, 10, 11, 14), fill=METAL_DARK)
-    draw.line((3, 10, 12, 10), fill=METAL_LIGHT)
-    draw.point((10, 13), fill=AMBER_LIGHT)
-    draw.point((9, 13), fill=AMBER_LIGHT)
-    draw.point((8, 13), fill=AMBER_DARK)
-    if not body_only:
-        draw.polygon(((8, 1), (12, 6), (10, 10), (5, 10), (3, 6)), fill=ICE_DARK)
-        draw.polygon(((8, 2), (10, 6), (8, 9), (5, 6)), fill=ICE_MID)
-        draw.line((7, 2, 7, 8), fill=ICE_PALE)
-        if core:
-            draw.rectangle((7, 5, 8, 7), fill=AMBER_LIGHT)
-        else:
-            draw.line((8, 5, 8, 8), fill=FROST_SHADOW)
-            draw.point((7, 4), fill=FROST_LIGHT)
+    draw.line((3, 15, 12, 15), fill=OUTLINE)
+    draw.rectangle((3, 10, 12, 14), fill=OUTLINE)
+    draw.rectangle((4, 10, 11, 13), fill=METAL_DARK)
+    draw.line((4, 10, 11, 10), fill=METAL_LIGHT)
+    draw.rectangle((6, 12, 9, 13), fill=AMBER_DARK)
+    draw.point((7, 12), fill=AMBER_LIGHT)
+    draw.point((8, 12), fill=AMBER_LIGHT)
+    if body_only:
+        draw.rectangle((4, 0, 11, 10), fill=OUTLINE)
+        draw.rectangle((5, 0, 10, 9), fill=ICE_DARK)
+        draw.rectangle((6, 0, 9, 8), fill=ICE_MID)
+        draw.line((6, 0, 6, 8), fill=ICE_PALE)
+        return image
+
+    draw.polygon(((7, 0), (10, 1), (13, 5), (11, 10), (4, 10), (2, 5), (5, 1)), fill=OUTLINE)
+    draw.polygon(((7, 1), (10, 2), (12, 5), (10, 9), (5, 9), (3, 5), (5, 2)), fill=ICE_DARK)
+    draw.ellipse((6, 2, 9, 5), fill=ICE_PALE)
+    draw.rectangle((5, 6, 10, 8), fill=ICE_MID)
+    draw.line((6, 3, 6, 8), fill=ICE_GLINT)
+    draw.line((7, 6, 9, 6), fill=ICE_PALE)
+    for point in ((8, 2), (9, 4), (6, 7), (9, 8)):
+        draw.point(point, fill=ICE_GLINT)
+    if core:
+        draw.rectangle((7, 6, 8, 7), fill=AMBER_LIGHT)
     return image
 
 
@@ -425,9 +437,14 @@ def draw_object_overhang(kind: str, alt: bool = False) -> Image.Image:
         draw.line((7, 9, 10, 7), fill=ICE_PALE)
         draw.point((4, 13), fill=AMBER_LIGHT)
     elif kind == "specimen":
-        draw.polygon(((8, 4), (12, 10), (9, 15), (5, 15), (3, 10)), fill=ICE_DARK)
-        draw.line((7, 5, 7, 14), fill=ICE_PALE)
-        draw.point((9, 10), fill=AMBER_LIGHT if alt else ICE_GLINT)
+        draw.polygon(((7, 3), (10, 4), (13, 9), (10, 15), (5, 15), (2, 9), (5, 4)), fill=OUTLINE)
+        draw.polygon(((7, 4), (10, 5), (12, 9), (9, 14), (5, 14), (3, 9), (5, 5)), fill=ICE_DARK)
+        draw.ellipse((6, 6, 9, 9), fill=ICE_PALE)
+        draw.rectangle((5, 10, 10, 13), fill=ICE_MID)
+        draw.line((6, 7, 6, 13), fill=ICE_GLINT)
+        draw.point((8, 7), fill=ICE_GLINT)
+        draw.point((9, 11), fill=AMBER_LIGHT if alt else ICE_GLINT)
+        draw.rectangle((6, 15, 9, 15), fill=METAL_DARK)
     elif kind == "pod":
         draw.ellipse((5, 5, 10, 13), fill=ICE_MID, outline=ICE_PALE)
         draw.line((5, 13, 5, 15), fill=METAL_LIGHT)
@@ -595,7 +612,12 @@ def build_tileset() -> Image.Image:
     for index, image in overhangs.items():
         replace_tile(atlas, image, index)
 
-    return atlas
+    return normalize_tower_tileset(
+        atlas,
+        sewers,
+        Image.open(ENV / "tiles_halls.png"),
+        build_water_texture(),
+    )
 
 
 def generate() -> tuple[Path, Path]:

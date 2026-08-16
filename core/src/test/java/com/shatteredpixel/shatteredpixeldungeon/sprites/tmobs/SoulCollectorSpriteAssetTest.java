@@ -56,7 +56,11 @@ public class SoulCollectorSpriteAssetTest {
 		assertTrue(collector.contains("frames, 0, 0, 0, 2, 3, 4"));
 		assertTrue(collector.contains("frames, 5, 6, 7, 8"));
 		assertTrue(collector.contains("frames, 9, 10, 11, 12"));
-		assertTrue(collector.contains("Speck.RATTLE"));
+		assertTrue(collector.contains("ShadowParticle.MISSILE"));
+		assertTrue(collector.contains("ShadowParticle.CURSE"));
+		assertTrue(collector.contains("Assets.Sounds.CHARGEUP"));
+		assertTrue(collector.contains("Assets.Sounds.CURSED"));
+		assertFalse(collector.contains("Speck.RATTLE"));
 		assertTrue(wraith.contains("frames, 0, 1"));
 		assertTrue(wraith.contains("frames, 0, 2, 3"));
 		assertTrue(wraith.contains("frames, 0, 4, 5, 6, 7"));

@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.function.Supplier;
 public final class TowerBossGenerator {
 
     public static final String PESTILENCE_KNIGHT_ID = "pestilence_knight";
+    public static final String DEATH_KNIGHT_ID = "death_knight";
     private static final long SELECTION_SALT = 0x50455354494C454EL;
 
     private static final List<Entry> ENTRIES;
@@ -24,6 +26,8 @@ public final class TowerBossGenerator {
         ArrayList<Entry> entries = new ArrayList<>();
         entries.add(new Entry(PESTILENCE_KNIGHT_ID, 1, 1, Integer.MAX_VALUE,
                 PestilenceKnight::new));
+        entries.add(new Entry(DEATH_KNIGHT_ID, 1, 1, Integer.MAX_VALUE,
+                DeathKnight::new));
         ENTRIES = Collections.unmodifiableList(entries);
 
         LinkedHashMap<String, Entry> byId = new LinkedHashMap<>();
@@ -50,6 +54,24 @@ public final class TowerBossGenerator {
         }
         long seed = mix64(dungeonSeed ^ ((long) depth << 32) ^ branch ^ SELECTION_SALT);
         return selectId(eligible, seed);
+    }
+
+    public static int nextBossDepthAfter(int depth) {
+        return (Math.max(0, depth) / TowerBossLevel.FLOORS_PER_BOSS + 1)
+                * TowerBossLevel.FLOORS_PER_BOSS;
+    }
+
+    public static int predictionDepth(int currentDepth, boolean currentBossPending) {
+        if (currentBossPending && currentDepth > 0
+                && currentDepth % TowerBossLevel.FLOORS_PER_BOSS == 0) {
+            return currentDepth;
+        }
+        return nextBossDepthAfter(currentDepth);
+    }
+
+    public static String predictId(long dungeonSeed, int currentDepth, int branch,
+            boolean currentBossPending) {
+        return selectId(dungeonSeed, predictionDepth(currentDepth, currentBossPending), branch);
     }
 
     static String selectId(List<Entry> eligible, long seed) {

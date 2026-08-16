@@ -86,7 +86,7 @@ public enum Rankings {
 
 	public Record latestDaily;
 	public Record latestDailyReplay = null; //not stored, only meant to be temp
-	public LinkedHashMap<Long, Integer> dailyScoreHistory = new LinkedHashMap<>();
+	public LinkedHashMap<Long, Double> dailyScoreHistory = new LinkedHashMap<>();
 	private static final CloudSyncService.Callback SILENT_CLOUD_CALLBACK = new CloudSyncService.Callback() {
 		@Override
 		public void onSuccess() {
@@ -121,7 +121,11 @@ public enum Rankings {
 		rec.armorTier	= hero.tier();
 		rec.skin        = Dungeon.skin;
 		rec.herolevel	= hero.lvl;
-		if (Statistics.highestAscent == 0){
+		rec.newCycle = Dungeon.newCycle;
+		if (rec.newCycle) {
+			rec.depth = Statistics.deepestTowerFloor;
+			rec.ascending = false;
+		} else if (Statistics.highestAscent == 0){
 			rec.depth = Statistics.deepestFloor;
 			rec.ascending = false;
 		} else {
@@ -132,7 +136,6 @@ public enum Rankings {
 		rec.customSeed  = Dungeon.customSeedText;
 		rec.daily       = Dungeon.daily;
 		rec.randomMode  = hero.randomMode;
-		rec.newCycle    = Dungeon.newCycle;
 		rec.randomTalents = hero.randomClassTalents == null ? new String[0] : hero.randomClassTalents.clone();
 		rec.selectedTalents = talentSummary(hero);
 		rec.subClass = hero.subClass == null ? "" : hero.subClass.name();
@@ -192,16 +195,21 @@ public enum Rankings {
 		CloudSyncService.uploadLocalData(SILENT_CLOUD_CALLBACK);
 	}
 
-	private int score( boolean win ) {
-		return (Statistics.goldCollected + hero.lvl * (win ? 26 : Dungeon.depth ) * 100) * (win ? 2 : 1);
+	private double score( boolean win ) {
+		return (Statistics.goldCollected
+				+ (double) hero.lvl * (win ? 26 : Dungeon.depth) * 100d)
+				* (win ? 2d : 1d);
 	}
 
 	//assumes a ranking is loaded, or game is ending
-	public int calculateScore(){
+	public double calculateScore(){
 
 		if (Dungeon.initialVersion > ShatteredPixelDungeon.v1_2_3){
-			Statistics.progressScore = hero.lvl * Statistics.deepestFloor * 65;
-			Statistics.progressScore = Math.min(Statistics.progressScore, 50_000);
+			int progressDepth = progressDepth(Dungeon.newCycle,
+					Statistics.deepestFloor, Statistics.deepestTowerFloor);
+			Statistics.progressScore = (double) hero.lvl * progressDepth * 65d;
+			Statistics.progressScore = applyScoreLimit(
+					Statistics.progressScore, 50_000d, Dungeon.newCycle);
 
 			if (Statistics.heldItemValue == 0) {
 				for (Item i : hero.belongings) {
@@ -212,30 +220,31 @@ public enum Rankings {
 					}
 				}
 			}
-			Statistics.treasureScore = Statistics.goldCollected + Statistics.heldItemValue;
-			Statistics.treasureScore = Math.min(Statistics.treasureScore, 20_000);
+			Statistics.treasureScore = (double) Statistics.goldCollected + Statistics.heldItemValue;
+			Statistics.treasureScore = applyScoreLimit(
+					Statistics.treasureScore, 20_000d, Dungeon.newCycle);
 
 			/*
 			Statistics.exploreScore = 0;
-			int scorePerFloor = Statistics.floorsExplored.size * 50;
+			double scorePerFloor = (double) Statistics.floorsExplored.size * 50d;
 			for (Boolean b : Statistics.floorsExplored.valueList()){
 				if (b) Statistics.exploreScore += scorePerFloor;
 			}
 
 			 */
 			Statistics.exploreScore = 0;
-			int scorePerFloor = Statistics.floorsExplored.size * 50;
+			double scorePerFloor = (double) Statistics.floorsExplored.size * 50d;
 			for (float percentExplored : Statistics.floorsExplored.valueList()){
 				Statistics.exploreScore += Math.round(percentExplored*scorePerFloor);
 			}
 
 			Statistics.totalBossScore = 0;
-			for (int i : Statistics.bossScores){
+			for (double i : Statistics.bossScores){
 				if (i > 0) Statistics.totalBossScore += i;
 			}
 
 			Statistics.totalQuestScore = 0;
-			for (int i : Statistics.questScores){
+			for (double i : Statistics.questScores){
 				if (i > 0) Statistics.totalQuestScore += i;
 			}
 
@@ -247,8 +256,11 @@ public enum Rankings {
 		//only progress and treasure score, and they are each up to 50% bigger
 		//win multiplier is a simple 2x if run was a win, challenge multi is the same as 1.3.0
 		} else {
-			Statistics.progressScore = hero.lvl * Statistics.deepestFloor * 100;
-			Statistics.treasureScore = Math.min(Statistics.goldCollected, 30_000);
+			int progressDepth = progressDepth(Dungeon.newCycle,
+					Statistics.deepestFloor, Statistics.deepestTowerFloor);
+			Statistics.progressScore = (double) hero.lvl * progressDepth * 100d;
+			Statistics.treasureScore = applyScoreLimit(
+					Statistics.goldCollected, 30_000d, Dungeon.newCycle);
 
 			Statistics.exploreScore = Statistics.totalBossScore = Statistics.totalQuestScore = 0;
 
@@ -256,7 +268,7 @@ public enum Rankings {
 
 		}
 
-		Statistics.chalMultiplier = (float)Math.pow(1.25, Challenges.activeChallenges());
+		Statistics.chalMultiplier = Math.pow(1.25, Challenges.activeChallenges());
 		if(hero.hasTalent(Talent.HEAVY_BURDEN)){
 			if(hero.hasTalent(Talent.REVELATION) && Dungeon.isChallenged(Challenges.WEAKENED_TALENT)){
 				Statistics.chalMultiplier*=1+1+hero.pointsInTalent(Talent.HEAVY_BURDEN);
@@ -265,7 +277,7 @@ public enum Rankings {
 			}
 
 		}
-		Statistics.chalMultiplier = Math.round(Statistics.chalMultiplier*20f)/20f;
+		Statistics.chalMultiplier = Math.round(Statistics.chalMultiplier * 20d) / 20d;
 
 		if(Dungeon.isChallenged(Challenges.RED_ENVELOPE)){
 			Statistics.chalMultiplier =0;
@@ -274,12 +286,30 @@ public enum Rankings {
 			Statistics.chalMultiplier =0;
 		}
 
-		Statistics.totalScore = Statistics.progressScore + Statistics.treasureScore + Statistics.exploreScore
-					+ Statistics.totalBossScore + Statistics.totalQuestScore;
-
-		Statistics.totalScore *= Statistics.winMultiplier * Statistics.chalMultiplier;
+		Statistics.totalScore = combineScore(
+				Statistics.progressScore,
+				Statistics.treasureScore,
+				Statistics.exploreScore,
+				Statistics.totalBossScore,
+				Statistics.totalQuestScore,
+				Statistics.winMultiplier,
+				Statistics.chalMultiplier);
 
 		return Statistics.totalScore;
+	}
+
+	static int progressDepth(boolean newCycle, int deepestFloor, int deepestTowerFloor) {
+		return Math.max(0, newCycle ? deepestTowerFloor : deepestFloor);
+	}
+
+	static double applyScoreLimit(double score, double limit, boolean unlimited) {
+		return unlimited ? score : Math.min(score, limit);
+	}
+
+	static double combineScore(double progress, double treasure, double explore,
+			double bosses, double quests, double winMultiplier, double challengeMultiplier) {
+		return (progress + treasure + explore + bosses + quests)
+				* winMultiplier * challengeMultiplier;
 	}
 
 	public static final String HERO         = "hero";
@@ -294,6 +324,10 @@ public enum Rankings {
 	public static final String DAILY_REPLAY	= "daily_replay";
 	public static final String GOLD         = "gold";
 
+	public static ArrayList<Item> rankingBackpackItems(Bag backpack) {
+		return new ArrayList<>(backpack.items);
+	}
+
 	public void saveGameData(Record rec){
 		if (hero == null){
 			rec.gameData = null;
@@ -305,24 +339,8 @@ public enum Rankings {
 		Belongings belongings = hero.belongings;
 
 		//save the hero and belongings
-		ArrayList<Item> allItems = (ArrayList<Item>) belongings.backpack.items.clone();
-		//remove items that won't show up in the rankings screen
-		for (Item item : belongings.backpack.items.toArray( new Item[0])) {
-			if (item instanceof Bag){
-				for (Item bagItem : ((Bag) item).items.toArray( new Item[0])){
-					if (Dungeon.quickslot.contains(bagItem)
-							&& !Dungeon.quickslot.contains(item)){
-						belongings.backpack.items.add(bagItem);
-					}
-				}
-			}
-			/*
-			if (!(item instanceof Trinket) && !Dungeon.quickslot.contains(item)) {
-				belongings.backpack.items.remove(item);
-			}
-
-			 */
-		}
+		ArrayList<Item> allItems = belongings.backpack.items;
+		belongings.backpack.items = rankingBackpackItems(belongings.backpack);
 
 		//remove all buffs (ones tied to equipment will be re-applied)
 		for(Buff b : Dungeon.hero.buffs()){
@@ -333,6 +351,7 @@ public enum Rankings {
 		}
 
 		rec.gameData.put( HERO, hero );
+		Dungeon.quickslot.storeRankingSnapshot(rec.gameData);
 
 		//save stats
 		Bundle stats = new Bundle();
@@ -396,6 +415,7 @@ public enum Rankings {
 		Badges.loadLocal(data.getBundle(BADGES));
 
 		hero = (Hero)data.get(HERO);
+		Dungeon.quickslot.restoreRankingSnapshot(data, hero.belongings);
 		hero.belongings.identify();
 		Statistics.restoreFromBundle(data.getBundle(STATS));
 
@@ -452,7 +472,7 @@ public enum Rankings {
 		bundle.put(LATEST_DAILY, latestDaily);
 
 		long[] dates = new long[dailyScoreHistory.size()];
-		int[] scores = new int[dailyScoreHistory.size()];
+		double[] scores = new double[dailyScoreHistory.size()];
 		int i = 0;
 		for (Long l : dailyScoreHistory.keySet()){
 			dates[i] = l;
@@ -541,7 +561,7 @@ public enum Rankings {
 				latestDaily = (Record) bundle.get(LATEST_DAILY);
 
 				dailyScoreHistory.clear();
-				int[] scores = bundle.getIntArray(DAILY_HISTORY_SCORES);
+				double[] scores = bundle.getDoubleArray(DAILY_HISTORY_SCORES);
 				int i = 0;
 				long latestDate = 0;
 				for (long date : bundle.getLongArray(DAILY_HISTORY_DATES)){
@@ -615,7 +635,7 @@ public enum Rankings {
 		public String gameID;
 
 		//Note this is for summary purposes, visible score should be re-calculated from game data
-		public int score;
+		public double score;
 
 		public String customSeed;
 		public boolean daily;
@@ -666,7 +686,7 @@ public enum Rankings {
 			}
 			
 			win		    = bundle.getBoolean( WIN );
-			score	    = bundle.getInt( SCORE );
+			score	    = bundle.getDouble( SCORE );
 			customSeed  = bundle.getString( SEED );
 			daily       = bundle.getBoolean( DAILY );
 			randomMode  = bundle.contains( RANDOM_MODE ) && bundle.getBoolean( RANDOM_MODE );
@@ -744,9 +764,9 @@ public enum Rankings {
 				return -1;
 			}
 
-			int result = (int)Math.signum( rhs.score - lhs.score );
+			int result = Double.compare(rhs.score, lhs.score);
 			if (result == 0) {
-				return (int)Math.signum( rhs.gameID.hashCode() - lhs.gameID.hashCode());
+				return Integer.compare(rhs.gameID.hashCode(), lhs.gameID.hashCode());
 			} else {
 				return result;
 			}
@@ -891,7 +911,7 @@ public enum Rankings {
 			Record secondWorst = null;
 			for (int i = records.size() - 1; i >= 0; i--) {
 				Record record = records.get(i);
-				if (record.newCycle != newCycle) {
+				if (record.newCycle != newCycle || record.restarted) {
 					continue;
 				}
 				if (worst == null) {
@@ -901,7 +921,11 @@ public enum Rankings {
 					break;
 				}
 			}
-			records.remove(worst == latestRecord ? secondWorst : worst);
+			Record removed = worst == latestRecord ? secondWorst : worst;
+			if (removed == null) {
+				break;
+			}
+			records.remove(removed);
 		}
 	}
 }

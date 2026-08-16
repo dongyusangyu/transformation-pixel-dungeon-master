@@ -24,20 +24,20 @@ public class WildDreadSprite extends MobSprite {
 		texture(Assets.Sprites.WILD_DREAD);
 		TextureFilm frames = new TextureFilm(texture, 16, 16);
 
-		idle = new Animation(3, true);
+		idle = new Animation(2, true);
 		idle.frames(frames, 0, 1);
 
 		run = new Animation(12, true);
-		run.frames(frames, 2, 3, 4, 5);
+		run.frames(frames, 0, 4,5,6);
 
 		attack = new Animation(12, false);
-		attack.frames(frames, 6, 7, 8);
+		attack.frames(frames, 0,1, 2, 3);
 
-		down = new Animation(12, false);
-		down.frames(frames, 9, 10, 11);
+		down = new Animation(5, false);
+		down.frames(frames, 0, 10, 9, 8, 7,11);
 
-		revive = new Animation(12, false);
-		revive.frames(frames, 11, 10, 9, 0);
+		revive = new Animation(5, false);
+		revive.frames(frames, 7, 8, 9, 10, 0);
 
 		die = down.clone();
 		play(idle);

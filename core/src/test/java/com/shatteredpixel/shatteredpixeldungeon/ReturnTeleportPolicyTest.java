@@ -229,6 +229,35 @@ public class ReturnTeleportPolicyTest {
 		}
 	}
 
+	@Test
+	public void lockedBossUsesTheLevelsCombatAreaPolicy() {
+		Level oldLevel = Dungeon.level;
+		int oldDepth = Dungeon.depth;
+		int oldBranch = Dungeon.branch;
+		try {
+			RestrictedBossLevel level = new RestrictedBossLevel();
+			level.setSize(5, 5);
+			level.transitions = new java.util.ArrayList<>();
+			level.passable[7] = true;
+			level.passable[8] = true;
+			level.allowedPosition = 8;
+			level.locked = true;
+			Dungeon.level = level;
+			Dungeon.depth = 5;
+			Dungeon.branch = 0;
+
+			assertFalse(Dungeon.returnTeleportPositionAllowed(7));
+			assertTrue(Dungeon.returnTeleportPositionAllowed(8));
+		} finally {
+			Dungeon.level = oldLevel;
+			Dungeon.depth = oldDepth;
+			Dungeon.branch = oldBranch;
+			if (oldLevel != null) {
+				com.watabou.utils.PathFinder.setMapSize(oldLevel.width(), oldLevel.height());
+			}
+		}
+	}
+
 	private static void setField(Object target, String name, Object value) throws Exception {
 		Field field = target.getClass().getDeclaredField(name);
 		field.setAccessible(true);
@@ -259,6 +288,15 @@ public class ReturnTeleportPolicyTest {
 
 		@Override
 		protected void createItems() {
+		}
+	}
+
+	private static class RestrictedBossLevel extends TestLevel {
+		private int allowedPosition;
+
+		@Override
+		public boolean isBossTeleportPositionAllowed(int pos) {
+			return pos == allowedPosition;
 		}
 	}
 

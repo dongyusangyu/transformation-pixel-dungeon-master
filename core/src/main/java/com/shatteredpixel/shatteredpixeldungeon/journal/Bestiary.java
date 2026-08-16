@@ -33,11 +33,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MarshSlime;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RuneSpinner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
@@ -297,8 +300,8 @@ public enum Bestiary {
 				Corpse.class, EarthlySerpent.class, RoastLambWarlock.class,
 				MechanicalFist.class, MimicCrocodile.class, Obscura.class,
 				AlienatedPrismaticGuard.class, SoulCollector.class,
-				HeavyCrabification.class);
-		TOWER_BOSSES.addEntities(PestilenceKnight.class);
+				HeavyCrabification.class, MarshSlime.class, RuneSpinner.class);
+		TOWER_BOSSES.addEntities(PestilenceKnight.class, DeathKnight.class);
 
 	}
 

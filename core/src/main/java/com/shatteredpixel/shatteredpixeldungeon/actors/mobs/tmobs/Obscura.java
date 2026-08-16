@@ -59,6 +59,8 @@ public class Obscura extends Mob implements Stasis.ReleaseListener {
 
 		loot = null;
 		lootChance = 0f;
+
+		properties.add(Property.DEMONIC);
 	}
 
 	@Override

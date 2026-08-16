@@ -236,7 +236,7 @@ class ChineseHallObjectBackgroundTest(unittest.TestCase):
         atlas = load_generator().build_tileset()
         brick_background = tile(atlas, FLOOR)
         wood_background = tile(atlas, FLOOR_SP)
-        brick_objects = (64, 65, 66, 67, 69, 70, 72, 74, 76, 77, 78, 120, 121, 122, 123, 125, 126, 128, 130, 132, 133, 134)
+        brick_objects = (65, 66, 67, 69, 70, 72, 74, 76, 77, 78, 121, 122, 123, 125, 126, 128, 130, 132, 133, 134)
         wood_objects = (73, 75, 129, 131)
         corners = ((0, 0), (15, 0), (0, 15), (15, 15))
         for index in brick_objects:
@@ -356,13 +356,19 @@ class ChineseHallWallStitchingTest(unittest.TestCase):
         atlas = load_generator().build_tileset()
         with Image.open(ENV / "tiles_prison.png") as source:
             prison = source.convert("RGBA")
-        wall_indices = tuple(range(80, 120)) + tuple(range(144, 224))
-        for index in wall_indices:
-            with self.subTest(index=index):
-                self.assertEqual(
-                    tuple(tile(prison, index).getchannel("A").getdata()),
-                    tuple(tile(atlas, index).getchannel("A").getdata()),
-                )
+        with Image.open(ENV / "tiles_halls.png") as source:
+            halls = source.convert("RGBA")
+        references = (
+            (prison, tuple(range(80, 117)) + (119,) + tuple(range(144, 192))),
+            (halls, tuple(range(192, 224))),
+        )
+        for reference, wall_indices in references:
+            for index in wall_indices:
+                with self.subTest(index=index):
+                    self.assertEqual(
+                        tuple(tile(reference, index).getchannel("A").getdata()),
+                        tuple(tile(atlas, index).getchannel("A").getdata()),
+                    )
 
     def test_internal_walls_avoid_full_height_vermilion_edge_posts(self) -> None:
         atlas = load_generator().build_tileset()

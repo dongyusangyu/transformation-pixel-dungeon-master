@@ -52,9 +52,10 @@ public class Dirk extends MeleeWeapon {
 			if (enemy instanceof Mob && ((Mob) enemy).surprisedBy(hero)) {
 				//deals 67% toward max to max on surprise, instead of min to max.
 				int diff = max() - min();
-				int damage = augment.damageFactor(Hero.heroDamageIntRange(
+				int damage = augment.damageFactor(heroDamageRangeRoll(hero,
 						min() + Math.round(diff*0.67f),
 						max()));
+                damage = Math.max(super.damageRoll(owner),damage);
 				int exStr = hero.STR() - STRReq();
 				if (exStr > 0) {
 					damage += Hero.heroDamageIntRange(0, exStr);

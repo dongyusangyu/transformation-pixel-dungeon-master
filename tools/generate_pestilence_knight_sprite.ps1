@@ -5,37 +5,56 @@ param(
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
-$frameSize = 16
+$frameSize = 32
 $frameCount = 17
 $bitmap = [System.Drawing.Bitmap]::new(
     $frameSize * $frameCount,
     $frameSize,
     [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
 
+# Sixteen opaque colours plus transparent black. The hierarchy follows the
+# concept sheet: charcoal silhouette, black-violet cloth, bone mask, old brass,
+# and very restrained plague light.
 $palette = @{
-    outline = [System.Drawing.Color]::FromArgb(255, 23, 20, 31)
-    deep    = [System.Drawing.Color]::FromArgb(255, 39, 34, 43)
-    cloth   = [System.Drawing.Color]::FromArgb(255, 58, 52, 57)
-    ivory   = [System.Drawing.Color]::FromArgb(255, 193, 186, 157)
-    light   = [System.Drawing.Color]::FromArgb(255, 232, 221, 183)
-    metal   = [System.Drawing.Color]::FromArgb(255, 105, 103, 92)
-    verdigris = [System.Drawing.Color]::FromArgb(255, 67, 103, 82)
-    plague  = [System.Drawing.Color]::FromArgb(255, 132, 174, 66)
-    glow    = [System.Drawing.Color]::FromArgb(255, 196, 218, 105)
-    gold    = [System.Drawing.Color]::FromArgb(255, 169, 132, 69)
-    purple  = [System.Drawing.Color]::FromArgb(255, 91, 54, 105)
+    outline    = [System.Drawing.Color]::FromArgb(255, 18, 15, 27)
+    abyss      = [System.Drawing.Color]::FromArgb(255, 28, 23, 39)
+    deep       = [System.Drawing.Color]::FromArgb(255, 42, 32, 54)
+    cloth      = [System.Drawing.Color]::FromArgb(255, 61, 43, 70)
+    clothHi    = [System.Drawing.Color]::FromArgb(255, 82, 56, 86)
+    steelDark  = [System.Drawing.Color]::FromArgb(255, 66, 68, 78)
+    steel      = [System.Drawing.Color]::FromArgb(255, 102, 105, 113)
+    ivoryDark  = [System.Drawing.Color]::FromArgb(255, 143, 132, 104)
+    ivory      = [System.Drawing.Color]::FromArgb(255, 201, 190, 148)
+    ivoryHi    = [System.Drawing.Color]::FromArgb(255, 239, 228, 179)
+    brassDark  = [System.Drawing.Color]::FromArgb(255, 101, 72, 38)
+    brass      = [System.Drawing.Color]::FromArgb(255, 169, 126, 58)
+    verdigris  = [System.Drawing.Color]::FromArgb(255, 57, 91, 78)
+    plague     = [System.Drawing.Color]::FromArgb(255, 125, 169, 56)
+    glow       = [System.Drawing.Color]::FromArgb(255, 205, 226, 91)
+    purple     = [System.Drawing.Color]::FromArgb(255, 104, 56, 118)
 }
 
 function Set-Pixel([int]$frame, [int]$x, [int]$y, [System.Drawing.Color]$color) {
-    if ($x -ge 0 -and $x -lt 16 -and $y -ge 0 -and $y -lt 16) {
-        $bitmap.SetPixel($frame * 16 + $x, $y, $color)
+    if ($x -ge 0 -and $x -lt $frameSize -and $y -ge 0 -and $y -lt $frameSize) {
+        $bitmap.SetPixel($frame * $frameSize + $x, $y, $color)
+    }
+}
+
+function Fill-Rect([int]$frame, [int]$x, [int]$y, [int]$width, [int]$height,
+        [System.Drawing.Color]$color) {
+    for ($py = $y; $py -lt $y + $height; $py++) {
+        for ($px = $x; $px -lt $x + $width; $px++) {
+            Set-Pixel $frame $px $py $color
+        }
     }
 }
 
 function Draw-Line([int]$frame, [int]$x0, [int]$y0, [int]$x1, [int]$y1,
         [System.Drawing.Color]$color) {
-    $dx = [Math]::Abs($x1 - $x0); $sx = if ($x0 -lt $x1) { 1 } else { -1 }
-    $dy = -[Math]::Abs($y1 - $y0); $sy = if ($y0 -lt $y1) { 1 } else { -1 }
+    $dx = [Math]::Abs($x1 - $x0)
+    $sx = if ($x0 -lt $x1) { 1 } else { -1 }
+    $dy = -[Math]::Abs($y1 - $y0)
+    $sy = if ($y0 -lt $y1) { 1 } else { -1 }
     $err = $dx + $dy
     while ($true) {
         Set-Pixel $frame $x0 $y0 $color
@@ -46,104 +65,198 @@ function Draw-Line([int]$frame, [int]$x0, [int]$y0, [int]$x1, [int]$y1,
     }
 }
 
-function Draw-Base([int]$frame, [int]$bob, [int]$leftFoot, [int]$rightFoot,
-        [bool]$raisedStaff, [bool]$castGlow) {
-    # Broken circular crown/halo: four isolated anchors keep the silhouette readable at 1x.
-    Set-Pixel $frame 5 (1 + $bob) $palette.gold
-    Set-Pixel $frame 9 (1 + $bob) $palette.gold
-    Set-Pixel $frame 4 (2 + $bob) $palette.outline
-    Set-Pixel $frame 10 (2 + $bob) $palette.outline
+function Draw-Halo([int]$frame, [int]$shift, [int]$bob) {
+    # A broken brass arc sits behind the hat. Its gaps read as a ruined crown.
+    Set-Pixel $frame (10 + $shift) (3 + $bob) $palette.brassDark
+    Set-Pixel $frame (11 + $shift) (2 + $bob) $palette.brass
+    Set-Pixel $frame (15 + $shift) (1 + $bob) $palette.brass
+    Set-Pixel $frame (19 + $shift) (2 + $bob) $palette.brass
+    Set-Pixel $frame (20 + $shift) (3 + $bob) $palette.brassDark
+}
 
-    # Hood and ivory plague mask with a left-facing hooked beak.
-    Draw-Line $frame 6 (2 + $bob) 9 (2 + $bob) $palette.outline
-    Draw-Line $frame 5 (3 + $bob) 9 (3 + $bob) $palette.outline
-    Set-Pixel $frame 5 (4 + $bob) $palette.outline
-    Set-Pixel $frame 6 (4 + $bob) $palette.ivory
-    Set-Pixel $frame 7 (4 + $bob) $palette.light
-    Set-Pixel $frame 8 (4 + $bob) $palette.ivory
-    Set-Pixel $frame 9 (4 + $bob) $palette.outline
-    Draw-Line $frame 2 (5 + $bob) 8 (5 + $bob) $palette.outline
-    Draw-Line $frame 3 (4 + $bob) 7 (4 + $bob) $palette.ivory
-    Set-Pixel $frame 2 (4 + $bob) $palette.light
-    Set-Pixel $frame 7 (3 + $bob) $palette.verdigris
+function Draw-Head([int]$frame, [int]$shift, [int]$bob) {
+    Draw-Halo $frame $shift $bob
 
-    # Inverted-triangle coat, shoulder armour, and oxidised clasp.
-    Draw-Line $frame 4 (6 + $bob) 10 (6 + $bob) $palette.outline
-    Set-Pixel $frame 4 (7 + $bob) $palette.metal
-    Set-Pixel $frame 10 (7 + $bob) $palette.metal
-    for ($y = 7 + $bob; $y -le 12; $y++) {
-        $inset = [Math]::Max(0, $y - (10 + $bob))
-        $left = 4 + $inset; $right = 10 - $inset
-        Set-Pixel $frame $left $y $palette.outline
-        Set-Pixel $frame $right $y $palette.outline
-        for ($x = $left + 1; $x -lt $right; $x++) {
-            $shade = if ($x -le 6) { $palette.cloth } else { $palette.deep }
-            Set-Pixel $frame $x $y $shade
-        }
+    # Crown and broad torn brim.
+    Fill-Rect $frame (12 + $shift) (3 + $bob) 8 1 $palette.outline
+    Fill-Rect $frame (10 + $shift) (4 + $bob) 12 2 $palette.outline
+    Fill-Rect $frame (11 + $shift) (4 + $bob) 9 1 $palette.deep
+    Fill-Rect $frame (7 + $shift) (6 + $bob) 18 2 $palette.outline
+    Fill-Rect $frame (9 + $shift) (6 + $bob) 13 1 $palette.cloth
+    Set-Pixel $frame (6 + $shift) (7 + $bob) $palette.outline
+    Set-Pixel $frame (24 + $shift) (8 + $bob) $palette.outline
+
+    # Hood and ivory faceplate.
+    Fill-Rect $frame (11 + $shift) (8 + $bob) 10 6 $palette.outline
+    Fill-Rect $frame (12 + $shift) (8 + $bob) 7 5 $palette.ivoryDark
+    Fill-Rect $frame (13 + $shift) (8 + $bob) 5 4 $palette.ivory
+    Set-Pixel $frame (14 + $shift) (8 + $bob) $palette.ivoryHi
+    Set-Pixel $frame (12 + $shift) (10 + $bob) $palette.glow
+    Set-Pixel $frame (13 + $shift) (10 + $bob) $palette.plague
+
+    # Long hooked beak, deliberately separated from the chest by negative space.
+    Draw-Line $frame (3 + $shift) (12 + $bob) (12 + $shift) (10 + $bob) $palette.outline
+    Draw-Line $frame (3 + $shift) (12 + $bob) (8 + $shift) (15 + $bob) $palette.outline
+    Draw-Line $frame (8 + $shift) (15 + $bob) (13 + $shift) (12 + $bob) $palette.outline
+    Draw-Line $frame (5 + $shift) (12 + $bob) (11 + $shift) (11 + $bob) $palette.ivoryHi
+    Draw-Line $frame (6 + $shift) (13 + $bob) (10 + $shift) (14 + $bob) $palette.ivory
+    Set-Pixel $frame (4 + $shift) (12 + $bob) $palette.ivory
+    Set-Pixel $frame (8 + $shift) (14 + $bob) $palette.ivoryDark
+}
+
+function Draw-Body([int]$frame, [int]$shift, [int]$bob, [int]$leftStep, [int]$rightStep) {
+    # Neck, asymmetric pauldrons and segmented breastplate.
+    Fill-Rect $frame (14 + $shift) (13 + $bob) 5 3 $palette.outline
+    Fill-Rect $frame (15 + $shift) (13 + $bob) 3 2 $palette.steelDark
+    Fill-Rect $frame (8 + $shift) (15 + $bob) 15 3 $palette.outline
+    Fill-Rect $frame (9 + $shift) (15 + $bob) 4 2 $palette.steel
+    Fill-Rect $frame (19 + $shift) (15 + $bob) 3 2 $palette.steelDark
+    Set-Pixel $frame (10 + $shift) (15 + $bob) $palette.brass
+
+    Fill-Rect $frame (10 + $shift) (18 + $bob) 12 7 $palette.outline
+    Fill-Rect $frame (11 + $shift) (18 + $bob) 5 6 $palette.clothHi
+    Fill-Rect $frame (16 + $shift) (18 + $bob) 5 6 $palette.deep
+    Draw-Line $frame (16 + $shift) (18 + $bob) (16 + $shift) (24 + $bob) $palette.steelDark
+    Draw-Line $frame (12 + $shift) (20 + $bob) (20 + $shift) (20 + $bob) $palette.steelDark
+    Set-Pixel $frame (15 + $shift) (18 + $bob) $palette.brass
+    Set-Pixel $frame (16 + $shift) (19 + $bob) $palette.verdigris
+
+    # Split coat tails create a sharp mounted-rider silhouette without a horse.
+    Draw-Line $frame (10 + $shift) (24 + $bob) (9 + $shift) (29 + $bob) $palette.outline
+    Draw-Line $frame (22 + $shift) (24 + $bob) (23 + $shift) (29 + $bob) $palette.outline
+    Fill-Rect $frame (11 + $shift) (24 + $bob) 11 3 $palette.deep
+    Draw-Line $frame (11 + $shift) (27 + $bob) (14 + $shift) (30 + $bob) $palette.cloth
+    Draw-Line $frame (21 + $shift) (27 + $bob) (18 + $shift) (30 + $bob) $palette.abyss
+    Set-Pixel $frame (10 + $shift) (28 + $bob) $palette.clothHi
+    Set-Pixel $frame (22 + $shift) (28 + $bob) $palette.purple
+
+    # Armoured feet stay bottom-anchored while stride offsets sell locomotion.
+    $leftX = 12 + $shift + $leftStep
+    $rightX = 19 + $shift + $rightStep
+    Draw-Line $frame (14 + $shift) (26 + $bob) $leftX 30 $palette.outline
+    Draw-Line $frame (18 + $shift) (26 + $bob) $rightX 30 $palette.outline
+    Fill-Rect $frame ($leftX - 1) 30 4 2 $palette.steelDark
+    Fill-Rect $frame ($rightX - 1) 30 4 2 $palette.steel
+    Set-Pixel $frame ($leftX - 1) 31 $palette.outline
+    Set-Pixel $frame ($rightX + 2) 31 $palette.outline
+}
+
+function Draw-Vial([int]$frame, [int]$shift, [int]$bob, [string]$pose, [int]$pulse) {
+    if ($pose -eq 'raised') { $x = 6 + $shift; $y = 9 + $bob }
+    elseif ($pose -eq 'cast') { $x = 3 + $shift; $y = 8 + $bob }
+    else { $x = 7 + $shift; $y = 19 + $bob }
+
+    Draw-Line $frame (10 + $shift) (17 + $bob) ($x + 2) ($y + 2) $palette.outline
+    Fill-Rect $frame ($x + 1) $y 2 2 $palette.brass
+    Fill-Rect $frame $x ($y + 2) 4 5 $palette.outline
+    Fill-Rect $frame ($x + 1) ($y + 3) 2 3 $palette.plague
+    Set-Pixel $frame ($x + 2) ($y + 3) $palette.glow
+    if ($pulse -ge 1) {
+        Set-Pixel $frame ($x - 1) ($y + 3) $palette.plague
+        Set-Pixel $frame ($x + 4) ($y + 1) $palette.glow
     }
-    Set-Pixel $frame 6 (7 + $bob) $palette.verdigris
-    Set-Pixel $frame 7 (8 + $bob) $palette.gold
-    Set-Pixel $frame 5 (10 + $bob) $palette.ivory
-    Set-Pixel $frame 9 (11 + $bob) $palette.verdigris
-
-    # Split coat tails and planted armoured feet.
-    Draw-Line $frame 5 12 (5 + $leftFoot) 14 $palette.outline
-    Draw-Line $frame 9 12 (9 + $rightFoot) 14 $palette.outline
-    Set-Pixel $frame (4 + $leftFoot) 15 $palette.metal
-    Set-Pixel $frame (5 + $leftFoot) 15 $palette.outline
-    Set-Pixel $frame (9 + $rightFoot) 15 $palette.outline
-    Set-Pixel $frame (10 + $rightFoot) 15 $palette.metal
-
-    # The diagnosis staff rises above the body; its diamond head is the fourth silhouette anchor.
-    $staffX = if ($raisedStaff) { 12 } else { 13 }
-    $top = if ($raisedStaff) { 0 } else { 2 }
-    Draw-Line $frame $staffX $top $staffX 14 $palette.outline
-    Set-Pixel $frame ($staffX - 1) ($top + 1) $palette.verdigris
-    Set-Pixel $frame $staffX $top $palette.light
-    Set-Pixel $frame ($staffX + 1) ($top + 1) $palette.gold
-    if ($castGlow) {
-        Set-Pixel $frame ($staffX - 1) ($top + 2) $palette.glow
-        Set-Pixel $frame ($staffX + 1) ($top + 2) $palette.plague
-        Set-Pixel $frame 3 (9 + $bob) $palette.plague
-        Set-Pixel $frame 11 (10 + $bob) $palette.glow
+    if ($pulse -ge 2) {
+        Set-Pixel $frame ($x - 2) ($y + 1) $palette.glow
+        Set-Pixel $frame ($x + 5) ($y + 4) $palette.plague
+        Set-Pixel $frame ($x + 1) ($y - 2) $palette.glow
     }
 }
 
-# Idle: restrained breathing; Run: opposing feet and coat bob.
-Draw-Base 0 0 0 0 $false $false
-Draw-Base 1 1 0 0 $false $false
-Draw-Base 2 0 0 0 $false $false
-Draw-Base 3 0 -1 1 $false $false
-Draw-Base 4 1 0 0 $false $false
-Draw-Base 5 0 1 -1 $false $false
-Draw-Base 6 1 0 0 $false $false
+function Draw-Staff([int]$frame, [int]$shift, [int]$bob, [string]$pose, [int]$pulse) {
+    if ($pose -eq 'back') {
+        $x0 = 23 + $shift; $y0 = 4 + $bob; $x1 = 29 + $shift; $y1 = 30
+    } elseif ($pose -eq 'sweep') {
+        $x0 = 3 + $shift; $y0 = 18 + $bob; $x1 = 29 + $shift; $y1 = 14 + $bob
+    } elseif ($pose -eq 'raised') {
+        $x0 = 26 + $shift; $y0 = 1 + $bob; $x1 = 27 + $shift; $y1 = 30
+    } else {
+        $x0 = 27 + $shift; $y0 = 5 + $bob; $x1 = 27 + $shift; $y1 = 30
+    }
 
-# Attack: staff retracts, sweeps left, then settles.
-Draw-Base 7 0 0 0 $true $false
-Draw-Base 8 0 -1 0 $true $false
-Draw-Line 8 3 8 13 5 $palette.outline
-Set-Pixel 8 3 8 $palette.light
-Draw-Base 9 1 0 0 $false $false
+    Draw-Line $frame $x0 $y0 $x1 $y1 $palette.outline
+    if ($pose -ne 'sweep') { Draw-Line $frame ($x0 - 1) ($y0 + 4) ($x1 - 1) $y1 $palette.brassDark }
 
-# Cast/harvest: raised staff and asymmetric yellow-green plague light.
-Draw-Base 10 0 0 0 $true $true
-Draw-Base 11 1 0 0 $true $true
-Set-Pixel 11 2 10 $palette.glow
-Set-Pixel 11 11 8 $palette.plague
-Draw-Base 12 0 0 0 $true $true
-Set-Pixel 12 7 6 $palette.light
+    # Censer/halberd head. It remains a narrow readable anchor rather than a giant prop.
+    Set-Pixel $frame $x0 ($y0 - 1) $palette.brass
+    Set-Pixel $frame ($x0 - 1) $y0 $palette.ivoryHi
+    Set-Pixel $frame ($x0 + 1) $y0 $palette.brass
+    Set-Pixel $frame ($x0 - 2) ($y0 + 1) $palette.verdigris
+    Set-Pixel $frame ($x0 + 2) ($y0 + 1) $palette.outline
+    if ($pulse -gt 0) {
+        Set-Pixel $frame ($x0 - 2) ($y0 - 1) $palette.glow
+        Set-Pixel $frame ($x0 + 2) ($y0 - 1) $palette.plague
+    }
+}
 
-# Death: recoil, kneel, collapse, dark residue. Key poses beat in-between noise.
-Draw-Base 13 1 0 0 $false $false
-Draw-Base 14 2 -1 0 $false $false
-for ($x = 3; $x -le 11; $x++) { Set-Pixel 15 $x 13 $palette.outline }
-for ($x = 4; $x -le 10; $x++) { Set-Pixel 15 $x 14 $palette.deep }
-Set-Pixel 15 2 12 $palette.ivory; Set-Pixel 15 11 12 $palette.verdigris
-for ($x = 2; $x -le 12; $x++) { Set-Pixel 16 $x 14 $palette.outline }
-for ($x = 4; $x -le 10; $x++) { Set-Pixel 16 $x 13 $palette.deep }
-Set-Pixel 16 2 13 $palette.ivory; Set-Pixel 16 12 13 $palette.purple
+function Draw-Standing([int]$frame, [int]$bob, [int]$shift,
+        [int]$leftStep, [int]$rightStep, [string]$staffPose,
+        [string]$vialPose, [int]$pulse) {
+    Draw-Head $frame $shift $bob
+    Draw-Body $frame $shift $bob $leftStep $rightStep
+    Draw-Vial $frame $shift $bob $vialPose $pulse
+    Draw-Staff $frame $shift $bob $staffPose $pulse
+}
 
-$absolute = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputPath))
+function Draw-Collapsed([int]$frame, [bool]$residue) {
+    if (-not $residue) {
+        # Hat and beak retain identity after the body hits the ground.
+        Fill-Rect $frame 3 23 12 3 $palette.outline
+        Fill-Rect $frame 5 23 8 1 $palette.deep
+        Draw-Line $frame 1 27 11 25 $palette.outline
+        Draw-Line $frame 2 27 9 26 $palette.ivory
+        Fill-Rect $frame 10 24 15 6 $palette.outline
+        Fill-Rect $frame 11 25 12 4 $palette.deep
+        Draw-Line $frame 15 25 22 29 $palette.clothHi
+        Draw-Line $frame 24 24 29 30 $palette.brassDark
+        Fill-Rect $frame 24 29 6 2 $palette.steelDark
+        Fill-Rect $frame 7 29 17 3 $palette.abyss
+        Set-Pixel $frame 8 30 $palette.purple
+        Set-Pixel $frame 25 26 $palette.verdigris
+    } else {
+        Fill-Rect $frame 5 29 22 3 $palette.outline
+        Fill-Rect $frame 8 28 15 2 $palette.abyss
+        Draw-Line $frame 2 29 10 27 $palette.ivoryDark
+        Draw-Line $frame 3 29 8 28 $palette.ivoryHi
+        Fill-Rect $frame 22 27 4 3 $palette.outline
+        Set-Pixel $frame 23 28 $palette.plague
+        Set-Pixel $frame 24 28 $palette.glow
+        Set-Pixel $frame 26 30 $palette.purple
+        Set-Pixel $frame 19 27 $palette.brass
+    }
+}
+
+# Idle: controlled breathing and a one-pixel pulse, without floaty displacement.
+Draw-Standing 0 0 0 0 0 'vertical' 'low' 0
+Draw-Standing 1 -1 0 0 0 'vertical' 'low' 1
+Draw-Standing 2 0 0 0 0 'vertical' 'low' 0
+
+# Run: opposing feet, compression and a restrained lateral weight transfer.
+Draw-Standing 3 0 -1 -2 1 'vertical' 'low' 0
+Draw-Standing 4 1 0 -1 0 'vertical' 'low' 0
+Draw-Standing 5 0 1 1 -2 'vertical' 'low' 0
+Draw-Standing 6 1 0 0 -1 'vertical' 'low' 1
+
+# Attack: staff retracts, cuts across the silhouette, then returns to guard.
+Draw-Standing 7 0 0 0 0 'back' 'low' 0
+Draw-Standing 8 1 -1 -1 1 'sweep' 'low' 0
+Draw-Standing 9 0 0 0 0 'vertical' 'low' 0
+
+# Cast/harvest: vial and staff form two separate luminous anchors.
+Draw-Standing 10 0 0 0 0 'raised' 'raised' 1
+Draw-Standing 11 -1 0 0 0 'raised' 'cast' 2
+Draw-Standing 12 0 0 0 0 'raised' 'raised' 2
+
+# Death: recoil, collapse to one knee, full fall, then mask-and-vial residue.
+Draw-Standing 13 1 0 -1 0 'back' 'low' 0
+Draw-Standing 14 3 -1 -2 0 'vertical' 'low' 0
+Draw-Collapsed 15 $false
+Draw-Collapsed 16 $true
+
+$absolute = if ([System.IO.Path]::IsPathRooted($OutputPath)) {
+    [System.IO.Path]::GetFullPath($OutputPath)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputPath))
+}
 $directory = [System.IO.Path]::GetDirectoryName($absolute)
 if (-not [System.IO.Directory]::Exists($directory)) {
     [System.IO.Directory]::CreateDirectory($directory) | Out-Null

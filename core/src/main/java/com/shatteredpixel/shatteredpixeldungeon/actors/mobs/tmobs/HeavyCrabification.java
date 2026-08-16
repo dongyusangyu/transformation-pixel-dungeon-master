@@ -14,8 +14,11 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.HeavyCrabificationSprite;
@@ -98,12 +101,31 @@ public class HeavyCrabification extends Mob {
 
 	@Override
 	public void damage(int damage, Object source, DamageTag... damageTags) {
-		if (source instanceof Char && isVulnerableAttack((Char) source)) {
+		if (DamageTag.of(damageTags).contains(DamageTag.CORRUPTION)
+				|| !canBlockDamage(source, damageTags)) {
+			applyAllowedDamage(damage, source, damageTags);
+		} else if (source instanceof Char && isVulnerableAttack((Char) source)) {
 			int reducedDamage = damage <= 0 ? 0 : damage / 2 + damage % 2;
 			applyAllowedDamage(reducedDamage, source, damageTags);
 		} else {
 			showShellBlock();
 		}
+	}
+
+	protected boolean canBlockDamage(Object source, DamageTag... damageTags) {
+		if (source instanceof Char) {
+			return true;
+		}
+		return DamageTag.of(damageTags).contains(DamageTag.MAGICAL)
+				&& !isSourceType(source, Buff.class)
+				&& !isSourceType(source, Blob.class)
+				&& !isSourceType(source, Trap.class);
+	}
+
+	private boolean isSourceType(Object source, Class<?> type) {
+		Class<?> sourceClass = source instanceof Class ? (Class<?>) source
+				: source == null ? null : source.getClass();
+		return sourceClass != null && type.isAssignableFrom(sourceClass);
 	}
 
 	protected void applyAllowedDamage(int damage, Object source, DamageTag... damageTags) {

@@ -16,21 +16,16 @@ import static org.junit.Assert.assertTrue;
 public class DictionaryJournalLocationInfoTest {
 
 	@Test
-	public void surfaceAndTowerEntriesFollowShopWithDedicatedIcons() throws IOException {
+	public void towerEntryFollowsRandomModeWithDedicatedIcon() throws IOException {
 		String journal = readCoreFile(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/custom/dict/DictionaryJournal.java");
 		String sprites = readCoreFile(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/custom/dict/DictSpriteSheet.java");
-		int shop = journal.indexOf("DOCUMENTS.d.put(\"info_shop\"");
-		int surface = journal.indexOf("DOCUMENTS.d.put(\"info_surface\"", shop);
-		int tower = journal.indexOf("DOCUMENTS.d.put(\"info_tower\"", surface);
-		int feeling = journal.indexOf("DOCUMENTS.d.put(\"info_feeling\"", tower);
+		int randomMode = journal.indexOf("DOCUMENTS.d.put(\"misc_random_mode\"");
+		int tower = journal.indexOf("DOCUMENTS.d.put(\"info_tower\"", randomMode);
 
-		assertTrue(shop >= 0 && shop < surface && surface < tower && tower < feeling);
-		assertTrue(journal.contains("\"info_surface\",     DictSpriteSheet.AREA_SURFACE"));
+		assertTrue(randomMode >= 0 && randomMode < tower);
 		assertTrue(journal.contains("\"info_tower\",       DictSpriteSheet.AREA_TOWER"));
-		assertTrue(sprites.contains("case AREA_SURFACE:"));
-		assertTrue(sprites.contains("Assets.Environment.TILES_SURFACE_LUSH"));
 		assertTrue(sprites.contains("case AREA_TOWER:"));
 		assertTrue(sprites.contains("Assets.Environment.TILES_CHINESE_HALL"));
 	}

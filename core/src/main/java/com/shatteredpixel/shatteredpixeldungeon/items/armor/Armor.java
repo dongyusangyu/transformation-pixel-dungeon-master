@@ -1019,7 +1019,50 @@ public class Armor extends EquipableItem {
 		public abstract int proc( Armor armor, Char attacker, Char defender, int damage );
 
 		protected float procChanceMultiplier( Char defender ){
+			ForcedCurseProc forced = defender.buff(ForcedCurseProc.class);
+			if (curse() && forced != null && forced.matches(this)) {
+				forced.detach();
+				return Float.POSITIVE_INFINITY;
+			}
 			return genericProcChanceMultiplier( defender );
+		}
+
+		public static void forceNextCurseProc(Char defender, Glyph targetGlyph) {
+			if (defender != null && targetGlyph != null && targetGlyph.curse()) {
+				Buff.affect(defender, ForcedCurseProc.class).targetGlyph = targetGlyph;
+			}
+		}
+
+		public static boolean forcedCurseProcPending(Char defender) {
+			return defender != null && defender.buff(ForcedCurseProc.class) != null;
+		}
+
+		public static boolean forcedCurseProcTargets(Char defender, Glyph glyph) {
+			ForcedCurseProc forced = defender == null ? null : defender.buff(ForcedCurseProc.class);
+			return forced != null && forced.matches(glyph);
+		}
+
+		public static void clearForcedCurseProc(Char defender) {
+			if (defender != null) {
+				ForcedCurseProc forced = defender.buff(ForcedCurseProc.class);
+				if (forced != null) {
+					forced.detach();
+				}
+			}
+		}
+
+		public static class ForcedCurseProc extends Buff {
+			private Glyph targetGlyph;
+
+			private boolean matches(Glyph glyph) {
+				return targetGlyph == glyph;
+			}
+
+			@Override
+			public boolean act() {
+				detach();
+				return true;
+			}
 		}
 
 		public static float genericProcChanceMultiplier( Char defender ){

@@ -10,20 +10,21 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
-import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
 import com.watabou.noosa.TextureFilm;
+import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class SoulCollectorSprite extends MobSprite {
 
-	private final Map<Integer, Emitter> soulMarkers = new HashMap<>();
+	private final ConcurrentMap<Integer, Emitter> soulMarkers = new ConcurrentHashMap<>();
 
 	public SoulCollectorSprite() {
 		texture(Assets.Sprites.SOUL_COLLECTOR);
@@ -68,8 +69,17 @@ public class SoulCollectorSprite extends MobSprite {
 		Emitter marker = soulMarkers.remove(cell);
 		if (marker == null) {
 			marker = CellEmitter.get(cell);
+			marker.visible = Dungeon.level != null
+					&& cell >= 0
+					&& cell < Dungeon.level.length()
+					&& Dungeon.level.heroFOV[cell];
 		}
-		marker.burst(Speck.factory(Speck.RATTLE), 10);
+		if (marker.visible) {
+			Sample.INSTANCE.play(Assets.Sounds.CURSED);
+			marker.burst(ShadowParticle.CURSE, 5);
+		} else {
+			marker.on = false;
+		}
 	}
 
 	private void syncSoulMarkers() {
@@ -85,12 +95,11 @@ public class SoulCollectorSprite extends MobSprite {
 			}
 		}
 
-		Iterator<Map.Entry<Integer, Emitter>> iterator = soulMarkers.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Map.Entry<Integer, Emitter> entry = iterator.next();
+		for (Map.Entry<Integer, Emitter> entry : soulMarkers.entrySet()) {
 			if (!wanted.contains(entry.getKey()) || entry.getValue().parent == null) {
-				entry.getValue().on = false;
-				iterator.remove();
+				if (soulMarkers.remove(entry.getKey(), entry.getValue())) {
+					entry.getValue().on = false;
+				}
 			}
 		}
 
@@ -98,7 +107,11 @@ public class SoulCollectorSprite extends MobSprite {
 			Emitter marker = soulMarkers.get(cell);
 			if (marker == null) {
 				marker = CellEmitter.get(cell);
-				marker.pour(Speck.factory(Speck.RATTLE), 0.1f);
+				marker.pour(ShadowParticle.MISSILE, 0.1f);
+				marker.visible = Dungeon.level.heroFOV[cell];
+				if (visible || marker.visible) {
+					Sample.INSTANCE.play(Assets.Sounds.CHARGEUP, 1f, 0.8f);
+				}
 				soulMarkers.put(cell, marker);
 			}
 			marker.visible = Dungeon.level.heroFOV[cell];
@@ -106,10 +119,11 @@ public class SoulCollectorSprite extends MobSprite {
 	}
 
 	private void clearSoulMarkers() {
-		for (Emitter marker : soulMarkers.values()) {
-			marker.on = false;
+		for (Map.Entry<Integer, Emitter> entry : soulMarkers.entrySet()) {
+			if (soulMarkers.remove(entry.getKey(), entry.getValue())) {
+				entry.getValue().on = false;
+			}
 		}
-		soulMarkers.clear();
 	}
 
 	@Override

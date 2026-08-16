@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon;
 
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.SparseArray;
 
@@ -31,8 +32,9 @@ import java.util.HashSet;
 
 public class Statistics {
 
-	public static int goldCollected;
+	public static long goldCollected;
 	public static int deepestFloor;
+	public static int deepestTowerFloor;
 	public static int highestAscent;
 	public static int enemiesSlain;
 	public static int foodEaten;
@@ -49,21 +51,21 @@ public class Statistics {
 
 	//These are used for score calculation
 	// some are built incrementally, most are assigned when full score is calculated
-	public static int progressScore;
-	public static int heldItemValue;
-	public static int treasureScore;
+	public static double progressScore;
+	public static double heldItemValue;
+	public static double treasureScore;
 	//public static SparseArray<Boolean> floorsExplored = new SparseArray<>();
 	public static SparseArray<Float> floorsExplored = new SparseArray<>();
-	public static int exploreScore;
-	public static int[] bossScores = new int[10];
-	public static int totalBossScore;
-	public static int[] questScores = new int[5];
+	public static double exploreScore;
+	public static double[] bossScores = new double[10];
+	public static double totalBossScore;
+	public static double[] questScores = new double[5];
 	public static boolean[] subLimation = new boolean[5];
 	public static boolean[] negativetalents = new boolean[4];
-	public static int totalQuestScore;
-	public static float winMultiplier;
-	public static float chalMultiplier;
-	public static int totalScore;
+	public static double totalQuestScore;
+	public static double winMultiplier;
+	public static double chalMultiplier;
+	public static double totalScore;
 
 	//used for hero unlock badges
 	public static int upgradesUsed;
@@ -88,6 +90,7 @@ public class Statistics {
 		
 		goldCollected	= 0;
 		deepestFloor	= 0;
+		deepestTowerFloor = 0;
 		highestAscent	= 0;
 		enemiesSlain	= 0;
 		foodEaten		= 0;
@@ -102,9 +105,9 @@ public class Statistics {
 		treasureScore   = 0;
 		floorsExplored  = new SparseArray<>();
 		exploreScore    = 0;
-		bossScores      = new int[10];
+		bossScores      = new double[10];
 		totalBossScore  = 0;
-		questScores     = new int[5];
+		questScores     = new double[5];
 		totalQuestScore = 0;
 		winMultiplier   = 1;
 		chalMultiplier  = 1;
@@ -140,6 +143,7 @@ public class Statistics {
 	
 	private static final String GOLD		= "score";
 	private static final String DEEPEST		= "maxDepth";
+	private static final String DEEPEST_TOWER = "maxTowerDepth";
 	private static final String HIGHEST		= "maxAscent";
 	private static final String SLAIN		= "enemiesSlain";
 	private static final String FOOD		= "foodEaten";
@@ -152,6 +156,8 @@ public class Statistics {
 	private static final String ITEM_VAL	    = "item_val";
 	private static final String TRES_SCORE      = "tres_score";
 	private static final String FLR_EXPL        = "flr_expl_";
+	private static final String FLR_EXPL_KEYS   = "flr_expl_keys";
+	private static final String FLR_EXPL_VALUES = "flr_expl_values";
 	private static final String EXPL_SCORE      = "expl_score";
 	private static final String BOSS_SCORES		= "boss_scores";
 	private static final String TOT_BOSS		= "tot_boss";
@@ -188,6 +194,7 @@ public class Statistics {
 	public static void storeInBundle( Bundle bundle ) {
 		bundle.put( GOLD,		goldCollected );
 		bundle.put( DEEPEST,	deepestFloor );
+		bundle.put( DEEPEST_TOWER, deepestTowerFloor );
 		bundle.put( HIGHEST,	highestAscent );
 		bundle.put( SLAIN,		enemiesSlain );
 		bundle.put( FOOD,		foodEaten );
@@ -200,11 +207,13 @@ public class Statistics {
 		bundle.put( PROG_SCORE,  progressScore );
 		bundle.put( ITEM_VAL,    heldItemValue );
 		bundle.put( TRES_SCORE,  treasureScore );
-		for (int i = 1; i < 26; i++){
-			if (floorsExplored.containsKey(i)){
-				bundle.put( FLR_EXPL+i, floorsExplored.get(i) );
-			}
+		int[] exploredKeys = floorsExplored.keyArray();
+		float[] exploredValues = new float[exploredKeys.length];
+		for (int i = 0; i < exploredKeys.length; i++) {
+			exploredValues[i] = floorsExplored.get(exploredKeys[i]);
 		}
+		bundle.put( FLR_EXPL_KEYS, exploredKeys );
+		bundle.put( FLR_EXPL_VALUES, exploredValues );
 
 		bundle.put( EXPL_SCORE,  exploreScore );
 		bundle.put( BOSS_SCORES, bossScores );
@@ -237,8 +246,9 @@ public class Statistics {
 	}
 	
 	public static void restoreFromBundle( Bundle bundle ) {
-		goldCollected	= bundle.getInt( GOLD );
+		goldCollected	= bundle.getLong( GOLD );
 		deepestFloor	= bundle.getInt( DEEPEST );
+		deepestTowerFloor = bundle.getInt( DEEPEST_TOWER );
 		highestAscent   = bundle.getInt( HIGHEST );
 		enemiesSlain	= bundle.getInt( SLAIN );
 		foodEaten		= bundle.getInt( FOOD );
@@ -253,38 +263,50 @@ public class Statistics {
 			itemTypesDiscovered.clear();
 		}
 
-		progressScore   = bundle.getInt( PROG_SCORE );
-		heldItemValue   = bundle.getInt( ITEM_VAL );
-		treasureScore   = bundle.getInt( TRES_SCORE );
+		progressScore   = bundle.getDouble( PROG_SCORE );
+		heldItemValue   = bundle.getDouble( ITEM_VAL );
+		treasureScore   = bundle.getDouble( TRES_SCORE );
 		floorsExplored.clear();
-		for (int i = 1; i < 26; i++){
-			if (bundle.contains( FLR_EXPL+i )){
-				//we have this check to reduce an error with bad conversion specifically in v3.1-BETA-1.0
-				if (!Dungeon.bossLevel(i) && i <= deepestFloor){
-					floorsExplored.put(i, bundle.getFloat( FLR_EXPL+i ));
+		if (bundle.contains( FLR_EXPL_KEYS ) && bundle.contains( FLR_EXPL_VALUES )) {
+			int[] keys = bundle.getIntArray( FLR_EXPL_KEYS );
+			float[] values = bundle.getFloatArray( FLR_EXPL_VALUES );
+			for (int i = 0; i < Math.min(keys.length, values.length); i++) {
+				floorsExplored.put(keys[i], values[i]);
+			}
+		} else {
+			for (int i = 1; i < 26; i++){
+				if (bundle.contains( FLR_EXPL+i )){
+					//we have this check to reduce an error with bad conversion specifically in v3.1-BETA-1.0
+					if (!Dungeon.bossLevel(i) && i <= deepestFloor){
+						floorsExplored.put(i, bundle.getFloat( FLR_EXPL+i ));
+					}
+				//pre-3.1 saves. The bundle key does have an underscore and is a boolean
+				} else if (bundle.contains( "flr_expl"+i )){
+					floorsExplored.put(i, bundle.getBoolean( "flr_expl"+i ) ? 1f : 0f);
 				}
-			//pre-3.1 saves. The bundle key does have an underscore and is a boolean
-			} else if (bundle.contains( "flr_expl"+i )){
-				floorsExplored.put(i, bundle.getBoolean( "flr_expl"+i ) ? 1f : 0f);
 			}
 		}
-		exploreScore    = bundle.getInt( EXPL_SCORE );
+		exploreScore    = bundle.getDouble( EXPL_SCORE );
 		if (bundle.contains( BOSS_SCORES )) {
-			int[] a = bundle.getIntArray( BOSS_SCORES );
-			bossScores = new int[10];
-			for(int i = 0;i<a.length;i=i+1){
+			double[] a = bundle.getDoubleArray( BOSS_SCORES );
+			bossScores = new double[10];
+			for(int i = 0; i < Math.min(a.length, bossScores.length); i++){
 				bossScores[i] = a[i];
 			}
 
 		}
-		else                                bossScores = new int[10];
-		totalBossScore  = bundle.getInt( TOT_BOSS );
-		if (bundle.contains( QUEST_SCORES ))questScores = bundle.getIntArray( QUEST_SCORES );
-		else                                questScores = new int[5];
-		totalQuestScore = bundle.getInt( TOT_QUEST );
-		winMultiplier   = bundle.getFloat( WIN_MULT );
-		chalMultiplier  = bundle.getFloat( CHAL_MULT );
-		totalScore      = bundle.getInt( TOTAL_SCORE );
+		else                                bossScores = new double[10];
+		totalBossScore  = bundle.getDouble( TOT_BOSS );
+		questScores = new double[5];
+		if (bundle.contains( QUEST_SCORES )) {
+			double[] restoredQuestScores = bundle.getDoubleArray( QUEST_SCORES );
+			System.arraycopy(restoredQuestScores, 0, questScores, 0,
+					Math.min(restoredQuestScores.length, questScores.length));
+		}
+		totalQuestScore = bundle.getDouble( TOT_QUEST );
+		winMultiplier   = bundle.getDouble( WIN_MULT );
+		chalMultiplier  = bundle.getDouble( CHAL_MULT );
+		totalScore      = bundle.getDouble( TOTAL_SCORE );
 		
 		upgradesUsed    = bundle.getInt( UPGRADES );
 		metamorphosis   = bundle.getInt(METAMORPHOSIS);
@@ -324,10 +346,36 @@ public class Statistics {
 			}
 		}
 	}
+
+	public static boolean observeDepth(int depth, int branch) {
+		if (branch == TowerLevel.BRANCH) {
+			if (depth > deepestTowerFloor) {
+				deepestTowerFloor = depth;
+			}
+			return false;
+		}
+		if (branch == 0 && depth > deepestFloor) {
+			deepestFloor = depth;
+			return true;
+		}
+		return false;
+	}
+
+	public static void recoverTowerDepth(int depth, int branch) {
+		if (branch == TowerLevel.BRANCH && depth > deepestTowerFloor) {
+			deepestTowerFloor = depth;
+		}
+	}
 	
 	public static void preview( GamesInProgress.Info info, Bundle bundle ){
-		info.goldCollected  = bundle.getInt( GOLD );
-		info.maxDepth       = bundle.getInt( DEEPEST );
+		info.goldCollected  = bundle.getLong( GOLD );
+		if (info.newCycle) {
+			int savedTowerDepth = bundle.getInt(DEEPEST_TOWER);
+			info.maxDepth = Math.max(savedTowerDepth,
+					info.branch == TowerLevel.BRANCH ? info.depth : 0);
+		} else {
+			info.maxDepth = bundle.getInt( DEEPEST );
+		}
 	}
 
 }

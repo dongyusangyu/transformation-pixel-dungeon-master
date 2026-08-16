@@ -6,6 +6,11 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+try:
+    from tools.tower_tileset_semantics import normalize_tower_tileset
+except ImportError:
+    from tower_tileset_semantics import normalize_tower_tileset
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV = ROOT / "core" / "src" / "main" / "assets" / "environment"
@@ -888,7 +893,12 @@ def build_tileset() -> Image.Image:
     for index in range(232, 256):
         replace_tile(atlas, overhangs.get(index, Image.new("RGBA", (T, T), TRANSPARENT)), index)
 
-    return atlas
+    return normalize_tower_tileset(
+        atlas,
+        sewers,
+        Image.open(ENV / "tiles_halls.png"),
+        build_water_texture(),
+    )
 
 
 def generate() -> tuple[Path, Path]:

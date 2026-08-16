@@ -67,6 +67,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hunger;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invulnerability;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LifeLink;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
@@ -590,6 +591,8 @@ public abstract class Char extends Actor {
 			
 			DamageTag[] resolvedAttackTags = attackTags.toArray(new DamageTag[0]);
 			int effectiveDamage = enemy.defenseProc(this, Math.round(dmg), resolvedAttackTags);
+			boolean enemyAliveAfterDefenseProc = enemy.isAlive();
+			int attackHealthBefore = enemy.HP + enemy.shielding();
 			//do not trigger on-hit logic if defenseProc returned a negative value
 			if (effectiveDamage >= 0) {
 				effectiveDamage = Math.max(effectiveDamage - dr, 0);
@@ -629,13 +632,18 @@ public abstract class Char extends Actor {
 			// If the enemy is already dead, interrupt the attack.
 			// This matters as defence procs can sometimes inflict self-damage, such as armor glyphs.
 			if (!enemy.isAlive()){
+				//attackProc may deal damage directly. Include that damage in the completed
+				//attack result, but preserve the old no-on-hit behavior for defenseProc kills.
+				if (enemyAliveAfterDefenseProc) {
+					finishAttackResolution(enemy, attackHealthBefore, resolvedAttackTags);
+				}
 				return true;
 			}
 
-			int enemyHealthBefore = enemy.HP + enemy.shielding();
 			boolean hostilePhysicalAttack = this instanceof Hero && enemy.alignment == Alignment.ENEMY;
+			int primaryHealthBefore = enemy.HP + enemy.shielding();
 			enemy.damage(effectiveDamage, this, resolvedAttackTags);
-			int damageDealt = resolvedAttackDamage(enemy, enemyHealthBefore);
+			int damageDealt = resolvedAttackDamage(enemy, primaryHealthBefore);
 			if (hostilePhysicalAttack) {
 				Berserk attackBerserk = buff(Berserk.class);
 				if (attackBerserk != null) {
@@ -643,7 +651,7 @@ public abstract class Char extends Actor {
 					attackBerserk.onPhysicalDamageDealt(damageDealt, melee);
 				}
 			}
-			onAttackResolved(enemy, true, damageDealt, resolvedAttackTags);
+			finishAttackResolution(enemy, attackHealthBefore, resolvedAttackTags);
 			if (this == Dungeon.hero) {
 				AgentMinRewardTracker.onHeroAttackEnemy(enemy, effectiveDamage);
 			}
@@ -1004,6 +1012,13 @@ public abstract class Char extends Actor {
 		return Math.max(0, healthBefore - enemy.HP - enemy.shielding());
 	}
 
+	protected int finishAttackResolution(
+			Char enemy, int healthBefore, DamageTag... damageTags) {
+		int damageDealt = resolvedAttackDamage(enemy, healthBefore);
+		onAttackResolved(enemy, true, damageDealt, damageTags);
+		return damageDealt;
+	}
+
 	
 	public int defenseProc(Char enemy, int damage, DamageTag... damageTags) {
 
@@ -1318,6 +1333,9 @@ public abstract class Char extends Actor {
 			}
 			if (dmg < 0) dmg = 0;
 		}
+        if(buff(MagicImmune.class)!=null && tags.contains(DamageTag.MAGICAL)) {
+            dmg = 0;
+        }
         //史莱姆
         if(this==hero && !unavoidable){
             if(hero.hasTalent(Talent.ENERGY_ABSORPTION)){

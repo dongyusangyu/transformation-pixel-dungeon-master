@@ -292,7 +292,7 @@ public class RingOfWealth extends Ring {
 				result = a;
 				break;
 			case 3:
-				result = Generator.randomUsingDefaults(Generator.Category.RING);
+				result = genTreasureRingDrop();
 				break;
 			case 4:
 				result = Generator.random(Generator.Category.ARTIFACT);
@@ -300,10 +300,7 @@ public class RingOfWealth extends Ring {
 		}
 		//minimum level is 1/2/3/4/5/6 when ring level is 1/3/5/7/9/11
 		if (result.isUpgradable()){
-			int minLevel = (level+1)/2;
-			if (result.level() < minLevel){
-				result.level(minLevel);
-			}
+			result.level(EquipmentDropLevelPolicy.level(result.level(), level));
 		}
 		result.cursed = false;
 		result.cursedKnown = true;
@@ -313,6 +310,25 @@ public class RingOfWealth extends Ring {
 			latestDropTier = 3;
 		}
 		return result;
+	}
+
+	static final class EquipmentDropLevelPolicy {
+		private static final int MAX_LEVEL = 10;
+
+		static int level(int generatedLevel, int wealthLevel) {
+			int minimumLevel = (wealthLevel + 1) / 2;
+			return Math.min(MAX_LEVEL, Math.max(generatedLevel, minimumLevel));
+		}
+	}
+
+	static Ring genTreasureRingDrop() {
+		Ring result = (Ring) Reflection.newInstance(treasureRingClass());
+		return (Ring) result.random();
+	}
+
+	static Class<?> treasureRingClass() {
+		return Generator.randomClassUsingDefaultsExcluding(
+				Generator.Category.RING, RingOfWealth.class);
 	}
 
 	public class Wealth extends RingBuff {

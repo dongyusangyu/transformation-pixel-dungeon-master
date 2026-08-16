@@ -1,0 +1,100 @@
+{
+  "title": "tower_silent_gear",
+  "bpm": 64,
+  "render": {
+    "bars": 24,
+    "pads": [
+      [0.75, [38, 45, 50, 53], -0.18],
+      [4, [39, 46, 51, 55], 0.16],
+      [7, [38, 45, 50, 53], -0.10],
+      [9, [34, 41, 46, 50], 0.20],
+      [11, [39, 46, 51, 55], -0.22],
+      [13, [38, 45, 50, 53], 0.08],
+      [15, [36, 43, 48, 51], -0.16],
+      [17, [39, 46, 51, 55], 0.20],
+      [18.5, [38, 45, 50, 53], -0.05],
+      [20, [34, 41, 46, 50], 0.15],
+      [23.25, [38, 45, 50, 53], -0.12]
+    ],
+    "motifs": [
+      [0.65, [74, 75, 69, 74]],
+      [6, [74, 77, 75, 69]],
+      [10, [74, 75, 74, 69]],
+      [14, [74, 75, 72, 69]],
+      [17, [74, 75, 81, 77]],
+      [19, [74, 72, 75, 74]],
+      [23.05, [74, 75, 69, 74]]
+    ],
+    "gear_hits": [3, 7, 11, 15, 18, 21]
+  },
+  "tracks": [
+    {
+      "instrument": "synth-bass-2",
+      "notes": [
+        {"pitch": "D2", "duration": "1"}, {"pitch": "D2", "duration": "1"},
+        {"pitch": "D2", "duration": "1"}, {"pitch": "Eb2", "duration": "1"},
+        {"pitch": "Eb2", "duration": "1"}, {"pitch": "D2", "duration": "1"},
+        {"pitch": "D2", "duration": "1"}, {"pitch": "D2", "duration": "1"},
+        {"pitch": "Bb1", "duration": "1"}, {"pitch": "Bb1", "duration": "1"},
+        {"pitch": "Eb2", "duration": "1"}, {"pitch": "Eb2", "duration": "1"},
+        {"pitch": "D2", "duration": "1"}, {"pitch": "D2", "duration": "1"},
+        {"pitch": "C2", "duration": "1"}, {"pitch": "C2", "duration": "1"},
+        {"pitch": "Eb2", "duration": "1"}, {"pitch": "D2", "duration": "1"},
+        {"pitch": "D2", "duration": "1"}, {"pitch": "D2", "duration": "1"},
+        {"pitch": "Bb1", "duration": "1"}, {"pitch": "Bb1", "duration": "1"},
+        {"pitch": "D2", "duration": "1"}, {"pitch": "D2", "duration": "1"}
+      ]
+    },
+    {
+      "instrument": "pad-5-bowed",
+      "notes": [
+        {"pitch": "A2", "duration": "1"}, {"pitch": "A2", "duration": "1"},
+        {"pitch": "A2", "duration": "1"}, {"pitch": "Bb2", "duration": "1"},
+        {"pitch": "Bb2", "duration": "1"}, {"pitch": "A2", "duration": "1"},
+        {"pitch": "A2", "duration": "1"}, {"pitch": "A2", "duration": "1"},
+        {"pitch": "F2", "duration": "1"}, {"pitch": "F2", "duration": "1"},
+        {"pitch": "Bb2", "duration": "1"}, {"pitch": "Bb2", "duration": "1"},
+        {"pitch": "A2", "duration": "1"}, {"pitch": "A2", "duration": "1"},
+        {"pitch": "G2", "duration": "1"}, {"pitch": "G2", "duration": "1"},
+        {"pitch": "Bb2", "duration": "1"}, {"pitch": "A2", "duration": "1"},
+        {"pitch": "A2", "duration": "1"}, {"pitch": "A2", "duration": "1"},
+        {"pitch": "F2", "duration": "1"}, {"pitch": "F2", "duration": "1"},
+        {"pitch": "A2", "duration": "1"}, {"pitch": "A2", "duration": "1"}
+      ]
+    },
+    {
+      "instrument": "choir-aahs",
+      "notes": [
+        {"pitch": "F3", "duration": "1"}, {"pitch": "D3", "duration": "1"},
+        {"pitch": "F3", "duration": "1"}, {"pitch": "G3", "duration": "1"},
+        {"pitch": "Eb3", "duration": "1"}, {"pitch": "D3", "duration": "1"},
+        {"pitch": "F3", "duration": "1"}, {"pitch": "D3", "duration": "1"},
+        {"pitch": "D3", "duration": "1"}, {"pitch": "F3", "duration": "1"},
+        {"pitch": "G3", "duration": "1"}, {"pitch": "Eb3", "duration": "1"},
+        {"pitch": "F3", "duration": "1"}, {"pitch": "D3", "duration": "1"},
+        {"pitch": "Eb3", "duration": "1"}, {"pitch": "G3", "duration": "1"},
+        {"pitch": "G3", "duration": "1"}, {"pitch": "F3", "duration": "1"},
+        {"pitch": "Eb3", "duration": "1"}, {"pitch": "D3", "duration": "1"},
+        {"pitch": "D3", "duration": "1"}, {"pitch": "F3", "duration": "1"},
+        {"pitch": "D3", "duration": "1"}, {"pitch": "F3", "duration": "1"}
+      ]
+    },
+    {
+      "instrument": "tubular-bells",
+      "notes": [
+        {"pitch": "D5", "duration": "1"}, {"pitch": "Eb5", "duration": "1"},
+        {"pitch": "A4", "duration": "1"}, {"pitch": "D5", "duration": "1"},
+        {"pitch": "F5", "duration": "1"}, {"pitch": "Eb5", "duration": "1"},
+        {"pitch": "A4", "duration": "1"}, {"pitch": "D5", "duration": "1"},
+        {"pitch": "Eb5", "duration": "1"}, {"pitch": "D5", "duration": "1"},
+        {"pitch": "A4", "duration": "1"}, {"pitch": "C5", "duration": "1"},
+        {"pitch": "D5", "duration": "1"}, {"pitch": "Eb5", "duration": "1"},
+        {"pitch": "A5", "duration": "1"}, {"pitch": "F5", "duration": "1"},
+        {"pitch": "D5", "duration": "1"}, {"pitch": "C5", "duration": "1"},
+        {"pitch": "Eb5", "duration": "1"}, {"pitch": "D5", "duration": "1"},
+        {"pitch": "A4", "duration": "1"}, {"pitch": "D5", "duration": "1"},
+        {"pitch": "Eb5", "duration": "1"}, {"pitch": "D5", "duration": "1"}
+      ]
+    }
+  ]
+}

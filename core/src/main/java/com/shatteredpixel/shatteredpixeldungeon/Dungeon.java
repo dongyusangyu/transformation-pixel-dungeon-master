@@ -259,6 +259,7 @@ public class Dungeon {
 	public static long lastPlayed;
     public static boolean droneVison;
 	public static boolean newCycle;
+	public static String newCycleSourceGameID;
 
 	//we initialize the seed separately so that things like interlevelscene can access it early
 	public static void initSeed(){
@@ -281,6 +282,7 @@ public class Dungeon {
 
 		initialVersion = version = Game.versionCode;
 		newCycle = false;
+		newCycleSourceGameID = null;
 		challenges = SPDSettings.challenges();
 		mobsToChampion = -1;
 
@@ -342,6 +344,8 @@ public class Dungeon {
 	public static void reinit() {
 
 		initialVersion = version = Game.versionCode;
+		newCycle = false;
+		newCycleSourceGameID = null;
 		challenges = SPDSettings.challenges();
 		mobsToChampion = -1;
 		Hero heroCopy=hero;
@@ -406,6 +410,10 @@ public class Dungeon {
 		Badges.reset();
 
 
+	}
+
+	public static void reinit(boolean ignored) {
+		reinit();
 	}
 
 	public static boolean isChallenged( int mask ) {
@@ -681,7 +689,7 @@ public class Dungeon {
 			return false;
 		}
 		if (level.locked && bossLevel()) {
-			return true;
+			return level.isBossTeleportPositionAllowed(pos);
 		}
 
 		PathFinder.buildDistanceMap(pos, traversable);
@@ -764,11 +772,18 @@ public class Dungeon {
 	}
 	
 	public static boolean bossLevel() {
-		return branch == 0 && bossLevel( depth );
+		return bossLevel(depth, branch);
 	}
 	
 	public static boolean bossLevel( int depth ) {
 		return depth == 5 || depth == 10 || depth == 15 || depth == 20 || depth == 25;
+	}
+
+	public static boolean bossLevel( int depth, int branch ) {
+		return branch == 0
+				? bossLevel(depth)
+				: branch == TowerLevel.BRANCH
+						&& depth > 0 && depth % TowerBossLevel.FLOORS_PER_BOSS == 0;
 	}
 
 	//Value used for scaling damage, effects, and depth-dependent combat stats.
@@ -888,12 +903,71 @@ public class Dungeon {
 	}
 
 	public static void dropToChasm( Item item ) {
-		int depth = Dungeon.depth + 1;
-		ArrayList<Item> dropped = Dungeon.droppedItems.get( depth );
+		int depth = chasmDropDepthForLocation(Dungeon.depth, Dungeon.branch);
+		int locationKey = chasmDropKeyForLocation(Dungeon.depth, Dungeon.branch);
+		ArrayList<Item> dropped = Dungeon.droppedItems.get( locationKey );
 		if (dropped == null) {
-			Dungeon.droppedItems.put( depth, dropped = new ArrayList<>() );
+			Dungeon.droppedItems.put( locationKey, dropped = new ArrayList<>() );
 		}
 		dropped.add( item );
+	}
+
+	public static int droppedItemsKeyForLocation(int depth, int branch) {
+		return branch == TowerLevel.BRANCH ? Integer.MIN_VALUE + depth : depth;
+	}
+
+	public static int fallDepthForLocation(int depth, int branch) {
+		return branch == TowerLevel.BRANCH ? Math.max(1, depth - 1) : depth + 1;
+	}
+
+	public static int chasmDropDepthForLocation(int depth, int branch) {
+		return branch == TowerLevel.BRANCH ? Math.max(0, depth - 1) : depth + 1;
+	}
+
+	public static int chasmDropKeyForLocation(int depth, int branch) {
+		int destinationDepth = chasmDropDepthForLocation(depth, branch);
+		return branch == TowerLevel.BRANCH && destinationDepth > 0
+				? droppedItemsKeyForLocation(destinationDepth, branch)
+				: destinationDepth;
+	}
+
+	public static int deepestTowerFloorInGeneratedLevels(int[] generated) {
+		int deepest = 0;
+		if (generated == null) {
+			return deepest;
+		}
+		for (int key : generated) {
+			if (key >= Integer.MIN_VALUE && key < Integer.MIN_VALUE + 1_000_000_000) {
+				deepest = Math.max(deepest, key - Integer.MIN_VALUE);
+			}
+		}
+		return deepest;
+	}
+
+	public static boolean levelTransitionAllowed(int depth, int branch, LevelTransition.Type type) {
+		if (type == LevelTransition.Type.REGULAR_EXIT) {
+			return branch == TowerLevel.BRANCH || (branch == 0 && depth < 26);
+		}
+		if (type == LevelTransition.Type.REGULAR_ENTRANCE) {
+			return true;
+		}
+		return true;
+	}
+
+	public static void rebuildBackpack(Hero target, boolean addChallengeSpawn) {
+		if (target == null || target.belongings == null || target.belongings.backpack == null) {
+			return;
+		}
+		ArrayList<Item> items = new ArrayList<>(target.belongings.backpack.items);
+		target.belongings.backpack.items.clear();
+		for (Item item : items) {
+			if (!item.collect(target.belongings.backpack)) {
+				target.belongings.backpack.items.add(item);
+			}
+		}
+		if (addChallengeSpawn) {
+			HeroClass.doChallengeSpawn(target);
+		}
 	}
 
 	public static boolean posNeeded() {
@@ -996,6 +1070,7 @@ public class Dungeon {
 	private static final String SKIN = "skin";
     private static final String DRONEVISON = "dronevison";
 	private static final String NEW_CYCLE = "new_cycle";
+	private static final String NEW_CYCLE_SOURCE_GAME_ID = "new_cycle_source_game_id";
 	
 	public static void saveGame( int save ) {
 		try {
@@ -1024,6 +1099,9 @@ public class Dungeon {
 			bundle.put( LAST_PLAYED, lastPlayed = Game.realTime);
             bundle.put( DRONEVISON, droneVison);
 			bundle.put( NEW_CYCLE, newCycle );
+			if (newCycleSourceGameID != null && !newCycleSourceGameID.isEmpty()) {
+				bundle.put( NEW_CYCLE_SOURCE_GAME_ID, newCycleSourceGameID );
+			}
 
 			for (int d : droppedItems.keyArray()) {
 				bundle.put(Messages.format(DROPPED, d), droppedItems.get(d));
@@ -1243,6 +1321,8 @@ public class Dungeon {
             droneVison = true;
         }
 		newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
+		newCycleSourceGameID = newCycle && bundle.contains(NEW_CYCLE_SOURCE_GAME_ID)
+				? bundle.getString(NEW_CYCLE_SOURCE_GAME_ID) : null;
 
 		droppedItems = new SparseArray<>();
 		for (int i=1; i <= 26; i++) {
@@ -1277,10 +1357,12 @@ public class Dungeon {
 	}
 	
 	public static void deleteGame( int save, boolean deleteLevels ) {
-
-		SaveManager.deleteGame(save);
-		
+		GamesInProgress.Info info = GamesInProgress.check(save);
+		boolean deleted = SaveManager.deleteGame(save);
 		GamesInProgress.delete( save );
+		if (deleted) {
+			RankingRestart.releaseRestartForDeletedSave(info);
+		}
 	}
 
 	public static void copyGame(int save) {
@@ -1307,6 +1389,8 @@ public class Dungeon {
 		info.daily = bundle.getBoolean( DAILY );
 		info.dailyReplay = bundle.getBoolean( DAILY_REPLAY );
 		info.newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
+		info.newCycleSourceGameID = info.newCycle && bundle.contains(NEW_CYCLE_SOURCE_GAME_ID)
+				? bundle.getString(NEW_CYCLE_SOURCE_GAME_ID) : null;
 
 		Hero.preview( info, bundle.getBundle( HERO ) );
 		Statistics.preview( info, bundle );
@@ -1365,10 +1449,29 @@ public class Dungeon {
 
 		observe( dist+1 );
 	}
+
+	private static void markVisitedNeighbourhood(int center) {
+		if (level == null || level.visited == null || level.heroFOV == null
+				|| level.visited.length != level.length() || level.heroFOV.length != level.length()
+				|| center < 0 || center >= level.length()) {
+			return;
+		}
+		int centerX = center % level.width();
+		int centerY = center / level.width();
+		for (int y = Math.max(0, centerY - 1); y <= Math.min(level.height() - 1, centerY + 1); y++) {
+			for (int x = Math.max(0, centerX - 1); x <= Math.min(level.width() - 1, centerX + 1); x++) {
+				int cell = x + y * level.width();
+				level.visited[cell] |= level.heroFOV[cell];
+			}
+		}
+	}
 	
 	public static void observe( int dist ) {
 
 		if (level == null) {
+			return;
+		}
+		if (hero.pos < 0 || hero.pos >= level.length()) {
 			return;
 		}
 		boolean[] agentMinVisitedBefore = AgentMinRewardTracker.snapshotVisited(level);
@@ -1395,9 +1498,7 @@ public class Dungeon {
 		}
 
 		//always visit adjacent tiles, even if they aren't seen
-		for (int i : PathFinder.NEIGHBOURS9){
-			level.visited[hero.pos+i] = true;
-		}
+		markVisitedNeighbourhood(hero.pos);
 	
 		GameScene.updateFog(l, t, width, height);
 
@@ -1407,9 +1508,7 @@ public class Dungeon {
 					continue;
 				}
 
-				BArray.or( level.visited, level.heroFOV, m.pos - 1 - level.width(), 3, level.visited );
-				BArray.or( level.visited, level.heroFOV, m.pos - 1, 3, level.visited );
-				BArray.or( level.visited, level.heroFOV, m.pos - 1 + level.width(), 3, level.visited );
+				markVisitedNeighbourhood(m.pos);
 				//updates adjacent cells too
 				GameScene.updateFog(m.pos, 2);
 			}
@@ -1417,9 +1516,7 @@ public class Dungeon {
 
 		if (hero.buff(Awareness.class) != null){
 			for (Heap h : level.heaps.valueList()){
-				BArray.or( level.visited, level.heroFOV, h.pos - 1 - level.width(), 3, level.visited );
-				BArray.or( level.visited, level.heroFOV, h.pos - 1, 3, level.visited );
-				BArray.or( level.visited, level.heroFOV, h.pos - 1 + level.width(), 3, level.visited );
+				markVisitedNeighbourhood(h.pos);
 				GameScene.updateFog(h.pos, 2);
 			}
 		}
@@ -1429,9 +1526,7 @@ public class Dungeon {
 					continue;
 				}
 
-				BArray.or( level.visited, level.heroFOV, m.pos - 1 - level.width(), 3, level.visited );
-				BArray.or( level.visited, level.heroFOV, m.pos - 1, 3, level.visited );
-				BArray.or( level.visited, level.heroFOV, m.pos - 1 + level.width(), 3, level.visited );
+				markVisitedNeighbourhood(m.pos);
 				//updates adjacent cells too
 				GameScene.updateFog(m.pos, 2);
 			}
@@ -1440,25 +1535,19 @@ public class Dungeon {
 		for (TalismanOfForesight.CharAwareness c : hero.buffs(TalismanOfForesight.CharAwareness.class)){
 			Char ch = (Char) Actor.findById(c.charID);
 			if (ch == null || !ch.isAlive()) continue;
-			BArray.or( level.visited, level.heroFOV, ch.pos - 1 - level.width(), 3, level.visited );
-			BArray.or( level.visited, level.heroFOV, ch.pos - 1, 3, level.visited );
-			BArray.or( level.visited, level.heroFOV, ch.pos - 1 + level.width(), 3, level.visited );
+			markVisitedNeighbourhood(ch.pos);
 			GameScene.updateFog(ch.pos, 2);
 		}
 
 		for (TalismanOfForesight.HeapAwareness h : hero.buffs(TalismanOfForesight.HeapAwareness.class)){
 			if (Dungeon.depth != h.depth || Dungeon.branch != h.branch) continue;
-			BArray.or( level.visited, level.heroFOV, h.pos - 1 - level.width(), 3, level.visited );
-			BArray.or( level.visited, level.heroFOV, h.pos - 1, 3, level.visited );
-			BArray.or( level.visited, level.heroFOV, h.pos - 1 + level.width(), 3, level.visited );
+			markVisitedNeighbourhood(h.pos);
 			GameScene.updateFog(h.pos, 2);
 		}
 
 		for (RevealedArea a : hero.buffs(RevealedArea.class)){
 			if (Dungeon.depth != a.depth || Dungeon.branch != a.branch) continue;
-			BArray.or( level.visited, level.heroFOV, a.pos - 1 - level.width(), 3, level.visited );
-			BArray.or( level.visited, level.heroFOV, a.pos - 1, 3, level.visited );
-			BArray.or( level.visited, level.heroFOV, a.pos - 1 + level.width(), 3, level.visited );
+			markVisitedNeighbourhood(a.pos);
 			GameScene.updateFog(a.pos, 2);
 		}
 
@@ -1468,6 +1557,9 @@ public class Dungeon {
 					|| ch instanceof SpiritHawk.HawkAlly
 					|| ch.buff(PowerOfMany.PowerBuff.class) != null
 					|| ch instanceof AuxiliaryDrone.ScoutDrone){
+				if (ch.pos < 0 || ch.pos >= level.length()) {
+					continue;
+				}
 				x = ch.pos % level.width();
 				y = ch.pos / level.width();
 

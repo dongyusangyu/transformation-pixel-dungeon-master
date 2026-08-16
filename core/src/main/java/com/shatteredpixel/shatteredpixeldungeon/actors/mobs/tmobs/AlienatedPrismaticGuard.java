@@ -2,6 +2,10 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.AlienatedPrismaticGuardSprite;
@@ -34,6 +38,11 @@ public class AlienatedPrismaticGuard extends HeroReplicaMob {
 		maxLvl = 30;
 
 		alignment = Alignment.ENEMY;
+		properties.add(Property.INORGANIC);
+		immunities.add(ToxicGas.class);
+		immunities.add(CorrosiveGas.class);
+		immunities.add(Burning.class);
+		immunities.add(AllyBuff.class);
 
 		loot = ScrollOfMirrorImage.class;
 		lootChance = 1f / 8f;

@@ -27,22 +27,22 @@ public class SkilledParry extends FlavourBuff {
 		return Math.max(0, points) + 1f;
 	}
 
+	static boolean canTrigger(SkilledParryCooldown cooldown) {
+		return cooldown == null;
+	}
+
 	public static void trigger(Hero hero, MeleeWeapon weapon) {
 		int points = hero.pointsInTalent(Talent.SKILLED_PARRY);
 		if (points <= 0 || weapon == null) return;
 
 		Class<?> abilityType = weapon.abilityType();
 		SkilledParryCooldown cooldown = hero.buff(SkilledParryCooldown.class);
-		if (cooldown != null
-				&& !SkilledParryCooldown.isDifferentAbility(cooldown.ability, abilityType)) {
-			return;
-		}
+		if (!canTrigger(cooldown)) return;
 
 		SkilledParry active = hero.buff(SkilledParry.class);
 		if (active != null) active.detach();
 		Buff.affect(hero, SkilledParry.class, duration(points));
 
-		if (cooldown != null) cooldown.detach();
 		cooldown = Buff.affect(hero, SkilledParryCooldown.class, SkilledParryCooldown.DURATION);
 		cooldown.ability = abilityType;
 		BuffIndicator.refreshHero();

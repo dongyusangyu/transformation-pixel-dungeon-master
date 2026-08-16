@@ -8,8 +8,10 @@ from PIL import Image, ImageDraw
 
 try:
     from tools import generate_astral_library_tileset as base
+    from tools.tower_tileset_semantics import normalize_tower_tileset
 except ImportError:
     import generate_astral_library_tileset as base
+    from tower_tileset_semantics import normalize_tower_tileset
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -351,19 +353,29 @@ def draw_herb_underhang(dry: bool = False, alt: bool = False) -> Image.Image:
 
 def draw_sun_prism(background: Image.Image, body_only: bool = False, flowering: bool = False) -> Image.Image:
     image, draw = local_draw(background)
-    draw.rectangle((4, 10, 11, 14), fill=STONE_DARK)
-    draw.line((3, 10, 12, 10), fill=STONE_EDGE)
-    draw.rectangle((7, 5, 8, 10), fill=BRASS_MID)
-    if not body_only:
-        if flowering:
-            for x, y in ((5, 5), (8, 3), (11, 5), (8, 7)):
-                draw.point((x, y), fill=PETAL_PINK)
-                draw.point((8, 5), fill=LEAF_GLOW)
-        else:
-            draw.polygon(((8, 1), (12, 5), (8, 9), (4, 5)), fill=GLASS_DARK)
-            draw.line((8, 1, 8, 9), fill=GLASS_LIGHT)
-            draw.line((4, 5, 12, 5), fill=BRASS_LIGHT)
-            draw.point((7, 3), fill=GLASS_GLINT)
+    draw.line((3, 15, 12, 15), fill=OUTLINE)
+    draw.rectangle((3, 10, 12, 14), fill=OUTLINE)
+    draw.rectangle((4, 10, 11, 13), fill=BRASS_DARK)
+    draw.line((4, 10, 11, 10), fill=BRASS_LIGHT)
+    draw.rectangle((6, 12, 9, 13), fill=WOOD_DARK)
+    stem_top = 0 if body_only else 4
+    draw.rectangle((6, stem_top, 9, 10), fill=OUTLINE)
+    draw.rectangle((7, stem_top, 8, 10), fill=BRASS_MID)
+    if body_only:
+        draw.point((7, 0), fill=BRASS_LIGHT)
+        return image
+
+    draw.polygon(((8, 0), (13, 5), (8, 10), (3, 5)), fill=OUTLINE)
+    draw.polygon(((8, 1), (12, 5), (8, 9), (4, 5)), fill=GLASS_DARK)
+    draw.polygon(((8, 2), (10, 5), (8, 8), (6, 5)), fill=GLASS_MID)
+    draw.line((4, 5, 12, 5), fill=BRASS_LIGHT)
+    draw.line((8, 1, 8, 9), fill=GLASS_GLINT)
+    for point in ((7, 3), (9, 3), (7, 7), (9, 7)):
+        draw.point(point, fill=GLASS_GLINT)
+    if flowering:
+        for x, y in ((4, 3), (11, 3), (4, 7), (11, 7)):
+            draw.point((x, y), fill=PETAL_PINK)
+            draw.point((x + (1 if x < 8 else -1), y), fill=LEAF_GLOW)
     return image
 
 
@@ -407,9 +419,14 @@ def draw_object_overhang(kind: str, alt: bool = False) -> Image.Image:
         draw.line((6, 15, 5, 10), fill=DRY_DARK)
         draw.point((4, 10), fill=DRY_LIGHT)
     elif kind == "prism":
-        color = PETAL_PINK if alt else GLASS_LIGHT
-        draw.polygon(((8, 5), (12, 10), (8, 15), (4, 10)), fill=GLASS_DARK)
-        draw.line((4, 10, 12, 10), fill=color)
+        draw.polygon(((8, 4), (13, 10), (9, 15), (6, 15), (3, 10)), fill=OUTLINE)
+        draw.polygon(((8, 5), (12, 10), (8, 14), (4, 10)), fill=GLASS_DARK)
+        draw.polygon(((8, 6), (10, 10), (8, 13), (6, 10)), fill=GLASS_MID)
+        draw.line((4, 10, 12, 10), fill=PETAL_PINK if alt else BRASS_LIGHT)
+        draw.line((8, 5, 8, 14), fill=GLASS_GLINT)
+        draw.point((7, 8), fill=GLASS_GLINT)
+        draw.point((9, 12), fill=GLASS_GLINT)
+        draw.rectangle((7, 15, 8, 15), fill=BRASS_MID)
     elif kind == "vat":
         draw.line((7, 15, 7, 8), fill=LEAF_DARK)
         draw.line((8, 15, 10, 6), fill=LEAF_MID)
@@ -556,7 +573,12 @@ def build_tileset() -> Image.Image:
     for index, image in overhangs.items():
         replace_tile(atlas, image, index)
 
-    return atlas
+    return normalize_tower_tileset(
+        atlas,
+        sewers,
+        Image.open(ENV / "tiles_halls.png"),
+        build_water_texture(),
+    )
 
 
 def generate() -> tuple[Path, Path]:

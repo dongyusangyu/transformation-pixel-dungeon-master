@@ -90,7 +90,24 @@ public class MimicCrocodileSpriteAssetTest {
 		assertTrue(java.contains("attack.frames(frames, 8, 9, 10)"));
 		assertTrue(java.contains("die.frames(frames, 11, 12)"));
 		assertTrue(java.contains("MimicCrocodile.LURKING_ALPHA"));
+		assertTrue(java.contains("applyLurkingAlpha(ch)"));
 		assertTrue(java.contains("alpha(1f)"));
+	}
+
+	@Test
+	public void lurkingSuppressesStatusIconsAndAttachedEffects() throws IOException {
+		Path source = coreDirectory().resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tmobs/MimicCrocodileSprite.java");
+		Path charSpriteSource = coreDirectory().resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/CharSprite.java");
+		String java = Files.readString(source);
+		String charSprite = Files.readString(charSpriteSource);
+
+		assertTrue(java.contains("return super.visualEffectsVisible() && !isLurking()"));
+		assertTrue(charSprite.contains("protected boolean visualEffectsVisible()"));
+		assertTrue(charSprite.contains("boolean effectsVisible = visualEffectsVisible()"));
+		assertTrue(charSprite.contains("if (visualEffectsVisible())"));
+		assertTrue(charSprite.contains("emo.visible = visualEffectsVisible()"));
 	}
 
 	private static Path spritePath(String name) {

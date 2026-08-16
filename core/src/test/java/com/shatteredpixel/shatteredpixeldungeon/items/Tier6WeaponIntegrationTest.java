@@ -4,12 +4,15 @@ import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator.TestMe
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.AuxiliaryCore;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMace;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.DemonTailWhip;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.HundredTonHammer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 
 import org.junit.Test;
@@ -21,6 +24,7 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class Tier6WeaponIntegrationTest {
@@ -37,9 +41,11 @@ public class Tier6WeaponIntegrationTest {
 				PalermoSword.class,
 				MercuryBlade.class,
 				AuxiliaryCore.class,
-				HundredTonHammer.class
+				HundredTonHammer.class,
+				DemonTailWhip.class,
+				OracleTerminal.class
 		}, tierSix.classes);
-		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
+		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
 		assertEquals(6, Generator.wepTiers.length);
 		assertEquals(tierSix, Generator.wepTiers[5]);
 	}
@@ -110,30 +116,33 @@ public class Tier6WeaponIntegrationTest {
 				PalermoSword.class,
 				MercuryBlade.class,
 				AuxiliaryCore.class,
-				HundredTonHammer.class
+				HundredTonHammer.class,
+				DemonTailWhip.class,
+				OracleTerminal.class
 		}, tierSix);
 	}
 
 	@Test
-	public void missingTierSixMissilesFallBackToTierFive() throws Exception {
+	public void tierSixMissilePoolContainsGungnir() throws Exception {
 		Generator.Category tierSix = Generator.Category.valueOf("MIS_T6");
-		assertEquals(0, tierSix.classes.length);
+		assertArrayEquals(new Class<?>[]{Gungnir.class}, tierSix.classes);
 		assertEquals(6, Generator.misTiers.length);
 
 		Method availableTier = Generator.class.getDeclaredMethod("availableMissileTier", int.class);
 		availableTier.setAccessible(true);
-		assertEquals(4, availableTier.invoke(null, 5));
+		assertEquals(5, availableTier.invoke(null, 5));
 	}
 
 	@Test
-	public void customGuideExplainsTierSixAndMissileFallback() throws Exception {
+	public void customGuideExplainsTierSixGeneration() throws Exception {
 		String customText = new String(Files.readAllBytes(Paths.get(
 				"src/main/assets/messages/custom/custom_zh.properties")), StandardCharsets.UTF_8);
 
 		assertTrue(customText.contains("_6阶：_0%，0%，0%，0%，1%"));
-		assertTrue(customText.contains("抽中6阶时，会自动降为5阶生成"));
+		assertTrue(customText.contains("近战武器与投掷武器均按此权重生成"));
 		assertTrue(customText.contains("高塔(-1层及更小楼层)使用独立装备阶数权重"));
-		assertTrue(customText.contains("实际均为4阶5%、5阶95%"));
+		assertTrue(customText.contains("护甲实际为4阶5%、5阶95%"));
+		assertFalse(customText.contains("当前没有6阶投掷武器"));
 	}
 
 	private float[] weaponTierProbs(int floorSet, int depth, boolean randomMode) throws Exception {

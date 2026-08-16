@@ -6,6 +6,11 @@ from typing import NamedTuple
 
 from PIL import Image, ImageDraw
 
+try:
+    from tools.tower_tileset_semantics import normalize_tower_tileset
+except ImportError:
+    from tower_tileset_semantics import normalize_tower_tileset
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV = ROOT / "core" / "src" / "main" / "assets" / "environment"
@@ -1507,7 +1512,7 @@ def build_tileset() -> Image.Image:
     }
     for index in unused_opaque_slots:
         replace_tile(atlas, service_floor if index % 4 == 3 else floor, index)
-    return atlas
+    return normalize_tower_tileset(atlas, sewers, halls, build_water_texture())
 
 
 def generate() -> tuple[Path, Path]:

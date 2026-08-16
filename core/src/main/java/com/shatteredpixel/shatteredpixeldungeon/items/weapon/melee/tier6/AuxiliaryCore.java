@@ -42,7 +42,7 @@ public class AuxiliaryCore extends MeleeWeapon {
 	private static final int BASE_MAGIC_DAMAGE = 10;
 	private static final int BOOSTED_MAGIC_DAMAGE = 20;
 	private static final int ABILITY_CHARGE_COST = 1;
-	private static final float BOOST_DURATION = 3f;
+	private static final float BOOST_DURATION = 2f;
 
 	public static final String AC_INFUSE = "INFUSE";
 
@@ -203,7 +203,7 @@ public class AuxiliaryCore extends MeleeWeapon {
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, "ability_desc", (int) BOOST_DURATION,
+		return Messages.get(this, "ability_desc", (int) BOOST_DURATION+1,
 				BASE_MAGIC_DAMAGE, BOOSTED_MAGIC_DAMAGE);
 	}
 

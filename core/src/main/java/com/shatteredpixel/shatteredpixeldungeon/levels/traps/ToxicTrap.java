@@ -45,7 +45,8 @@ public class ToxicTrap extends Trap{
 		Sample.INSTANCE.play(Assets.Sounds.GAS);
 
 		for( int i : PathFinder.NEIGHBOURS9) {
-			if (Actor.findChar(pos+i) instanceof Mob){
+			int p = pos + i;
+			if (Actor.findChar(p) instanceof Mob){
 				Buff.prolong(Actor.findChar(pos+i), Trap.HazardAssistTracker.class, HazardAssistTracker.DURATION);
 			}
 		}

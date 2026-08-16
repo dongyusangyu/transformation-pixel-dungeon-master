@@ -324,7 +324,7 @@ public abstract class Recipe {
 				for (Item ingredient : ingredients) {
 					if (ingredient instanceof Weapon) {
 						weaponCount++;
-						levelTotal += Math.max(0, Math.min(3, ingredient.trueLevel()));
+						levelTotal += ingredient.trueLevel();
 					}
 				}
 			}

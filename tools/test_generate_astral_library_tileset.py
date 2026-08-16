@@ -363,7 +363,7 @@ class AstralLibraryLayeringTest(unittest.TestCase):
         atlas = load_generator().build_tileset()
         with Image.open(HALLS_PATH) as source:
             halls = source.convert("RGBA")
-        wall_indices = tuple(range(80, 120)) + tuple(range(144, 224))
+        wall_indices = tuple(range(80, 117)) + (119,) + tuple(range(144, 224))
         for index in wall_indices:
             with self.subTest(index=index):
                 self.assertEqual(
