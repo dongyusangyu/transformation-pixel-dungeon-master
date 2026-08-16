@@ -153,7 +153,7 @@ public class InterlevelScene extends PixelScene {
 				}
 				break;
 			case FALL:
-				loadingDepth = Dungeon.depth+1;
+				loadingDepth = Dungeon.fallDepthForLocation(Dungeon.depth, Dungeon.branch);
 				break;
 			case ASCEND:
 				fadeTime = FAST_FADE;
@@ -701,7 +701,6 @@ public class InterlevelScene extends PixelScene {
 
 
 
-	//TODO atm falling always just increments depth by 1, do we eventually want to roll it into the transition system?
 	private void fall() throws IOException {
 		
 		Mob.holdAllies( Dungeon.level );
@@ -710,7 +709,7 @@ public class InterlevelScene extends PixelScene {
 		Dungeon.saveAll();
 
 		Level level;
-		Dungeon.depth++;
+		Dungeon.depth = Dungeon.fallDepthForLocation(Dungeon.depth, Dungeon.branch);
 		if (Dungeon.levelHasBeenGenerated(Dungeon.depth, Dungeon.branch)) {
 			level = Dungeon.loadLevel( GamesInProgress.curSlot );
 		} else {
@@ -811,7 +810,8 @@ public class InterlevelScene extends PixelScene {
 
 
 		Level level;
-		if (Dungeon.level.locked &&  Dungeon.bossLevel() && !Statistics.subLimation[Dungeon.depth/5-1]) {
+		if (Dungeon.branch == 0 && Dungeon.level.locked && Dungeon.bossLevel()
+				&& !Statistics.subLimation[Dungeon.depth/5-1]) {
 			ArrayList<Item> preservedItems = Dungeon.level.getItemsToPreserveFromSealedResurrect();
 
 			Dungeon.hero.resurrect();
@@ -840,7 +840,8 @@ public class InterlevelScene extends PixelScene {
 			int invPos = Dungeon.hero.pos;
 			int tries = 0;
 			do {
-				if(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1]){
+				if(Dungeon.branch == 0 && Dungeon.bossLevel()
+						&& Statistics.subLimation[Dungeon.depth/5-1]){
                     break;
 				}else{
 					Dungeon.hero.pos = level.randomRespawnCell(Dungeon.hero);
@@ -858,7 +859,8 @@ public class InterlevelScene extends PixelScene {
 				level.map[Dungeon.hero.pos] = Terrain.GRASS;
 			}
 			Dungeon.hero.resurrect();
-			if(Dungeon.bossLevel() && Statistics.subLimation[Dungeon.depth/5-1] && level.locked){
+			if(Dungeon.branch == 0 && Dungeon.bossLevel()
+					&& Statistics.subLimation[Dungeon.depth/5-1] && level.locked){
 				Dungeon.hero.HP=1;
 			}
 			level.drop(new LostBackpack(), invPos);

@@ -256,12 +256,7 @@ public class ScrollOfTransmutation extends InventoryScroll {
 	
 	private static Weapon changeWeapon( Weapon w ) {
 		Weapon n;
-		Generator.Category c;
-		if (w instanceof MeleeWeapon) {
-			c = Generator.wepTiers[((MeleeWeapon)w).tier - 1];
-		} else {
-			c = Generator.misTiers[((MissileWeapon)w).tier - 1];
-		}
+		Generator.Category c = weaponCategoryForTransmutation(w);
 		
 		do {
 			n = (Weapon)Generator.randomUsingDefaults(c);
@@ -295,6 +290,14 @@ public class ScrollOfTransmutation extends InventoryScroll {
 
 		return n;
 		
+	}
+
+	private static Generator.Category weaponCategoryForTransmutation(Weapon weapon) {
+		if (weapon instanceof MeleeWeapon) {
+			return Generator.weaponTransmutationCategory(false, ((MeleeWeapon) weapon).tier);
+		}
+
+		return Generator.weaponTransmutationCategory(true, ((MissileWeapon) weapon).tier);
 	}
 	
 	private static Ring changeRing( Ring r ) {

@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 public final class TowerStyleSchedule {
 
@@ -33,6 +35,12 @@ public final class TowerStyleSchedule {
 
 	private static final String ORDER = "order";
 	private static final String BANDS = "bands";
+	private static final String EPOCH_STARTS = "epoch_starts";
+	private static final String EPOCH_COUNTS = "epoch_counts";
+	private static final String EPOCH_SHIFTS = "epoch_shifts";
+	private static final String HIGHEST_BAND = "highest_band";
+	private static final String OVERRIDE_BANDS = "override_bands";
+	private static final String OVERRIDE_STYLES = "override_styles";
 	private static final int FLOORS_PER_STYLE = 5;
 
 	// These IDs are part of the save format. Keep existing IDs stable and append new styles.
@@ -47,7 +55,9 @@ public final class TowerStyleSchedule {
 
 	private final ArrayList<String> availableStyles;
 	private final ArrayList<String> styleOrder = new ArrayList<>();
-	private final ArrayList<String> assignedBands = new ArrayList<>();
+	private final ArrayList<StyleEpoch> epochs = new ArrayList<>();
+	private final HashMap<Integer, String> bandOverrides = new HashMap<>();
+	private int highestAssignedBand = -1;
 
 	public TowerStyleSchedule() {
 		this(CURRENT_STYLES);
@@ -59,7 +69,9 @@ public final class TowerStyleSchedule {
 
 	public void reset() {
 		styleOrder.clear();
-		assignedBands.clear();
+		epochs.clear();
+		bandOverrides.clear();
+		highestAssignedBand = -1;
 	}
 
 	public Class<? extends Level> levelClassForFloor(int floor, long runSeed) {
@@ -80,22 +92,14 @@ public final class TowerStyleSchedule {
 		}
 		ensureStyleOrder(runSeed);
 		int band = (floor - 1) / FLOORS_PER_STYLE;
-		while (assignedBands.size() <= band) {
-			int nextBand = assignedBands.size();
-			int styleIndex = nextBand % styleOrder.size();
-			String nextStyle = styleOrder.get(styleIndex);
-			if (styleOrder.size() > 1 && !assignedBands.isEmpty()
-					&& nextStyle.equals(assignedBands.get(nextBand - 1))) {
-				nextStyle = styleOrder.get((styleIndex + 1) % styleOrder.size());
-			}
-			assignedBands.add(nextStyle);
-		}
-		return assignedBands.get(band);
+		highestAssignedBand = Math.max(highestAssignedBand, band);
+		return styleForBand(band);
 	}
 
 	public void preserveLegacyGeneratedFloor(int floor, long runSeed) {
+		int band = (floor - 1) / FLOORS_PER_STYLE;
 		styleIdForFloor(floor, runSeed);
-		assignedBands.set((floor - 1) / FLOORS_PER_STYLE, CHINESE_HALL);
+		bandOverrides.put(band, CHINESE_HALL);
 	}
 
 	String[] styleOrder() {
@@ -104,7 +108,30 @@ public final class TowerStyleSchedule {
 
 	public void storeInBundle(Bundle bundle) {
 		bundle.put(ORDER, styleOrder.toArray(new String[0]));
-		bundle.put(BANDS, assignedBands.toArray(new String[0]));
+		int[] starts = new int[epochs.size()];
+		int[] counts = new int[epochs.size()];
+		int[] shifts = new int[epochs.size()];
+		for (int i = 0; i < epochs.size(); i++) {
+			StyleEpoch epoch = epochs.get(i);
+			starts[i] = epoch.startBand;
+			counts[i] = epoch.styleCount;
+			shifts[i] = epoch.shift;
+		}
+		bundle.put(EPOCH_STARTS, starts);
+		bundle.put(EPOCH_COUNTS, counts);
+		bundle.put(EPOCH_SHIFTS, shifts);
+		bundle.put(HIGHEST_BAND, highestAssignedBand);
+
+		int[] overrideBands = new int[bandOverrides.size()];
+		String[] overrideStyles = new String[bandOverrides.size()];
+		int i = 0;
+		for (Map.Entry<Integer, String> entry : bandOverrides.entrySet()) {
+			overrideBands[i] = entry.getKey();
+			overrideStyles[i] = entry.getValue();
+			i++;
+		}
+		bundle.put(OVERRIDE_BANDS, overrideBands);
+		bundle.put(OVERRIDE_STYLES, overrideStyles);
 	}
 
 	public boolean restoreFromBundle(Bundle bundle, long runSeed) {
@@ -112,8 +139,31 @@ public final class TowerStyleSchedule {
 		boolean restored = bundle != null && !bundle.isNull() && bundle.contains(ORDER);
 		if (restored) {
 			Collections.addAll(styleOrder, bundle.getStringArray(ORDER));
-			if (bundle.contains(BANDS)) {
-				Collections.addAll(assignedBands, bundle.getStringArray(BANDS));
+			if (bundle.contains(EPOCH_STARTS)) {
+				int[] starts = bundle.getIntArray(EPOCH_STARTS);
+				int[] counts = bundle.getIntArray(EPOCH_COUNTS);
+				int[] shifts = bundle.getIntArray(EPOCH_SHIFTS);
+				int length = Math.min(starts.length, Math.min(counts.length, shifts.length));
+				for (int i = 0; i < length; i++) {
+					epochs.add(new StyleEpoch(starts[i], counts[i], shifts[i]));
+				}
+				highestAssignedBand = bundle.getInt(HIGHEST_BAND);
+			} else if (bundle.contains(BANDS)) {
+				String[] legacyBands = bundle.getStringArray(BANDS);
+				epochs.add(new StyleEpoch(0, styleOrder.size(), 0));
+				highestAssignedBand = legacyBands.length - 1;
+				for (int i = 0; i < legacyBands.length; i++) {
+					if (!legacyBands[i].equals(styleForBand(i))) {
+						bandOverrides.put(i, legacyBands[i]);
+					}
+				}
+			}
+			if (bundle.contains(OVERRIDE_BANDS) && bundle.contains(OVERRIDE_STYLES)) {
+				int[] bands = bundle.getIntArray(OVERRIDE_BANDS);
+				String[] styles = bundle.getStringArray(OVERRIDE_STYLES);
+				for (int i = 0; i < Math.min(bands.length, styles.length); i++) {
+					bandOverrides.put(bands[i], styles[i]);
+				}
 			}
 		}
 		ensureStyleOrder(runSeed);
@@ -124,6 +174,7 @@ public final class TowerStyleSchedule {
 		if (styleOrder.isEmpty()) {
 			styleOrder.addAll(availableStyles);
 			Collections.shuffle(styleOrder, new java.util.Random(mixedSeed(runSeed)));
+			epochs.add(new StyleEpoch(0, styleOrder.size(), 0));
 			return;
 		}
 
@@ -139,7 +190,47 @@ public final class TowerStyleSchedule {
 				return Long.compare(styleHash(runSeed, first), styleHash(runSeed, second));
 			}
 		});
-		styleOrder.addAll(additions);
+		if (!additions.isEmpty()) {
+			if (epochs.isEmpty()) {
+				epochs.add(new StyleEpoch(0, styleOrder.size(), 0));
+			}
+			styleOrder.addAll(additions);
+			if (highestAssignedBand < 0) {
+				epochs.clear();
+				epochs.add(new StyleEpoch(0, styleOrder.size(), 0));
+			} else {
+				int startBand = highestAssignedBand + 1;
+				String previousStyle = styleForBand(highestAssignedBand);
+				String nextStyle = styleOrder.get(startBand % styleOrder.size());
+				int shift = styleOrder.size() > 1 && nextStyle.equals(previousStyle) ? 1 : 0;
+				epochs.add(new StyleEpoch(startBand, styleOrder.size(), shift));
+			}
+		}
+	}
+
+	private String styleForBand(int band) {
+		String override = bandOverrides.get(band);
+		if (override != null) {
+			return override;
+		}
+		StyleEpoch selected = epochs.get(0);
+		for (int i = 1; i < epochs.size() && epochs.get(i).startBand <= band; i++) {
+			selected = epochs.get(i);
+		}
+		int index = (band % selected.styleCount + selected.shift) % selected.styleCount;
+		return styleOrder.get(index);
+	}
+
+	private static final class StyleEpoch {
+		final int startBand;
+		final int styleCount;
+		final int shift;
+
+		StyleEpoch(int startBand, int styleCount, int shift) {
+			this.startBand = startBand;
+			this.styleCount = styleCount;
+			this.shift = shift;
+		}
 	}
 
 	private static Class<? extends Level> levelClassForStyle(String style) {

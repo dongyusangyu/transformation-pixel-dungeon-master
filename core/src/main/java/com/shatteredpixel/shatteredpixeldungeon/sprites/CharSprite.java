@@ -230,8 +230,16 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		showStatusWithIcon(color, text, FloatingText.NO_ICON, args);
 	}
 
+	protected boolean visualEffectsVisible() {
+		return visible;
+	}
+
+	public final boolean areVisualEffectsVisible() {
+		return visualEffectsVisible();
+	}
+
 	public void showStatusWithIcon( int color, String text, int icon, Object... args ) {
-		if (visible) {
+		if (visualEffectsVisible()) {
 			if (args.length > 0) {
 				text = Messages.format( text, args );
 			}
@@ -683,7 +691,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				aura = new Flare(5, size);
 				aura.angularSpeed = 90;
 				aura.color(auraColor, true);
-				aura.visible = visible;
+				aura.visible = visualEffectsVisible();
 
 				if (parent != null) {
 					aura.show(this, 0);
@@ -860,52 +868,53 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			stateRemovals.clear();
 		}
 
+		boolean effectsVisible = visualEffectsVisible();
+
 		if (burning != null) {
-			burning.visible = visible;
+			burning.visible = effectsVisible;
 		}
 		if (levitation != null) {
-			levitation.visible = visible;
+			levitation.visible = effectsVisible;
 		}
 		if (iceBlock != null) {
-			iceBlock.visible = visible;
+			iceBlock.visible = effectsVisible;
 		}
 		if (light != null) {
-			light.visible = visible;
+			light.visible = effectsVisible;
 		}
 		if (chilled != null) {
-			chilled.visible = visible;
+			chilled.visible = effectsVisible;
 		}
 		if (darkBlock != null) {
-			darkBlock.visible = visible;
+			darkBlock.visible = effectsVisible;
 		}
 		if (alignmentColorBlock != null) {
-			alignmentColorBlock.visible = visible;
+			alignmentColorBlock.visible = effectsVisible;
 		}
 		if (marked != null) {
-			marked.visible = visible;
+			marked.visible = effectsVisible;
 		}
 		if (healing != null) {
-			healing.visible = visible;
+			healing.visible = effectsVisible;
 		}
 		if (hearts != null) {
-			hearts.visible = visible;
+			hearts.visible = effectsVisible;
 		}
 		if (coin != null) {
-			coin.visible = visible;
+			coin.visible = effectsVisible;
 		}
 		if (runemark != null) {
-			runemark.visible = visible;
+			runemark.visible = effectsVisible;
 		}
-		//shield fx updates its own visibility
 		if (aura != null) {
 			if (aura.parent == null) {
 				aura.show(this, 0);
 			}
-			aura.visible = visible;
+			aura.visible = effectsVisible;
 			aura.point(center());
 		}
 		if (glowBlock != null){
-			glowBlock.visible =visible;
+			glowBlock.visible = effectsVisible;
 		}
 
 		if (sleeping) {
@@ -915,7 +924,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		}
 		synchronized (EmoIcon.class) {
 			if (emo != null && emo.alive) {
-				emo.visible = visible;
+				emo.visible = effectsVisible;
 			}
 		}
 	}
@@ -935,7 +944,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 					emo.killAndErase();
 				}
 				emo = new EmoIcon.Sleep(this);
-				emo.visible = visible;
+				emo.visible = visualEffectsVisible();
 			}
 		}
 		idle();
@@ -957,7 +966,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 					emo.killAndErase();
 				}
 				emo = new EmoIcon.Alert(this);
-				emo.visible = visible;
+				emo.visible = visualEffectsVisible();
 			}
 		}
 	}
@@ -978,7 +987,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 					emo.killAndErase();
 				}
 				emo = new EmoIcon.Investigate(this);
-				emo.visible = visible;
+				emo.visible = visualEffectsVisible();
 			}
 		}
 	}
@@ -999,7 +1008,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 					emo.killAndErase();
 				}
 				emo = new EmoIcon.Lost(this);
-				emo.visible = visible;
+				emo.visible = visualEffectsVisible();
 			}
 		}
 	}

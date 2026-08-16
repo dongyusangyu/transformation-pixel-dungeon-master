@@ -27,12 +27,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FightStance;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
@@ -51,7 +45,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SprayGun;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
@@ -139,16 +132,9 @@ public class TengusMask extends Item {
 		
 		curUser.subClass = way;
 		Talent.initSubclassTalents(curUser);
+		curUser.ensureSubclassBuffs();
 		grantRandomModeKit(way);
 
-		if (way.is(HeroSubClass.ASSASSIN) && curUser.invisible > 0){
-			Buff.affect(curUser, Preparation.class);
-		}
-		//史莱姆
-		if (way.is(HeroSubClass.DARKSLIME)){
-			Buff.affect(curUser, DarkHook.class);
-
-		}
 		if (way.is(HeroSubClass.TATTEKI_NINJA)){
 			Tatteki t =new Tatteki();
 			t.identify();
@@ -157,14 +143,6 @@ public class TengusMask extends Item {
             }else{
 
             }
-		}
-		if (way.is(HeroSubClass.NINJA_MASTER)){
-			Buff.affect(curUser, Ninja_Energy.class);
-			//Ninja_Energy ninjaenergy=curUser.buff(Ninja_Energy.class);
-			//ninjaenergy.energy=5;
-		}
-		if (way.is(HeroSubClass.CHAMPION) && HeroRandomizer.active(curUser)){
-			MeleeWeapon.syncCharger(curUser);
 		}
 		if (way.is(HeroSubClass.PIOUS) && curUser.belongings.getItem(RitualDagger.class) == null){
 			RitualDagger dagger = new RitualDagger();
@@ -175,10 +153,6 @@ public class TengusMask extends Item {
 				dagger.resetRitual(curUser);
 			}
 		}
-        if (way.is(HeroSubClass.COMBATMASTER)){
-            Buff.affect(curUser, FightStance.class);
-
-        }
 		hero.updateHT(true);
 
 		curUser.sprite.operate( curUser.pos );
@@ -230,9 +204,6 @@ public class TengusMask extends Item {
 		if (way.is(HeroSubClass.ALCHEMIST) && curUser.belongings.getItem(SprayGun.class) == null) {
 			collectOrDrop(new SprayGun());
 		}
-        if (way.is(HeroSubClass.PIOUS) && curUser.buff(Reason.class) == null) {
-            Buff.affect(curUser,Reason.class);
-        }
 	}
 
 	private boolean hasBrokenSeal() {

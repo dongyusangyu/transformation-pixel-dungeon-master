@@ -86,6 +86,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Panic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PhysicalEmpower;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
@@ -687,21 +688,57 @@ public class Hero extends Char {
 		}
 		Buff.affect( this, Regeneration.class );
 		Buff.affect( this, Hunger.class );
-		if(subClass.is(HeroSubClass.DARKSLIME) && buff(DarkHook.class)!=null && buff(Talent.DarkHookCooldown.class)==null){
-			ActionIndicator.setAction(buff(DarkHook.class));
-		}else if(subClass.is(HeroSubClass.DARKSLIME)){
-			Buff.affect(this,DarkHook.class);
-		}
-		if(subClass.is(HeroSubClass.NINJA_MASTER) && buff(Ninja_Energy.class)!=null){
-			ActionIndicator.setAction(buff(Ninja_Energy.class));
-		}else if(subClass.is(HeroSubClass.NINJA_MASTER)){
-			Buff.affect(this,Ninja_Energy.class);
-		}
+		ensureSubclassBuffs();
 		if(hasTalent(Talent.SMOKE_MASK) && buff(Talent.SmokeMask.class)!=null && buff(Talent.SmokeCooldown.class)==null){
 			ActionIndicator1.setAction(buff(Talent.SmokeMask.class));
 		}else if(hasTalent(Talent.SMOKE_MASK)){
 			Buff.affect(this,Talent.SmokeMask.class);
 		}
+	}
+
+	/**
+	 * Restores the permanent or action-providing Buffs that belong to the current
+	 * subclass. This is also used when a run is rebuilt without going through the
+	 * normal subclass-selection screen, such as a new-cycle restart.
+	 */
+	public void ensureSubclassBuffs() {
+		if (subClass == null) return;
+
+		if (subClass.is(HeroSubClass.ASSASSIN) && invisible > 0) {
+			Buff.affect(this, Preparation.class);
+		}
+
+		if (subClass.is(HeroSubClass.DARKSLIME)) {
+			DarkHook darkHook = Buff.affect(this, DarkHook.class);
+			if (buff(Talent.DarkHookCooldown.class) == null) {
+				ActionIndicator.setAction(darkHook);
+			} else {
+				ActionIndicator.clearAction(darkHook);
+			}
+		}
+
+		if (subClass.is(HeroSubClass.NINJA_MASTER)) {
+			Ninja_Energy ninjaEnergy = Buff.affect(this, Ninja_Energy.class);
+			ActionIndicator.setAction(ninjaEnergy);
+		}
+
+		if (subClass.is(HeroSubClass.MONK)) {
+			MonkEnergy monkEnergy = Buff.affect(this, MonkEnergy.class);
+			ActionIndicator.setAction(monkEnergy);
+		}
+
+		if (subClass.is(HeroSubClass.COMBATMASTER)) {
+			FightStance fightStance = Buff.affect(this, FightStance.class);
+			ActionIndicator.setAction(fightStance);
+		}
+
+		if (subClass.is(HeroSubClass.PIOUS)) {
+			Reason reason = Buff.affect(this, Reason.class);
+			ActionIndicator.setAction(reason);
+		}
+
+		// This also covers Champion and the briefcase's MartialMastery marker.
+		MeleeWeapon.syncCharger(this);
 	}
 	
 	public int tier() {

@@ -94,9 +94,34 @@ public class SpiritBow extends Weapon {
 	}
 
 
-	public static Class[] harmfulPlants = new Class[]{
-			Blindweed.class, Firebloom.class, Icecap.class, Sorrowmoss.class,  Stormvine.class
-	};
+	private static final Class<? extends Plant>[] HARMFUL_PLANTS = plantClasses(
+			Blindweed.class,
+			Firebloom.class,
+			Icecap.class,
+			Sorrowmoss.class,
+			Stormvine.class);
+
+	@SafeVarargs
+	private static Class<? extends Plant>[] plantClasses(Class<? extends Plant>... classes) {
+		return classes;
+	}
+
+	public static Class<? extends Plant>[] harmfulPlantPool() {
+		return HARMFUL_PLANTS.clone();
+	}
+
+	public static Class<? extends Plant> harmfulPlantClass(int index) {
+		if (index < 0 || index >= HARMFUL_PLANTS.length) {
+			throw new IllegalArgumentException("harmful plant index out of bounds: " + index);
+		}
+		return HARMFUL_PLANTS[index];
+	}
+
+	public static void activateHarmfulPlant(Char defender, int index) {
+		Plant plant = Reflection.newInstance(harmfulPlantClass(index));
+		plant.pos = defender.pos;
+		plant.activate(defender.isAlive() ? defender : null);
+	}
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
@@ -112,9 +137,7 @@ public class SpiritBow extends Weapon {
 				protected boolean act() {
 
 					if (Random.Int(12) < ((Hero)attacker).pointsInTalent(Talent.NATURES_WRATH)){
-						Plant plant = (Plant) Reflection.newInstance(Random.element(harmfulPlants));
-						plant.pos = defender.pos;
-						plant.activate( defender.isAlive() ? defender : null );
+						activateHarmfulPlant(defender, Random.Int(HARMFUL_PLANTS.length));
 					}
 
 					if (!defender.isAlive()){
@@ -515,4 +538,4 @@ public class SpiritBow extends Weapon {
 			return Messages.get(SpiritBow.class, "prompt");
 		}
 	};
-}	
+}

@@ -53,14 +53,16 @@ public final class EXItemSpriteSheet {
 
 	// Row 10 (indices 144-159): new tier 6 weapons.
 	public static final int GREAT_GREAT_GREATSWORD = encode(144, 16, 16);
-	public static final int SAKURA_BLOSSOM = encode(145, 15, 16);
-	public static final int BLOOD_SAKURA = encode(146, 15, 16);
+	public static final int SAKURA_BLOSSOM = encode(145, 16, 16);
+	public static final int BLOOD_SAKURA = encode(146, 16, 16);
 	public static final int CHAIN_MACE = encode(147, 16, 16);
 	public static final int TWO_HANDED_GREATSWORD = encode(148, 16, 16);
 	public static final int PALERMO_SWORD = encode(149, 16, 16);
 	public static final int MERCURY_BLADE = encode(150, 15, 16);
 	public static final int AUXILIARY_CORE = encode(151, 14, 15);
 	public static final int HUNDRED_TON_HAMMER = encode(152, 16, 16);
+	public static final int ORACLE_TERMINAL = encode(153, 16, 16);
+	public static final int DEMON_TAIL_WHIP = encode(154, 16, 16);
 
 	// Rows 11-13 (indices 160-207) are intentionally reserved as blank spacers.
 
@@ -85,7 +87,7 @@ public final class EXItemSpriteSheet {
 				| (height << HEIGHT_SHIFT);
 	}
 
-	static boolean isEX(int image) {
+	public static boolean isEX(int image) {
 		return image >= 0 && (image & EX_SHEET_FLAG) != 0;
 	}
 

@@ -2,6 +2,10 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
@@ -11,6 +15,11 @@ import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
@@ -29,6 +38,23 @@ public class AlienatedPrismaticGuardTest {
 		assertEquals(20, guard.defenseSkill(null));
 		assertEquals(13, guard.EXP);
 		assertEquals(30, guard.maxLvl);
+	}
+
+	@Test
+	public void hostileGuardAndMirrorMatchNormalImageEnvironmentalImmunities() {
+		AlienatedPrismaticGuard guard = new AlienatedPrismaticGuard();
+		TwistedMirror mirror = new TwistedMirror();
+		Class<?>[] effects = {
+				ToxicGas.class,
+				CorrosiveGas.class,
+				Burning.class,
+				AllyBuff.class
+		};
+
+		for (Class<?> effect : effects) {
+			assertTrue(guard.isImmune(effect));
+			assertTrue(mirror.isImmune(effect));
+		}
 	}
 
 	@Test
@@ -205,6 +231,27 @@ public class AlienatedPrismaticGuardTest {
 		restored.restoreFromBundle(stored);
 		assertTrue(restored.firstSplitPendingForTest());
 		assertEquals(0, restored.splitChargeForTest());
+	}
+
+	@Test
+	public void summoningUsesFiniteBurstWithoutPersistentMirrorParticles() throws IOException {
+		String guardSprite = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tmobs/"
+						+ "AlienatedPrismaticGuardSprite.java");
+		String mirrorSprite = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tmobs/"
+						+ "TwistedMirrorSprite.java");
+
+		assertTrue(guardSprite.contains("burst(ShadowParticle.CURSE, 6)"));
+		assertFalse(mirrorSprite.contains("pour(ShadowParticle.CURSE"));
+	}
+
+	private static String sourceFile(String relativePath) throws IOException {
+		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
+		Path coreDirectory = workingDirectory.resolve("core");
+		if (!Files.isDirectory(coreDirectory)) coreDirectory = workingDirectory;
+		return new String(Files.readAllBytes(coreDirectory.resolve(relativePath)),
+				StandardCharsets.UTF_8);
 	}
 
 	private static TestGuard guardAfterFirstSplit() {

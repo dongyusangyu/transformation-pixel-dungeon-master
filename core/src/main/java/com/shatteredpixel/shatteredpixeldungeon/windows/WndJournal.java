@@ -64,6 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
@@ -1017,6 +1018,9 @@ public class WndJournal extends WndTabbed {
 						desc += item.desc();
 					} else {
 						desc += item.info();
+						if (item instanceof OracleTerminal) {
+							desc += "\n\n" + ((OracleTerminal) item).catalogDesc();
+						}
 					}
 
 

@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SoulMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AuxiliaryDrone;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.cave.BruteH;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.cave.ShamanH;
 import com.shatteredpixel.shatteredpixeldungeon.custom.ch.mob.city.ElementalH;
@@ -67,13 +68,71 @@ public class RangedAttackTest {
 	}
 
 	@Test
-	public void dronesUsePhysicalRangedProtocol() {
-		assertPhysical(InstructionTool.Drone.class);
+	public void droneAttackProtocolsMatchTheirRoles() {
 		assertPhysical(AttackDrone.FlashDrone.class);
-		assertPhysical(AttackDrone.LaserDrone.class);
-		assertPhysical(AttackDrone.AnesthesiaDrone.class);
-		assertPhysical(AttackDrone.RaidDrone.class);
+		assertMagical(AttackDrone.LaserDrone.class);
 		assertPhysical(AttackDrone.ShockDrone.class);
+
+		assertNotRanged(InstructionTool.Drone.class);
+		assertNotRanged(AttackDrone.AnesthesiaDrone.class);
+		assertNotRanged(AttackDrone.RaidDrone.class);
+
+		assertNotRanged(AuxiliaryDrone.ScoutDrone.class);
+		assertNotRanged(AuxiliaryDrone.MirrorDrone.class);
+		assertNotRanged(AuxiliaryDrone.ProtectDrone.class);
+		assertNotRanged(AuxiliaryDrone.EscortDrone.class);
+		assertNotRanged(AuxiliaryDrone.BombDrone.class);
+		assertNotRanged(AuxiliaryDrone.ChaosDrone.class);
+	}
+
+	@Test
+	public void raidDroneUsesThreeTileMeleeReach() {
+		Level previousLevel = Dungeon.level;
+		try {
+			TestLevel level = new TestLevel();
+			level.setSize(9, 9);
+			for (int cell = 0; cell < level.length(); cell++) {
+				level.passable[cell] = true;
+				level.openSpace[cell] = true;
+			}
+			Dungeon.level = level;
+
+			TestRaidDrone drone = new TestRaidDrone();
+			drone.pos = 40;
+			TestTarget target = new TestTarget();
+			target.pos = 43;
+			assertTrue(drone.canAttackTarget(target));
+
+			target.pos = 44;
+			assertFalse(drone.canAttackTarget(target));
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
+	public void shockDroneHasNoRangeCapButRespectsProjectileBallistics() {
+		Level previousLevel = Dungeon.level;
+		try {
+			TestLevel level = new TestLevel();
+			level.setSize(11, 11);
+			for (int cell = 0; cell < level.length(); cell++) {
+				level.passable[cell] = true;
+				level.openSpace[cell] = true;
+			}
+			Dungeon.level = level;
+
+			AttackDrone.ShockDrone drone = new AttackDrone.ShockDrone();
+			drone.pos = 12;
+			TestTarget target = new TestTarget();
+			target.pos = 108;
+			assertTrue(drone.canRangedAttack(target));
+
+			level.solid[60] = true;
+			assertFalse(drone.canRangedAttack(target));
+		} finally {
+			Dungeon.level = previousLevel;
+		}
 	}
 
 	@Test
@@ -298,6 +357,12 @@ public class RangedAttackTest {
 		}
 	}
 
+	private static class TestRaidDrone extends AttackDrone.RaidDrone {
+		boolean canAttackTarget(Char target) {
+			return canAttack(target);
+		}
+	}
+
 	private static class TestLevel extends Level {
 		@Override
 		protected boolean build() {
@@ -339,5 +404,9 @@ public class RangedAttackTest {
 						return false;
 					}
 				}.rangedAttackType());
+	}
+
+	private static void assertNotRanged(Class<?> attacker) {
+		assertFalse(RangedAttack.class.isAssignableFrom(attacker));
 	}
 }

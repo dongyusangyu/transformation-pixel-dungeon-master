@@ -194,6 +194,13 @@ public class BuffIndicator extends Component {
 	public static final int SKILLED_PARRY = 134;
 	public static final int SKILLED_PARRY_COOLDOWN = 135;
 	public static final int ALTERNATING_WEAPONS = 136;
+	public static final int ORACLE_BLUNT = 140;
+	public static final int ORACLE_SLASH = 141;
+	public static final int ORACLE_THRUST = 142;
+	public static final int ORACLE_SCYTHE = 143;
+
+    public static final int HUXIFA = 144;
+    public static final int JIASUWEILAI = 145;
 
 
 

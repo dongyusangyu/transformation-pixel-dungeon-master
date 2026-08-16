@@ -34,6 +34,9 @@ public class MechanicalFist extends Mob {
 
 		loot = null;
 		lootChance = 0f;
+
+		properties.add(Property.INORGANIC);
+		properties.add(Property.LARGE);
 	}
 
 	@Override

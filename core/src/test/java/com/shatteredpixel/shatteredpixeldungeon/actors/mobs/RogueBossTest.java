@@ -43,6 +43,18 @@ public class RogueBossTest {
 				"InvisibilityAttack = advanceSpecialCounter("));
 	}
 
+	@Test
+	public void relocationKeepsSpriteAndLogicalPositionInSync() throws IOException {
+		String source = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/actors/mobs/RogueBoss.java");
+
+		assertTrue(source.contains("relocateWithSpriteSync(p);"));
+		assertTrue(source.contains("relocateWithSpriteSync(newPos);"));
+		assertTrue(source.contains("sprite.interruptMotion();"));
+		assertTrue(source.contains("sprite.place(from);"));
+		assertTrue(source.contains("move(destination, false);"));
+	}
+
 	private static String readCoreSource(String relativePath) throws IOException {
 		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
 		Path coreDirectory = workingDirectory.resolve("core");

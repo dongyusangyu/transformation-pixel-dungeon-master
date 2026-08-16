@@ -8,6 +8,7 @@ import java.util.HashSet;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -130,5 +131,29 @@ public class TowerStyleScheduleTest {
 		for (int floor = 6; floor <= 10; floor++) {
 			assertEquals("chinese_hall", schedule.styleIdForFloor(floor, 77L));
 		}
+	}
+
+	@Test
+	public void deepSchedulesUseConstantSizeSaveData() {
+		TowerStyleSchedule schedule = new TowerStyleSchedule(INITIAL_STYLES);
+		schedule.styleIdForFloor(1_000_001, 123456L);
+		Bundle bundle = new Bundle();
+		schedule.storeInBundle(bundle);
+
+		assertFalse(bundle.contains("bands"));
+		assertEquals(1, bundle.getIntArray("epoch_starts").length);
+		assertEquals(0, bundle.getIntArray("override_bands").length);
+	}
+
+	@Test
+	public void legacyBandArraysRestoreWithoutChangingAssignments() {
+		Bundle bundle = new Bundle();
+		bundle.put("order", INITIAL_STYLES);
+		bundle.put("bands", new String[]{"chinese_hall", "astral_library"});
+		TowerStyleSchedule schedule = new TowerStyleSchedule(INITIAL_STYLES);
+
+		assertTrue(schedule.restoreFromBundle(bundle, 42L));
+		assertEquals("chinese_hall", schedule.styleIdForFloor(1, 42L));
+		assertEquals("astral_library", schedule.styleIdForFloor(6, 42L));
 	}
 }

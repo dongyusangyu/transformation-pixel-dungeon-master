@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FightStance;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
@@ -147,7 +148,7 @@ public final class TestSpecializationState {
 		}
 
 		grantSubclassKit(hero, subClass);
-		applySubclassBuffs(hero, subClass);
+		applySubclassBuffs(hero);
 		MeleeWeapon.syncCharger(hero);
 		refreshHero(hero);
 		return true;
@@ -199,28 +200,15 @@ public final class TestSpecializationState {
 		detach(hero, Preparation.class);
 		detach(hero, DarkHook.class);
 		detach(hero, Ninja_Energy.class);
+		detach(hero, MonkEnergy.class);
 		detach(hero, FightStance.class);
 		if (oldSubClass == HeroSubClass.PIOUS && hero.heroClass != HeroClass.FRIAR) {
 			detach(hero, Reason.class);
 		}
 	}
 
-	private static void applySubclassBuffs(Hero hero, HeroSubClass subClass) {
-		if (subClass == HeroSubClass.ASSASSIN && hero.invisible > 0) {
-			Buff.affect(hero, Preparation.class);
-		}
-		if (subClass == HeroSubClass.DARKSLIME) {
-			Buff.affect(hero, DarkHook.class);
-		}
-		if (subClass == HeroSubClass.NINJA_MASTER) {
-			Buff.affect(hero, Ninja_Energy.class);
-		}
-		if (subClass == HeroSubClass.COMBATMASTER) {
-			Buff.affect(hero, FightStance.class);
-		}
-		if (subClass == HeroSubClass.PIOUS && hero.buff(Reason.class) == null) {
-			Buff.affect(hero, Reason.class);
-		}
+	private static void applySubclassBuffs(Hero hero) {
+		hero.ensureSubclassBuffs();
 	}
 
 	private static void grantSubclassKit(Hero hero, HeroSubClass subClass) {

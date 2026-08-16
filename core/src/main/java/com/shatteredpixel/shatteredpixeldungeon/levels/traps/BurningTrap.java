@@ -45,10 +45,11 @@ public class BurningTrap extends Trap {
 	public void activate() {
 		
 		for( int i : PathFinder.NEIGHBOURS9) {
-			if (!Dungeon.level.solid[pos + i]) {
+			int p = pos + i;
+			if (!Dungeon.level.solid[p]) {
 				GameScene.add( Blob.seed( pos+i, 2, Fire.class ) );
 				CellEmitter.get( pos+i ).burst( FlameParticle.FACTORY, 5 );
-				if (Actor.findChar(pos+i) instanceof Mob){
+				if (Actor.findChar(p) instanceof Mob){
 					Buff.prolong(Actor.findChar(pos+i), Trap.HazardAssistTracker.class, HazardAssistTracker.DURATION);
 				}
 			}

@@ -11,6 +11,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PurifyingIncense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
@@ -19,13 +20,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
-import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfPurity;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfCleansing;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
@@ -45,7 +46,7 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 
 /** Three-stage plague-doctor boss used by {@link TowerBossLevel}. */
-public class PestilenceKnight extends TowerBoss {
+public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
 
     public enum Phase { INCUBATION, OUTBREAK, TERMINAL }
     public enum HarvestState { NONE, ARMED, CHANNELING }
@@ -73,6 +74,8 @@ public class PestilenceKnight extends TowerBoss {
     private static final String PHASE_LOCKS = "phase_locks";
     private static final String HARVEST = "harvest";
     private static final String PENDING_SKILL = "pending_skill";
+    private static final String PENDING_TURNS = "pending_turns";
+    private static final String PENDING_PROJECTILE_TARGET = "pending_projectile_target";
     private static final String COOLDOWNS = "cooldowns";
     private static final String PENDING_CELLS = "pending_cells";
     private static final String PRESCRIPTION_INDEX = "prescription_index";
@@ -87,6 +90,8 @@ public class PestilenceKnight extends TowerBoss {
     private int phaseLocks;
     private HarvestState harvest = HarvestState.NONE;
     private String pendingSkill = "";
+    private int pendingTurns;
+    private int pendingProjectileTarget = -1;
     private int[] cooldowns = new int[4];
     private int[] pendingCells = new int[0];
     private int prescriptionIndex;
@@ -142,6 +147,44 @@ public class PestilenceKnight extends TowerBoss {
     @Override
     public int attackSkill(Char target) {
         return 50;
+    }
+
+    @Override
+    public int rangedAttackBallisticaMode() {
+        return Ballistica.PROJECTILE;
+    }
+
+    @Override
+    public boolean canRangedAttack(Char target) {
+        return target != null && Dungeon.level != null
+                && phase == Phase.OUTBREAK && cooldowns[PRESCRIPTION_CD] == 0
+                && target.invisible <= 0
+                && Dungeon.level.distance(pos, target.pos) <= viewDistance
+                && MagicalRangedAttack.super.canRangedAttack(target);
+    }
+
+    @Override
+    public boolean doRangedAttack(final Char target) {
+        final int prescription = prescriptionIndex++ % 3;
+        final int potionImage = prescriptionPotionImage(Random.Int(12));
+        announceSkill(prescriptionAnnouncementKey(prescription));
+        enemy = target;
+
+        if (sprite instanceof PestilenceKnightSprite && sprite.parent != null
+                && (sprite.visible || target.sprite != null && target.sprite.visible)) {
+            ((PestilenceKnightSprite) sprite).throwPrescription(target.pos, potionImage,
+                    new Callback() {
+                        @Override
+                        public void call() {
+                            resolvePrescriptionAttack(target, prescription);
+                            next();
+                        }
+                    });
+            return false;
+        }
+
+        resolvePrescriptionAttack(target, prescription);
+        return true;
     }
 
     @Override
@@ -218,7 +261,7 @@ public class PestilenceKnight extends TowerBoss {
             return true;
         }
         if (paralysed <= 0 && state != SLEEPING) {
-            if (canUsePhaseSkills()) return actPhaseAI();
+            if (shouldUsePhaseAI(!pendingSkill.isEmpty(), canUsePhaseSkills())) return actPhaseAI();
             resetDiagnosisStreak();
         }
         boolean completed = super.act();
@@ -251,13 +294,25 @@ public class PestilenceKnight extends TowerBoss {
         return !fleeing;
     }
 
+    private static boolean shouldUsePhaseAI(boolean hasPendingSkill, boolean canUsePhaseSkills) {
+        return hasPendingSkill || canUsePhaseSkills;
+    }
+
     private void cancelPendingSkillForFleeing() {
         pendingSkill = "";
+        pendingTurns = 0;
+        pendingProjectileTarget = -1;
         pendingCells = new int[0];
         processionSteps = 0;
     }
 
     private boolean actPhaseAI() {
+        if (!pendingSkill.isEmpty() && advancePendingCountdown()) {
+            showTelegraph(pendingCells, telegraphColor(pendingSkill));
+            spend(TICK);
+            finishBossAction();
+            return true;
+        }
         boolean diagnosedBeforeAction = hasFlaskDiagnosisBonus();
         updateDiagnosis();
         if (!pendingSkill.isEmpty()) return resolvePendingSkill(diagnosedBeforeAction);
@@ -274,7 +329,7 @@ public class PestilenceKnight extends TowerBoss {
                     int[] band = quarantineBand(Dungeon.hero.pos, arena.readyBrazier(Dungeon.hero.pos));
                     if (band.length > 0) return telegraphSkill(QUARANTINE, band);
                 }
-                if (cooldowns[PRESCRIPTION_CD] == 0) return castPrescription();
+                if (canCastPrescription(Dungeon.hero)) return doRangedAttack(Dungeon.hero);
                 return maintainRangeOrMelee(3, 5);
             case TERMINAL:
                 ensureTerminalEntered();
@@ -398,10 +453,13 @@ public class PestilenceKnight extends TowerBoss {
         if (cells == null || cells.length == 0) return completeBaseAction();
         pendingSkill = skill;
         pendingCells = cells;
+        pendingProjectileTarget = projectileTarget;
+        pendingTurns = PLAGUE_FLASK.equals(skill)
+                ? plagueFlaskTelegraphTurns(Dungeon.hero == null ? 1f : Dungeon.hero.speed()) : 1;
         announceSkill(skill);
-        showTelegraph(cells, skill.equals(PALE_CHARGE) ? 0xD8D8D8 : 0x88AA33);
+        showTelegraph(cells, telegraphColor(skill));
         if (sprite instanceof PestilenceKnightSprite) ((PestilenceKnightSprite) sprite).cast();
-        launchMiasmaProjectile(skill, projectileTarget);
+        if (!PLAGUE_FLASK.equals(skill)) launchMiasmaProjectile(skill, projectileTarget);
         spend(TICK);
         finishBossAction();
         return true;
@@ -440,6 +498,14 @@ public class PestilenceKnight extends TowerBoss {
         return Math.floorMod(index, 3);
     }
 
+    private static int prescriptionPotionImage(int index) {
+        return ItemSpriteSheet.POTION_CRIMSON + prescriptionPotionPaletteIndex(index);
+    }
+
+    private static int prescriptionPotionPaletteIndex(int index) {
+        return Math.floorMod(index, 12);
+    }
+
     private static int miasmaProjectileImage(String skill) {
         if (QUARANTINE.equals(skill)) return ItemSpriteSheet.POTION_JADE;
         if (PALE_CHARGE.equals(skill) || DOOM_PROCESSION.equals(skill)) {
@@ -472,12 +538,17 @@ public class PestilenceKnight extends TowerBoss {
     private boolean resolvePendingSkill(boolean diagnosedBeforeAction) {
         String skill = pendingSkill;
         int[] cells = pendingCells;
+        int projectileTarget = pendingProjectileTarget;
         pendingSkill = "";
+        pendingTurns = 0;
+        pendingProjectileTarget = -1;
         pendingCells = new int[0];
         if (PLAGUE_FLASK.equals(skill)) {
+            launchMiasmaProjectile(skill, projectileTarget);
             hitHeroInCells(cells, 12, 20, diagnosedBeforeAction);
             seedCells(cells, miasmaAmountForSkill(skill), IncubatingMiasma.class, false);
-            cooldowns[FLASK_CD] = 5;
+            cooldowns[FLASK_CD] = plagueFlaskCooldown(
+                    Dungeon.hero == null ? 1f : Dungeon.hero.speed());
         } else if (QUARANTINE.equals(skill)) {
             seedCells(cells, miasmaAmountForSkill(skill), OutbreakMiasma.class, false);
             cooldowns[QUARANTINE_CD] = 7;
@@ -491,10 +562,12 @@ public class PestilenceKnight extends TowerBoss {
             if (processionSteps < 3) {
                 processionSteps++;
                 pendingSkill = DOOM_PROCESSION;
+                pendingTurns = 1;
                 pendingCells = processionCells(processionSteps);
+                pendingProjectileTarget = miasmaProjectileTarget(pendingCells);
                 showTelegraph(pendingCells, 0x6B557C);
                 launchMiasmaProjectile(DOOM_PROCESSION,
-                        miasmaProjectileTarget(pendingCells));
+                        pendingProjectileTarget);
             } else {
                 processionSteps = 0;
                 cooldowns[QUARANTINE_CD] = 8;
@@ -512,30 +585,60 @@ public class PestilenceKnight extends TowerBoss {
         return 0;
     }
 
-    private boolean castPrescription() {
-        int prescription = prescriptionIndex++ % 3;
-        announceSkill(prescriptionAnnouncementKey(prescription));
-        applyPrescription(Dungeon.hero, prescription);
-        cooldowns[PRESCRIPTION_CD] = 5;
-        spend(TICK);
-        finishBossAction();
+    private static int plagueFlaskCooldown(float heroSpeed) {
+        if (!(heroSpeed > 1f)) return 5;
+        if (heroSpeed >= 10f) return 1;
+        return 5 - (int) Math.floor((heroSpeed - 1f) * 4f / 9f);
+    }
+
+    private static int plagueFlaskTelegraphTurns(float heroSpeed) {
+        return heroSpeed > 2f ? 1 : 2;
+    }
+
+    private boolean advancePendingCountdown() {
+        if (pendingTurns <= 1) return false;
+        pendingTurns--;
         return true;
+    }
+
+    private static int telegraphColor(String skill) {
+        if (PALE_CHARGE.equals(skill)) return 0xD8D8D8;
+        if (DOOM_PROCESSION.equals(skill)) return 0x6B557C;
+        return 0x88AA33;
+    }
+
+    private boolean canCastPrescription(Char target) {
+        return !soulMarkBlocksRangedAttack(target) && canRangedAttack(target);
+    }
+
+    private void resolvePrescriptionAttack(Char target, int prescription) {
+        spend(TICK);
+        Invisibility.dispel(this);
+        if (target != null && target.isAlive()) {
+            if (rangedHit(target)) {
+                applyPrescription(target, prescription);
+            } else {
+                showRangedMiss(target);
+            }
+        }
+        cooldowns[PRESCRIPTION_CD] = 5;
+        finishBossAction();
     }
 
     private void applyPrescription(Char target, int index) {
         switch (index % 3) {
             case 0:
-                dealSkillDamage(target, 10, 16);
+                dealPrescriptionDamage(target, 10, 16);
                 Buff.prolong(target, Weakness.class, 4f);
                 Infection.addStacks(target, 1);
                 break;
             case 1:
-                dealSkillDamage(target, 10, 16);
+                dealPrescriptionDamage(target, 10, 16);
                 Buff.affect(target, Bleeding.class).set(6f);
                 break;
             default:
                 showPurplePrescription(target);
-                dealSkillDamage(target, 8, 14);
+                dealPrescriptionDamage(target, 8, 14);
                 Buff.prolong(target, Vertigo.class, 3f);
                 break;
         }
@@ -543,14 +646,17 @@ public class PestilenceKnight extends TowerBoss {
 
     private void showPurplePrescription(Char target) {
         if (target == null) return;
-        if (sprite != null && sprite.parent != null) {
-            MagicMissile.boltFromChar(sprite.parent, MagicMissile.SHAMAN_PURPLE,
-                    sprite, target.pos, null);
-        }
         if (target.sprite != null && target.sprite.visible) {
             Splash.at(target.pos, PURPLE_PRESCRIPTION_COLOR, 10);
             target.sprite.emitter().burst(ShadowParticle.CURSE, 6);
         }
+    }
+
+    private void dealPrescriptionDamage(Char target, int min, int max) {
+        target.damage(Random.NormalIntRange(
+                Math.round(min * activeDamageMultiplier()),
+                Math.round(max * activeDamageMultiplier())), this,
+                DamageTag.MAGICAL, DamageTag.RANGED);
     }
 
     private boolean castTerminalDiagnosis() {
@@ -838,10 +944,10 @@ public class PestilenceKnight extends TowerBoss {
 
     private void dropBossRewards() {
         if (Dungeon.level == null) return;
-        PotionOfPurity purity = new PotionOfPurity();
-        purity.identify(false);
-        Dungeon.level.drop(purity, pos).sprite.drop(pos);
-        Dungeon.level.drop(TowerBossRewardGenerator.createTierSixWeapon(
+        PotionOfCleansing cleansing = new PotionOfCleansing();
+        cleansing.identify(false);
+        Dungeon.level.drop(cleansing, pos).sprite.drop(pos);
+        Dungeon.level.drop(TowerBossRewardGenerator.createReward(
                 Dungeon.seed, Dungeon.depth, towerBossId()), pos).sprite.drop(pos);
     }
 
@@ -890,15 +996,35 @@ public class PestilenceKnight extends TowerBoss {
     void advanceHarvestForTest(int blobCells) { advanceHarvest(blobCells); }
     boolean telegraphSkillForTest(String skill, int[] cells) {
         pendingSkill = skill;
+        pendingTurns = 1;
+        pendingProjectileTarget = miasmaProjectileTarget(cells);
         pendingCells = cells.clone();
         return true;
     }
-    void resolveSkillForTest() {
-        if (PLAGUE_FLASK.equals(pendingSkill)) cooldowns[FLASK_CD] = 4;
+    boolean telegraphSkillForTest(String skill, int[] cells, float heroSpeed) {
+        telegraphSkillForTest(skill, cells);
+        pendingTurns = PLAGUE_FLASK.equals(skill) ? plagueFlaskTelegraphTurns(heroSpeed) : 1;
+        return true;
+    }
+    boolean telegraphSkillForTest(String skill, int[] cells, float heroSpeed, int projectileTarget) {
+        telegraphSkillForTest(skill, cells, heroSpeed);
+        pendingProjectileTarget = projectileTarget;
+        return true;
+    }
+    void resolveSkillForTest(float heroSpeed) {
+        if (PLAGUE_FLASK.equals(pendingSkill)) {
+            cooldowns[FLASK_CD] = plagueFlaskCooldown(heroSpeed);
+        }
         pendingSkill = "";
+        pendingTurns = 0;
+        pendingProjectileTarget = -1;
         pendingCells = new int[0];
+        finishBossAction();
     }
     String pendingSkillForTest() { return pendingSkill; }
+    int pendingTurnsForTest() { return pendingTurns; }
+    int pendingProjectileTargetForTest() { return pendingProjectileTarget; }
+    boolean advancePendingCountdownForTest() { return advancePendingCountdown(); }
     int[] pendingCellsForTest() { return pendingCells.clone(); }
     int skillCooldownForTest(int index) { return cooldowns[index]; }
     void setSkillCooldownForTest(int index, int value) { cooldowns[index] = value; }
@@ -930,6 +1056,18 @@ public class PestilenceKnight extends TowerBoss {
         return diagnosisAnnouncementKey(stacks);
     }
     static int plagueFlaskPaletteIndexForTest(int index) { return plagueFlaskPaletteIndex(index); }
+    static int prescriptionPotionPaletteIndexForTest(int index) {
+        return prescriptionPotionPaletteIndex(index);
+    }
+    static int plagueFlaskCooldownForTest(float heroSpeed) {
+        return plagueFlaskCooldown(heroSpeed);
+    }
+    static int plagueFlaskTelegraphTurnsForTest(float heroSpeed) {
+        return plagueFlaskTelegraphTurns(heroSpeed);
+    }
+    static boolean shouldUsePhaseAIForTest(boolean hasPendingSkill, boolean canUsePhaseSkills) {
+        return shouldUsePhaseAI(hasPendingSkill, canUsePhaseSkills);
+    }
     static int plagueFlaskImpactColorForTest() { return PLAGUE_FLASK_IMPACT_COLOR; }
     static int miasmaProjectileColorForTest(String skill) {
         return miasmaProjectileImpactColor(skill);
@@ -989,6 +1127,8 @@ public class PestilenceKnight extends TowerBoss {
         bundle.put(PHASE_LOCKS, phaseLocks);
         bundle.put(HARVEST, harvest.ordinal());
         bundle.put(PENDING_SKILL, pendingSkill);
+        bundle.put(PENDING_TURNS, pendingTurns);
+        bundle.put(PENDING_PROJECTILE_TARGET, pendingProjectileTarget);
         bundle.put(COOLDOWNS, cooldowns);
         bundle.put(PENDING_CELLS, pendingCells);
         bundle.put(PRESCRIPTION_INDEX, prescriptionIndex);
@@ -1013,10 +1153,15 @@ public class PestilenceKnight extends TowerBoss {
         harvest = enumAt(HarvestState.values(), bundle.getInt(HARVEST), HarvestState.NONE);
         pendingSkill = bundle.getString(PENDING_SKILL);
         if (pendingSkill == null) pendingSkill = "";
+        pendingTurns = pendingSkill.isEmpty() ? 0
+                : bundle.contains(PENDING_TURNS) ? Math.max(1, bundle.getInt(PENDING_TURNS)) : 1;
+        pendingCells = bundle.getIntArray(PENDING_CELLS);
+        pendingProjectileTarget = pendingSkill.isEmpty() ? -1
+                : bundle.contains(PENDING_PROJECTILE_TARGET)
+                ? bundle.getInt(PENDING_PROJECTILE_TARGET) : miasmaProjectileTarget(pendingCells);
         int[] savedCooldowns = bundle.getIntArray(COOLDOWNS);
         cooldowns = savedCooldowns.length == 4 ? savedCooldowns : new int[4];
         for (int i = 0; i < cooldowns.length; i++) cooldowns[i] = Math.max(0, cooldowns[i]);
-        pendingCells = bundle.getIntArray(PENDING_CELLS);
         prescriptionIndex = Math.max(0, bundle.getInt(PRESCRIPTION_INDEX));
         int savedDiagnosis = Math.max(0, bundle.getInt(DIAGNOSIS));
         diagnosis = (savedDiagnosis & BRAZIER_TUTORIAL_FLAG)

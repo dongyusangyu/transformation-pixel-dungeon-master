@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -105,7 +106,9 @@ public class WndGameInProgress extends Window {
 		
 		pos += GAP;
 		statSlot( Messages.get(this, "gold"), info.goldCollected );
-		statSlot( Messages.get(this, "depth"), info.maxDepth );
+		statSlot( Messages.get(this, "depth"), info.newCycle
+				? Dungeon.displayDepthLabel(info.maxDepth, TowerLevel.BRANCH)
+				: Integer.toString(info.maxDepth) );
 		if (info.daily) {
 			if (info.dailyReplay) {
 				statSlot(Messages.get(this, "replay_for"), "_" + info.customSeed + "_");
@@ -235,5 +238,9 @@ public class WndGameInProgress extends Window {
 	
 	private void statSlot( String label, int value ) {
 		statSlot( label, Integer.toString( value ) );
+	}
+
+	private void statSlot( String label, long value ) {
+		statSlot( label, Long.toString( value ) );
 	}
 }

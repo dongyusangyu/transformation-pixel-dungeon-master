@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -322,7 +323,9 @@ public class RankingsScene extends PixelScene {
 				level.hardlight( TEXT_LOSE[odd] );
 
 				if (rec.depth != 0){
-					depth.text( Integer.toString(rec.depth) );
+					depth.text(rec.newCycle
+							? Dungeon.displayDepthLabel(rec.depth, TowerLevel.BRANCH)
+							: Integer.toString(rec.depth));
 					depth.measure();
 					steps.copy(Icons.STAIRS.get());
 

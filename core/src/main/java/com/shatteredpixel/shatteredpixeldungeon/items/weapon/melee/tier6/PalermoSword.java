@@ -384,13 +384,27 @@ public class PalermoSword extends MeleeWeapon {
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
-				xiexiangDamageBoost(levelKnown ? buffedLvl() : 0));
+		int level = levelKnown ? buffedLvl() : 0;
+		int damageBoost = xiexiangDamageBoost(level);
+		if (levelKnown) {
+			return Messages.get(this, "ability_desc",
+					augment.damageFactor(min()) + damageBoost,
+					augment.damageFactor(max()) + damageBoost);
+		}
+		return Messages.get(this, "typical_ability_desc",
+				min(0) + damageBoost, max(0) + damageBoost);
 	}
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return Integer.toString(xiexiangDamageBoost(level));
+		int damageBoost = xiexiangDamageBoost(level);
+		return augment.damageFactor(min(level)) + damageBoost + "-"
+				+ (augment.damageFactor(max(level)) + damageBoost);
+	}
+
+	@Override
+	public String statsInfo() {
+		return Messages.get(this, "stats_desc");
 	}
 
 	@Override
@@ -432,13 +446,9 @@ public class PalermoSword extends MeleeWeapon {
 
 		@Override
 		public int icon() {
-			return BuffIndicator.HASTE;
+			return BuffIndicator.JIASUWEILAI;
 		}
 
-		@Override
-		public void tintIcon(Image icon) {
-			icon.hardlight(0.35f, 0.9f, 1f);
-		}
 
 		@Override
 		public String name() {
@@ -482,12 +492,7 @@ public class PalermoSword extends MeleeWeapon {
 
 		@Override
 		public int icon() {
-			return BuffIndicator.PREPARATION;
-		}
-
-		@Override
-		public void tintIcon(Image icon) {
-			icon.hardlight(1f, 0.7f, 0.2f);
+			return BuffIndicator.HUXIFA;
 		}
 
 		@Override

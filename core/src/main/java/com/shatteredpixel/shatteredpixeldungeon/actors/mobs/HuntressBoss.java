@@ -10,6 +10,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
@@ -18,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.BlobImmunity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -36,14 +38,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.duelist.Feint;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.huntress.SpiritHawk;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.MetalShard;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BowFragment;
-import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HuntressBossLevel;
@@ -65,6 +68,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HuntressBossSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
+import com.watabou.noosa.particles.Emitter;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
@@ -72,62 +76,57 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 	public static final String SUBLIMATION_TYPE = "HUNTRESS";
 
-	public static final int WARDEN_BOON_INTERVAL = 10;
-	public static final int CLOSE_QUARTERS_KNOCKBACK_DISTANCE = 3;
 	public static final float FIRE_IMBUE_DURATION = FireImbue.DURATION * 0.3f;
 	public static final float FIRE_ABSORPTION_COOLDOWN = 20f;
 	public static final int BASE_NORMAL_SHOT_RANGE = 6;
 	public static final int HAWK_RELAY_RADIUS = 4;
 	public static final int GALE_INTERVAL = 5;
-
-	@SuppressWarnings("unchecked")
-	private static final Class<? extends Plant>[] HARMFUL_PLANTS = new Class[]{
-			Blindweed.class,
-			Firebloom.class,
-			Icecap.class,
-			Sorrowmoss.class,
-			Stormvine.class
-	};
+	public static final int GALE_RECOVERY_TURNS = 1;
+	public static final int ESCAPE_COOLDOWN = 4;
+	public static final int PLANT_HUNT_GRACE = 3;
+	public static final int PLANT_HUNT_DURATION = 5;
+	public static final float NATURE_HUNT_MOVE_MULTIPLIER = 2f;
+	public static final float NATURE_HUNT_ATTACK_DELAY_MULTIPLIER = 0.75f;
+	public static final int NATURE_HUNT_PLANT_CHANCE_DENOMINATOR = 4;
+	public static final int MAX_FADELEAF_ESCAPES = 3;
 
 	public enum Phase {
 		SNIPER,
 		WARDEN
 	}
 
+	public enum CombatStep {
+		SHOOT,
+		MOVE
+	}
+
+	public enum GaleState {
+		HUNTING,
+		READY,
+		AIMED,
+		RECOVERING
+	}
+
+	public enum PlantHuntState {
+		GRACE,
+		SELECTED,
+		BOON_ACTIVE,
+		LOST_TRACK,
+		NO_PLANTS
+	}
+
 	public enum TacticalAction {
 		CHASE,
 		MELEE,
 		SHOOT,
-		SEEK_COVER
-	}
-
-	static final class TacticalDecision {
-
-		private Char target;
-		private TacticalAction action;
-
-		boolean matches(Char candidate) {
-			return target != null && target == candidate;
-		}
-
-		TacticalAction actionFor(Char candidate) {
-			return matches(candidate) ? action : null;
-		}
-
-		void set(Char target, TacticalAction action) {
-			this.target = target;
-			this.action = action;
-		}
-
-		void clear() {
-			target = null;
-			action = null;
-		}
+		SEEK_COVER,
+		SEEK_PLANT
 	}
 
 	public enum WardenBoon {
@@ -149,19 +148,50 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	private boolean encounterDelay = true;
 	private int galeTurnsRemaining = GALE_INTERVAL;
 	private int galeTarget = -1;
-	private int boonCooldown = WARDEN_BOON_INTERVAL;
 	private WardenBoon activeBoon;
 	private int boonTurns;
-	private final TacticalDecision cachedTacticalDecision = new TacticalDecision();
+	private int fadeleafEscapesUsed;
+	private CombatStep combatStep = CombatStep.SHOOT;
+	private GaleState galeState = GaleState.HUNTING;
+	private PlantHuntState plantHuntState = PlantHuntState.GRACE;
+	private int galeAimDx;
+	private int galeAimDy;
+	private int galeAimOrigin = -1;
+	private int galeAimTarget = -1;
+	private int galeRecoveryTurns;
+	private boolean contactArmed;
+	private int contactTargetId = -1;
+	private int escapeCooldown;
+	private transient boolean escapeCooldownStartedThisAction;
+	private int markedPlantCell = -1;
+	private int plantHuntTurns;
+	private int plantGraceTurns = PLANT_HUNT_GRACE;
+	private boolean restoredPlantValidationPending;
 	private boolean meleeAttack;
+	private transient boolean ordinaryActionStarted;
+	private transient boolean claimedPlantThisAction;
 
 	private static final String PHASE = "phase";
 	private static final String ENCOUNTER_DELAY = "encounter_delay";
 	static final String GALE_TURNS_REMAINING = "gale_turns_remaining";
 	private static final String GALE_TARGET = "gale_target";
-	private static final String BOON_COOLDOWN = "boon_cooldown";
 	private static final String ACTIVE_BOON = "active_boon";
 	private static final String BOON_TURNS = "boon_turns";
+	private static final String FADELEAF_ESCAPES_USED = "fadeleaf_escapes_used";
+	private static final String COMBAT_STEP = "combat_step";
+	private static final String GALE_STATE = "gale_state";
+	private static final String PLANT_HUNT_STATE = "plant_hunt_state";
+	private static final String GALE_AIM_DX = "gale_aim_dx";
+	private static final String GALE_AIM_DY = "gale_aim_dy";
+	private static final String GALE_AIM_ORIGIN = "gale_aim_origin";
+	private static final String GALE_AIM_TARGET = "gale_aim_target";
+	private static final String GALE_RECOVERY_TURNS_KEY = "gale_recovery_turns";
+	private static final String CONTACT_ARMED = "contact_armed";
+	private static final String CONTACT_TARGET_ID = "contact_target_id";
+	private static final String ESCAPE_COOLDOWN_KEY = "escape_cooldown";
+	private static final String MARKED_PLANT_CELL = "marked_plant_cell";
+	private static final String PLANT_HUNT_TURNS = "plant_hunt_turns";
+	private static final String PLANT_GRACE_TURNS = "plant_grace_turns";
 
 	{
 		HUNTING = new Hunting();
@@ -172,7 +202,6 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		viewDistance = 15;
 		properties.add(Property.BOSS);
 		properties.add(Property.DEMONIC);
-        properties.add(Property.UNSLEEP);
 	}
 
 	public Phase phase() {
@@ -183,8 +212,71 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return galeTurnsRemaining;
 	}
 
+	public int fadeleafEscapesUsed() {
+		return fadeleafEscapesUsed;
+	}
+
+	CombatStep combatStep() {
+		return combatStep;
+	}
+
+	GaleState galeState() {
+		return galeState;
+	}
+
+	PlantHuntState plantHuntState() {
+		return plantHuntState;
+	}
+
+	boolean contactArmed() {
+		return contactArmed;
+	}
+
+	int escapeCooldown() {
+		return escapeCooldown;
+	}
+
+	int markedPlantCell() {
+		return markedPlantCell;
+	}
+
+	int plantHuntTurns() {
+		return plantHuntTurns;
+	}
+
+	int plantGraceTurns() {
+		return plantGraceTurns;
+	}
+
+	int galeAimOrigin() {
+		return galeAimOrigin;
+	}
+
+	int galeAimTarget() {
+		return galeAimTarget;
+	}
+
+	int galeAimDx() {
+		return galeAimDx;
+	}
+
+	int galeAimDy() {
+		return galeAimDy;
+	}
+
+	int galeRecoveryTurns() {
+		return galeRecoveryTurns;
+	}
+
+	int contactTargetId() {
+		return contactTargetId;
+	}
+
+	WardenBoon activeBoon() {
+		return activeBoon;
+	}
+
 	public void startEncounter() {
-		clearTacticalDecision();
 		encounterDelay = true;
 		state = HUNTING;
 		enemy = Dungeon.hero;
@@ -199,10 +291,16 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		phase = Phase.WARDEN;
 		galeTurnsRemaining = GALE_INTERVAL;
 		galeTarget = -1;
-		boonCooldown = WARDEN_BOON_INTERVAL;
 		meleeAttack = false;
 		galeShot = false;
-		clearTacticalDecision();
+		combatStep = CombatStep.SHOOT;
+		clearGaleRhythm(GaleState.HUNTING);
+		contactArmed = false;
+		contactTargetId = -1;
+		plantHuntState = PlantHuntState.GRACE;
+		markedPlantCell = -1;
+		plantHuntTurns = 0;
+		plantGraceTurns = PLANT_HUNT_GRACE;
 		return true;
 	}
 
@@ -223,24 +321,67 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return enemyInBossFOV || relayEligible;
 	}
 
-	static TacticalAction tacticalAction(boolean enemyInBossFOV, boolean hawkRelayed,
-			boolean clearLine, int distance, int shotRange, int roll) {
-		if (!enemySeenForHunting(enemyInBossFOV, hawkRelayed)
-				|| !normalShotEligible(enemyInBossFOV, hawkRelayed,
-				clearLine, distance, shotRange)) {
-			return TacticalAction.CHASE;
-		}
+	static TacticalAction tacticalAction(CombatStep step, boolean enemyInBossFOV,
+			boolean hawkRelayed, boolean clearLine, int distance, int shotRange,
+			boolean natureHunt) {
 		if (distance <= 1) {
 			return TacticalAction.MELEE;
 		}
-		if (distance <= 4) {
-			return roll == 0 ? TacticalAction.SHOOT : TacticalAction.SEEK_COVER;
+		if (natureHunt && step == CombatStep.MOVE) {
+			return TacticalAction.SEEK_PLANT;
+		}
+		if (!normalShotEligible(enemyInBossFOV, hawkRelayed,
+				clearLine, distance, shotRange)) {
+			return TacticalAction.CHASE;
+		}
+		if (step == CombatStep.MOVE && distance >= 2 && distance <= 4) {
+			return TacticalAction.SEEK_COVER;
 		}
 		return TacticalAction.SHOOT;
 	}
 
+	static CombatStep stepAfterCompletedAction(CombatStep current,
+			TacticalAction action, boolean completed) {
+		if (!completed) {
+			return current;
+		}
+		if (action == TacticalAction.SHOOT) {
+			return CombatStep.MOVE;
+		}
+		if (action == TacticalAction.SEEK_COVER) {
+			return CombatStep.SHOOT;
+		}
+		return current;
+	}
+
+	static boolean canUseHawkRelay(boolean bossBlinded, boolean hawkBlinded,
+			boolean hawkAlive, boolean withinRelayRadius, boolean clearProjectile) {
+		return !bossBlinded && !hawkBlinded && hawkAlive
+				&& withinRelayRadius && clearProjectile;
+	}
+
+	static boolean canAcquireGaleTarget(boolean blinded) {
+		return !blinded;
+	}
+
 	protected int normalShotRange() {
 		return BASE_NORMAL_SHOT_RANGE;
+	}
+
+	private boolean natureHuntActive() {
+		return phase == Phase.WARDEN && plantHuntState == PlantHuntState.SELECTED
+				&& !restoredPlantValidationPending;
+	}
+
+	@Override
+	public float speed() {
+		return natureHuntSpeed(super.speed(), natureHuntActive());
+	}
+
+	@Override
+	public float attackDelay() {
+		return natureHuntAttackDelay(super.attackDelay(), natureHuntActive(),
+				meleeAttack, galeShot);
 	}
 
 	static int armorForAttack(Phase phase, boolean meleeAttack, boolean galeShot, int armor) {
@@ -274,15 +415,6 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return bow.new SpiritArrow();
 	}
 
-	static boolean shouldKnockBackCloseTarget(boolean adjacent, boolean heroOrAlly, int roll) {
-		return adjacent && heroOrAlly && roll == 0;
-	}
-
-	static boolean shouldApplyHarmfulPlantEffect(Phase phase, boolean meleeAttack,
-			boolean galeShot, int roll) {
-		return phase == Phase.WARDEN && !meleeAttack && !galeShot && roll == 0;
-	}
-
 	static boolean shouldDeferCustomActions(int paralysed, boolean sleeping,
 			boolean fleeing, boolean confused) {
 		return paralysed > 0 || sleeping || fleeing || confused;
@@ -290,6 +422,18 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 	static int advanceGaleCountdown(int remaining, boolean actionable) {
 		return actionable ? Math.max(0, remaining - 1) : remaining;
+	}
+
+	static int galeEndpointForVector(int origin, int dx, int dy, int width, int height) {
+		if (width <= 0 || height <= 0 || origin < 0 || origin >= width * height
+				|| dx == 0 && dy == 0) {
+			return -1;
+		}
+		int originX = origin % width;
+		int originY = origin / width;
+		int targetX = clamp(originX + dx, 0, width - 1);
+		int targetY = clamp(originY + dy, 0, height - 1);
+		return targetX + targetY * width;
 	}
 
 	static boolean shouldAimGale(Phase phase, int remaining, boolean hasTarget) {
@@ -313,8 +457,151 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 				? bundle.getInt(GALE_TURNS_REMAINING) : GALE_INTERVAL;
 	}
 
+	static int restoredFadeleafEscapes(Bundle bundle) {
+		return bundle.contains(FADELEAF_ESCAPES_USED)
+				? Math.max(0, Math.min(MAX_FADELEAF_ESCAPES,
+				bundle.getInt(FADELEAF_ESCAPES_USED))) : 0;
+	}
+
+	private static int clamp(int value, int minimum, int maximum) {
+		return Math.max(minimum, Math.min(maximum, value));
+	}
+
+	private static <E extends Enum<E>> E restoredEnum(Bundle bundle, String key,
+			Class<E> type, E fallback) {
+		if (!bundle.contains(key)) {
+			return fallback;
+		}
+		try {
+			return Enum.valueOf(type, bundle.getString(key));
+		} catch (IllegalArgumentException exception) {
+			return fallback;
+		}
+	}
+
+	private static boolean validLevelCell(int cell) {
+		return Dungeon.level != null && cell >= 0 && cell < Dungeon.level.length();
+	}
+
+	private void clearGaleRhythm(GaleState nextState) {
+		galeState = nextState;
+		galeAimDx = 0;
+		galeAimDy = 0;
+		galeAimOrigin = -1;
+		galeAimTarget = -1;
+		galeRecoveryTurns = 0;
+		galeTarget = -1;
+	}
+
+	private boolean restoreLegacyGaleTarget(int legacyTarget) {
+		if (phase != Phase.SNIPER || !validLevelCell(pos)
+				|| !validLevelCell(legacyTarget) || pos == legacyTarget) {
+			return false;
+		}
+		int width = Dungeon.level.width();
+		galeAimDx = legacyTarget % width - pos % width;
+		galeAimDy = legacyTarget / width - pos / width;
+		if (galeAimDx == 0 && galeAimDy == 0) {
+			return false;
+		}
+		galeAimOrigin = pos;
+		galeAimTarget = legacyTarget;
+		galeTarget = legacyTarget;
+		galeRecoveryTurns = 0;
+		galeState = GaleState.AIMED;
+		return true;
+	}
+
+	private void normalizeRestoredRhythm(boolean hadPlantState) {
+		escapeCooldownStartedThisAction = false;
+		if (phase == Phase.WARDEN) {
+			clearGaleRhythm(GaleState.HUNTING);
+			if (!hadPlantState) {
+				plantHuntState = activeBoon == null
+						? PlantHuntState.GRACE : PlantHuntState.BOON_ACTIVE;
+			}
+			if (activeBoon != null) {
+				plantHuntState = PlantHuntState.BOON_ACTIVE;
+			}
+			switch (plantHuntState) {
+			case SELECTED:
+				plantGraceTurns = 0;
+				HuntressBossLevel level = huntressLevel();
+				if (Dungeon.level == null) {
+					restoredPlantValidationPending = true;
+				} else if (level == null
+						|| !level.isMarkedPlantReachable(this, markedPlantCell)) {
+					plantHuntState = PlantHuntState.LOST_TRACK;
+					markedPlantCell = -1;
+					plantHuntTurns = 0;
+				}
+				break;
+			case BOON_ACTIVE:
+				markedPlantCell = -1;
+				plantHuntTurns = 0;
+				plantGraceTurns = 0;
+				if (activeBoon == null) {
+					plantHuntState = PlantHuntState.GRACE;
+					plantGraceTurns = PLANT_HUNT_GRACE;
+				}
+				break;
+			case LOST_TRACK:
+			case NO_PLANTS:
+				markedPlantCell = -1;
+				plantHuntTurns = 0;
+				plantGraceTurns = 0;
+				break;
+			case GRACE:
+			default:
+				markedPlantCell = -1;
+				plantHuntTurns = 0;
+				break;
+			}
+		} else {
+			activeBoon = null;
+			boonTurns = 0;
+			plantHuntState = PlantHuntState.GRACE;
+			markedPlantCell = -1;
+			plantHuntTurns = 0;
+			plantGraceTurns = PLANT_HUNT_GRACE;
+			if (galeState == GaleState.AIMED) {
+				if (!validLevelCell(galeAimOrigin) || !validLevelCell(galeAimTarget)
+						|| galeAimOrigin == galeAimTarget
+						|| galeAimDx == 0 && galeAimDy == 0) {
+					clearGaleRhythm(GaleState.READY);
+				} else {
+					galeTarget = galeAimTarget;
+					galeRecoveryTurns = 0;
+				}
+			} else {
+				galeAimDx = 0;
+				galeAimDy = 0;
+				galeAimOrigin = -1;
+				galeAimTarget = -1;
+				galeTarget = -1;
+				if (galeState != GaleState.RECOVERING) {
+					galeRecoveryTurns = 0;
+				}
+			}
+		}
+	}
+
 	static boolean shouldAbsorbBurning(int roll) {
 		return roll == 0;
+	}
+
+	static float natureHuntSpeed(float base, boolean active) {
+		return active ? base * NATURE_HUNT_MOVE_MULTIPLIER : base;
+	}
+
+	static float natureHuntAttackDelay(float base, boolean active,
+			boolean melee, boolean gale) {
+		return active && !melee && !gale
+				? base * NATURE_HUNT_ATTACK_DELAY_MULTIPLIER : base;
+	}
+
+	static boolean shouldProcNatureWrath(boolean melee, boolean gale, int roll) {
+		return !melee && !gale && roll == 0;
 	}
 
 	public static WardenBoon boonForPlant(Plant plant) {
@@ -332,10 +619,6 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return null;
 	}
 
-	static Class<? extends Plant>[] harmfulPlantPool() {
-		return HARMFUL_PLANTS.clone();
-	}
-
 	public static int hawksSpawnedAtFightStart() {
 		return 1;
 	}
@@ -351,28 +634,74 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		bundle.put(ENCOUNTER_DELAY, encounterDelay);
 		bundle.put(GALE_TURNS_REMAINING, galeTurnsRemaining);
 		bundle.put(GALE_TARGET, galeTarget);
-		bundle.put(BOON_COOLDOWN, boonCooldown);
 		if (activeBoon != null) {
 			bundle.put(ACTIVE_BOON, activeBoon);
 		}
 		bundle.put(BOON_TURNS, boonTurns);
+		bundle.put(FADELEAF_ESCAPES_USED, fadeleafEscapesUsed);
+		bundle.put(COMBAT_STEP, combatStep);
+		bundle.put(GALE_STATE, galeState);
+		bundle.put(PLANT_HUNT_STATE, plantHuntState);
+		bundle.put(GALE_AIM_DX, galeAimDx);
+		bundle.put(GALE_AIM_DY, galeAimDy);
+		bundle.put(GALE_AIM_ORIGIN, galeAimOrigin);
+		bundle.put(GALE_AIM_TARGET, galeAimTarget);
+		bundle.put(GALE_RECOVERY_TURNS_KEY, galeRecoveryTurns);
+		bundle.put(CONTACT_ARMED, contactArmed);
+		bundle.put(CONTACT_TARGET_ID, contactTargetId);
+		bundle.put(ESCAPE_COOLDOWN_KEY, escapeCooldown);
+		bundle.put(MARKED_PLANT_CELL, markedPlantCell);
+		bundle.put(PLANT_HUNT_TURNS, plantHuntTurns);
+		bundle.put(PLANT_GRACE_TURNS, plantGraceTurns);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
-		if (bundle.contains(PHASE)) {
-			phase = bundle.getEnum(PHASE, Phase.class);
-		}
+		phase = restoredEnum(bundle, PHASE, Phase.class, Phase.SNIPER);
 		encounterDelay = bundle.getBoolean(ENCOUNTER_DELAY);
 		galeTurnsRemaining = restoredGaleTurns(bundle);
-		galeTarget = bundle.contains(GALE_TARGET) ? bundle.getInt(GALE_TARGET) : -1;
-		boonCooldown = bundle.contains(BOON_COOLDOWN)
-				? bundle.getInt(BOON_COOLDOWN) : WARDEN_BOON_INTERVAL;
-		if (bundle.contains(ACTIVE_BOON)) {
-			activeBoon = bundle.getEnum(ACTIVE_BOON, WardenBoon.class);
-		}
+		int legacyGaleTarget = bundle.contains(GALE_TARGET)
+				? bundle.getInt(GALE_TARGET) : -1;
+		galeTarget = legacyGaleTarget;
+		activeBoon = restoredEnum(bundle, ACTIVE_BOON, WardenBoon.class, null);
 		boonTurns = bundle.getInt(BOON_TURNS);
+		fadeleafEscapesUsed = restoredFadeleafEscapes(bundle);
+		combatStep = restoredEnum(bundle, COMBAT_STEP, CombatStep.class, CombatStep.SHOOT);
+		galeState = restoredEnum(bundle, GALE_STATE, GaleState.class, GaleState.HUNTING);
+		boolean hadPlantState = bundle.contains(PLANT_HUNT_STATE);
+		plantHuntState = restoredEnum(bundle, PLANT_HUNT_STATE,
+				PlantHuntState.class, PlantHuntState.GRACE);
+		galeAimDx = bundle.contains(GALE_AIM_DX) ? bundle.getInt(GALE_AIM_DX) : 0;
+		galeAimDy = bundle.contains(GALE_AIM_DY) ? bundle.getInt(GALE_AIM_DY) : 0;
+		galeAimOrigin = bundle.contains(GALE_AIM_ORIGIN)
+				? bundle.getInt(GALE_AIM_ORIGIN) : -1;
+		galeAimTarget = bundle.contains(GALE_AIM_TARGET)
+				? bundle.getInt(GALE_AIM_TARGET) : -1;
+		galeRecoveryTurns = clamp(bundle.contains(GALE_RECOVERY_TURNS_KEY)
+				? bundle.getInt(GALE_RECOVERY_TURNS_KEY) : 0,
+				0, GALE_RECOVERY_TURNS);
+		contactArmed = bundle.contains(CONTACT_ARMED) && bundle.getBoolean(CONTACT_ARMED);
+		contactTargetId = bundle.contains(CONTACT_TARGET_ID)
+				? Math.max(-1, bundle.getInt(CONTACT_TARGET_ID)) : -1;
+		escapeCooldown = clamp(bundle.contains(ESCAPE_COOLDOWN_KEY)
+				? bundle.getInt(ESCAPE_COOLDOWN_KEY) : 0, 0, ESCAPE_COOLDOWN);
+		markedPlantCell = bundle.contains(MARKED_PLANT_CELL)
+				? bundle.getInt(MARKED_PLANT_CELL) : -1;
+		if (Dungeon.level != null && !validLevelCell(markedPlantCell)) {
+			markedPlantCell = -1;
+		}
+		plantHuntTurns = clamp(bundle.contains(PLANT_HUNT_TURNS)
+				? bundle.getInt(PLANT_HUNT_TURNS) : 0, 0, PLANT_HUNT_DURATION);
+		plantGraceTurns = clamp(bundle.contains(PLANT_GRACE_TURNS)
+				? bundle.getInt(PLANT_GRACE_TURNS) : PLANT_HUNT_GRACE,
+				0, PLANT_HUNT_GRACE);
+		if (legacyGaleTarget >= 0 && galeAimTarget < 0) {
+			if (!restoreLegacyGaleTarget(legacyGaleTarget)) {
+				clearGaleRhythm(GaleState.READY);
+			}
+		}
+		normalizeRestoredRhythm(hadPlantState);
 		BossHealthBar.assignBoss(this);
 		BossHealthBar.bleed(phase == Phase.WARDEN);
 	}
@@ -380,10 +709,10 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	@Override
 	protected boolean act() {
 		if (shouldDeferCustomActions(paralysed, state == SLEEPING, state == FLEEING,
-				buff(Feint.AfterImage.FeintConfusion.class) != null)) {
-			clearTacticalDecision();
+				isConfusedForCustomActionPriority())) {
 			return super.act();
 		}
+		validateRestoredPlantHunt(huntressLevel());
 
 		if (encounterDelay) {
 			encounterDelay = false;
@@ -391,38 +720,392 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			return true;
 		}
 
-		if (phase == Phase.WARDEN) {
-			advanceBoon();
-			if (--boonCooldown <= 0) {
-				WardenBoon timedBoon = Random.element(WardenBoon.values());
-				grantBoon(timedBoon);
-				boonCooldown = activeBoon == WardenBoon.STARFLOWER
-						? WARDEN_BOON_INTERVAL - 2 : WARDEN_BOON_INTERVAL;
-				if (timedBoon == WardenBoon.FADELEAF) {
-					spend(TICK);
-					return true;
-				}
+		if (phase == Phase.SNIPER) {
+			switch (galeState) {
+				case AIMED:
+					return finishSpecialAction(fireGale());
+				case RECOVERING:
+					return finishSpecialAction(recoverFromGale());
+				default:
+					break;
 			}
+		}
+
+		Char closeTarget = closestAdjacentHostile();
+		if (closeTarget == null) {
+			clearContactWarning();
+		}
+
+		if (hasPriorityPlantRhythmAction() && actWardenRhythm()) {
+			return finishSpecialAction(true);
+		}
+
+		if (closeTarget != null && contactArmed && escapeCooldown == 0) {
+			if (tryContactEscape(closeTarget)) {
+				spend(TICK);
+				onEffectiveActionCompleted(false);
+				return true;
+			}
+		}
+
+		if (phase == Phase.WARDEN && actWardenRhythm()) {
+			return finishSpecialAction(true);
+		}
+
+		if (closeTarget == null && shouldSeekMarkedPlant()) {
+			int oldPos = pos;
+			boolean moved = getCloser(markedPlantCell);
+			if (moved) {
+				spend(1 / speed());
+				combatStep = CombatStep.SHOOT;
+				onEffectiveActionCompleted(true);
+				return moveSprite(oldPos, pos);
+			}
+		}
+
+		if (closeTarget != null) {
+			enemy = closeTarget;
+			target = closeTarget.pos;
+			state = HUNTING;
+			ordinaryActionStarted = false;
+			boolean result = doAttack(closeTarget);
+			if (ordinaryActionStarted) {
+				if (!contactArmed) {
+					contactArmed = true;
+					announceContactWarning();
+				}
+				contactTargetId = closeTarget.id();
+				onEffectiveActionCompleted(true);
+			}
+			return result;
 		}
 
 		if (phase == Phase.SNIPER) {
-			if (galeTarget != -1) {
-				refreshGaleFieldOfView();
-				Char target = Actor.findChar(galeTarget);
-				if (isEligibleGaleTarget(target)) {
-					return fireGale();
-				}
-				galeTarget = -1;
-			}
-
-			galeTurnsRemaining = advanceGaleCountdown(galeTurnsRemaining, true);
-			ArrayList<Char> visibleTargets = visibleGaleTargets();
-			if (shouldAimGale(phase, galeTurnsRemaining, !visibleTargets.isEmpty())) {
-				Char target = pickGaleTarget(visibleTargets, Random.Int(visibleTargets.size()));
-				return aimGaleAt(target);
+			switch (galeState) {
+				case HUNTING:
+					if (galeTurnsRemaining <= 0) {
+						if (tryAimGale()) {
+							return finishSpecialAction(true);
+						}
+						galeState = GaleState.READY;
+					}
+					break;
+				case READY:
+					if (tryAimGale()) {
+						return finishSpecialAction(true);
+					}
+					break;
+				default:
+					break;
 			}
 		}
-		return super.act();
+
+		ordinaryActionStarted = false;
+		boolean result = super.act();
+		if (ordinaryActionStarted) {
+			onEffectiveActionCompleted(true);
+		}
+		return result;
+	}
+
+	public void finishLevelRestore(HuntressBossLevel level) {
+		validateRestoredPlantHunt(level);
+	}
+
+	private void validateRestoredPlantHunt(HuntressBossLevel level) {
+		if (!restoredPlantValidationPending) {
+			return;
+		}
+		restoredPlantValidationPending = false;
+		if (phase == Phase.WARDEN && plantHuntState == PlantHuntState.SELECTED
+				&& level != null && level.isMarkedPlantReachable(this, markedPlantCell)) {
+			return;
+		}
+		plantHuntState = PlantHuntState.LOST_TRACK;
+		markedPlantCell = -1;
+		plantHuntTurns = 0;
+	}
+
+	private boolean hasPriorityPlantRhythmAction() {
+		return phase == Phase.WARDEN && plantHuntState == PlantHuntState.LOST_TRACK;
+	}
+
+	private boolean shouldSeekMarkedPlant() {
+		return natureHuntActive() && combatStep == CombatStep.MOVE
+				&& levelHasMarkedPlant();
+	}
+
+	protected boolean isConfusedForCustomActionPriority() {
+		return buff(Amok.class) != null
+				|| buff(Feint.AfterImage.FeintConfusion.class) != null;
+	}
+
+	private boolean tryAimGale() {
+		ArrayList<Char> visibleTargets = visibleGaleTargets();
+		if (visibleTargets.isEmpty()) {
+			return false;
+		}
+		Char target = pickGaleTarget(visibleTargets, Random.Int(visibleTargets.size()));
+		return target != null && aimGaleAt(target);
+	}
+
+	private void onEffectiveActionCompleted(boolean ordinary) {
+		if (ordinary && phase == Phase.SNIPER && galeState == GaleState.HUNTING
+				&& galeTurnsRemaining > 0) {
+			galeTurnsRemaining = advanceGaleCountdown(galeTurnsRemaining, true);
+		}
+		if (escapeCooldownStartedThisAction) {
+			escapeCooldownStartedThisAction = false;
+		} else if (escapeCooldown > 0) {
+			escapeCooldown--;
+		}
+		if (!ordinary || phase != Phase.WARDEN) {
+			return;
+		}
+		if (claimedPlantThisAction) {
+			claimedPlantThisAction = false;
+			return;
+		}
+		switch (plantHuntState) {
+			case GRACE:
+				if (plantGraceTurns > 0) {
+					plantGraceTurns--;
+				}
+				break;
+			case SELECTED:
+				if (plantHuntTurns > 0) {
+					plantHuntTurns--;
+				}
+				break;
+			case BOON_ACTIVE:
+				advanceBoon();
+				if (activeBoon == null) {
+					beginPlantGrace();
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	private boolean actWardenRhythm() {
+		switch (plantHuntState) {
+			case LOST_TRACK:
+				beginPlantGrace();
+				spend(TICK);
+				return true;
+			case GRACE:
+				return plantGraceTurns <= 0 && markNextPlant();
+			case SELECTED:
+				if (!levelHasMarkedPlant() || plantHuntTurns <= 0) {
+					loseMarkedPlant();
+					return actWardenRhythm();
+				}
+				return false;
+			case BOON_ACTIVE:
+				if (activeBoon == null) {
+					beginPlantGrace();
+				}
+				return false;
+			case NO_PLANTS:
+				if (hasReachablePlant()) {
+					beginPlantGrace();
+				}
+				return false;
+			default:
+				return false;
+		}
+	}
+
+	private HuntressBossLevel huntressLevel() {
+		return Dungeon.level instanceof HuntressBossLevel
+				? (HuntressBossLevel) Dungeon.level : null;
+	}
+
+	private boolean levelHasMarkedPlant() {
+		HuntressBossLevel level = huntressLevel();
+		return level != null && markedPlantCell >= 0
+				&& level.isMarkedPlantReachable(this, markedPlantCell);
+	}
+
+	private boolean hasReachablePlant() {
+		HuntressBossLevel level = huntressLevel();
+		return level != null && level.hasReachablePlant(this);
+	}
+
+	private boolean markNextPlant() {
+		if (isBlindedForPlantMark()) {
+			return false;
+		}
+		HuntressBossLevel level = huntressLevel();
+		markedPlantCell = level == null ? -1 : level.selectMarkedPlant(this);
+		if (markedPlantCell < 0) {
+			plantHuntState = PlantHuntState.NO_PLANTS;
+			return false;
+		}
+		plantHuntState = PlantHuntState.SELECTED;
+		plantHuntTurns = PLANT_HUNT_DURATION;
+		plantGraceTurns = 0;
+		announcePlantMarked(markedPlantCell);
+		announceNatureHunt();
+		spend(TICK);
+		return true;
+	}
+
+	protected boolean isBlindedForPlantMark() {
+		return buff(Blindness.class) != null;
+	}
+
+	private void loseMarkedPlant() {
+		if (plantHuntState == PlantHuntState.LOST_TRACK) {
+			return;
+		}
+		markedPlantCell = -1;
+		plantHuntTurns = 0;
+		plantHuntState = PlantHuntState.LOST_TRACK;
+		announceLostTrack();
+	}
+
+	private void beginPlantGrace() {
+		markedPlantCell = -1;
+		plantHuntTurns = 0;
+		plantGraceTurns = PLANT_HUNT_GRACE;
+		plantHuntState = PlantHuntState.GRACE;
+	}
+
+	protected void announcePlantMarked(int cell) {
+		if (sprite != null && sprite.parent != null) {
+			sprite.parent.addToBack(new TargetedCell(cell, 0x00CC44));
+		}
+		yell(Messages.get(this, "plant_marked"));
+	}
+
+	protected void announceNatureHunt() {
+		Emitter emitter = sprite == null ? null : sprite.emitter();
+		if (emitter != null) {
+			emitter.burst(LeafParticle.GENERAL, 10);
+		}
+		if (Gdx.app != null && Gdx.files != null) {
+			yell(Messages.get(this, "nature_hunt"));
+		}
+	}
+
+	protected void announceLostTrack() {
+		yell(Messages.get(this, "lost_track"));
+	}
+
+	public void onPlantRemoved(int cell) {
+		if (phase == Phase.WARDEN && plantHuntState == PlantHuntState.SELECTED
+				&& cell == markedPlantCell) {
+			loseMarkedPlant();
+		}
+	}
+
+	public void onPlantClaimed(int cell, WardenBoon boon) {
+		if (phase != Phase.WARDEN || boon == null) {
+			return;
+		}
+		markedPlantCell = -1;
+		plantHuntTurns = 0;
+		claimedPlantThisAction = true;
+		grantBoon(boon);
+		if (activeBoon == null) {
+			beginPlantGrace();
+		} else {
+			plantGraceTurns = 0;
+			plantHuntState = PlantHuntState.BOON_ACTIVE;
+		}
+	}
+
+	private boolean finishSpecialAction(boolean result) {
+		onEffectiveActionCompleted(false);
+		return result;
+	}
+
+	private boolean recoverFromGale() {
+		announceGaleRecovery();
+		spend(TICK);
+		if (--galeRecoveryTurns <= 0) {
+			clearGaleRhythm(GaleState.HUNTING);
+			galeTurnsRemaining = GALE_INTERVAL;
+		}
+		return true;
+	}
+
+	protected boolean teleportBossAndTargetApart(Char target) {
+		return Dungeon.level instanceof HuntressBossLevel
+				&& ((HuntressBossLevel) Dungeon.level)
+				.teleportBossAndTargetApart(this, target);
+	}
+
+	private Char closestAdjacentHostile() {
+		if (Dungeon.level == null) {
+			return null;
+		}
+		Char closest = null;
+		int closestDistance = Integer.MAX_VALUE;
+		for (Char candidate : Actor.chars()) {
+			if (candidate == null || candidate == this || !candidate.isAlive()
+					|| candidate.invisible > 0
+					|| Actor.findCharById(candidate.id()) != candidate
+					|| !isHostileOrAggressed(this, candidate) || isCharmedBy(candidate)
+					|| isProtectedHuntressSummon(candidate)) {
+				continue;
+			}
+			int distance = Dungeon.level.distance(pos, candidate.pos);
+			if (distance <= 1 && (distance < closestDistance
+					|| distance == closestDistance && closest != null
+					&& candidate.id() < closest.id())) {
+				closest = candidate;
+				closestDistance = distance;
+			}
+		}
+		return closest;
+	}
+
+	private void clearContactWarning() {
+		contactArmed = false;
+		contactTargetId = -1;
+	}
+
+	protected void announceContactWarning() {
+		yell(Messages.get(this, "contact_warning"));
+	}
+
+	protected void announceGaleRecovery() {
+		yell(Messages.get(this, "gale_recover"));
+	}
+
+	private boolean tryContactEscape(Char closeTarget) {
+		boolean escaped = false;
+		if (phase == Phase.WARDEN && fadeleafEscapesUsed < MAX_FADELEAF_ESCAPES) {
+			escaped = teleportBossAndTargetApart(closeTarget);
+			if (escaped) {
+				fadeleafEscapesUsed++;
+			}
+		}
+		if (!escaped) {
+			escaped = performBossOnlyEscape(closeTarget);
+		}
+		if (escaped) {
+			startEscapeCooldown();
+			clearContactWarning();
+		}
+		return escaped;
+	}
+
+	protected boolean performBossOnlyEscape(Char target) {
+		if (!(Dungeon.level instanceof HuntressBossLevel)) {
+			return false;
+		}
+		HuntressBossLevel level = (HuntressBossLevel) Dungeon.level;
+		int destination = level.selectHuntressEscapeCell(this, target);
+		return destination >= 0 && level.moveHuntressToEscapeCell(this, destination);
+	}
+
+	private void startEscapeCooldown() {
+		escapeCooldown = ESCAPE_COOLDOWN;
+		escapeCooldownStartedThisAction = true;
 	}
 
 	@Override
@@ -501,13 +1184,17 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	protected Char chooseEnemy() {
 		boolean canUseHawkRelay = state == HUNTING || state == WANDERING;
 		Char chosen = super.chooseEnemy();
+		if (isProtectedHuntressSummon(chosen)) {
+			chosen = null;
+		}
 		if (!canUseHawkRelay) {
 			return chosen;
 		}
 		if (bossCanSee(chosen) || hasHawkRelay(chosen)) {
 			return chosen;
 		}
-		if (bossCanSee(enemy) || hasHawkRelay(enemy)) {
+		if (!isProtectedHuntressSummon(enemy)
+				&& (bossCanSee(enemy) || hasHawkRelay(enemy))) {
 			return enemy;
 		}
 		ArrayList<Char> relayTargets = hawkRelayTargets();
@@ -516,6 +1203,17 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			return Random.element(relayTargets);
 		}
 		return chosen;
+	}
+
+	@Override
+	public void aggro(Char ch) {
+		if (isProtectedHuntressSummon(ch)) {
+			if (enemy == ch) {
+				clearEnemy();
+			}
+			return;
+		}
+		super.aggro(ch);
 	}
 
 	protected boolean bossCanSee(Char target) {
@@ -528,15 +1226,24 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		if (target == null || Dungeon.level == null || target.pos < 0) {
 			return false;
 		}
+		boolean bossBlinded = isBlindedForNormalShot();
+		boolean clearProjectile = hasClearNormalShotLine(target);
 		for (Char candidate : Actor.chars()) {
-			if (candidate instanceof DistractingHawk && candidate.isAlive()
-					&& candidate.pos >= 0
-					&& withinHawkRelayRadius(
-						Dungeon.level.distance(candidate.pos, target.pos), HAWK_RELAY_RADIUS)) {
+			if (candidate instanceof DistractingHawk
+					&& candidate.alignment == alignment && candidate.pos >= 0
+					&& canUseHawkRelay(bossBlinded,
+						candidate.buff(Blindness.class) != null, candidate.isAlive(),
+						withinHawkRelayRadius(Dungeon.level.distance(
+							candidate.pos, target.pos), HAWK_RELAY_RADIUS),
+						clearProjectile)) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	protected boolean isBlindedForNormalShot() {
+		return buff(Blindness.class) != null;
 	}
 
 	protected boolean hasHawkRelay(Char target) {
@@ -556,7 +1263,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	private boolean isEligibleRelayTarget(Char target) {
 		return target != null && target != this && target.isAlive() && target.isActive()
 				&& target.invisible <= 0 && Actor.chars().contains(target)
-				&& Actor.isHostile(this, target) && !isCharmedBy(target);
+				&& isHostileOrAggressed(this, target) && !isCharmedBy(target)
+				&& !isProtectedHuntressSummon(target);
 	}
 
 	private boolean hasClearNormalShotLine(Char target) {
@@ -578,14 +1286,15 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	private boolean isEligibleGaleTarget(Char target) {
 		boolean inBossFOV = target != null && fieldOfView != null && target.pos >= 0
 				&& target.pos < fieldOfView.length && fieldOfView[target.pos];
-		return target != null && target != this && isGaleTargetEligible(
-				target.isAlive(), Actor.isHostile(this, target) && !isCharmedBy(target),
+		return target != null && target != this && !isProtectedHuntressSummon(target)
+				&& isGaleTargetEligible(
+				target.isAlive(), isHostileOrAggressed(this, target) && !isCharmedBy(target),
 				inBossFOV, target.invisible > 0);
 	}
 
 	private ArrayList<Char> visibleGaleTargets() {
 		ArrayList<Char> targets = new ArrayList<>();
-		if (Dungeon.level == null) {
+		if (Dungeon.level == null || !canAcquireGaleTarget(isBlindedForGaleAim())) {
 			return targets;
 		}
 		refreshGaleFieldOfView();
@@ -595,6 +1304,10 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			}
 		}
 		return targets;
+	}
+
+	protected boolean isBlindedForGaleAim() {
+		return buff(Blindness.class) != null;
 	}
 
 	protected class Hunting extends Mob.Hunting {
@@ -608,7 +1321,10 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 	@Override
 	protected boolean canAttack(Char enemy) {
-		if (galeTarget != -1) {
+		if (isProtectedHuntressSummon(enemy)) {
+			return false;
+		}
+		if (galeState == GaleState.AIMED) {
 			return true;
 		}
 		TacticalAction action = tacticalActionFor(enemy);
@@ -617,21 +1333,25 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 	@Override
 	public boolean canRangedAttack(Char enemy) {
-		return galeTarget == -1 && tacticalActionFor(enemy) == TacticalAction.SHOOT;
+		return !isProtectedHuntressSummon(enemy)
+				&& galeState != GaleState.AIMED
+				&& tacticalActionFor(enemy) == TacticalAction.SHOOT;
 	}
 
 	@Override
 	public boolean canMeleeAttack(Char enemy) {
-		return tacticalActionFor(enemy) == TacticalAction.MELEE;
+		return !isProtectedHuntressSummon(enemy)
+				&& tacticalActionFor(enemy) == TacticalAction.MELEE;
 	}
 
 	@Override
 	protected boolean doAttack(final Char enemy) {
-		TacticalAction action = cachedTacticalDecision.actionFor(enemy);
-		if (action == null) {
-			action = tacticalActionFor(enemy);
+		if (isProtectedHuntressSummon(enemy)) {
+			return false;
 		}
+		TacticalAction action = tacticalActionFor(enemy);
 		if (action == TacticalAction.MELEE) {
+			ordinaryActionStarted = true;
 			meleeAttack = true;
 			boolean awaitingAnimation = false;
 			try {
@@ -641,16 +1361,20 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			} finally {
 				if (!awaitingAnimation) {
 					meleeAttack = false;
-					clearTacticalDecision();
 				}
 			}
 		}
-
-		return doRangedAttack(enemy);
+		return action == TacticalAction.SHOOT && doRangedAttack(enemy);
 	}
 
 	@Override
 	public boolean doRangedAttack(final Char enemy) {
+		if (isProtectedHuntressSummon(enemy)) {
+			return false;
+		}
+		ordinaryActionStarted = true;
+		combatStep = stepAfterCompletedAction(combatStep,
+				TacticalAction.SHOOT, true);
 		final int targetCell = enemy.pos;
 		spend(attackDelay());
 		if (sprite != null && sprite.parent != null
@@ -679,8 +1403,23 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	private boolean aimGaleAt(Char target) {
-		galeTarget = target.pos;
-		Ballistica aim = new Ballistica(pos, galeTarget, Ballistica.STOP_SOLID);
+		if (target == null || Dungeon.level == null) {
+			return false;
+		}
+		int width = Dungeon.level.width();
+		galeAimOrigin = pos;
+		galeAimTarget = target.pos;
+		galeAimDx = target.pos % width - pos % width;
+		galeAimDy = target.pos / width - pos / width;
+		int endpoint = galeEndpointForVector(pos, galeAimDx, galeAimDy,
+				width, Dungeon.level.height());
+		if (endpoint < 0) {
+			return false;
+		}
+		galeState = GaleState.AIMED;
+		galeRecoveryTurns = 0;
+		galeTarget = -1;
+		Ballistica aim = new Ballistica(pos, endpoint, Ballistica.STOP_SOLID);
 		if (sprite != null && sprite.parent != null) {
 			for (int cell : aim.subPath(1, aim.dist)) {
 				sprite.parent.addToBack(new TargetedCell(cell, 0xFF0000));
@@ -688,7 +1427,6 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		}
 		announceGaleAim();
 		spend(TICK);
-		clearTacticalDecision();
 		return true;
 	}
 
@@ -697,6 +1435,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		try {
 			galeShot = false;
 			if (shotTarget != null && shotTarget.isAlive()
+					&& !isProtectedHuntressSummon(shotTarget)
 					&& new Ballistica(pos, shotTarget.pos, Ballistica.PROJECTILE).collisionPos == shotTarget.pos) {
 				beginPhysicalRangedAttack();
 				completePhysicalAttack(shotTarget, attack(shotTarget));
@@ -704,14 +1443,26 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			Invisibility.dispel(this);
 		} finally {
 			galeShot = false;
-			clearTacticalDecision();
 		}
 	}
 
 	private boolean fireGale() {
-		galeTurnsRemaining = GALE_INTERVAL;
-		final Ballistica gale = new Ballistica(pos, galeTarget, Ballistica.STOP_SOLID);
+		if (Dungeon.level == null) {
+			return recoverFromInvalidGale();
+		}
+		int endpoint = galeEndpointForVector(pos, galeAimDx, galeAimDy,
+				Dungeon.level.width(), Dungeon.level.height());
+		if (endpoint < 0) {
+			return recoverFromInvalidGale();
+		}
+		final Ballistica gale = new Ballistica(pos, endpoint, Ballistica.STOP_SOLID);
 		final int destination = gale.collisionPos;
+		galeState = GaleState.RECOVERING;
+		galeRecoveryTurns = GALE_RECOVERY_TURNS;
+		galeAimDx = 0;
+		galeAimDy = 0;
+		galeAimOrigin = -1;
+		galeAimTarget = -1;
 		galeTarget = -1;
 		spend(attackDelay());
 
@@ -735,6 +1486,18 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return true;
 	}
 
+	private boolean recoverFromInvalidGale() {
+		galeState = GaleState.RECOVERING;
+		galeRecoveryTurns = GALE_RECOVERY_TURNS;
+		galeAimDx = 0;
+		galeAimDy = 0;
+		galeAimOrigin = -1;
+		galeAimTarget = -1;
+		galeTarget = -1;
+		spend(TICK);
+		return true;
+	}
+
 	private void launchProjectile(int destination, boolean gale, Callback callback) {
 		if (sprite == null || sprite.parent == null) {
 			callback.call();
@@ -750,7 +1513,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		try {
 			for (int cell : gale.subPath(1, gale.dist)) {
 				Char ch = Actor.findChar(cell);
-				if (ch != null && ch != this && ch.alignment != alignment) {
+				if (ch != null && ch != this && !isProtectedHuntressSummon(ch)
+					&& galeCanDamage(alignment, ch)) {
 					beginPhysicalRangedAttack();
 					completePhysicalAttack(ch, attack(ch));
 					Buff.prolong(ch, Cripple.class, 2f);
@@ -759,38 +1523,49 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			Invisibility.dispel(this);
 		} finally {
 			galeShot = false;
-			clearTacticalDecision();
 		}
+	}
+
+	static boolean galeCanDamage(Alignment attacker, Char target) {
+		return target != null && (attacker != target.alignment
+				|| target.buff(StoneOfAggression.Aggression.class) != null);
+	}
+
+	private static boolean isHostileOrAggressed(Char attacker, Char target) {
+		return Actor.isHostile(attacker, target)
+				|| target != null
+				&& target.buff(StoneOfAggression.Aggression.class) != null;
+	}
+
+	private boolean isProtectedHuntressSummon(Char target) {
+		return target != null && target.alignment == alignment
+				&& (target instanceof DistractingHawk
+				|| target instanceof HuntressTentacle)
+				&& target.buff(StoneOfAggression.Aggression.class) == null;
 	}
 
 	@Override
 	public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
-		damage = super.attackProc(enemy, damage, damageTags);
-
-		boolean adjacent = Dungeon.level != null && Dungeon.level.adjacent(pos, enemy.pos);
-		boolean heroOrAlly = enemy == Dungeon.hero || enemy.alignment == Alignment.ALLY;
-		if (adjacent && heroOrAlly) {
-			if (shouldKnockBackCloseTarget(true, true, Random.Int(3))) {
-				int oppositeAdjacent = enemy.pos + (enemy.pos - pos);
-				Ballistica trajectory = new Ballistica(enemy.pos, oppositeAdjacent, Ballistica.MAGIC_BOLT);
-				WandOfBlastWave.throwChar(enemy, trajectory, CLOSE_QUARTERS_KNOCKBACK_DISTANCE,
-						false, false, this);
-				if (enemy == Dungeon.hero) {
-					Dungeon.hero.interrupt();
-				}
-			}
+		if (isProtectedHuntressSummon(enemy)) {
+			return 0;
 		}
-
-		if (phase == Phase.WARDEN && !meleeAttack && !galeShot) {
-			int plantEffectRoll = Random.Int(3);
-			if (shouldApplyHarmfulPlantEffect(
-					phase, meleeAttack, galeShot, plantEffectRoll)) {
-				applyHarmfulPlantEffect(enemy, Random.Int(HARMFUL_PLANTS.length));
+		damage = baseAttackProc(enemy, damage, damageTags);
+		boolean ordinaryRemote = phase == Phase.WARDEN && !meleeAttack && !galeShot;
+		if (ordinaryRemote && plantHuntState == PlantHuntState.SELECTED) {
+			if (shouldProcNatureWrath(meleeAttack, galeShot, natureWrathRoll())) {
+				activateNatureWrathPlant(enemy, natureWrathPlantIndex());
 			}
+		} else if (ordinaryRemote && activeBoon != null) {
+			applyActiveBoonOnRemoteHit(enemy, activeBoon);
 		}
+		return damage;
+	}
 
-		if (phase == Phase.WARDEN && activeBoon != null) {
-			switch (activeBoon) {
+	protected void applyActiveBoonOnRemoteHit(Char enemy, WardenBoon boon) {
+		switch (boon) {
+				case BLINDWEED:
+					Buff.prolong(enemy, Blindness.class, 3f);
+					break;
 				case FIREBLOOM:
 					Buff.affect(enemy, Burning.class).reignite(enemy, 4f);
 					break;
@@ -800,32 +1575,28 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 				case SORROWMOSS:
 					Buff.affect(enemy, Poison.class).set(5f);
 					break;
+				case STORMVINE:
+					Buff.prolong(enemy, Vertigo.class, 4f);
+					break;
 				default:
 					break;
-			}
 		}
-		return damage;
 	}
 
-	private void applyHarmfulPlantEffect(Char enemy, int effect) {
-		switch (effect) {
-			case 0:
-				Buff.prolong(enemy, Blindness.class, 3f);
-				Buff.prolong(enemy, Cripple.class, 2f);
-				break;
-			case 1:
-				Buff.affect(enemy, Burning.class).reignite(enemy, 4f);
-				break;
-			case 2:
-				Buff.prolong(enemy, Chill.class, 4f);
-				break;
-			case 3:
-				Buff.affect(enemy, Poison.class).set(5f);
-				break;
-			default:
-				Buff.prolong(enemy, Vertigo.class, 4f);
-				break;
-		}
+	protected int baseAttackProc(Char enemy, int damage, DamageTag... damageTags) {
+		return super.attackProc(enemy, damage, damageTags);
+	}
+
+	protected int natureWrathRoll() {
+		return Random.Int(NATURE_HUNT_PLANT_CHANCE_DENOMINATOR);
+	}
+
+	protected int natureWrathPlantIndex() {
+		return Random.Int(SpiritBow.harmfulPlantPool().length);
+	}
+
+	protected void activateNatureWrathPlant(Char enemy, int index) {
+		SpiritBow.activateHarmfulPlant(enemy, index);
 	}
 
 	public void grantBoon(WardenBoon boon) {
@@ -843,7 +1614,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 				break;
 			case FADELEAF:
 				boonTurns = 0;
-				triggerFadeleafBoon();
+				if (tryTriggerFadeleafBoon()) {
+					startEscapeCooldown();
+				}
 				activeBoon = null;
 				break;
 			case MAGEROYAL:
@@ -857,7 +1630,6 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			case STARFLOWER:
 				boonTurns = 6;
 				Buff.affect(this, Bless.class, 6f);
-				boonCooldown = Math.max(1, boonCooldown - 2);
 				break;
 			case STORMVINE:
 				Buff.affect(this, Levitation.class, 5f);
@@ -870,8 +1642,12 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 				break;
 		}
 		if (activeBoon != null) {
-			yell(Messages.get(this, "boon_" + boon.name().toLowerCase()));
+			announceBoon(boon);
 		}
+	}
+
+	protected void announceBoon(WardenBoon boon) {
+		yell(Messages.get(this, "boon_" + boon.name().toLowerCase()));
 	}
 
 	private void advanceBoon() {
@@ -947,10 +1723,14 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 					? damageTaken / 2f : damageTaken);
 		}
 		if (isAlive() && HP * 2 <= HT && enterWardenPhase()) {
-			BossHealthBar.bleed(true);
-			yell(Messages.get(this, "warden"));
+			announceWardenTransition();
 			onWardenPhaseStarted();
 		}
+	}
+
+	protected void announceWardenTransition() {
+		BossHealthBar.bleed(true);
+		yell(Messages.get(this, "warden"));
 	}
 
 	protected void onWardenPhaseStarted() {
@@ -963,6 +1743,14 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		if (Dungeon.level instanceof HuntressBossLevel) {
 			((HuntressBossLevel) Dungeon.level).teleportBossAndHero(this);
 		}
+	}
+
+	protected boolean tryTriggerFadeleafBoon() {
+		if (Dungeon.level instanceof HuntressBossLevel) {
+			return ((HuntressBossLevel) Dungeon.level).teleportBossAndHero(this);
+		}
+		triggerFadeleafBoon();
+		return false;
 	}
 
 	protected boolean usesCampaignDeathEffects() {
@@ -1018,43 +1806,53 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 	@Override
 	protected boolean getCloser(int target) {
-		try {
-			TacticalAction action = state == HUNTING && enemy != null
-					&& this.target == enemy.pos && target == this.target
-					? cachedTacticalDecision.actionFor(enemy) : null;
-			if (action == TacticalAction.SEEK_COVER) {
-				int coverCell = nearestCoverCell();
-				if (coverCell != -1 && super.getCloser(coverCell)) {
-					return true;
-				}
+		TacticalAction action = state == HUNTING && enemy != null
+				&& this.target == enemy.pos && target == this.target
+				? tacticalActionFor(enemy) : null;
+		if (action == TacticalAction.SEEK_COVER) {
+			int coverCell = nearestCoverCell();
+			if (coverCell == -1) {
+				coverCell = nearestFirePositionByCover(enemy);
 			}
-			return super.getCloser(target);
-		} finally {
-			clearTacticalDecision();
+			if (coverCell != -1) {
+				boolean moved;
+				if (Dungeon.level.adjacent(pos, coverCell)) {
+					move(coverCell);
+					moved = true;
+				} else {
+					moved = super.getCloser(coverCell);
+				}
+				moved = markOrdinaryMovement(moved);
+				combatStep = stepAfterCompletedAction(combatStep, action, moved);
+				return moved;
+			}
 		}
+		if (action == TacticalAction.SEEK_PLANT && levelHasMarkedPlant()) {
+			boolean moved = markOrdinaryMovement(super.getCloser(markedPlantCell));
+			if (moved) {
+				combatStep = CombatStep.SHOOT;
+			}
+			return moved;
+		}
+		return markOrdinaryMovement(super.getCloser(target));
+	}
+
+	private boolean markOrdinaryMovement(boolean moved) {
+		if (moved) {
+			ordinaryActionStarted = true;
+		}
+		return moved;
 	}
 
 	private TacticalAction tacticalActionFor(Char enemy) {
-		TacticalAction action = cachedTacticalDecision.actionFor(enemy);
-		if (action == null) {
-			boolean enemyInBossFOV = bossCanSee(enemy);
-			boolean hawkRelayed = hasHawkRelay(enemy);
-			boolean clearLine = hasClearNormalShotLine(enemy);
-			int distance = enemy == null || Dungeon.level == null
-					? Integer.MAX_VALUE : Dungeon.level.distance(pos, enemy.pos);
-			int shotRange = normalShotRange();
-			boolean shotEligible = normalShotEligible(enemyInBossFOV, hawkRelayed,
-					clearLine, distance, shotRange);
-			int roll = shotEligible && distance >= 2 && distance <= 4 ? Random.Int(2) : 0;
-			action = tacticalAction(enemyInBossFOV, hawkRelayed, clearLine,
-					distance, shotRange, roll);
-			cachedTacticalDecision.set(enemy, action);
-		}
+		boolean enemyInBossFOV = bossCanSee(enemy);
+		boolean hawkRelayed = hasHawkRelay(enemy);
+		boolean clearLine = hasClearNormalShotLine(enemy);
+		int distance = enemy == null || Dungeon.level == null
+				? Integer.MAX_VALUE : Dungeon.level.distance(pos, enemy.pos);
+		TacticalAction action = tacticalAction(combatStep, enemyInBossFOV,
+				hawkRelayed, clearLine, distance, normalShotRange(), natureHuntActive());
 		return action;
-	}
-
-	private void clearTacticalDecision() {
-		cachedTacticalDecision.clear();
 	}
 
 	private int nearestCoverCell() {
@@ -1082,6 +1880,47 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return bestCell;
 	}
 
+	private int nearestFirePositionByCover(Char target) {
+		if (!(Dungeon.level instanceof HuntressBossLevel) || target == null) {
+			return -1;
+		}
+		List<Set<Integer>> clusters = ((HuntressBossLevel) Dungeon.level).coverClusters();
+		if (clusters.isEmpty()) {
+			return -1;
+		}
+		int bestCell = -1;
+		int bestCoverDistance = Integer.MAX_VALUE;
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = pos + offset;
+			if (!Dungeon.level.insideMap(cell)
+					|| !Dungeon.level.adjacent(pos, cell)
+					|| !Dungeon.level.passable[cell]
+					|| Actor.findChar(cell) != null
+					|| Char.hasProp(this, Char.Property.LARGE)
+					&& !Dungeon.level.openSpace[cell]
+					|| new Ballistica(cell, target.pos, Ballistica.PROJECTILE)
+					.collisionPos.intValue() != target.pos) {
+				continue;
+			}
+			int coverDistance = distanceToCover(cell, clusters);
+			if (coverDistance < bestCoverDistance) {
+				bestCell = cell;
+				bestCoverDistance = coverDistance;
+			}
+		}
+		return bestCell;
+	}
+
+	private int distanceToCover(int cell, List<Set<Integer>> clusters) {
+		int best = Integer.MAX_VALUE;
+		for (Set<Integer> cluster : clusters) {
+			for (int cover : cluster) {
+				best = Math.min(best, Dungeon.level.distance(cell, cover));
+			}
+		}
+		return best;
+	}
+
 	@Override
 	public void onAttackComplete() {
 		if (!meleeAttack) {
@@ -1092,7 +1931,6 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			super.onAttackComplete();
 		} finally {
 			meleeAttack = false;
-			clearTacticalDecision();
 		}
 	}
 
@@ -1161,7 +1999,50 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			flying = true;
 			alignment = Alignment.ENEMY;
 			properties.add(Property.BOSS_MINION);
+            properties.add(Property.UNSLEEP);
 			HUNTING = new Hunting();
+		}
+
+		public DistractingHawk() {
+			this(Alignment.ENEMY);
+		}
+
+		public DistractingHawk(Alignment huntressAlignment) {
+			alignment = huntressAlignment;
+		}
+
+		private boolean isHuntressFaction(Char target) {
+			return target != null && target.alignment == alignment
+					&& (target instanceof HuntressBoss
+					|| target instanceof DistractingHawk
+					|| target instanceof HuntressTentacle)
+					&& target.buff(StoneOfAggression.Aggression.class) == null;
+		}
+
+		@Override
+		protected Char chooseEnemy() {
+			Char chosen = super.chooseEnemy();
+			if (isHuntressFaction(chosen)) {
+				clearEnemy();
+				return null;
+			}
+			return chosen;
+		}
+
+		@Override
+		protected boolean canAttack(Char enemy) {
+			return !isHuntressFaction(enemy) && super.canAttack(enemy);
+		}
+
+		@Override
+		public void aggro(Char ch) {
+			if (isHuntressFaction(ch)) {
+				if (enemy == ch) {
+					clearEnemy();
+				}
+				return;
+			}
+			super.aggro(ch);
 		}
 
 		public HawkMode hawkMode() {
@@ -1213,6 +2094,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 		@Override
 		public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+			if (isHuntressFaction(enemy)) {
+				return 0;
+			}
 			damage = baseAttackProc(enemy, damage, damageTags);
 			applyDistraction(enemy);
 			beginRetreatFrom(enemy);
@@ -1235,12 +2119,16 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		private boolean isEligibleTarget(Char candidate) {
 			return candidate != null
 					&& candidate != this
+					&& !isHuntressFaction(candidate)
 					&& candidate.pos >= 0
 					&& fieldOfView != null
 					&& candidate.pos < fieldOfView.length
-					&& eligibleTarget(candidate.isAlive(), Actor.isHostile(this, candidate),
-							fieldOfView[candidate.pos], candidate.invisible > 0,
-							candidate.buff(Cripple.class) != null)
+					&& eligibleTarget(candidate.isAlive(),
+							isHostileOrAggressed(this, candidate),
+							fieldOfView[candidate.pos], candidate.invisible > 0
+									&& candidate.buff(StoneOfAggression.Aggression.class) == null,
+						candidate.buff(Cripple.class) != null
+								&& candidate.buff(StoneOfAggression.Aggression.class) == null)
 					&& !isCharmedBy(candidate);
 		}
 
@@ -1248,16 +2136,22 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			Char best = null;
 			int bestDistance = Integer.MAX_VALUE;
 			int bestId = -1;
+			boolean bestIsAggressed = false;
 			for (Char candidate : Actor.chars()) {
 				if (!isEligibleTarget(candidate)) {
 					continue;
 				}
+				boolean candidateIsAggressed = candidate.buff(
+						StoneOfAggression.Aggression.class) != null;
 				int distance = Dungeon.level.distance(pos, candidate.pos);
 				int id = candidate.id();
-				if (preferTarget(distance, id, bestDistance, bestId)) {
+				if (candidateIsAggressed && !bestIsAggressed
+						|| candidateIsAggressed == bestIsAggressed
+						&& preferTarget(distance, id, bestDistance, bestId)) {
 					best = candidate;
 					bestDistance = distance;
 					bestId = id;
+					bestIsAggressed = candidateIsAggressed;
 				}
 			}
 			return best;
@@ -1268,8 +2162,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			int bestDistance = Integer.MAX_VALUE;
 			int bestId = -1;
 			for (Char candidate : Actor.chars()) {
-				if (candidate == this || !candidate.isAlive()
-						|| !Actor.isHostile(this, candidate)
+				if (candidate == this || isHuntressFaction(candidate) || !candidate.isAlive()
+						|| !isHostileOrAggressed(this, candidate)
 						|| candidate.pos < 0 || fieldOfView == null
 						|| candidate.pos >= fieldOfView.length
 						|| !fieldOfView[candidate.pos] || candidate.invisible > 0
@@ -1289,11 +2183,15 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 		private Char validRetreatTarget() {
 			Char target = Actor.findCharById(retreatTargetId);
-			return target != null && target.isAlive() && Actor.chars().contains(target)
-					&& Actor.isHostile(this, target) ? target : null;
+			return target != null && !isHuntressFaction(target)
+					&& target.isAlive() && Actor.chars().contains(target)
+					&& isHostileOrAggressed(this, target) ? target : null;
 		}
 
 		private boolean actSeeking(boolean justAlerted) {
+			if (isBlindedForSearch()) {
+				return actBlindedWaiting();
+			}
 			Char next = nearestEligibleTarget();
 			if (next == null) {
 				hawkMode = HawkMode.WAITING;
@@ -1323,6 +2221,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			}
 
 			retreatTargetId = -1;
+			if (isBlindedForSearch()) {
+				return actBlindedWaiting();
+			}
 			Char next = nearestEligibleTarget();
 			hawkMode = modeAfterRetreat(next != null);
 			if (next != null) {
@@ -1332,6 +2233,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		}
 
 		private boolean actWaiting(boolean justAlerted) {
+			if (isBlindedForSearch()) {
+				return actBlindedWaiting();
+			}
 			Char next = nearestEligibleTarget();
 			if (next != null) {
 				hawkMode = HawkMode.SEEKING;
@@ -1358,6 +2262,21 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 				spend(1 / speed());
 				return moveSprite(oldPos, pos);
 			}
+			spend(TICK);
+			return true;
+		}
+
+		private boolean isBlindedForSearch() {
+			return buff(Blindness.class) != null;
+		}
+
+		private boolean actBlindedWaiting() {
+			hawkMode = HawkMode.WAITING;
+			retreatTargetId = -1;
+			enemy = null;
+			enemySeen = false;
+			state = WANDERING;
+			target = ((Mob.Wandering) WANDERING).randomDestination();
 			spend(TICK);
 			return true;
 		}
@@ -1420,6 +2339,48 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			properties.add(Property.BOSS_MINION);
 		}
 
+		public HuntressTentacle() {
+			this(Alignment.ENEMY);
+		}
+
+		public HuntressTentacle(Alignment huntressAlignment) {
+			alignment = huntressAlignment;
+		}
+
+		private boolean isHuntressFaction(Char target) {
+			return target != null && target.alignment == alignment
+					&& (target instanceof HuntressBoss
+					|| target instanceof DistractingHawk
+					|| target instanceof HuntressTentacle)
+					&& target.buff(StoneOfAggression.Aggression.class) == null;
+		}
+
+		@Override
+		protected Char chooseEnemy() {
+			Char chosen = super.chooseEnemy();
+			if (isHuntressFaction(chosen)) {
+				clearEnemy();
+				return null;
+			}
+			return chosen;
+		}
+
+		@Override
+		protected boolean canAttack(Char enemy) {
+			return !isHuntressFaction(enemy) && super.canAttack(enemy);
+		}
+
+		@Override
+		public void aggro(Char ch) {
+			if (isHuntressFaction(ch)) {
+				if (enemy == ch) {
+					clearEnemy();
+				}
+				return;
+			}
+			super.aggro(ch);
+		}
+
 		@Override
 		public int damageRoll() {
 			return Random.NormalIntRange(1, 3);
@@ -1432,6 +2393,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 		@Override
 		public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
+			if (isHuntressFaction(enemy)) {
+				return 0;
+			}
 			Buff.prolong(enemy, Cripple.class, 2f);
 			return damage;
 		}

@@ -82,6 +82,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -590,7 +592,8 @@ public class GameScene extends PixelScene {
 				break;
 		}
 
-		ArrayList<Item> dropped = Dungeon.droppedItems.get( Dungeon.depth );
+		int droppedItemsKey = Dungeon.droppedItemsKeyForLocation(Dungeon.depth, Dungeon.branch);
+		ArrayList<Item> dropped = Dungeon.droppedItems.get(droppedItemsKey);
 		if (dropped != null) {
 			for (Item item : dropped) {
 				int pos = level.randomRespawnCell( null );
@@ -614,7 +617,7 @@ public class GameScene extends PixelScene {
 					level.drop(item, pos);
 				}
 			}
-			Dungeon.droppedItems.remove( Dungeon.depth );
+			Dungeon.droppedItems.remove(droppedItemsKey);
 		}
         if(Dungeon.hero!=null && Dungeon.hero.heroClass==HeroClass.ROGUE && !level.mapped[level.exit()] && level instanceof RegularLevel){
             level.mapped[level.exit()]=true;
@@ -638,6 +641,18 @@ public class GameScene extends PixelScene {
 			if (Dungeon.branch == TowerLevel.BRANCH) {
 				GLog.h(Messages.get(this, "tower_arrive"),
 						Dungeon.displayDepthLabel(Dungeon.depth, Dungeon.branch));
+				if (InterlevelScene.mode == InterlevelScene.Mode.DESCEND
+						|| InterlevelScene.mode == InterlevelScene.Mode.ASCEND) {
+					boolean currentBossPending = level instanceof TowerBossLevel
+							&& !((TowerBossLevel) level).bossEncounterDefeated();
+					int bossDepth = TowerBossGenerator.predictionDepth(
+							Dungeon.depth, currentBossPending);
+					String bossId = TowerBossGenerator.predictId(Dungeon.seed, Dungeon.depth,
+							TowerLevel.BRANCH, currentBossPending);
+					GLog.w(Messages.get(this, "tower_boss_prediction"),
+							Dungeon.displayDepthLabel(bossDepth, TowerLevel.BRANCH),
+							TowerBossGenerator.create(bossId).name());
+				}
 				if (InterlevelScene.mode == InterlevelScene.Mode.DESCEND
 						|| InterlevelScene.mode == InterlevelScene.Mode.FALL) {
 					Sample.INSTANCE.play(Assets.Sounds.DESCEND);

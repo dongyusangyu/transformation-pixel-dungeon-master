@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RuneSpinner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TwistedMirror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.PowerfulWraith;
@@ -52,6 +53,7 @@ public class TowerMobPlacerTest {
 		assertTrue(placerMobs.contains(AlienatedPrismaticGuard.class));
 		assertTrue(placerMobs.contains(SoulCollector.class));
 		assertTrue(placerMobs.contains(HeavyCrabification.class));
+		assertTrue(placerMobs.contains(RuneSpinner.class));
 		assertTrue(!placerMobs.contains(TwistedMirror.class));
 		assertTrue(!placerMobs.contains(PowerfulWraith.class));
 	}
@@ -82,6 +84,11 @@ public class TowerMobPlacerTest {
 		heavyCrab.state = heavyCrab.WANDERING;
 		TowerMobPlacer.applyInitialState(heavyCrab);
 		assertTrue(heavyCrab.state == heavyCrab.SLEEPING);
+
+		Mob runeSpinner = new RuneSpinner();
+		runeSpinner.state = runeSpinner.WANDERING;
+		TowerMobPlacer.applyInitialState(runeSpinner);
+		assertTrue(runeSpinner.state == runeSpinner.SLEEPING);
 
 		Mob crocodile = new MimicCrocodile();
 		crocodile.state = crocodile.SLEEPING;

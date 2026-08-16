@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -197,7 +198,9 @@ public class WndHero extends WndTabbed {
 			pos += GAP;
 
 			statSlot( Messages.get(this, "gold"), Statistics.goldCollected );
-			statSlot( Messages.get(this, "depth"), Statistics.deepestFloor );
+			statSlot( Messages.get(this, "depth"), Dungeon.newCycle
+					? Dungeon.displayDepthLabel(Statistics.deepestTowerFloor, TowerLevel.BRANCH)
+					: Integer.toString(Statistics.deepestFloor) );
 			if (Dungeon.daily){
 				if (!Dungeon.dailyReplay) {
 					statSlot(Messages.get(this, "daily_for"), "_" + Dungeon.customSeedText + "_");
@@ -229,6 +232,10 @@ public class WndHero extends WndTabbed {
 		
 		private void statSlot( String label, int value ) {
 			statSlot( label, Integer.toString( value ) );
+		}
+
+		private void statSlot( String label, long value ) {
+			statSlot( label, Long.toString( value ) );
 		}
 		
 		public float height() {

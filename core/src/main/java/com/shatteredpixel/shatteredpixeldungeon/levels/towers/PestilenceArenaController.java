@@ -193,7 +193,7 @@ public class PestilenceArenaController implements Bundlable {
         } finally {
             level.endPurifierMiasmaClear();
         }
-        Infection.set(hero, Math.max(0, Infection.stacks(hero) - 2));
+        Infection.clear(hero);
         Dungeon.observe();
         if (result == ActivationResult.START_BOSS) {
             GLog.p(Messages.get(PestilenceArenaController.class, "purifier_start"));

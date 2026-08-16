@@ -69,6 +69,23 @@ public class ChainMaceTest {
 	}
 
 	@Test
+	public void followerSpeedMatchesHeroExceptWhileReturning() {
+		assertEquals(0.5f, ChainMace.BallFollower.movementSpeed(false, 0.5f), 0.001f);
+		assertEquals(1f, ChainMace.BallFollower.movementSpeed(false, 1f), 0.001f);
+		assertEquals(2f, ChainMace.BallFollower.movementSpeed(false, 2f), 0.001f);
+		assertEquals(3f, ChainMace.BallFollower.movementSpeed(true, 0.5f), 0.001f);
+	}
+
+	@Test
+	public void followerIgnoresDirectInstantDeath() {
+		ChainMace.BallFollower follower = new ChainMace.BallFollower();
+		int hp = follower.HP;
+		follower.die(new Object());
+		assertEquals(hp, follower.HP);
+		assertTrue(follower.isAlive());
+	}
+
+	@Test
 	public void bossTransitionsPreserveDirectableAllies() throws IOException {
 		String prisonBossLevel = sourceFile(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/PrisonBossLevel.java");
@@ -118,7 +135,8 @@ public class ChainMaceTest {
 		assertTrue(source.contains("playLaunchFeedback();\n\t\tfinal int from = ball.pos"));
 		assertTrue(source.contains("private void playLaunchFeedback() {\n\t\tSample.INSTANCE.play(Assets.Sounds.CHAINS)"));
 		assertTrue(source.contains("private void playHitFeedback() {\n\t\tPixelScene.shake(2, 0.33f)"));
-		assertTrue(source.contains("if (hit) {\n\t\t\t\t\tSample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.9f);\n\t\t\t\t\tplayHitFeedback();"));
+		assertTrue(source.contains("dealThrowImpact(hero, ball, destination)"));
+		assertTrue(source.contains("WandOfBlastWave.BlastWave.blast(cell)"));
 		assertTrue(source.contains("if (hero.attack(target, 1f, 0f, Char.INFINITE_ACCURACY)) {\n\t\t\t\t\t\tSample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.9f);\n\t\t\t\t\t\tplayHitFeedback();"));
 		assertTrue(source.contains("public int proc(Char attacker, Char defender, int damage)"));
 		assertTrue(source.contains("Dungeon.hero.belongings.thrownWeapon != this"));
@@ -127,13 +145,15 @@ public class ChainMaceTest {
 	}
 
 	@Test
-	public void usesTierSixGreataxeDamageAndStrengthCurve() {
+	public void usesLowMeleeCurveAndDoubledImpactDamage() {
 		ChainMace weapon = new ChainMace();
 
 		assertEquals(6, weapon.min(0));
-		assertEquals(50, weapon.max(0));
+		assertEquals(20, weapon.max(0));
 		assertEquals(9, weapon.min(3));
-		assertEquals(71, weapon.max(3));
+		assertEquals(41, weapon.max(3));
+		assertEquals(3, ChainMace.heroDamageForImpact(12));
+		assertEquals(20, ChainMace.heroDamageForImpact(82));
 		assertEquals(22, weapon.STRReq(0));
 		assertEquals(21, weapon.STRReq(1));
 		assertEquals(1, weapon.reachFactor(null));
@@ -160,11 +180,11 @@ public class ChainMaceTest {
 		assertTrue(english.contains(
 				"items.weapon.melee.tier6.chainmace$ballfollower.name=chain mace iron ball"));
 		assertTrue(english.contains(
-				"items.weapon.melee.tier6.chainmace$ballfollower.desc=This solid iron ball is bound to its wielder by a heavy chain. It follows close by and rushes at targets when commanded. Enemies cannot target or harm it."));
+				"items.weapon.melee.tier6.chainmace$ballfollower.desc=This solid iron ball is bound to its wielder by a heavy chain. It matches the wielder's speed while following and returns at triple speed after a command. It is neutral, cannot be targeted or buffed, and cannot be harmed or killed."));
 		assertTrue(chinese.contains(
 				"items.weapon.melee.tier6.chainmace$ballfollower.name=链锤铁球"));
 		assertTrue(chinese.contains(
-				"items.weapon.melee.tier6.chainmace$ballfollower.desc=这颗实心铁球由沉重的锁链牵引，始终紧跟链球的持有者。它会在命令下冲向敌人并发动撞击；敌人无法锁定或伤害它。"));
+				"items.weapon.melee.tier6.chainmace$ballfollower.desc=这颗实心铁球由沉重的锁链牵引。普通随行时与持有者同速，执行命令后以三倍速度回返。它保持中立，无法被锁定、施加效果、伤害或杀死。"));
 	}
 
 	@Test
@@ -217,6 +237,44 @@ public class ChainMaceTest {
 	}
 
 	@Test
+	public void inertialThrowUsesTheActualBallisticPath() throws IOException {
+		String source = source();
+		assertTrue(source.contains("hasEnchant(Projecting.class, user)"));
+		assertTrue(source.contains(
+				"inertialThrowPathAllowed(ball.pos, hero.pos, dst, projecting)"));
+		assertTrue(source.contains("trajectory.path.contains(hero)"));
+		assertTrue(source.contains("if (!projecting) pathFlags |= Ballistica.STOP_SOLID"));
+		assertTrue(source.contains("private boolean inertialThrowPathAllowed"));
+		assertFalse(source.contains("inertialThrowGeometryAllowed"));
+	}
+
+	@Test
+	public void destinationValidationAllowsEmptyOrOccupiedOpenCells() {
+		assertTrue(ChainMace.throwDestinationAllowed(true, true, true, true));
+		assertFalse(ChainMace.throwDestinationAllowed(false, true, true, true));
+		assertFalse(ChainMace.throwDestinationAllowed(true, false, true, true));
+		assertFalse(ChainMace.throwDestinationAllowed(true, true, false, true));
+		assertFalse(ChainMace.throwDestinationAllowed(true, true, true, false));
+		assertTrue(ChainMace.throwDestinationAllowed(true, true, false, true, true));
+		assertFalse(ChainMace.throwDestinationAllowed(true, true, false, false, true));
+	}
+
+
+	@Test
+	public void equippedThrowUsesAreaImpactWithoutAttackingOrKnockback() throws IOException {
+		String source = source();
+		assertTrue(source.contains("private void dispatchThrow"));
+		assertTrue(source.contains("private void dealThrowImpact"));
+		assertTrue(source.contains("new ArrayList<>(Actor.chars())"));
+		assertTrue(source.contains("Dungeon.level.distance(ch.pos, cell) <= 1"));
+		assertTrue(source.contains("ch.damage(dealt, ball)"));
+		assertTrue(source.contains("WandOfBlastWave.BlastWave.blast(cell)"));
+		assertFalse(source.contains("WandOfBlastWave.throwChar"));
+		assertFalse(source.contains("pushAllAround"));
+		assertFalse(source.contains("hero.attack(target)"));
+	}
+
+	@Test
 	public void sourceQualifiesCommandsFromHeroAndReconcilesFloorChanges()
 			throws IOException {
 		String source = source();
@@ -244,17 +302,18 @@ public class ChainMaceTest {
 	}
 
 	@Test
-	public void sourceInterceptsEquippedThrowAndUsesNormalVersusCertainHits()
+	public void sourceInterceptsEquippedThrowWithoutConvertingItIntoAnAttack()
 			throws IOException {
 		String source = source();
 
 		assertTrue(source.contains("public void cast(Hero user, int dst)"));
 		assertTrue(source.contains("if (!isEquipped(user))"));
 		assertTrue(source.contains("super.cast(user, dst)"));
-		assertTrue(source.contains("hero.attack(target)"));
+		assertTrue(source.contains("dispatchThrow(user, ball, dst)"));
+		assertTrue(source.contains("private void dispatchThrow"));
+		assertTrue(source.contains("dealThrowImpact(hero, ball, destination)"));
 		assertTrue(source.contains("Char.INFINITE_ACCURACY"));
-		assertTrue(source.contains("hero.belongings.thrownWeapon = ChainMace.this"));
-		assertTrue(source.contains("finally"));
+		assertFalse(source.contains("hero.belongings.thrownWeapon = ChainMace.this"));
 		assertFalse(source.contains("hero.belongings.abilityWeapon = ChainMace.this"));
 	}
 

@@ -36,6 +36,10 @@ import com.watabou.utils.PathFinder;
 import java.util.ArrayList;
 
 public class WoollyBomb extends Bomb {
+
+	public static int sheepLifespan(int depth, int branch) {
+		return Dungeon.bossLevel(depth, branch) ? 20 : 200;
+	}
 	
 	{
 		image = ItemSpriteSheet.WOOLY_BOMB;
@@ -63,7 +67,7 @@ public class WoollyBomb extends Bomb {
 					&& Actor.findChar(i) == null
 					&& !(Dungeon.level.pit[i])) {
 				Sheep sheep = new Sheep();
-				sheep.initialize(Dungeon.bossLevel() ? 20 : 200);
+				sheep.initialize(sheepLifespan(Dungeon.depth, Dungeon.branch));
 				sheep.pos = i;
 				GameScene.add(sheep);
 				Dungeon.level.occupyCell(sheep);

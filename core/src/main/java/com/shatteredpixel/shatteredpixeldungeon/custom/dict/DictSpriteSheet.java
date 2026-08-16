@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.dict;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIcon;
@@ -13,10 +14,14 @@ public class DictSpriteSheet {
         if (sheet == RANDOM_MODE) {
             return Icons.get(Icons.SHUFFLE_SLIVER);
         }
-        if(sheet<10000) {
+        if(isItemSprite(sheet)) {
             return new ItemSprite(sheet);
         }
         return miscImages(sheet);
+    }
+
+    static boolean isItemSprite(int sheet) {
+        return sheet >= 0 && (sheet < 10000 || EXItemSpriteSheet.isEX(sheet));
     }
     
     public static Image miscImages(int sheet){
@@ -210,6 +215,42 @@ public class DictSpriteSheet {
             case GNOLL_SAPPER:
                 return new Image(Assets.Sprites.GNOLL_SAPPER, 0, 0, 12, 15);
 
+            case TOWER_CAMOUFLAGE_GNOLL:
+                return new Image(Assets.Sprites.CAMOUFLAGE_GNOLL, 0, 0, 12, 16);
+            case TOWER_CORROSIVE_SWARM:
+                return new Image(Assets.Sprites.CORROSIVE_SWARM, 0, 0, 16, 16);
+            case TOWER_CORPSE:
+                return new Image(Assets.Sprites.CORPSE, 0, 0, 12, 15);
+            case TOWER_EARTHLY_SERPENT:
+                return new Image(Assets.Sprites.EARTHLY_SERPENT, 0, 0, 12, 11);
+            case TOWER_ROAST_LAMB_WARLOCK:
+                return new Image(Assets.Sprites.ROAST_LAMB_WARLOCK, 0, 0, 12, 15);
+            case TOWER_MECHANICAL_FIST:
+                return new Image(Assets.Sprites.MECHANICAL_FIST, 0, 0, 24, 17);
+            case TOWER_MIMIC_CROCODILE:
+                return new Image(Assets.Sprites.MIMIC_CROCODILE, 0, 0, 16, 16);
+            case TOWER_OBSCURA:
+                return new Image(Assets.Sprites.OBSCURA, 0, 0, 16, 16);
+            case TOWER_WILD_DREAD:
+                return new Image(Assets.Sprites.WILD_DREAD, 0, 0, 16, 16);
+            case TOWER_ALIENATED_PRISMATIC_GUARD:
+            case TOWER_TWISTED_MIRROR:
+                return new Image(Assets.Sprites.WARRIOR, 0, 15, 12, 15);
+            case TOWER_SOUL_COLLECTOR:
+                return new Image(Assets.Sprites.SOUL_COLLECTOR, 0, 0, 16, 16);
+            case TOWER_POWERFUL_WRAITH:
+                return new Image(Assets.Sprites.POWERFUL_WRAITH, 0, 0, 14, 15);
+            case TOWER_HEAVY_CRABIFICATION:
+                return new Image(Assets.Sprites.HEAVY_CRABIFICATION, 0, 0, 16, 16);
+            case TOWER_MARSH_SLIME:
+                return new Image(Assets.Sprites.MARSH_SLIME, 0, 0, 14, 12);
+            case TOWER_RUNE_SPINNER:
+                return new Image(Assets.Sprites.RUNE_SPINNER, 0, 0, 16, 16);
+            case TOWER_PESTILENCE_KNIGHT:
+                return new Image(Assets.Sprites.PESTILENCE_KNIGHT, 0, 0, 32, 32);
+            case TOWER_DEATH_KNIGHT:
+                return new Image(Assets.Sprites.DEATH_KNIGHT, 0, 0, 32, 32);
+
             case HERO:
                 return new Image(Assets.Sprites.ROGUE, 0, 15, 12, 15);
             case TRAP_GREEN_RECT:
@@ -331,6 +372,25 @@ public class DictSpriteSheet {
     public static final int GNOLL_GEOMANCER = 713 + 10000;
     public static final int GNOLL_GUARD = 714 + 10000;
     public static final int GNOLL_SAPPER = 715 + 10000;
+
+    public static final int TOWER_CAMOUFLAGE_GNOLL          = 900 + 10000;
+    public static final int TOWER_CORROSIVE_SWARM           = 901 + 10000;
+    public static final int TOWER_CORPSE                    = 902 + 10000;
+    public static final int TOWER_EARTHLY_SERPENT           = 903 + 10000;
+    public static final int TOWER_ROAST_LAMB_WARLOCK        = 904 + 10000;
+    public static final int TOWER_MECHANICAL_FIST           = 905 + 10000;
+    public static final int TOWER_MIMIC_CROCODILE           = 906 + 10000;
+    public static final int TOWER_OBSCURA                   = 907 + 10000;
+    public static final int TOWER_WILD_DREAD                = 908 + 10000;
+    public static final int TOWER_ALIENATED_PRISMATIC_GUARD = 909 + 10000;
+    public static final int TOWER_TWISTED_MIRROR            = 910 + 10000;
+    public static final int TOWER_SOUL_COLLECTOR            = 911 + 10000;
+    public static final int TOWER_POWERFUL_WRAITH           = 912 + 10000;
+    public static final int TOWER_HEAVY_CRABIFICATION       = 913 + 10000;
+    public static final int TOWER_MARSH_SLIME               = 914 + 10000;
+    public static final int TOWER_RUNE_SPINNER              = 915 + 10000;
+    public static final int TOWER_PESTILENCE_KNIGHT         = 916 + 10000;
+    public static final int TOWER_DEATH_KNIGHT              = 917 + 10000;
 
     public static final int SAD_GHOST       = 800 + 10000;
     public static final int WAND_MAKER      = 801 + 10000;

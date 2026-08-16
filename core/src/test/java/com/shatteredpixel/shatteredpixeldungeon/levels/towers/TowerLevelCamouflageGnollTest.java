@@ -8,9 +8,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MarshSlime;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RuneSpinner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TwistedMirror;
 
@@ -27,13 +29,13 @@ public class TowerLevelCamouflageGnollTest {
 	@Test
 	public void allTowerMonstersOwnEqualInteriorBuckets() {
 		TowerMobRules.Selection[] selections = TowerMobRules.Selection.values();
-		assertEquals(11, selections.length);
+		assertEquals(13, selections.length);
 		for (int i = 0; i < selections.length; i++) {
 			assertSame(selections[i], TowerMobRules.select((i + 0.25f) / selections.length));
 			assertSame(selections[i], TowerMobRules.select((i + 0.75f) / selections.length));
 		}
 		assertSame(TowerMobRules.Selection.CAMOUFLAGE_GNOLL, selections[0]);
-		assertSame(TowerMobRules.Selection.HEAVY_CRABIFICATION, selections[10]);
+		assertSame(TowerMobRules.Selection.RUNE_SPINNER, selections[12]);
 		assertTrue(Arrays.stream(TowerMobRules.Selection.values())
 				.noneMatch(selection -> selection.name().contains("TWISTED_MIRROR")));
 	}
@@ -51,7 +53,9 @@ public class TowerLevelCamouflageGnollTest {
 				new Obscura(),
 				new AlienatedPrismaticGuard(),
 				new SoulCollector(),
-				new HeavyCrabification())) {
+				new HeavyCrabification(),
+				new MarshSlime(),
+				new RuneSpinner())) {
 			mob.state = mob.SLEEPING;
 			TowerMobRules.prepareNaturalSpawn(mob);
 			assertSame(mob.WANDERING, mob.state);

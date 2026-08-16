@@ -45,7 +45,7 @@ public class MercuryBlade extends MeleeWeapon {
 	public static final int TIER = 6;
 	public static final float DELAY = 0.8f;
 	public static final int RANGE = 1;
-	private static final float SOLIDIFICATION_DURATION = 5f;
+	private static final float SOLIDIFICATION_DURATION = 4f;
 
 	{
 		image = EXItemSpriteSheet.MERCURY_BLADE;

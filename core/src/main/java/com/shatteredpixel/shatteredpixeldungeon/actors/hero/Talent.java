@@ -3263,7 +3263,7 @@ public enum Talent {
 			}
 			if(Dungeon.level.map[hero.pos] == Terrain.GRASS || Dungeon.level.map[hero.pos] == Terrain.EMBERS
 					|| Dungeon.level.map[hero.pos] == Terrain.HIGH_GRASS || Dungeon.level.map[hero.pos] == Terrain.FURROWED_GRASS){
-				Plant plant = (Plant) Reflection.newInstance(Random.element(SpiritBow.harmfulPlants));
+				Plant plant = (Plant) Reflection.newInstance(Random.element(SpiritBow.harmfulPlantPool()));
 				plant.pos = enemy.pos;
 				plant.activate( enemy.isAlive() ? enemy : null );
 			}else if(Dungeon.level.water[hero.pos]){
@@ -3362,7 +3362,7 @@ public enum Talent {
             int shield = hero.buff(Earthroot.Armor.class).getLevel();
             if(shield>Random.Int(20)){
                 hero.buff(Earthroot.Armor.class).changeLevel(-(5+Dungeon.scalingDepth())/2);
-                Plant plant = (Plant) Reflection.newInstance(Random.element(SpiritBow.harmfulPlants));
+				Plant plant = (Plant) Reflection.newInstance(Random.element(SpiritBow.harmfulPlantPool()));
                 plant.pos = enemy.pos;
 				if(plant instanceof Icecap){
 					Buff.affect(hero, FrostImbue.class, 1f);
@@ -4999,14 +4999,18 @@ public enum Talent {
 	}
 
 	private static final String TALENT_TIER = "talents_tier_";
+	private static final String COMPLETE_TALENT_LAYOUT = "complete_talent_layout";
 
 	public static void storeTalentsInBundle( Bundle bundle, Hero hero ){
+		if (Dungeon.newCycle) {
+			bundle.put(COMPLETE_TALENT_LAYOUT, true);
+		}
 		for (int i = 0; i < MAX_TALENT_TIERS; i++){
 			LinkedHashMap<Talent, Integer> tier = hero.talents.get(i);
 			Bundle tierBundle = new Bundle();
 
 			for (Talent talent : tier.keySet()){
-				if (tier.get(talent) > 0){
+				if (tier.get(talent) > 0 || Dungeon.newCycle){
 					tierBundle.put(talent.name(), tier.get(talent));
 				}
 				if (tierBundle.contains(talent.name())){
@@ -5135,6 +5139,14 @@ public enum Talent {
 		if(Dungeon.isChallenged(Challenges.NEGATIVE) || !hero.negativeTalents.isEmpty()){
 			Talent.initNegativeTalent(hero.heroClass,hero.talents,hero.negativeTalents);
 		}
+		boolean restoreCompleteLayout = Dungeon.newCycle
+				&& bundle.contains(COMPLETE_TALENT_LAYOUT)
+				&& bundle.getBoolean(COMPLETE_TALENT_LAYOUT);
+		if (restoreCompleteLayout) {
+			for (LinkedHashMap<Talent, Integer> tier : hero.talents) {
+				tier.clear();
+			}
+		}
 
 
 
@@ -5154,7 +5166,7 @@ public enum Talent {
 						try {
 							Talent talent = Talent.valueOf(tName);
 
-							if (tier.containsKey(talent)) {
+							if (tier.containsKey(talent) || Dungeon.newCycle) {
 								tier.put(talent, Math.min(points, talent.maxPoints()));
 							}
 

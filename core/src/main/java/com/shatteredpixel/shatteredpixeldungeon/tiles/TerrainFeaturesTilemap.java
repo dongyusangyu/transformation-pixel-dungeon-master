@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastShopLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.watabou.noosa.Image;
@@ -69,14 +70,29 @@ public class TerrainFeaturesTilemap extends DungeonTilemap {
 		int stage = (Dungeon.depth-1)/5;
 		if (Dungeon.depth == 21 && Dungeon.level instanceof LastShopLevel) stage--;
 		stage = Math.min(stage, 4);
+		return regionalVegetationVisual(
+				tile,
+				stage,
+				DungeonTileSheet.tileVariance[pos],
+				Dungeon.branch == TowerLevel.BRANCH);
+	}
+
+	static int regionalVegetationVisual(int tile, int stage, int variance, boolean towerTheme) {
+		if (towerTheme && (tile == Terrain.GRASS
+				|| tile == Terrain.HIGH_GRASS
+				|| tile == Terrain.FURROWED_GRASS
+				|| tile == Terrain.EMBERS)) {
+			return -1;
+		}
+
 		if (tile == Terrain.HIGH_GRASS){
-			return 9 + 16*stage + (DungeonTileSheet.tileVariance[pos] >= 50 ? 1 : 0);
+			return 9 + 16*stage + (variance >= 50 ? 1 : 0);
 		} else if (tile == Terrain.FURROWED_GRASS){
-			return 11 + 16*stage + (DungeonTileSheet.tileVariance[pos] >= 50 ? 1 : 0);
+			return 11 + 16*stage + (variance >= 50 ? 1 : 0);
 		} else if (tile == Terrain.GRASS) {
-			return 13 + 16*stage + (DungeonTileSheet.tileVariance[pos] >= 50 ? 1 : 0);
+			return 13 + 16*stage + (variance >= 50 ? 1 : 0);
 		} else if (tile == Terrain.EMBERS) {
-			return 9 + (16*5) + (DungeonTileSheet.tileVariance[pos] >= 50 ? 1 : 0);
+			return 9 + (16*5) + (variance >= 50 ? 1 : 0);
 		}
 
 		return -1;

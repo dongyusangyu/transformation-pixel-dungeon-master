@@ -135,7 +135,16 @@ public class TwoHandedGreatsword extends Greatsword {
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc");
+		if (levelKnown) {
+			return Messages.get(this, "ability_desc",
+					augment.damageFactor(min()), augment.damageFactor(max()));
+		}
+		return Messages.get(this, "typical_ability_desc", min(0), max(0));
+	}
+
+	@Override
+	public String statsInfo() {
+		return Messages.get(this, "stats_desc");
 	}
 
 	@Override

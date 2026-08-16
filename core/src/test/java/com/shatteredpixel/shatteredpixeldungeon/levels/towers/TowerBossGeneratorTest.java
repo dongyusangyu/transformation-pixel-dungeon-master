@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.watabou.utils.Random;
 
@@ -16,13 +17,18 @@ import static org.junit.Assert.fail;
 public class TowerBossGeneratorTest {
 
     @Test
-    public void onlyRegisteredBossIsAlwaysSelected() {
+    public void registeredBossesRotateDeterministicallyWithEqualWeights() {
+        boolean sawPestilence = false;
+        boolean sawDeath = false;
         for (long seed = 0; seed < 64; seed++) {
-            assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID,
-                    TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH));
-            assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID,
-                    TowerBossGenerator.selectId(seed, 40, TowerLevel.BRANCH));
+            String first = TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH);
+            String repeated = TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH);
+            assertEquals(first, repeated);
+            sawPestilence |= TowerBossGenerator.PESTILENCE_KNIGHT_ID.equals(first);
+            sawDeath |= TowerBossGenerator.DEATH_KNIGHT_ID.equals(first);
         }
+        assertTrue(sawPestilence);
+        assertTrue(sawDeath);
     }
 
     @Test
@@ -42,13 +48,37 @@ public class TowerBossGeneratorTest {
     }
 
     @Test
+    public void predictionTargetsTheNextBossFloorAboveTheCurrentFloor() {
+        assertEquals(5, TowerBossGenerator.nextBossDepthAfter(1));
+        assertEquals(5, TowerBossGenerator.nextBossDepthAfter(4));
+        assertEquals(10, TowerBossGenerator.nextBossDepthAfter(5));
+        assertEquals(10, TowerBossGenerator.nextBossDepthAfter(9));
+        assertEquals(5, TowerBossGenerator.predictionDepth(5, true));
+        assertEquals(10, TowerBossGenerator.predictionDepth(5, false));
+
+        long seed = 0x1234L;
+        assertEquals(TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH),
+                TowerBossGenerator.predictId(seed, 4, TowerLevel.BRANCH, false));
+        assertEquals(TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH),
+                TowerBossGenerator.predictId(seed, 5, TowerLevel.BRANCH, true));
+        assertEquals(TowerBossGenerator.selectId(seed, 10, TowerLevel.BRANCH),
+                TowerBossGenerator.predictId(seed, 5, TowerLevel.BRANCH, false));
+    }
+
+    @Test
     public void registryEntryKeepsFutureWeightAndFloorBounds() {
+        assertEquals(2, TowerBossGenerator.entries().size());
         TowerBossGenerator.Entry entry = TowerBossGenerator.entries().get(0);
+        TowerBossGenerator.Entry death = TowerBossGenerator.entries().get(1);
 
         assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, entry.id());
         assertTrue(entry.weight() > 0);
         assertEquals(1, entry.minBossIndex());
         assertEquals(Integer.MAX_VALUE, entry.maxBossIndex());
+        assertEquals(TowerBossGenerator.DEATH_KNIGHT_ID, death.id());
+        assertEquals(entry.weight(), death.weight());
+        assertEquals(1, death.minBossIndex());
+        assertEquals(Integer.MAX_VALUE, death.maxBossIndex());
         assertFalse(TowerBossGenerator.entries().isEmpty());
     }
 
@@ -58,6 +88,10 @@ public class TowerBossGeneratorTest {
 
         assertTrue(boss instanceof PestilenceKnight);
         assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, boss.towerBossId());
+
+        TowerBoss death = TowerBossGenerator.create(TowerBossGenerator.DEATH_KNIGHT_ID);
+        assertTrue(death instanceof DeathKnight);
+        assertEquals(TowerBossGenerator.DEATH_KNIGHT_ID, death.towerBossId());
     }
 
     @Test

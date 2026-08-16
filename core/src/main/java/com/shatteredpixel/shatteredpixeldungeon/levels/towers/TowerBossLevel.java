@@ -23,6 +23,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -42,6 +43,7 @@ public class TowerBossLevel extends TowerLevel {
 	private final TowerBossEncounter encounter = new TowerBossEncounter();
 	private PestilenceArenaController pestilenceArena;
 	private transient boolean purifierClearingMiasma;
+	private transient int reservedBossSpawnCell = -1;
 
 	@Override
 	public String tilesTex() {
@@ -60,7 +62,7 @@ public class TowerBossLevel extends TowerLevel {
 	@Override
 	public void playLevelMusic() {
 		if (locked) {
-			Music.INSTANCE.play(Assets.Music.HALLS_BOSS, true);
+			Music.INSTANCE.play(TowerBossMusic.musicFor(encounter.selectedBossId()), true);
 		} else {
 			super.playLevelMusic();
 		}
@@ -103,6 +105,9 @@ public class TowerBossLevel extends TowerLevel {
 
 	@Override
 	public int randomRespawnCell(Char ch) {
+		if (locked) {
+			return randomArenaTeleportCell(ch, true);
+		}
 		for (int attempts = 0; attempts < 20; attempts++) {
 			int x = Random.Int(13, 16);
 			int y = Random.Int(31, 34);
@@ -113,6 +118,30 @@ public class TowerBossLevel extends TowerLevel {
 			}
 		}
 		return -1;
+	}
+
+	@Override
+	public int randomDestination(Char ch) {
+		if (locked) {
+			return randomArenaTeleportCell(ch, false);
+		}
+		return super.randomDestination(ch);
+	}
+
+	private int randomArenaTeleportCell(Char ch, boolean requireEmpty) {
+		ArrayList<Integer> candidates = new ArrayList<>();
+		boolean large = ch != null && Char.hasProp(ch, Char.Property.LARGE);
+		for (int cell = 0; cell < length(); cell++) {
+			if (TowerBossLayout.isLegalTeleportDestination(cell, passable[cell], openSpace[cell],
+					large, requireEmpty && Actor.findChar(cell) != null)) {
+				candidates.add(cell);
+			}
+		}
+		return candidates.isEmpty() ? -1 : Random.element(candidates);
+	}
+
+	public boolean isBossTeleportPositionAllowed(int pos) {
+		return TowerBossLayout.isArenaCell(pos);
 	}
 
 	@Override
@@ -137,6 +166,7 @@ public class TowerBossLevel extends TowerLevel {
 			return;
 		}
 		int bossCell = selectBossSpawnCell();
+		reservedBossSpawnCell = bossCell;
 		if (pestilenceArena == null) pestilenceArena = new PestilenceArenaController();
 		if (!pestilenceArena.beginPrelude(this, bossCell)) {
 			startEncounter();
@@ -250,7 +280,7 @@ public class TowerBossLevel extends TowerLevel {
 		return encounter.bossEncounterStarted();
 	}
 
-	boolean bossEncounterDefeated() {
+	public boolean bossEncounterDefeated() {
 		return encounter.bossEncounterDefeated();
 	}
 
@@ -263,7 +293,8 @@ public class TowerBossLevel extends TowerLevel {
 
 			@Override
 			public int selectBossSpawnCell() {
-				return TowerBossLevel.this.selectBossSpawnCell();
+				reservedBossSpawnCell = TowerBossLevel.this.selectBossSpawnCell();
+				return reservedBossSpawnCell;
 			}
 
 			@Override
@@ -297,16 +328,46 @@ public class TowerBossLevel extends TowerLevel {
 	public void seal() {
 		if (!locked) {
 			super.seal();
+			relocateSafeZoneCreatures(reservedBossSpawnCell);
 			set(TowerBossLayout.SAFE_GATE, Terrain.WALL, this);
 			GameScene.updateMap(TowerBossLayout.SAFE_GATE);
 			Dungeon.observe();
 			Game.runOnRenderThread(new Callback() {
 				@Override
 				public void call() {
-					Music.INSTANCE.play(Assets.Music.HALLS_BOSS, true);
+					Music.INSTANCE.play(TowerBossMusic.musicFor(encounter.selectedBossId()), true);
 				}
 			});
 		}
+	}
+
+	void relocateSafeZoneCreatures(int reservedCell) {
+		for (Mob mob : new ArrayList<>(mobs)) {
+			if (!TowerBossLayout.shouldRelocateCreature(mob.pos)) {
+				continue;
+			}
+			int destination = randomEncounterCreatureCell(mob, reservedCell);
+			if (destination != -1) {
+				teleportEncounterCreature(mob, destination);
+			}
+		}
+	}
+
+	private int randomEncounterCreatureCell(Mob creature, int reservedCell) {
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (int cell = 0; cell < length(); cell++) {
+			if (!TowerBossLayout.isLegalCreatureDestination(cell, passable[cell], openSpace[cell],
+					Char.hasProp(creature, Char.Property.LARGE), reservedCell,
+					Actor.findChar(cell) != null)) {
+				continue;
+			}
+			candidates.add(cell);
+		}
+		return candidates.isEmpty() ? -1 : Random.element(candidates);
+	}
+
+	protected void teleportEncounterCreature(Mob creature, int destination) {
+		ScrollOfTeleportation.appear(creature, destination);
 	}
 
 	@Override

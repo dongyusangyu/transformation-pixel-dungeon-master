@@ -45,6 +45,7 @@ public class TowerShopRoom extends ShopRoom {
 	protected ArrayList<Item> generateItems() {
 		ArrayList<Item> items = super.generateItems();
 		items.add(TowerGenerationRules.guaranteedShopItem());
+		items.add(TowerGenerationRules.guaranteedShopMetamorphosis());
 		return items;
 	}
 }

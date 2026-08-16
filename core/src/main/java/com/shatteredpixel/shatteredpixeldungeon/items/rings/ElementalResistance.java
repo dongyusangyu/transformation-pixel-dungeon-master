@@ -19,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
 
 import java.util.HashSet;
@@ -38,6 +39,7 @@ final class ElementalResistance {
 		RESISTS.add(ToxicGas.class);
 		RESISTS.add(Electricity.class);
 		RESISTS.addAll(AntiMagic.RESISTS);
+        RESISTS.add(RoastLambWarlock.class);
 	}
 
 	private ElementalResistance() {

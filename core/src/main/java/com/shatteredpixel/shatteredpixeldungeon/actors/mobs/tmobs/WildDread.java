@@ -46,6 +46,9 @@ public class WildDread extends Mob implements com.shatteredpixel.shatteredpixeld
 
 		loot = null;
 		lootChance = 0f;
+
+		properties.add(Property.DEMONIC);
+		properties.add(Property.INORGANIC);
 	}
 
 	@Override

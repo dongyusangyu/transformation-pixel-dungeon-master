@@ -11,11 +11,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Amok;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.PhysicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
@@ -69,7 +72,15 @@ public class AttackDrone  extends InstructionTool.Drone {
         dodgesUsed = bundle.getInt(DODGES_USED);
     }
 
-    public static class FlashDrone extends AttackDrone {
+    private abstract static class PhysicalRangedAttackDrone extends AttackDrone implements PhysicalRangedAttack {
+
+        @Override
+        public boolean doRangedAttack(Char enemy) {
+            return doPhysicalRangedAttack(enemy, true);
+        }
+    }
+
+    public static class FlashDrone extends PhysicalRangedAttackDrone {
         {
             spriteClass = DronesSprite.FlashDroneSprite.class;
             HP = HT = 3;
@@ -96,6 +107,11 @@ public class AttackDrone  extends InstructionTool.Drone {
             return Dungeon.level.distance( pos, enemy.pos )<4
                     && super.canRangedAttack(enemy);
         }
+
+        @Override
+        public int rangedAttackBallisticaMode() {
+            return Ballistica.MAGIC_BOLT;
+        }
         @Override
         public int damageRoll() {
             int lvl = InstructionTool.Drone.getTool();
@@ -110,7 +126,7 @@ public class AttackDrone  extends InstructionTool.Drone {
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null){
                 Buff.affect(enemy, Blindness.class,3);
                 if (Char.hasProp(enemy, Char.Property.UNDEAD) || Char.hasProp(enemy, Char.Property.DEMONIC)){
-                    enemy.damage(5, this, DamageTag.PHYSICAL);
+                    enemy.damage(5, this, DamageTag.MAGICAL);
                 }
             }
             return damage;
@@ -121,7 +137,7 @@ public class AttackDrone  extends InstructionTool.Drone {
     }
 
 
-    public static class LaserDrone extends AttackDrone {
+    public static class LaserDrone extends AttackDrone implements MagicalRangedAttack {
         {
             spriteClass = DronesSprite.LaserDroneSprite.class;
             HP = HT = 3;
@@ -147,10 +163,41 @@ public class AttackDrone  extends InstructionTool.Drone {
             return 2*super.attackSkill(this);
         }
 
+        private boolean rangedAttackPending;
+
         @Override
-        public boolean canRangedAttack(Char enemy) {
-            return super.canRangedAttack(enemy);
+        public boolean doRangedAttack(Char enemy) {
+            if (sprite != null && (sprite.visible || enemy.sprite.visible)) {
+                rangedAttackPending = true;
+                sprite.zap(enemy.pos);
+                return false;
+            }
+            resolveRangedAttack(enemy);
+            return true;
         }
+
+        private void resolveRangedAttack(Char enemy) {
+            spend(attackDelay());
+            Invisibility.dispel(this);
+            if (rangedHit(enemy)) {
+                enemy.damage(damageRoll(), this, DamageTag.MAGICAL, DamageTag.RANGED);
+                applyLaserEffect(enemy);
+            } else {
+                showRangedMiss(enemy);
+            }
+        }
+
+        @Override
+        public void onAttackComplete() {
+            if (rangedAttackPending) {
+                rangedAttackPending = false;
+                resolveRangedAttack(enemy);
+                next();
+            } else {
+                super.onAttackComplete();
+            }
+        }
+
         @Override
         public int damageRoll() {
             int lvl = InstructionTool.Drone.getTool();
@@ -161,10 +208,14 @@ public class AttackDrone  extends InstructionTool.Drone {
         @Override
         public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
             enemy.damage(damageRoll(), this, DamageTag.MAGICAL);
+            applyLaserEffect(enemy);
+            return -1;
+        }
+
+        private void applyLaserEffect(Char enemy) {
             if(enemy.buff(InstructionTool.InstructionMark.class)!=null && Random.Int(2)==0){
                 Buff.affect(enemy, Burning.class).extend(3);
             }
-            return -1;
         }
 
     }
@@ -243,6 +294,16 @@ public class AttackDrone  extends InstructionTool.Drone {
 
         }
 
+        @Override
+        protected boolean canAttack(Char enemy) {
+            if (enemy == null) {
+                return false;
+            }
+            return super.canAttack(enemy)
+                    || (Dungeon.level.distance(pos, enemy.pos) <= 3
+                    && new Ballistica(pos, enemy.pos, Ballistica.MAGIC_BOLT).collisionPos == enemy.pos);
+        }
+
 
 
         @Override
@@ -250,12 +311,6 @@ public class AttackDrone  extends InstructionTool.Drone {
             int lvl = InstructionTool.Drone.getTool();
             int damage = Random.NormalIntRange(lvl, 5+lvl);
             return damage;
-        }
-
-        @Override
-        public boolean canRangedAttack(Char enemy) {
-            return Dungeon.level.distance( pos, enemy.pos )<4
-                    && super.canRangedAttack(enemy);
         }
 
         @Override
@@ -271,7 +326,7 @@ public class AttackDrone  extends InstructionTool.Drone {
 
     }
 
-    public static class ShockDrone extends AttackDrone {
+    public static class ShockDrone extends PhysicalRangedAttackDrone {
         {
             spriteClass = DronesSprite.ShockDroneSprite.class;
             HP = HT = 3;
@@ -297,11 +352,6 @@ public class AttackDrone  extends InstructionTool.Drone {
             int lvl = InstructionTool.Drone.getTool();
             int damage = Random.NormalIntRange(lvl, 5+lvl);
             return damage;
-        }
-
-        @Override
-        public boolean canRangedAttack(Char enemy) {
-            return super.canRangedAttack(enemy);
         }
 
         @Override

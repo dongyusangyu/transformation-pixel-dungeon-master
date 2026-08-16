@@ -23,7 +23,6 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
@@ -32,13 +31,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MarshSlime;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RuneSpinner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.levels.CityLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
@@ -50,6 +50,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.RuinsRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.SegmentedLibraryRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StatuesRoom;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.entrance.LibraryHallEntranceRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.exit.LibraryHallExitRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CorrosionTrap;
@@ -63,6 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Random;
+import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
 
@@ -81,14 +83,7 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	public void playLevelMusic() {
-		if (Statistics.amuletObtained) {
-			Music.INSTANCE.play(Assets.Music.CITY_TENSE, true);
-		} else {
-			Music.INSTANCE.playTracks(
-					CityLevel.CITY_TRACK_LIST,
-					CityLevel.CITY_TRACK_CHANCES,
-					false);
-		}
+		Music.INSTANCE.play(Assets.Music.TOWER, true);
 	}
 
 	@Override
@@ -106,6 +101,7 @@ public class TowerLevel extends RegularLevel {
 		if (!built) {
 			return false;
 		}
+		TowerRoomSanitizer.clearEntranceRoomDecor(this, roomEntrance, entrance());
 
 		for (LevelTransition transition : transitions) {
 			if (transition.type == LevelTransition.Type.REGULAR_ENTRANCE) {
@@ -153,6 +149,10 @@ public class TowerLevel extends RegularLevel {
 		}
 		if (isShopFloor(towerFloor())) {
 			result.add(new TowerShopRoom(towerFloor()));
+		}
+		for (Class<? extends SpecialRoom> type : TowerSpecialRoomRules.roomTypesForFloor(
+				towerFloor(), Dungeon.seed, feeling == Feeling.LARGE)) {
+			result.add(Reflection.newInstance(type));
 		}
 		return result;
 	}
@@ -261,6 +261,12 @@ public class TowerLevel extends RegularLevel {
 			case HEAVY_CRABIFICATION:
 				mob = new HeavyCrabification();
 				break;
+			case MARSH_SLIME:
+				mob = new MarshSlime();
+				break;
+			case RUNE_SPINNER:
+				mob = new RuneSpinner();
+				break;
 			default:
 				throw new IllegalStateException("Unknown tower mob selection");
 		}
@@ -273,7 +279,6 @@ public class TowerLevel extends RegularLevel {
 		generationTowerFloor = actualDepth;
 		Dungeon.depth = contentDepthForFloor(actualDepth);
 		try {
-			addTowerGuaranteedItems();
 			super.createItems();
 		} finally {
 			Dungeon.depth = actualDepth;
@@ -281,14 +286,11 @@ public class TowerLevel extends RegularLevel {
 		}
 	}
 
-	protected void addTowerGuaranteedItems() {
-		addItemToSpawn(TowerGenerationRules.guaranteedFloorItem());
-	}
-
 	@Override
 	public void addItemToSpawn(Item item) {
-		if (!TowerGenerationRules.isForbiddenNaturalItem(item)) {
-			super.addItemToSpawn(item);
+		Item prepared = TowerGenerationRules.prepareFloorSpawn(item, towerFloor());
+		if (prepared != null) {
+			super.addItemToSpawn(prepared);
 		}
 	}
 

@@ -49,12 +49,12 @@ import com.watabou.utils.Rect;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class HuntressBossLevel extends Level {
+	private boolean bossPlantClaimInProgress;
 
 	private static final int WIDTH = 31;
 	private static final int HEIGHT = 32;
@@ -71,8 +71,11 @@ public class HuntressBossLevel extends Level {
 	static final int MIN_OPENING_SPAWN_DISTANCE = 6;
 	static final int MAX_OPENING_SPAWN_DISTANCE = 9;
 	private static final int TRIGGER_SPAWN_BUFFER = 2;
+	private static final int PREFERRED_FADELEAF_SEPARATION = 6;
 	private static final Rect ARENA = new Rect(3, 2, 28, 24);
 	private static final String STATE = "huntress_boss_state";
+	private static final String COVER_CLUSTER_CELLS = "cover_cluster_cells";
+	private static final String COVER_CLUSTER_SIZES = "cover_cluster_sizes";
 	static final int COVER_CLUSTER_COUNT = 8;
 	static final int COVER_CELLS_PER_CLUSTER = 4;
 	private static final long COVER_SEED_SALT = 150032L;
@@ -115,6 +118,7 @@ public class HuntressBossLevel extends Level {
 	}
 
 	enum WardenFeature {
+		NONE,
 		FURROW,
 		PLANT,
 		TENTACLE
@@ -133,6 +137,29 @@ public class HuntressBossLevel extends Level {
 		}
 	}
 
+	private static final class WardenArenaApplication {
+		final WardenArenaAllocation allocation;
+		final List<Plant> plants;
+		final List<HuntressBoss.HuntressTentacle> tentacles;
+
+		WardenArenaApplication(WardenArenaAllocation allocation,
+				List<Plant> plants, List<HuntressBoss.HuntressTentacle> tentacles) {
+			this.allocation = allocation;
+			this.plants = plants;
+			this.tentacles = tentacles;
+		}
+	}
+
+	static final class FadeleafDestinations {
+		final int bossCell;
+		final int targetCell;
+
+		FadeleafDestinations(int bossCell, int targetCell) {
+			this.bossCell = bossCell;
+			this.targetCell = targetCell;
+		}
+	}
+
 	private State state = State.START;
 	private List<Set<Integer>> coverClusters = new ArrayList<>();
 
@@ -141,12 +168,29 @@ public class HuntressBossLevel extends Level {
 		color2 = 0xb9d661;
 	}
 
-	static int[] phaseTwoCounts(int legalCells) {
-		return new int[]{
-				Math.round(legalCells * 0.50f),
-				Math.max(1, Math.round(legalCells * 0.01f)),
-				Math.round(legalCells * 0.05f)
-		};
+	static WardenFeature wardenFeatureForRoll(float roll) {
+		if (roll < 0.02f) {
+			return WardenFeature.TENTACLE;
+		}
+		if (roll < 0.12f) {
+			return WardenFeature.PLANT;
+		}
+		if (roll < 0.62f) {
+			return WardenFeature.FURROW;
+		}
+		return WardenFeature.NONE;
+	}
+
+	static int arenaSeedClassCount() {
+		return ARENA_SEEDS.length;
+	}
+
+	static Class<? extends Plant.Seed> arenaSeedClassForIndex(int index) {
+		return ARENA_SEEDS[index];
+	}
+
+	private static Class<? extends Plant.Seed> arenaSeedClassForCurrentGenerator() {
+		return arenaSeedClassForIndex(Random.Int(arenaSeedClassCount()));
 	}
 
 	static boolean isLegalVegetationTerrain(int terrain) {
@@ -171,6 +215,10 @@ public class HuntressBossLevel extends Level {
 	}
 
 	boolean isBasicBossSpawnCell(int cell) {
+		return isBasicArenaDestinationCell(cell) && Actor.findChar(cell) == null;
+	}
+
+	private boolean isBasicArenaDestinationCell(int cell) {
 		return isArenaCell(cell)
 				&& passable[cell]
 				&& isLegalVegetationTerrain(map[cell])
@@ -178,7 +226,6 @@ public class HuntressBossLevel extends Level {
 				&& cell != exit()
 				&& cell != GATE_X + GATE_Y * width()
 				&& distance(cell, triggerCell()) > TRIGGER_SPAWN_BUFFER
-				&& Actor.findChar(cell) == null
 				&& plants.get(cell) == null
 				&& heaps.get(cell) == null;
 	}
@@ -205,40 +252,7 @@ public class HuntressBossLevel extends Level {
 		if (!strict.isEmpty()) {
 			return Random.element(strict);
 		}
-
-		int fixed = BOSS_X + BOSS_Y * width();
-		if (isBasicBossSpawnCell(fixed)
-				&& hasBossSpawnProjectileLine(fixed, heroPos)) {
-			return fixed;
-		}
-
-		ArrayList<Integer> closestBallistic = new ArrayList<>();
-		ArrayList<Integer> safe = new ArrayList<>();
-		int bestDeviation = Integer.MAX_VALUE;
-		for (int cell = 0; cell < length(); cell++) {
-			if (!isBasicBossSpawnCell(cell)) {
-				continue;
-			}
-			safe.add(cell);
-			if (!hasBossSpawnProjectileLine(cell, heroPos)) {
-				continue;
-			}
-			int deviation = preferredRangeDeviation(distance(cell, heroPos));
-			if (deviation < bestDeviation) {
-				bestDeviation = deviation;
-				closestBallistic.clear();
-			}
-			if (deviation == bestDeviation) {
-				closestBallistic.add(cell);
-			}
-		}
-		if (!closestBallistic.isEmpty()) {
-			return Random.element(closestBallistic);
-		}
-		if (!safe.isEmpty()) {
-			return Random.element(safe);
-		}
-		throw new IllegalStateException("No safe Huntress boss opening spawn cell");
+		throw new IllegalStateException("No strict Huntress boss opening spawn cell");
 	}
 
 	static List<Set<Integer>> coverClustersForSeed(long dungeonSeed) {
@@ -269,7 +283,7 @@ public class HuntressBossLevel extends Level {
 		return result;
 	}
 
-	List<Set<Integer>> coverClusters() {
+	public List<Set<Integer>> coverClusters() {
 		ArrayList<Set<Integer>> copy = new ArrayList<>();
 		for (Set<Integer> cluster : coverClusters) {
 			copy.add(new LinkedHashSet<>(cluster));
@@ -382,39 +396,35 @@ public class HuntressBossLevel extends Level {
 	}
 
 	static WardenArenaAllocation allocateWardenArena(List<Integer> legalCells,
-			Set<Integer> existingFurrows, Set<Integer> blockedCells, int[] counts) {
-		Set<Integer> legal = new LinkedHashSet<>(legalCells);
+			Set<Integer> blockedCells) {
 		Set<Integer> furrows = new LinkedHashSet<>();
-		for (int cell : existingFurrows) {
-			if (legal.contains(cell)) {
-				furrows.add(cell);
+		Set<Integer> plants = new LinkedHashSet<>();
+		Set<Integer> tentacles = new LinkedHashSet<>();
+		for (int cell : legalCells) {
+			if (blockedCells.contains(cell)) {
+				continue;
+			}
+			Random.pushGenerator(Dungeon.seed + cell);
+			try {
+				WardenFeature feature = wardenFeatureForRoll(Random.Float());
+				if (feature == WardenFeature.FURROW) {
+					furrows.add(cell);
+				} else if (feature == WardenFeature.PLANT) {
+					plants.add(cell);
+				} else if (feature == WardenFeature.TENTACLE) {
+					tentacles.add(cell);
+				}
+			} finally {
+				Random.popGenerator();
 			}
 		}
-
-		ArrayList<Integer> candidates = new ArrayList<>();
-		for (int cell : legal) {
-			if (!existingFurrows.contains(cell) && !blockedCells.contains(cell)) {
-				candidates.add(cell);
-			}
-		}
-
-		Iterator<Integer> candidate = candidates.iterator();
-		Set<Integer> tentacles = takeCells(candidate, Math.max(0, counts[1]));
-		Set<Integer> plants = takeCells(candidate, Math.max(0, counts[2]));
-		int furrowsToAdd = Math.max(0, counts[0] - furrows.size());
-		furrows.addAll(takeCells(candidate, furrowsToAdd));
 		return new WardenArenaAllocation(furrows, plants, tentacles);
 	}
 
-	private static Set<Integer> takeCells(Iterator<Integer> candidates, int count) {
-		Set<Integer> result = new LinkedHashSet<>();
-		while (result.size() < count && candidates.hasNext()) {
-			result.add(candidates.next());
-		}
-		return result;
-	}
-
 	static int terrainForWardenFeature(int baseTerrain, WardenFeature feature) {
+		if (feature == WardenFeature.NONE) {
+			return baseTerrain;
+		}
 		if (feature == WardenFeature.FURROW) {
 			return Terrain.FURROWED_GRASS;
 		}
@@ -451,12 +461,15 @@ public class HuntressBossLevel extends Level {
 
 		ArrayList<Integer> vegetation = vegetationCells();
 		Random.pushGenerator(Dungeon.seedForDepth(15, 0) + 150015L);
-		Random.shuffle(vegetation);
-		int initialFurrows = Math.round(vegetation.size() * 0.10f);
-		for (int i = 0; i < initialFurrows; i++) {
-			map[vegetation.get(i)] = Terrain.FURROWED_GRASS;
+		try {
+			Random.shuffle(vegetation);
+			int initialFurrows = Math.round(vegetation.size() * 0.10f);
+			for (int i = 0; i < initialFurrows; i++) {
+				map[vegetation.get(i)] = Terrain.FURROWED_GRASS;
+			}
+		} finally {
+			Random.popGenerator();
 		}
-		Random.popGenerator();
 
 		state = State.START;
 		return true;
@@ -515,23 +528,108 @@ public class HuntressBossLevel extends Level {
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(STATE, state);
+		int total = 0;
+		for (Set<Integer> cluster : coverClusters) total += cluster.size();
+		int[] cells = new int[total];
+		int[] sizes = new int[coverClusters.size()];
+		int index = 0;
+		for (int i = 0; i < coverClusters.size(); i++) {
+			Set<Integer> cluster = coverClusters.get(i);
+			sizes[i] = cluster.size();
+			for (int cell : cluster) cells[index++] = cell;
+		}
+		bundle.put(COVER_CLUSTER_CELLS, cells);
+		bundle.put(COVER_CLUSTER_SIZES, sizes);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		state = bundle.contains(STATE) ? bundle.getEnum(STATE, State.class) : State.START;
+		coverClusters = bundle.contains(COVER_CLUSTER_CELLS)
+				&& bundle.contains(COVER_CLUSTER_SIZES)
+				? restoreCoverClusters(bundle.getIntArray(COVER_CLUSTER_CELLS),
+				bundle.getIntArray(COVER_CLUSTER_SIZES))
+				: rebuildCoverClustersFromMap();
+		for (Mob mob : mobs) {
+			if (mob instanceof HuntressBoss) {
+				((HuntressBoss) mob).finishLevelRestore(this);
+			}
+		}
+	}
+
+	private List<Set<Integer>> restoreCoverClusters(int[] cells, int[] sizes) {
+		ArrayList<Set<Integer>> restored = new ArrayList<>();
+		HashSet<Integer> used = new HashSet<>();
+		int index = 0;
+		for (int size : sizes) {
+			if (size <= 0 || index + size > cells.length) break;
+			LinkedHashSet<Integer> cluster = new LinkedHashSet<>();
+			boolean valid = true;
+			for (int i = 0; i < size; i++) {
+				int cell = cells[index++];
+				if (!isStoredCoverCell(cell) || used.contains(cell) || !cluster.add(cell)) {
+					valid = false;
+				}
+			}
+			if (valid) {
+				used.addAll(cluster);
+				restored.add(cluster);
+			}
+		}
+		return restored;
+	}
+
+	private boolean isStoredCoverCell(int cell) {
+		return cell >= 0 && cell < length() && isArenaCell(cell)
+				&& !isReservedEncounterCell(cell) && map[cell] == Terrain.WALL;
+	}
+
+	private List<Set<Integer>> rebuildCoverClustersFromMap() {
+		ArrayList<Set<Integer>> rebuilt = new ArrayList<>();
+		HashSet<Integer> visited = new HashSet<>();
+		for (int start = 0; start < length(); start++) {
+			if (visited.contains(start) || !isStoredCoverCell(start)) continue;
+			LinkedHashSet<Integer> cluster = new LinkedHashSet<>();
+			ArrayList<Integer> pending = new ArrayList<>();
+			pending.add(start);
+			while (!pending.isEmpty()) {
+				int cell = pending.remove(pending.size() - 1);
+				if (!visited.add(cell) || !isStoredCoverCell(cell)) continue;
+				cluster.add(cell);
+				int x = cell % width();
+				for (int neighbour : new int[]{cell - width(), cell + width(),
+						cell - 1, cell + 1}) {
+					if (neighbour < 0 || neighbour >= length()
+							|| neighbour == cell - 1 && x == 0
+							|| neighbour == cell + 1 && x == width() - 1) continue;
+					if (!visited.contains(neighbour) && isStoredCoverCell(neighbour)) {
+						pending.add(neighbour);
+					}
+				}
+			}
+			if (!cluster.isEmpty()) rebuilt.add(cluster);
+		}
+		return rebuilt;
 	}
 
 	@Override
 	public void occupyCell(Char ch) {
 		if (ch instanceof HuntressBoss) {
-			Plant plant = plants.get(ch.pos);
-			if (plant != null) {
-				HuntressBoss.WardenBoon boon = HuntressBoss.boonForPlant(plant);
-				uproot(ch.pos);
-				set(ch.pos, Terrain.FURROWED_GRASS, this);
-				((HuntressBoss) ch).grantBoon(boon);
+			int plantCell = ch.pos;
+			Plant plant = plants.get(plantCell);
+			HuntressBoss boss = (HuntressBoss) ch;
+			HuntressBoss.WardenBoon boon = HuntressBoss.boonForPlant(plant);
+			if (plant != null && boss.phase() == HuntressBoss.Phase.WARDEN
+					&& boon != null) {
+				bossPlantClaimInProgress = true;
+				try {
+					uproot(plantCell);
+				} finally {
+					bossPlantClaimInProgress = false;
+				}
+				set(plantCell, Terrain.FURROWED_GRASS, this);
+				boss.onPlantClaimed(plantCell, boon);
 			}
 		}
 
@@ -539,6 +637,83 @@ public class HuntressBossLevel extends Level {
 			startFight();
 		}
 		completeOccupyCell(ch);
+	}
+
+	@Override
+	public void uproot(int pos) {
+		boolean removedPlant = plants.get(pos) != null;
+		super.uproot(pos);
+		if (removedPlant && !bossPlantClaimInProgress) {
+			for (Char ch : Actor.chars()) {
+				if (ch instanceof HuntressBoss && ch.isAlive()) {
+					((HuntressBoss) ch).onPlantRemoved(pos);
+				}
+			}
+		}
+	}
+
+	public int selectMarkedPlant(HuntressBoss boss) {
+		if (boss == null || boss.pos < 0 || boss.pos >= length()) {
+			return -1;
+		}
+		buildPlantDistanceMap(boss);
+		ArrayList<Integer> preferred = new ArrayList<>();
+		ArrayList<Integer> fallback = new ArrayList<>();
+		for (int cell : plants.keyArray()) {
+			int path = PathFinder.distance[cell];
+			if (path == Integer.MAX_VALUE || path <= 2 || Actor.findChar(cell) != null) {
+				continue;
+			}
+			fallback.add(cell);
+			if (path >= 4 && path <= 8) {
+				preferred.add(cell);
+			}
+		}
+		ArrayList<Integer> pool = preferred.isEmpty() ? fallback : preferred;
+		return pool.isEmpty() ? -1 : pool.get(Random.Int(pool.size()));
+	}
+
+	public boolean hasPlantAt(int cell) {
+		return cell >= 0 && cell < length() && plants.get(cell) != null;
+	}
+
+	public boolean hasReachablePlant(HuntressBoss boss) {
+		if (boss == null || boss.pos < 0 || boss.pos >= length()) {
+			return false;
+		}
+		buildPlantDistanceMap(boss);
+		for (int cell : plants.keyArray()) {
+			if (PathFinder.distance[cell] != Integer.MAX_VALUE
+					&& PathFinder.distance[cell] > 2 && Actor.findChar(cell) == null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean isMarkedPlantReachable(HuntressBoss boss, int cell) {
+		if (boss == null || boss.pos < 0 || boss.pos >= length()
+				|| !hasPlantAt(cell) || Actor.findChar(cell) != null) {
+			return false;
+		}
+		buildPlantDistanceMap(boss);
+		return PathFinder.distance[cell] != Integer.MAX_VALUE;
+	}
+
+	private void buildPlantDistanceMap(HuntressBoss boss) {
+		boolean[] plantPassable = passable.clone();
+		for (Char ch : Actor.chars()) {
+			if (ch != boss && ch.pos >= 0 && ch.pos < plantPassable.length) {
+				plantPassable[ch.pos] = false;
+			}
+		}
+		if (Char.hasProp(boss, Char.Property.LARGE)) {
+			for (int cell = 0; cell < plantPassable.length; cell++) {
+				plantPassable[cell] &= openSpace[cell];
+			}
+		}
+		plantPassable[boss.pos] = true;
+		PathFinder.buildDistanceMap(boss.pos, plantPassable);
 	}
 
 	void completeOccupyCell(Char ch) {
@@ -572,14 +747,7 @@ public class HuntressBossLevel extends Level {
 				ScrollOfTeleportation.appear(gateOccupant, destination);
 			}
 		}
-		for (Mob mob : new ArrayList<>(mobs)) {
-			if (mob.alignment == Char.Alignment.ALLY && !isArenaCell(mob.pos)) {
-				int destination = randomArenaCell(mob, Dungeon.hero.pos);
-				if (destination != -1) {
-					ScrollOfTeleportation.appear(mob, destination);
-				}
-			}
-		}
+		relocateSafeZoneAllies();
 
 		set(gate, Terrain.WALL, this);
 		afterOpeningGateClosed(gate);
@@ -595,6 +763,26 @@ public class HuntressBossLevel extends Level {
 
 		state = State.FIGHT;
 		startFightMusic();
+	}
+
+	private void relocateSafeZoneAllies() {
+		for (Mob mob : new ArrayList<>(mobs)) {
+			if (mob.alignment != Char.Alignment.ALLY || isArenaCell(mob.pos)) {
+				continue;
+			}
+			int destination = selectEncounterAllyCell(mob);
+			if (destination != -1) {
+				teleportEncounterAlly(mob, destination);
+			}
+		}
+	}
+
+	protected int selectEncounterAllyCell(Mob ally) {
+		return randomArenaCell(ally, Dungeon.hero.pos);
+	}
+
+	protected void teleportEncounterAlly(Mob ally, int destination) {
+		ScrollOfTeleportation.appear(ally, destination);
 	}
 
 	HuntressBoss createOpeningBoss() {
@@ -624,10 +812,14 @@ public class HuntressBossLevel extends Level {
 	}
 
 	public void onWardenPhase(HuntressBoss boss) {
-		populateWardenArena();
+		populateWardenArena(boss);
 		for (int i = 0; i < HuntressBoss.hawksSpawnedAtWardenTransition(); i++) {
 			spawnHawk(boss);
 		}
+		startWardenPhaseMusic();
+	}
+
+	void startWardenPhaseMusic() {
 		Game.runOnRenderThread(new Callback() {
 			@Override
 			public void call() {
@@ -637,7 +829,8 @@ public class HuntressBossLevel extends Level {
 	}
 
 	private void spawnHawk(HuntressBoss boss) {
-		HuntressBoss.DistractingHawk hawk = new HuntressBoss.DistractingHawk();
+		HuntressBoss.DistractingHawk hawk =
+				new HuntressBoss.DistractingHawk(boss.alignment);
 		hawk.pos = randomArenaCell(hawk, boss.pos);
 		if (hawk.pos == -1) {
 			return;
@@ -646,24 +839,61 @@ public class HuntressBossLevel extends Level {
 		scheduleEncounterMob(hawk, 1f);
 	}
 
-	private void populateWardenArena() {
-		ArrayList<Integer> legal = vegetationCells();
-		Random.shuffle(legal);
-		int[] counts = phaseTwoCounts(legal.size());
+	private void populateWardenArena(HuntressBoss boss) {
+		WardenArenaApplication application = applyWardenArenaFeatures(
+				boss == null ? Char.Alignment.ENEMY : boss.alignment);
+		for (Plant plant : application.plants) {
+			submitWardenPlant(plant);
+		}
+		for (HuntressBoss.HuntressTentacle tentacle : application.tentacles) {
+			submitWardenTentacle(tentacle);
+		}
+		finishWardenArenaUpdate();
+	}
 
-		Set<Integer> existingFurrows = new HashSet<>();
+	void submitWardenPlant(Plant plant) {
+		GameScene.add(plant);
+	}
+
+	void submitWardenTentacle(HuntressBoss.HuntressTentacle tentacle) {
+		GameScene.add(tentacle, 1f);
+	}
+
+	void finishWardenArenaUpdate() {
+		GameScene.updateMap();
+		Dungeon.observe();
+	}
+
+	WardenArenaAllocation populateWardenArenaForTest() {
+		return applyWardenArenaFeatures(Char.Alignment.ENEMY).allocation;
+	}
+
+	private WardenArenaApplication applyWardenArenaFeatures(
+			Char.Alignment huntressAlignment) {
+		ArrayList<Integer> legal = vegetationCells();
+
 		Set<Integer> blocked = new HashSet<>();
 		for (int cell : legal) {
-			if (map[cell] == Terrain.FURROWED_GRASS) {
-				existingFurrows.add(cell);
-			}
-			if (Actor.findChar(cell) != null || plants.get(cell) != null) {
+			if (Actor.findChar(cell) != null || plants.get(cell) != null
+					|| heaps.get(cell) != null || isReservedEncounterCell(cell)) {
 				blocked.add(cell);
 			}
 		}
+		for (Set<Integer> cluster : coverClusters) {
+			blocked.addAll(cluster);
+		}
+		for (int heapCell : heaps.keyArray()) {
+			blocked.add(heapCell);
+		}
+		for (int plantCell : plants.keyArray()) {
+			blocked.add(plantCell);
+		}
+		for (Char ch : Actor.chars()) {
+			blocked.add(ch.pos);
+		}
 
 		WardenArenaAllocation allocation =
-				allocateWardenArena(legal, existingFurrows, blocked, counts);
+				allocateWardenArena(legal, blocked);
 
 		for (int cell : allocation.furrowCells) {
 			if (map[cell] != Terrain.FURROWED_GRASS) {
@@ -671,37 +901,335 @@ public class HuntressBossLevel extends Level {
 			}
 		}
 
+		ArrayList<Plant> newPlants = new ArrayList<>();
+		ArrayList<HuntressBoss.HuntressTentacle> newTentacles = new ArrayList<>();
 		for (int cell : allocation.plantCells) {
-			int baseTerrain = map[cell];
-			Plant.Seed seed = com.watabou.utils.Reflection.newInstance(
-					Random.element(ARENA_SEEDS));
-			Plant plant = seed.couch(cell, this);
-			plants.put(cell, plant);
-			set(cell, terrainForWardenFeature(baseTerrain, WardenFeature.PLANT), this);
-			GameScene.add(plant);
+			Random.pushGenerator(Dungeon.seed + cell);
+			try {
+				int baseTerrain = map[cell];
+				Random.Float();
+				Plant plant = createWardenArenaPlant(
+						cell, arenaSeedClassForCurrentGenerator());
+				plants.put(cell, plant);
+				set(cell, terrainForWardenFeature(baseTerrain, WardenFeature.PLANT), this);
+				newPlants.add(plant);
+			} finally {
+				Random.popGenerator();
+			}
 		}
-
 		for (int cell : allocation.tentacleCells) {
 			set(cell, terrainForWardenFeature(map[cell], WardenFeature.TENTACLE), this);
-			HuntressBoss.HuntressTentacle tentacle = new HuntressBoss.HuntressTentacle();
+			HuntressBoss.HuntressTentacle tentacle =
+					new HuntressBoss.HuntressTentacle(huntressAlignment);
 			tentacle.pos = cell;
 			tentacle.aggro(Dungeon.hero);
-			GameScene.add(tentacle, 1f);
+			newTentacles.add(tentacle);
 		}
-
-		GameScene.updateMap();
-		Dungeon.observe();
+		return new WardenArenaApplication(allocation, newPlants, newTentacles);
 	}
 
-	public void teleportBossAndHero(HuntressBoss boss) {
-		int bossDestination = randomArenaCell(boss, boss.pos);
-		if (bossDestination != -1) {
-			ScrollOfTeleportation.appear(boss, bossDestination);
+	protected Plant createWardenArenaPlant(int cell,
+			Class<? extends Plant.Seed> seedClass) {
+		Plant.Seed seed = com.watabou.utils.Reflection.newInstance(
+				seedClass);
+		return seed.couch(cell, this);
+	}
+
+	public boolean teleportBossAndHero(HuntressBoss boss) {
+		return Dungeon.hero != null && teleportBossAndTargetApart(boss, Dungeon.hero);
+	}
+
+	public boolean teleportBossAndTargetApart(HuntressBoss boss, Char target) {
+		if (boss == null || target == null) {
+			return false;
 		}
-		int heroDestination = randomArenaCell(Dungeon.hero, Dungeon.hero.pos);
-		if (heroDestination != -1) {
-			ScrollOfTeleportation.appear(Dungeon.hero, heroDestination);
+		int previousDistance = distance(boss.pos, target.pos);
+		FadeleafDestinations destinations =
+				selectRandomFadeleafDestinations(boss, target);
+		if (destinations == null) {
+			return false;
 		}
+		int oldBossPos = boss.pos;
+		int oldTargetPos = target.pos;
+		boolean succeeded = false;
+		try {
+			boolean bossMoved = teleportFadeleafChar(boss, destinations.bossCell);
+			if (bossMoved && boss.pos == destinations.bossCell) {
+				boolean targetMoved = teleportFadeleafChar(target, destinations.targetCell);
+				succeeded = targetMoved
+						&& boss.pos == destinations.bossCell
+						&& target.pos == destinations.targetCell
+						&& distance(boss.pos, target.pos) > previousDistance;
+			}
+		} catch (RuntimeException error) {
+			succeeded = false;
+		}
+		if (!succeeded) {
+			restoreFadeleafPair(boss, oldBossPos, target, oldTargetPos);
+		}
+		finishFadeleafTeleportSafely();
+		if (succeeded && (boss.pos != destinations.bossCell
+				|| target.pos != destinations.targetCell
+				|| distance(boss.pos, target.pos) <= previousDistance)) {
+			succeeded = false;
+		}
+		if (!succeeded) {
+			restoreFadeleafPair(boss, oldBossPos, target, oldTargetPos);
+		}
+		return succeeded;
+	}
+
+	public int selectHuntressEscapeCell(HuntressBoss boss, Char target) {
+		if (boss == null || target == null) {
+			return -1;
+		}
+		ArrayList<Integer> legal = new ArrayList<>();
+		ArrayList<Integer> preferredRange = new ArrayList<>();
+		for (int cell = 0; cell < length(); cell++) {
+			if (!isLegalHuntressEscapeCell(boss, target, cell)) {
+				continue;
+			}
+			legal.add(cell);
+			int distance = distance(cell, target.pos);
+			if (distance >= 3 && distance <= 5) {
+				preferredRange.add(cell);
+			}
+		}
+		if (preferredRange.isEmpty()) {
+			return farthestCellFromTarget(legal, target);
+		}
+
+		boolean hasBallisticCell = false;
+		for (int cell : preferredRange) {
+			if (hasProjectileLine(cell, target.pos)) {
+				hasBallisticCell = true;
+				break;
+			}
+		}
+		int nearestCoverDistance = Integer.MAX_VALUE;
+		for (int cell : preferredRange) {
+			if (!hasBallisticCell || hasProjectileLine(cell, target.pos)) {
+				nearestCoverDistance = Math.min(nearestCoverDistance,
+						distanceToNearestCover(cell));
+			}
+		}
+		int farthestTargetDistance = -1;
+		for (int cell : preferredRange) {
+			if ((!hasBallisticCell || hasProjectileLine(cell, target.pos))
+					&& distanceToNearestCover(cell) == nearestCoverDistance) {
+				farthestTargetDistance = Math.max(farthestTargetDistance,
+						distance(cell, target.pos));
+			}
+		}
+		ArrayList<Integer> finalists = new ArrayList<>();
+		for (int cell : preferredRange) {
+			if ((!hasBallisticCell || hasProjectileLine(cell, target.pos))
+					&& distanceToNearestCover(cell) == nearestCoverDistance
+					&& distance(cell, target.pos) == farthestTargetDistance) {
+				finalists.add(cell);
+			}
+		}
+		return finalists.isEmpty() ? -1 : Random.element(finalists);
+	}
+
+	boolean isLegalHuntressEscapeCell(HuntressBoss boss, Char target, int cell) {
+		if (boss == null || target == null || cell < 0 || cell >= length()
+				|| !isBasicArenaDestinationCell(cell)
+				|| isReservedEncounterCell(cell) || isCoverCell(cell)) {
+			return false;
+		}
+		Char occupant = Actor.findChar(cell);
+		return (occupant == null || occupant == boss)
+				&& (!Char.hasProp(boss, Char.Property.LARGE) || openSpace[cell])
+				&& distance(cell, target.pos) > distance(boss.pos, target.pos);
+	}
+
+	public boolean moveHuntressToEscapeCell(HuntressBoss boss, int destination) {
+		if (boss == null || destination < 0 || destination >= length()
+				|| !isBasicArenaDestinationCell(destination)
+				|| isReservedEncounterCell(destination) || isCoverCell(destination)
+				|| Actor.findChar(destination) != null
+				|| Char.hasProp(boss, Char.Property.LARGE) && !openSpace[destination]) {
+			return false;
+		}
+		int origin = boss.pos;
+		boolean succeeded = false;
+		try {
+			succeeded = teleportFadeleafChar(boss, destination)
+					&& boss.pos == destination;
+		} catch (RuntimeException error) {
+			succeeded = false;
+		}
+		if (!succeeded) {
+			restoreFadeleafPosition(boss, origin);
+		}
+		finishFadeleafTeleportSafely();
+		if (succeeded && boss.pos != destination) {
+			succeeded = false;
+		}
+		if (!succeeded) {
+			restoreFadeleafPosition(boss, origin);
+		}
+		return succeeded;
+	}
+
+	private int farthestCellFromTarget(ArrayList<Integer> cells, Char target) {
+		int farthest = -1;
+		ArrayList<Integer> finalists = new ArrayList<>();
+		for (int cell : cells) {
+			int candidateDistance = distance(cell, target.pos);
+			if (candidateDistance > farthest) {
+				farthest = candidateDistance;
+				finalists.clear();
+			}
+			if (candidateDistance == farthest) {
+				finalists.add(cell);
+			}
+		}
+		return finalists.isEmpty() ? -1 : Random.element(finalists);
+	}
+
+	private boolean hasProjectileLine(int from, int target) {
+		return new Ballistica(from, target, Ballistica.PROJECTILE).collisionPos == target;
+	}
+
+	private boolean isCoverCell(int cell) {
+		for (Set<Integer> cluster : coverClusters) {
+			if (cluster.contains(cell)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private int distanceToNearestCover(int cell) {
+		int result = Integer.MAX_VALUE;
+		for (Set<Integer> cluster : coverClusters) {
+			for (int cover : cluster) {
+				result = Math.min(result, distance(cell, cover));
+			}
+		}
+		return result;
+	}
+
+	private void restoreFadeleafPair(HuntressBoss boss, int bossPos,
+			Char target, int targetPos) {
+		restoreFadeleafPosition(target, targetPos);
+		restoreFadeleafPosition(boss, bossPos);
+	}
+
+	private void restoreFadeleafPosition(Char ch, int origin) {
+		if (ch == null) {
+			return;
+		}
+		ch.pos = origin;
+		if (ch.sprite != null) {
+			try {
+				ch.sprite.interruptMotion();
+			} catch (RuntimeException ignored) {
+				// The actor position is authoritative; visual recovery is best-effort.
+			}
+			try {
+				ch.sprite.place(origin);
+			} catch (RuntimeException ignored) {
+				// Keep restoring the other actor even if one sprite is unavailable.
+			}
+		}
+	}
+
+	private void finishFadeleafTeleportSafely() {
+		try {
+			finishFadeleafTeleport();
+		} catch (RuntimeException ignored) {
+			// Observation is presentation cleanup and cannot change transaction result.
+		}
+	}
+
+	FadeleafDestinations selectFadeleafDestinations(
+			Char boss, Char target, int selection) {
+		return selectFadeleafDestinations(boss, target, Integer.valueOf(selection));
+	}
+
+	private FadeleafDestinations selectRandomFadeleafDestinations(
+			Char boss, Char target) {
+		return selectFadeleafDestinations(boss, target, null);
+	}
+
+	private FadeleafDestinations selectFadeleafDestinations(
+			Char boss, Char target, Integer selection) {
+		if (boss == null || target == null) {
+			return null;
+		}
+		ArrayList<Integer> bossCells = fadeleafCellsFor(boss);
+		ArrayList<Integer> targetCells = fadeleafCellsFor(target);
+		int previousDistance = distance(boss.pos, target.pos);
+		int preferredCount = 0;
+		int maximumDistance = previousDistance;
+		int maximumCount = 0;
+		for (int bossCell : bossCells) {
+			for (int targetCell : targetCells) {
+				int separation = distance(bossCell, targetCell);
+				if (separation <= previousDistance) {
+					continue;
+				}
+				if (separation >= PREFERRED_FADELEAF_SEPARATION) {
+					preferredCount++;
+				}
+				if (separation > maximumDistance) {
+					maximumDistance = separation;
+					maximumCount = 1;
+				} else if (separation == maximumDistance) {
+					maximumCount++;
+				}
+			}
+		}
+		if (preferredCount == 0 && maximumCount == 0) {
+			return null;
+		}
+		int candidateCount = preferredCount > 0 ? preferredCount : maximumCount;
+		int chosen = selection == null ? Random.Int(candidateCount)
+				: Math.floorMod(selection, candidateCount);
+		for (int bossCell : bossCells) {
+			for (int targetCell : targetCells) {
+				int separation = distance(bossCell, targetCell);
+				boolean candidate = preferredCount > 0
+						? separation >= PREFERRED_FADELEAF_SEPARATION
+						: separation == maximumDistance;
+				if (candidate && separation > previousDistance && chosen-- == 0) {
+					return new FadeleafDestinations(bossCell, targetCell);
+				}
+			}
+		}
+		return null;
+	}
+
+	boolean isLegalFadeleafCell(Char ch, int cell) {
+		Char occupant = Actor.findChar(cell);
+		return isBasicArenaDestinationCell(cell)
+				&& (occupant == null || occupant == ch)
+				&& (!Char.hasProp(ch, Char.Property.LARGE) || openSpace[cell]);
+	}
+
+	private ArrayList<Integer> fadeleafCellsFor(Char ch) {
+		ArrayList<Integer> cells = new ArrayList<>();
+		for (int cell : vegetationCells()) {
+			if (isLegalFadeleafCell(ch, cell)) {
+				cells.add(cell);
+			}
+		}
+		return cells;
+	}
+
+	protected boolean teleportFadeleafChar(Char ch, int destination) {
+		ScrollOfTeleportation.appear(ch, destination);
+		return ch.pos == destination;
+	}
+
+	protected void restoreFadeleafChar(Char ch, int origin) {
+		ScrollOfTeleportation.appear(ch, origin);
+	}
+
+	protected void finishFadeleafTeleport() {
 		Dungeon.observe();
 		GameScene.updateFog();
 	}
@@ -789,7 +1317,10 @@ public class HuntressBossLevel extends Level {
 	ArrayList<Integer> vegetationCells() {
 		ArrayList<Integer> cells = new ArrayList<>();
 		for (int i = 0; i < length(); i++) {
-			if (!isArenaCell(i) || !isLegalVegetationTerrain(map[i])) {
+			if (!isArenaCell(i)
+					|| (Terrain.flags[map[i]] & Terrain.PASSABLE) == 0
+					|| !isLegalVegetationTerrain(map[i])
+					|| isReservedEncounterCell(i)) {
 				continue;
 			}
 			if (distance(i, triggerCell()) <= 2 || distance(i, exit()) <= 2) {

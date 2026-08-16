@@ -121,6 +121,10 @@ public class Bundle {
 		return (float)data.optDouble( key, 0.0 );
 	}
 
+	public double getDouble( String key ) {
+		return data.optDouble( key, 0.0 );
+	}
+
 	public String getString( String key ) {
 		return data.optString( key );
 	}
@@ -216,6 +220,21 @@ public class Bundle {
 			float[] result = new float[length];
 			for (int i=0; i < length; i++) {
 				result[i] = (float)array.optDouble( i, 0.0 );
+			}
+			return result;
+		} catch (JSONException e) {
+			Game.reportException(e);
+			return null;
+		}
+	}
+
+	public double[] getDoubleArray( String key ) {
+		try {
+			JSONArray array = data.getJSONArray( key );
+			int length = array.length();
+			double[] result = new double[length];
+			for (int i=0; i < length; i++) {
+				result[i] = array.optDouble( i, 0.0 );
 			}
 			return result;
 		} catch (JSONException e) {
@@ -342,6 +361,14 @@ public class Bundle {
 		}
 	}
 
+	public void put( String key, double value ) {
+		try {
+			data.put( key, value );
+		} catch (JSONException e) {
+			Game.reportException(e);
+		}
+	}
+
 	public void put( String key, String value ) {
 		try {
 			data.put( key, value );
@@ -414,6 +441,18 @@ public class Bundle {
 	}
 
 	public void put( String key, float[] array ) {
+		try {
+			JSONArray jsonArray = new JSONArray();
+			for (int i=0; i < array.length; i++) {
+				jsonArray.put( i, array[i] );
+			}
+			data.put( key, jsonArray );
+		} catch (JSONException e) {
+			Game.reportException(e);
+		}
+	}
+
+	public void put( String key, double[] array ) {
 		try {
 			JSONArray jsonArray = new JSONArray();
 			for (int i=0; i < array.length; i++) {

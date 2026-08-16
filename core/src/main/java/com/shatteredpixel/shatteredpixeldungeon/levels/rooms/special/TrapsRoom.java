@@ -66,7 +66,9 @@ public class TrapsRoom extends SpecialRoom {
 				trapClass = null;
 				break;
 			default:
-				trapClass = Random.oneOf(levelTraps[Dungeon.depth/5]);
+				// Depth 25+ can host this room in the tower, so reuse the deepest trap pool.
+				int trapRegion = Math.min(Dungeon.depth / 5, levelTraps.length - 1);
+				trapClass = Random.oneOf(levelTraps[trapRegion]);
 				break;
 		}
 

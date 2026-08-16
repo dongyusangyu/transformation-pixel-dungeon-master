@@ -18,6 +18,22 @@ import static org.junit.Assert.assertTrue;
 public class GungnirTest {
 
 	@Test
+	public void invalidThrowDoesNotArmQuickslotTargeting() throws Exception {
+		String source = readMainSource("items/weapon/missiles/Gungnir.java");
+		int executeStart = source.indexOf("public void execute(Hero hero, String action)");
+		int doThrowStart = source.indexOf("public void doThrow(Hero hero)", executeStart);
+		String execute = source.substring(executeStart, doThrowStart);
+		int accuracyStart = source.indexOf("public float accuracyFactor", doThrowStart);
+		String doThrow = source.substring(doThrowStart, accuracyStart);
+
+		assertTrue(execute.contains("usesTargeting = false;"));
+		assertTrue(execute.indexOf("usesTargeting = false;") < execute.indexOf("return;"));
+		assertTrue(execute.contains("usesTargeting = true;"));
+		assertTrue(execute.indexOf("usesTargeting = true;") > execute.indexOf("return;"));
+		assertTrue(doThrow.contains("usesTargeting = false;"));
+	}
+
+	@Test
 	public void tierSixTridentModelAndBloodCostAreFixed() {
 		Gungnir weapon = new Gungnir();
 
@@ -44,6 +60,33 @@ public class GungnirTest {
 		assertFalse(Gungnir.qualifiesForBleedingKillHealing(false, true));
 		assertFalse(Gungnir.qualifiesForBleedingKillHealing(true, false));
 		assertTrue(Gungnir.qualifiesForBleedingKillHealing(true, true));
+	}
+
+	@Test
+	public void successfulHitConsumesNormalMissileDurability() {
+		Gungnir weapon = new Gungnir();
+		float durabilityBefore = weapon.durabilityLeft();
+
+		weapon.rangedHit(null, 0);
+
+		assertEquals(durabilityBefore - weapon.durabilityPerUse(),
+				weapon.durabilityLeft(), 0.001f);
+	}
+
+	@Test
+	public void throwSelectionChecksHealthAndHitProcChargesIt() throws Exception {
+		String source = readMainSource("items/weapon/missiles/Gungnir.java");
+		int doThrowStart = source.indexOf("public void doThrow(Hero hero)");
+		int accuracyStart = source.indexOf("public float accuracyFactor", doThrowStart);
+		String doThrow = source.substring(doThrowStart, accuracyStart);
+		int procStart = source.indexOf("public int proc(Char attacker, Char defender, int damage)");
+		int rangedHitStart = source.indexOf("protected void rangedHit", procStart);
+		String proc = source.substring(procStart, rangedHitStart);
+
+		assertTrue(doThrow.contains("canThrowWithCurrentHP(hero.HP)"));
+		assertFalse(doThrow.contains("hero.HP -="));
+		assertTrue(proc.contains("attacker instanceof Hero"));
+		assertTrue(proc.contains("hero.HP -= lifeCost"));
 	}
 
 	@Test

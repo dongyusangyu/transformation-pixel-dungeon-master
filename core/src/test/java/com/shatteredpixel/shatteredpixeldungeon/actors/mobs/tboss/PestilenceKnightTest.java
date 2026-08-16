@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
@@ -8,7 +9,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -54,6 +58,25 @@ public class PestilenceKnightTest {
         assertTrue(boss.properties().contains(Char.Property.BOSS));
         assertTrue(boss.properties().contains(Char.Property.IMMOVABLE));
         assertTrue(boss.properties().contains(Char.Property.UNSLEEP));
+    }
+
+    @Test
+    public void prescriptionsUseTheMagicalRangedProjectileProtocol() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+
+        assertTrue(boss instanceof MagicalRangedAttack);
+        RangedAttack ranged = (RangedAttack) boss;
+        assertEquals(RangedAttack.Type.RANGED_MAGIC, ranged.rangedAttackType());
+        assertEquals(Ballistica.PROJECTILE, ranged.rangedAttackBallisticaMode());
+    }
+
+    @Test
+    public void prescriptionProjectilesCanUseEveryBasePotionAppearance() {
+        for (int index = 0; index < 12; index++) {
+            assertEquals(index, PestilenceKnight.prescriptionPotionPaletteIndexForTest(index));
+        }
+        assertEquals(0, PestilenceKnight.prescriptionPotionPaletteIndexForTest(12));
+        assertEquals(11, PestilenceKnight.prescriptionPotionPaletteIndexForTest(-1));
     }
 
     @Test
@@ -124,16 +147,75 @@ public class PestilenceKnightTest {
     }
 
     @Test
-    public void plagueFlaskUsesTelegraphThenResolutionAndFourActionCooldown() {
+    public void plagueFlaskUsesTelegraphThenResolutionAndBaseSpeedCooldown() {
         PestilenceKnight boss = new PestilenceKnight(5);
         assertTrue(boss.telegraphSkillForTest("plague_flask", new int[]{10, 11}));
         assertEquals("plague_flask", boss.pendingSkillForTest());
         assertEquals(0, boss.skillCooldownForTest(0));
 
-        boss.resolveSkillForTest();
+        boss.resolveSkillForTest(1f);
         assertEquals("", boss.pendingSkillForTest());
         assertEquals(4, boss.skillCooldownForTest(0));
         for (int i = 0; i < 4; i++) boss.finishBossActionForTest();
+        assertEquals(0, boss.skillCooldownForTest(0));
+    }
+
+    @Test
+    public void plagueFlaskCooldownScalesWithHeroSpeedAndCapsAtOneTurn() {
+        assertEquals(5, PestilenceKnight.plagueFlaskCooldownForTest(0.5f));
+        assertEquals(5, PestilenceKnight.plagueFlaskCooldownForTest(1f));
+        assertEquals(5, PestilenceKnight.plagueFlaskCooldownForTest(3.24f));
+        assertEquals(4, PestilenceKnight.plagueFlaskCooldownForTest(3.25f));
+        assertEquals(3, PestilenceKnight.plagueFlaskCooldownForTest(5.5f));
+        assertEquals(2, PestilenceKnight.plagueFlaskCooldownForTest(7.75f));
+        assertEquals(1, PestilenceKnight.plagueFlaskCooldownForTest(10f));
+        assertEquals(1, PestilenceKnight.plagueFlaskCooldownForTest(20f));
+    }
+
+    @Test
+    public void plagueFlaskTelegraphWaitsTwoTurnsAtSpeedTwoOrLess() {
+        assertEquals(2, PestilenceKnight.plagueFlaskTelegraphTurnsForTest(0.5f));
+        assertEquals(2, PestilenceKnight.plagueFlaskTelegraphTurnsForTest(1f));
+        assertEquals(2, PestilenceKnight.plagueFlaskTelegraphTurnsForTest(2f));
+        assertEquals(1, PestilenceKnight.plagueFlaskTelegraphTurnsForTest(2.01f));
+        assertEquals(1, PestilenceKnight.plagueFlaskTelegraphTurnsForTest(10f));
+    }
+
+    @Test
+    public void lowSpeedPlagueFlaskConsumesOneExtraBossActionBeforeResolution() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.telegraphSkillForTest("plague_flask", new int[]{10, 11}, 1f);
+
+        assertEquals(2, boss.pendingTurnsForTest());
+        assertTrue(boss.advancePendingCountdownForTest());
+        assertEquals("plague_flask", boss.pendingSkillForTest());
+        assertEquals(1, boss.pendingTurnsForTest());
+        assertFalse(boss.advancePendingCountdownForTest());
+    }
+
+    @Test
+    public void fastPlagueFlaskResolvesOnTheNextBossAction() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.telegraphSkillForTest("plague_flask", new int[]{10, 11}, 3f);
+
+        assertEquals(1, boss.pendingTurnsForTest());
+        assertFalse(boss.advancePendingCountdownForTest());
+    }
+
+    @Test
+    public void pendingSkillContinuesWithoutCurrentLineOfSight() {
+        assertTrue(PestilenceKnight.shouldUsePhaseAIForTest(true, false));
+        assertTrue(PestilenceKnight.shouldUsePhaseAIForTest(false, true));
+        assertFalse(PestilenceKnight.shouldUsePhaseAIForTest(false, false));
+    }
+
+    @Test
+    public void plagueFlaskResolutionStoresCooldownCalculatedFromCurrentHeroSpeed() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+        boss.telegraphSkillForTest("plague_flask", new int[]{10, 11});
+
+        boss.resolveSkillForTest(10f);
+
         assertEquals(0, boss.skillCooldownForTest(0));
     }
 
@@ -317,7 +399,7 @@ public class PestilenceKnightTest {
     @Test
     public void pendingSkillAndCooldownSurviveBundleRoundTrip() {
         PestilenceKnight boss = new PestilenceKnight(5);
-        boss.telegraphSkillForTest("plague_flask", new int[]{3, 4, 5});
+        boss.telegraphSkillForTest("plague_flask", new int[]{3, 4, 5}, 1f, 4);
         boss.setSkillCooldownForTest(2, 3);
         Bundle bundle = new Bundle();
         boss.storeInBundle(bundle);
@@ -326,6 +408,8 @@ public class PestilenceKnightTest {
         restored.restoreFromBundle(bundle);
         assertEquals("plague_flask", restored.pendingSkillForTest());
         assertEquals(3, restored.pendingCellsForTest().length);
+        assertEquals(2, restored.pendingTurnsForTest());
+        assertEquals(4, restored.pendingProjectileTargetForTest());
         assertEquals(3, restored.skillCooldownForTest(2));
     }
 
@@ -352,6 +436,11 @@ public class PestilenceKnightTest {
 
         @Override
         public void damage(int damage, Object source) {
+            damageTaken += damage;
+        }
+
+        @Override
+        public void damage(int damage, Object source, DamageTag... damageTags) {
             damageTaken += damage;
         }
 

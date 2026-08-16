@@ -1,6 +1,5 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -35,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWea
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
@@ -48,7 +48,6 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 public class TestMissile extends TestGenerator {
     {
@@ -227,6 +226,8 @@ public class TestMissile extends TestGenerator {
                 return (Class<? extends MissileWeapon>[]) Generator.Category.MIS_T4.classes.clone();
             case 5:
                 return (Class<? extends MissileWeapon>[]) Generator.Category.MIS_T5.classes.clone();
+            case 6:
+                return (Class<? extends MissileWeapon>[]) Generator.Category.MIS_T6.classes.clone();
         }
     }
 
@@ -269,7 +270,7 @@ public class TestMissile extends TestGenerator {
         public SettingsWindow() {
             super();
             createMissileArray();
-            o_tier = new OptionSlider(Messages.get(this, "tier"), "1", "5", 1, 5) {
+            o_tier = new OptionSlider(Messages.get(this, "tier"), "1", "6", 1, 6) {
                 @Override
                 protected void onChange() {
                     tier = getSelectedValue();
@@ -374,8 +375,7 @@ public class TestMissile extends TestGenerator {
                         super.onClick();
                     }
                 };
-                Image im = new Image(Assets.Sprites.ITEMS);
-                im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(all[i])).image));
+                Image im = new ItemSprite(Reflection.newInstance(all[i]));
                 im.scale.set(1f);
                 btn.icon(im);
                 btn.setRect(left + Math.floorMod(placed, perRow) * BTN_SIZE, top+(int)(placed/perRow)*BTN_SIZE, BTN_SIZE, BTN_SIZE);

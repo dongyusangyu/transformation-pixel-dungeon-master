@@ -102,12 +102,14 @@ public class EXItemSpriteSheetTest {
 				EXItemSpriteSheet.MERCURY_BLADE,
 				EXItemSpriteSheet.AUXILIARY_CORE,
 				EXItemSpriteSheet.HUNDRED_TON_HAMMER,
+				EXItemSpriteSheet.ORACLE_TERMINAL,
+				EXItemSpriteSheet.DEMON_TAIL_WHIP,
 				EXItemSpriteSheet.SEAL
 		};
 		int[] expectedIndices = {
 				0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 				10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-				32, 48, 145, 146, 147, 150, 151, 152, ItemSpriteSheet.SEAL
+				32, 48, 145, 146, 147, 150, 151, 152, 153, 154, ItemSpriteSheet.SEAL
 		};
 		int[][] expectedSizes = {
 				{14, 14}, {12, 14}, {15, 16}, {15, 16}, {14, 16},
@@ -115,7 +117,7 @@ public class EXItemSpriteSheetTest {
 				{13, 16}, {15, 16}, {11, 16}, {16, 16}, {11, 16},
 				{11, 16}, {15, 14}, {16, 16}, {11, 16}, {11, 16},
 				{15, 14}, {10, 15}, {15, 16}, {15, 16}, {16, 16},
-				{15, 16}, {14, 15}, {16, 16}, {16, 16}
+				{15, 16}, {14, 15}, {16, 16}, {16, 16}, {14, 14}, {16, 16}
 		};
 
 		assertEquals(expectedIndices.length, frames.length);
@@ -211,6 +213,18 @@ public class EXItemSpriteSheetTest {
 		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.HUNDRED_TON_HAMMER));
 		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.HUNDRED_TON_HAMMER));
 		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.HUNDRED_TON_HAMMER));
+
+		assertEquals(153, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(144, EXItemSpriteSheet.frameX(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.ORACLE_TERMINAL));
+
+		assertEquals(154, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.DEMON_TAIL_WHIP));
+		assertEquals(160, EXItemSpriteSheet.frameX(EXItemSpriteSheet.DEMON_TAIL_WHIP));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.DEMON_TAIL_WHIP));
+		assertEquals(14, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.DEMON_TAIL_WHIP));
+		assertEquals(14, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 	}
 
 	@Test
@@ -224,7 +238,20 @@ public class EXItemSpriteSheetTest {
 		assertCrispSprite(sheet, 150, 0, 0, 14, 15, 8);
 		assertCrispSprite(sheet, 151, 0, 1, 13, 14, 8);
 		assertCrispSprite(sheet, 152, 0, 0, 15, 15, 7);
-		for (int index = 153; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 153, 0, 0, 15, 15, 9);
+		assertCrispSprite(sheet, 154, 0, 0, 13, 13, 8);
+		for (int index = 155; index < 160; index++) assertTransparentCell(sheet, index);
+	}
+
+	@Test
+	public void oracleTerminalUsesACrispCaduceusCell() throws IOException {
+		assertEquals(153, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(144, EXItemSpriteSheet.frameX(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.ORACLE_TERMINAL));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.ORACLE_TERMINAL));
+		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
+		assertCrispSprite(sheet, 153, 0, 0, 15, 15, 9);
 	}
 
 	@Test
@@ -252,7 +279,7 @@ public class EXItemSpriteSheetTest {
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		assertCrispSprite(sheet, 148, 0, 1, 14, 15, 8);
 
-		for (int index = 153; index < 160; index++) assertTransparentCell(sheet, index);
+		for (int index = 155; index < 160; index++) assertTransparentCell(sheet, index);
 	}
 
 	private static void assertTransparentCell(BufferedImage sheet, int index) {

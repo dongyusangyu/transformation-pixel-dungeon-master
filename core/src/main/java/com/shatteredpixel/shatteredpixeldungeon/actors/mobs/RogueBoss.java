@@ -167,9 +167,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
                 p = Random.Int( level.length() );
             } while (!level.passable[p] || Actor.findChar( p ) != null || count<100);
             if(p!=-1){
-                //this.pos=p;
-                sprite.move( pos, p );
-                move( p );
+                relocateWithSpriteSync(p);
             }
         }
 
@@ -209,8 +207,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
                     Dungeon.level.distance(newPos, Dungeon.hero.pos) > 3 ||
                             Actor.findChar(newPos) != null) && turns>0);
             if(newPos !=-1 && level.passable[newPos]){
-                sprite.move( pos, newPos );
-                move( newPos );
+                relocateWithSpriteSync(newPos);
             }
 
         }
@@ -237,6 +234,17 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         }
 
         return super.act();
+    }
+
+    private void relocateWithSpriteSync(int destination) {
+        int from = pos;
+        if (sprite != null) {
+            // Reset an unfinished tween before starting the next relocation.
+            sprite.interruptMotion();
+            sprite.place(from);
+            sprite.move(from, destination);
+        }
+        move(destination, false);
     }
 
     static boolean canAdvanceSpecialCounter(int paralysed, boolean sleeping) {

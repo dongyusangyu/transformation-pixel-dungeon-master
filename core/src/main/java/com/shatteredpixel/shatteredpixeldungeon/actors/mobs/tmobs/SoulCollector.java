@@ -43,6 +43,8 @@ public class SoulCollector extends Mob implements Char.DeathListener {
 
 		loot = PotionOfMindVision.class;
 		lootChance = 1f / 8f;
+
+		properties.add(Property.UNDEAD);
 	}
 
 	@Override

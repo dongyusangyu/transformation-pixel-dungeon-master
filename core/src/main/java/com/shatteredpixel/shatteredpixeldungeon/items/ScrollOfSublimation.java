@@ -56,6 +56,8 @@ public class ScrollOfSublimation extends Item{
         actions.add( AC_READ );
         return actions;
     }
+
+
     public static final String AC_READ	= "READ";
     protected static final float TIME_TO_READ	= 1f;
     public void execute(Hero hero, String action ) {

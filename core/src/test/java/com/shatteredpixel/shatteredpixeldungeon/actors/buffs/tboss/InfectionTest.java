@@ -37,6 +37,28 @@ public class InfectionTest {
     }
 
     @Test
+    public void infectionLosesOneStackEveryTenGameTurns() {
+        TestChar target = freshTarget();
+        target.HP = target.HT;
+        Infection.set(target, 4);
+
+        assertEquals(10, Infection.DECAY_TURNS);
+        target.buff(Infection.class).decayOneIntervalForTest();
+        assertEquals(3, Infection.stacks(target));
+
+        target.buff(Infection.class).decayOneIntervalForTest();
+        assertEquals(2, Infection.stacks(target));
+    }
+
+    @Test
+    public void infectionColorChangesAtThreeAndFourStacks() {
+        assertEquals(Infection.DEFAULT_ICON_COLOR, Infection.iconColorForStacks(2));
+        assertEquals(Infection.WARNING_ICON_COLOR, Infection.iconColorForStacks(3));
+        assertEquals(Infection.DANGER_ICON_COLOR, Infection.iconColorForStacks(4));
+        assertEquals(Infection.DANGER_ICON_COLOR, Infection.iconColorForStacks(5));
+    }
+
+    @Test
     public void crossingThreeTriggersOnceUntilStacksFallBelowThree() {
         TestChar target = freshTarget();
         Infection.addStacks(target, 3);
@@ -97,11 +119,12 @@ public class InfectionTest {
     }
 
     @Test
-    public void bundlePreservesStacksLatchAndPotionRelief() {
+    public void bundlePreservesStacksLatchPotionReliefAndDecaySchedule() {
         TestChar target = freshTarget();
         Infection.set(target, 4);
         Infection.markHealingPotionRelief(target);
         Infection infection = target.buff(Infection.class);
+        float decayRemaining = infection.cooldown();
         Bundle bundle = new Bundle();
         infection.storeInBundle(bundle);
 
@@ -111,6 +134,18 @@ public class InfectionTest {
         assertEquals(4, restored.stacksForTest());
         assertTrue(restored.thirdThresholdArmedForTest());
         assertTrue(restored.potionReliefPendingForTest());
+        assertEquals(decayRemaining, restored.cooldown(), 0.001f);
+    }
+
+    @Test
+    public void legacyBundleStartsAFullDecayIntervalAfterLoading() {
+        Bundle legacy = new Bundle();
+        legacy.put("stacks", 3);
+
+        Infection restored = new Infection();
+        restored.restoreFromBundle(legacy);
+
+        assertEquals(Infection.DECAY_TURNS, restored.cooldown(), 0.001f);
     }
 
     @Test

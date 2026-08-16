@@ -55,6 +55,8 @@ public class CorrosiveSwarm extends Swarm {
 
 		loot = Generator.Category.POTION;
 		lootChance = BASE_LOOT_CHANCE;
+
+		//properties.add(Property.ACIDIC);
 	}
 
 	@Override

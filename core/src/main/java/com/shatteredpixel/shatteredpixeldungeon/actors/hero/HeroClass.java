@@ -224,11 +224,6 @@ public enum HeroClass {
         if (Dungeon.isChallenged(Challenges.TEST_MODE)) {
 		    doChallengeSpawn(hero);
         }
-        new Amulet().collect();
-        new BlacasEwer().setRarity(Treasures.Rarity.LEGENDARY).collect();
-        new AlMughiraPyxis().setRarity(Treasures.Rarity.EPIC).collect();
-        new BookOfKells().setRarity(Treasures.Rarity.RARE).collect();
-        new CholaNataraja().setRarity(Treasures.Rarity.COMMON).collect();
         /*
 		if (AgentMinBridgeConfig.ENABLED) {
 			Item stylus = new Stylus();
@@ -906,13 +901,13 @@ public enum HeroClass {
 			case WARRIOR:
 				return 5;
 			case MAGE:
-				return 2;
+				return 3;
 			case ROGUE:
-				return 4;
+				return 6;
 			case HUNTRESS:
 				return 4;
 			case DUELIST:
-				return 3;
+				return 4;
 			case CLERIC:
 				return 4;
 			case FREEMAN:

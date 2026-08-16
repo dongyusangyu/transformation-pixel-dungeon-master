@@ -44,23 +44,33 @@ public class MimicCrocodileSprite extends MobSprite {
 	@Override
 	public void linkVisuals(Char ch) {
 		super.linkVisuals(ch);
-		applyLurkingAlpha();
+		applyLurkingAlpha(ch);
 	}
 
 	@Override
 	public void resetColor() {
 		super.resetColor();
-		applyLurkingAlpha();
+		applyLurkingAlpha(ch);
 	}
 
 	@Override
 	public void play(Animation animation) {
 		super.play(animation);
-		applyLurkingAlpha();
+		applyLurkingAlpha(ch);
 	}
 
-	private void applyLurkingAlpha() {
-		if (ch instanceof MimicCrocodile && ((MimicCrocodile) ch).isLurking()) {
+	@Override
+	protected boolean visualEffectsVisible() {
+		return super.visualEffectsVisible() && !isLurking();
+	}
+
+	private boolean isLurking() {
+		return ch instanceof MimicCrocodile && ((MimicCrocodile) ch).isLurking();
+	}
+
+	private void applyLurkingAlpha(Char character) {
+		if (character instanceof MimicCrocodile
+				&& ((MimicCrocodile) character).isLurking()) {
 			alpha(MimicCrocodile.LURKING_ALPHA);
 		} else {
 			alpha(1f);

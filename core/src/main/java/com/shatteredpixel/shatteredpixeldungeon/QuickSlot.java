@@ -28,6 +28,8 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class QuickSlot {
 
@@ -124,6 +126,8 @@ public class QuickSlot {
 
 	private final String PLACEHOLDERS = "placeholders";
 	private final String PLACEMENTS = "placements";
+	private final String RANKING_ITEMS = "ranking_quickslot_items";
+	private final String RANKING_PLACEMENTS = "ranking_quickslot_placements";
 
 	/**
 	 * Placements array is used as order is preserved while bundling, but exact index is not, so if we
@@ -158,6 +162,60 @@ public class QuickSlot {
 			i++;
 		}
 
+	}
+
+	public void storeRankingSnapshot(Bundle bundle) {
+		ArrayList<Item> items = new ArrayList<>(SIZE);
+		boolean[] placements = new boolean[SIZE];
+		for (int i = 0; i < SIZE; i++) {
+			if (slots[i] != null) {
+				items.add(slots[i].duplicate());
+				placements[i] = true;
+			}
+		}
+		bundle.put(RANKING_ITEMS, items);
+		bundle.put(RANKING_PLACEMENTS, placements);
+	}
+
+	public boolean restoreRankingSnapshot(Bundle bundle) {
+		return restoreRankingSnapshot(bundle, null);
+	}
+
+	public boolean restoreRankingSnapshot(Bundle bundle, Iterable<Item> inventory) {
+		if (!bundle.contains(RANKING_ITEMS) || !bundle.contains(RANKING_PLACEMENTS)) {
+			return false;
+		}
+
+		Collection<Bundlable> items = bundle.getCollection(RANKING_ITEMS);
+		boolean[] placements = bundle.getBooleanArray(RANKING_PLACEMENTS);
+		Set<Item> reboundItems = new HashSet<>();
+		reset();
+		int slot = 0;
+		for (Bundlable bundled : items) {
+			while (slot < SIZE && (slot >= placements.length || !placements[slot])) {
+				slot++;
+			}
+			if (slot >= SIZE) {
+				break;
+			}
+			Item snapshot = (Item) bundled;
+			Item restored = matchingInventoryItem(inventory, snapshot, reboundItems);
+			setSlot(slot++, restored == null ? snapshot : restored);
+		}
+		return true;
+	}
+
+	private Item matchingInventoryItem(Iterable<Item> inventory, Item snapshot, Set<Item> usedItems) {
+		if (inventory == null) {
+			return null;
+		}
+		for (Item item : inventory) {
+			if (!usedItems.contains(item) && item.isSimilar(snapshot)) {
+				usedItems.add(item);
+				return item;
+			}
+		}
+		return null;
 	}
 
 }

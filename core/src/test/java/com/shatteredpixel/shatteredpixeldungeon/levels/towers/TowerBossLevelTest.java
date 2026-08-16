@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.utils.Bundle;
@@ -138,10 +139,59 @@ public class TowerBossLevelTest {
 	}
 
 	@Test
+	public void sealingRelocatesOnlySafeZoneAlliesToLegalArenaCells() {
+		int reservedBossCell = cell(14, 10);
+
+		assertTrue(TowerBossLayout.shouldRelocateAlly(
+				Char.Alignment.ALLY, TowerBossLayout.ENTRANCE));
+		assertFalse(TowerBossLayout.shouldRelocateAlly(
+				Char.Alignment.ALLY, cell(14, 29)));
+		assertFalse(TowerBossLayout.shouldRelocateAlly(
+				Char.Alignment.ENEMY, TowerBossLayout.ENTRANCE));
+		assertTrue(TowerBossLayout.isLegalAllyDestination(
+				cell(14, 11), true, true, false, reservedBossCell, false));
+		assertFalse(TowerBossLayout.isLegalAllyDestination(
+				reservedBossCell, true, true, false, reservedBossCell, false));
+		assertFalse(TowerBossLayout.isLegalAllyDestination(
+				cell(14, 11), true, true, false, reservedBossCell, true));
+		assertFalse(TowerBossLayout.isLegalAllyDestination(
+				cell(14, 11), true, false, true, reservedBossCell, false));
+	}
+
+	@Test
+	public void sealingRelocatesEverySafeZoneCreatureToTheArena() {
+		int reservedBossCell = cell(14, 10);
+
+		assertTrue(TowerBossLayout.shouldRelocateCreature(TowerBossLayout.ENTRANCE));
+		assertFalse(TowerBossLayout.shouldRelocateCreature(cell(14, 11)));
+		assertTrue(TowerBossLayout.isLegalCreatureDestination(
+				cell(14, 11), true, true, false, reservedBossCell, false));
+		assertFalse(TowerBossLayout.isLegalCreatureDestination(
+				reservedBossCell, true, true, false, reservedBossCell, false));
+		assertFalse(TowerBossLayout.isLegalCreatureDestination(
+				cell(14, 11), true, true, false, reservedBossCell, true));
+	}
+
+	@Test
+	public void lockedBossTeleportDestinationsStayInsideTheArena() {
+		assertTrue(TowerBossLayout.isLegalTeleportDestination(
+				cell(14, 11), true, true, false, false));
+		assertFalse(TowerBossLayout.isLegalTeleportDestination(
+				TowerBossLayout.ENTRANCE, true, true, false, false));
+		assertFalse(TowerBossLayout.isLegalTeleportDestination(
+				cell(14, 11), false, true, false, false));
+		assertFalse(TowerBossLayout.isLegalTeleportDestination(
+				cell(14, 11), true, false, true, false));
+		assertFalse(TowerBossLayout.isLegalTeleportDestination(
+				cell(14, 11), true, true, false, true));
+	}
+
+	@Test
 	public void selectedBossIdSurvivesBundleRoundTrip() {
 		TowerBossEncounter encounter = new TowerBossEncounter();
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
-		assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, encounter.selectedBossId());
+		assertEquals(TowerBossGenerator.selectId(Dungeon.seed, Dungeon.depth, Dungeon.branch),
+				encounter.selectedBossId());
 
 		Bundle bundle = new Bundle();
 		encounter.storeInBundle(bundle);
@@ -174,14 +224,14 @@ public class TowerBossLevelTest {
 	public void encounterCreatesSelectedBossAndUsesGenericLifecycle() {
 		TowerBossEncounter encounter = new TowerBossEncounter();
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
-		RecordingHost host = new RecordingHost();
+		RecordingHost host = new RecordingHost(encounter.selectedBossId());
 
 		TowerBoss boss = encounter.start(host);
 
 		assertTrue(encounter.bossEncounterStarted());
 		assertEquals(1, host.sealCalls);
 		assertNotNull(host.launchedBoss);
-		assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID,
+		assertEquals(encounter.selectedBossId(),
 				host.launchedBoss.towerBossId());
 		assertEquals(host.fixedSpawnCell, host.launchedBoss.pos);
 		assertTrue(boss == host.launchedBoss);
@@ -192,7 +242,7 @@ public class TowerBossLevelTest {
 	public void genericBossDeathCleanupAndUnsealAreIdempotent() {
 		TowerBossEncounter encounter = new TowerBossEncounter();
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
-		RecordingHost host = new RecordingHost();
+		RecordingHost host = new RecordingHost(encounter.selectedBossId());
 		TowerBoss boss = encounter.start(host);
 
 		encounter.onBossDefeated(boss, host);
@@ -251,16 +301,21 @@ public class TowerBossLevelTest {
 
 	private static class RecordingHost implements TowerBossEncounter.Host {
 		private final int fixedSpawnCell = cell(14, 10);
+		private final String expectedBossId;
 		private TestTowerBoss launchedBoss;
 		private int prepareCalls;
 		private int cleanupCalls;
 		private int sealCalls;
 		private int unsealCalls;
 
+		private RecordingHost(String expectedBossId) {
+			this.expectedBossId = expectedBossId;
+		}
+
 		@Override
 		public TowerBoss createBoss(String id) {
-			assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, id);
-			return new TestTowerBoss();
+			assertEquals(expectedBossId, id);
+			return new TestTowerBoss(id);
 		}
 
 		@Override
@@ -296,9 +351,16 @@ public class TowerBossLevelTest {
 	}
 
 	private static class TestTowerBoss extends TowerBoss {
+		private final String id;
+
+		private TestTowerBoss(String id) {
+			this.id = id;
+		}
+
 		@Override
 		public String towerBossId() {
-			return TowerBossGenerator.PESTILENCE_KNIGHT_ID;
+			return id;
 		}
 	}
+
 }
