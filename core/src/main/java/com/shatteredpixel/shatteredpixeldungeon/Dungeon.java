@@ -405,7 +405,7 @@ public class Dungeon {
 		for(Item item:allItems){
 			item.collect();
 		}
-        HeroClass.doChallengeSpawn(hero);
+        //HeroClass.doChallengeSpawn(hero);
 
 		Badges.reset();
 
