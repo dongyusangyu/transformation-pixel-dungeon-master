@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.PlagueFlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
@@ -15,6 +16,9 @@ import com.watabou.utils.Callback;
 public class PestilenceKnightSprite extends MobSprite {
 
     private Emitter terminalShadow;
+    private Emitter telegraphFlame;
+
+    private Animation telegraph;
 
     public PestilenceKnightSprite() {
         texture(Assets.Sprites.PESTILENCE_KNIGHT);
@@ -32,6 +36,9 @@ public class PestilenceKnightSprite extends MobSprite {
         zap = new Animation(8, false);
         zap.frames(film, 9,10, 11);
 
+        telegraph = new Animation(1, true);
+        telegraph.frames(film, 0);
+
         die = new Animation(8, false);
         die.frames(film, 12,13, 14, 15,16);
 
@@ -48,13 +55,36 @@ public class PestilenceKnightSprite extends MobSprite {
     public void update() {
         super.update();
         syncPhaseFx();
+        syncTelegraphFx();
     }
 
     public void cast() {
+        endTelegraph();
         play(zap);
     }
 
+    public void beginTelegraph() {
+        play(telegraph);
+        if (telegraphFlame == null || telegraphFlame.parent == null) {
+            telegraphFlame = bottomEmitter();
+            if (telegraphFlame != null) {
+                telegraphFlame.autoKill = false;
+                telegraphFlame.pour(PlagueFlameParticle.FACTORY, 0.08f);
+            }
+        }
+        syncTelegraphFx();
+    }
+
+    public void endTelegraph() {
+        if (telegraphFlame != null) {
+            telegraphFlame.on = false;
+            telegraphFlame.killAndErase();
+            telegraphFlame = null;
+        }
+    }
+
     public void throwPrescription(int cell, int image, Callback callback) {
+        endTelegraph();
         super.zap(cell);
         Item flask = new Item();
         flask.image = image;
@@ -86,6 +116,12 @@ public class PestilenceKnightSprite extends MobSprite {
         super.onComplete(anim);
     }
 
+    @Override
+    public void die() {
+        endTelegraph();
+        super.die();
+    }
+
     private void syncPhaseFx() {
         if (!(ch instanceof PestilenceKnight)) return;
         PestilenceKnight boss = (PestilenceKnight) ch;
@@ -113,6 +149,13 @@ public class PestilenceKnightSprite extends MobSprite {
         }
     }
 
+    private void syncTelegraphFx() {
+        if (telegraphFlame != null) {
+            telegraphFlame.pos(x, y + height, width, 0);
+            telegraphFlame.visible = visible;
+        }
+    }
+
     private void stopTerminalShadow() {
         if (terminalShadow != null) terminalShadow.killAndErase();
         terminalShadow = null;
@@ -120,6 +163,7 @@ public class PestilenceKnightSprite extends MobSprite {
 
     @Override
     public void kill() {
+        endTelegraph();
         stopTerminalShadow();
         super.kill();
     }

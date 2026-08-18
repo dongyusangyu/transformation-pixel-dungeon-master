@@ -95,7 +95,7 @@ public class PalermoSword extends MeleeWeapon {
 	}
 
 	public static int maxForLevel(int level) {
-		return 18 + Math.max(0, level) * 3;
+		return 18 + Math.max(0, level) * 4;
 	}
 
 	public static int strengthRequirementForLevel(int level) {

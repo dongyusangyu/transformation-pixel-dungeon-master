@@ -184,6 +184,7 @@ public class Assets {
 		public static final String PESTILENCE_BOSS      = "music/pestilence_boss.ogg";
 		public static final String DEATH_KNIGHT_BOSS    = "music/death_knight_boss.ogg";
 		public static final String TOWER                = "music/tower.ogg";
+		public static final String TOWER_2              = "music/tower2.ogg";
 		public static final String BACKS1_1    = "music/combat_area.ogg";
 		public static final String BACKS1_2    = "music/chuboss.ogg";
 		public static final String BACKS2    = "music/Oh-Boss.ogg";

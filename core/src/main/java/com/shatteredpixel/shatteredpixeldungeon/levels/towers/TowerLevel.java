@@ -76,6 +76,10 @@ public class TowerLevel extends RegularLevel {
 	public static final int BRANCH = 3;
 	private int generationTowerFloor = -1;
 
+	public static final String[] TOWER_TRACK_LIST =
+			new String[]{Assets.Music.TOWER, Assets.Music.TOWER_2};
+	public static final float[] TOWER_TRACK_CHANCES = new float[]{1f, 1f};
+
 	{
 		color1 = 0x7B2D26;
 		color2 = 0xD7B867;
@@ -83,7 +87,7 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	public void playLevelMusic() {
-		Music.INSTANCE.play(Assets.Music.TOWER, true);
+		Music.INSTANCE.playTracks(TOWER_TRACK_LIST, TOWER_TRACK_CHANCES, false);
 	}
 
 	@Override

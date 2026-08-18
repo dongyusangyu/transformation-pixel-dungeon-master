@@ -458,14 +458,18 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
                 ? plagueFlaskTelegraphTurns(Dungeon.hero == null ? 1f : Dungeon.hero.speed()) : 1;
         announceSkill(skill);
         showTelegraph(cells, telegraphColor(skill));
-        if (sprite instanceof PestilenceKnightSprite) ((PestilenceKnightSprite) sprite).cast();
-        if (!PLAGUE_FLASK.equals(skill)) launchMiasmaProjectile(skill, projectileTarget);
+        if (sprite instanceof PestilenceKnightSprite) {
+            ((PestilenceKnightSprite) sprite).beginTelegraph();
+        }
         spend(TICK);
         finishBossAction();
         return true;
     }
 
     private void launchMiasmaProjectile(final String skill, final int target) {
+        if (sprite instanceof PestilenceKnightSprite) {
+            ((PestilenceKnightSprite) sprite).cast();
+        }
         if (Dungeon.level == null || target < 0 || target >= Dungeon.level.length()
                 || sprite == null || sprite.parent == null) return;
         int image = miasmaProjectileImage(skill);
@@ -550,14 +554,17 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
             cooldowns[FLASK_CD] = plagueFlaskCooldown(
                     Dungeon.hero == null ? 1f : Dungeon.hero.speed());
         } else if (QUARANTINE.equals(skill)) {
+            launchMiasmaProjectile(skill, projectileTarget);
             seedCells(cells, miasmaAmountForSkill(skill), OutbreakMiasma.class, false);
             cooldowns[QUARANTINE_CD] = 7;
         } else if (PALE_CHARGE.equals(skill)) {
+            launchMiasmaProjectile(skill, projectileTarget);
             hitHeroInCells(cells, 30, 45, false);
             knockHeroIfInCells(cells, 2);
             seedCells(cells, miasmaAmountForSkill(skill), PaleMiasma.class, true);
             cooldowns[PALE_CHARGE_CD] = 5;
         } else if (DOOM_PROCESSION.equals(skill)) {
+            launchMiasmaProjectile(skill, projectileTarget);
             seedCells(cells, miasmaAmountForSkill(skill), PaleMiasma.class, false);
             if (processionSteps < 3) {
                 processionSteps++;
@@ -566,8 +573,9 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
                 pendingCells = processionCells(processionSteps);
                 pendingProjectileTarget = miasmaProjectileTarget(pendingCells);
                 showTelegraph(pendingCells, 0x6B557C);
-                launchMiasmaProjectile(DOOM_PROCESSION,
-                        pendingProjectileTarget);
+                if (sprite instanceof PestilenceKnightSprite) {
+                    ((PestilenceKnightSprite) sprite).beginTelegraph();
+                }
             } else {
                 processionSteps = 0;
                 cooldowns[QUARANTINE_CD] = 8;

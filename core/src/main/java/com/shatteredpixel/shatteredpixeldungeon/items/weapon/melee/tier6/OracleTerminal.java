@@ -199,6 +199,10 @@ public class OracleTerminal extends MeleeWeapon {
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
 		int result = super.proc(attacker, defender, damage);
+        if(attacker instanceof Hero){
+            onAttackResolved((Hero) attacker, defender, true, result, DamageTag.PHYSICAL);
+        }
+
 		return applyFormDamage(attacker, result);
 	}
 
@@ -207,6 +211,7 @@ public class OracleTerminal extends MeleeWeapon {
 		if (form != null && form.form() == Form.SCYTHE) {
 			return scytheDamage(damage);
 		}
+
 		return damage;
 	}
 
@@ -217,6 +222,20 @@ public class OracleTerminal extends MeleeWeapon {
 		OracleFormBuff form = currentForm(hero);
 		if (form == null) return;
 		if (requiresLivingTarget(form.form()) && !isValidEnemy(hero, target)) return;
+        /*
+        if(hero.buff(BluntForm.class)!=null && bluntTriggers(Random.Float())){
+            Buff.affect(target, Paralysis.class, 1f);
+            Buff.affect(target, Daze.class, 1f);
+        }else if(hero.buff(SlashForm.class)!=null){
+            applySlash(hero, target, damageDealt);
+        }else if(hero.buff(ThrustForm.class)!=null){
+            Buff.affect(target, Bleeding.class).set(bleedLevel(buffedLvl()));
+        } else if (hero.buff(ScytheForm.class) != null && target.buff(ScytheExecutionMark.class) == null) {
+            Buff.affect(target, ScytheExecutionMark.class);
+            Buff.affect(target, Vulnerable.class, 2f);
+            knockBackScytheTarget(hero, targe
+
+         */
 
 		switch (form.form()) {
 			case BLUNT:
@@ -239,6 +258,8 @@ public class OracleTerminal extends MeleeWeapon {
 				}
 				break;
 		}
+
+
 	}
 
 	private void applySlash(Hero hero, Char primaryTarget, int damageDealt) {
