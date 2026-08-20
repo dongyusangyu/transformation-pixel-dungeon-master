@@ -222,6 +222,20 @@ public class DeathKnightBombardmentTest {
                 grid, cell(7, 1), cell(7, 7)).contains(cell(7, 6)));
     }
 
+    @Test
+    public void executionDoesNotIncludeCoverCellOrOutsideArena() {
+        DeathKnightBombardment.Grid grid = coverGrid();
+        grid.solid[cell(7, 5)] = true;
+        grid.passable[cell(7, 5)] = false;
+        grid.destructibleCover[cell(7, 5)] = true;
+        grid.arena[cell(7, 6)] = false;
+
+        DeathKnightBombardment.Plan plan = DeathKnightBombardment.execution(
+                grid, cell(7, 1), cell(7, 7));
+        assertFalse(plan.contains(cell(7, 5)));
+        assertFalse(plan.contains(cell(7, 6)));
+    }
+
     private static DeathKnightBombardment.Grid openGrid() {
         boolean[] passable = new boolean[WIDTH * WIDTH];
         Arrays.fill(passable, true);
