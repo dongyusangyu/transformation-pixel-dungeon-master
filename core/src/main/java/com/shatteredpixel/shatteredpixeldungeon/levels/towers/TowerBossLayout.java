@@ -87,17 +87,7 @@ final class TowerBossLayout {
 			if (map[cell] != Terrain.EMPTY || isReservedRoute(x, y)) {
 				continue;
 			}
-			switch (Random.Int(3)) {
-				case 0:
-					map[cell] = Terrain.BARRICADE;
-					break;
-				case 1:
-					map[cell] = Terrain.STATUE;
-					break;
-				default:
-					map[cell] = Terrain.REGION_DECO;
-					break;
-			}
+			map[cell] = Terrain.BARRICADE;
 			placed++;
 		}
 	}
@@ -112,6 +102,26 @@ final class TowerBossLayout {
 		int y = cell / WIDTH;
 		return x >= ARENA_LEFT && x < ARENA_LEFT + ARENA_SIZE
 				&& y >= ARENA_TOP && y < ARENA_TOP + ARENA_SIZE;
+	}
+
+	static boolean isDestructibleTerrain(int terrain) {
+		return terrain == Terrain.BARRICADE
+				|| terrain == Terrain.HIGH_GRASS
+				|| terrain == Terrain.FURROWED_GRASS;
+	}
+
+	static boolean isProtectedCell(int cell) {
+		return !isArenaCell(cell) || isReservedRoute(cell % WIDTH, cell / WIDTH);
+	}
+
+	static boolean isSafeZoneCell(int cell) {
+		int x = cell % WIDTH;
+		int y = cell / WIDTH;
+		return x >= 13 && x <= 15 && y >= 31 && y <= 33;
+	}
+
+	static boolean shouldResetForSafeArrival(boolean locked, boolean encounterDefeated) {
+		return locked && !encounterDefeated;
 	}
 
 	static boolean shouldBeginPrelude(boolean encounterBegun, boolean hero, int cell) {

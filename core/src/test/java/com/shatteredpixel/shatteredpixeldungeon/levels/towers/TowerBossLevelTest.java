@@ -16,6 +16,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -91,6 +92,44 @@ public class TowerBossLevelTest {
 		}
 	}
 
+	@Test
+	public void generatedSolidObstaclesAreFlammableBarricades() {
+		int[] map = generateMap(0x5B055L);
+		int barricades = 0;
+		for (int cell = 0; cell < map.length; cell++) {
+			if (map[cell] == Terrain.STATUE || map[cell] == Terrain.REGION_DECO) {
+				fail("solid boss obstacle must use BARRICADE");
+			}
+			if (map[cell] == Terrain.BARRICADE) {
+				barricades++;
+				assertTrue((Terrain.flags[map[cell]] & Terrain.SOLID) != 0);
+				assertTrue((Terrain.flags[map[cell]] & Terrain.LOS_BLOCKING) != 0);
+				assertTrue((Terrain.flags[map[cell]] & Terrain.FLAMABLE) != 0);
+				assertTrue(TowerBossLayout.isArenaCell(cell));
+			}
+		}
+		assertEquals(28, barricades);
+	}
+
+	@Test
+	public void destructibleTerrainIncludesSoftCoverButNotWaterOrDoors() {
+		assertTrue(TowerBossLayout.isDestructibleTerrain(Terrain.BARRICADE));
+		assertTrue(TowerBossLayout.isDestructibleTerrain(Terrain.HIGH_GRASS));
+		assertTrue(TowerBossLayout.isDestructibleTerrain(Terrain.FURROWED_GRASS));
+		assertFalse(TowerBossLayout.isDestructibleTerrain(Terrain.WATER));
+		assertFalse(TowerBossLayout.isDestructibleTerrain(Terrain.DOOR));
+		assertFalse(TowerBossLayout.isDestructibleTerrain(Terrain.UNLOCKED_EXIT));
+	}
+
+	@Test
+	public void fixedRoutesAndGatesAreProtectedFromCoverDestruction() {
+		assertTrue(TowerBossLayout.isProtectedCell(TowerBossLayout.ENTRANCE));
+		assertTrue(TowerBossLayout.isProtectedCell(TowerBossLayout.EXIT));
+		assertTrue(TowerBossLayout.isProtectedCell(TowerBossLayout.SAFE_GATE));
+		assertTrue(TowerBossLayout.isProtectedCell(TowerBossLayout.EXIT_GATE));
+		assertFalse(TowerBossLayout.isProtectedCell(cell(10, 10)));
+	}
+
 	private static void assertValidNaturalTerrain(int[] map) {
 		int water = 0;
 		int vegetation = 0;
@@ -105,8 +144,7 @@ public class TowerBossLevelTest {
 					|| terrain == Terrain.FURROWED_GRASS) {
 				vegetation++;
 				assertTrue(TowerBossLayout.isArenaCell(cell));
-			} else if (terrain == Terrain.BARRICADE || terrain == Terrain.STATUE
-					|| terrain == Terrain.REGION_DECO) {
+			} else if (terrain == Terrain.BARRICADE) {
 				obstacles++;
 				assertTrue(TowerBossLayout.isArenaCell(cell));
 			}
@@ -184,6 +222,21 @@ public class TowerBossLevelTest {
 				cell(14, 11), true, false, true, false));
 		assertFalse(TowerBossLayout.isLegalTeleportDestination(
 				cell(14, 11), true, true, false, true));
+	}
+
+	@Test
+	public void safeArrivalZoneStaysOutsideArenaAndLockedUnfinishedBossResets() {
+		for (int y = 31; y <= 33; y++) {
+			for (int x = 13; x <= 15; x++) {
+				int cell = cell(x, y);
+				assertTrue(TowerBossLayout.isSafeZoneCell(cell));
+				assertFalse(TowerBossLayout.isArenaCell(cell));
+			}
+		}
+
+		assertTrue(TowerBossLayout.shouldResetForSafeArrival(true, false));
+		assertFalse(TowerBossLayout.shouldResetForSafeArrival(false, false));
+		assertFalse(TowerBossLayout.shouldResetForSafeArrival(true, true));
 	}
 
 	@Test
