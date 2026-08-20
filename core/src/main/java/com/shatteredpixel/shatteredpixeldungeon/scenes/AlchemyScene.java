@@ -313,7 +313,7 @@ public class AlchemyScene extends PixelScene {
 												if (item != null && inputs[0] != null) {
 													for (int i = 0; i < inputs.length; i++) {
 														if (inputs[i].item() == null) {
-															if (item instanceof LiquidMetal || item instanceof MissileWeapon || item instanceof ScrollOfMetamorphosis){
+															if (shouldDetachWholeStack(item)){
 																inputs[i].item(item.detachAll(hero.belongings.backpack));
 															} else {
 																inputs[i].item(item.detach(hero.belongings.backpack));
@@ -617,7 +617,7 @@ public class AlchemyScene extends PixelScene {
 				if (item != null && inputs[0] != null) {
 					for (int i = 0; i < inputs.length; i++) {
 						if (inputs[i].item() == null) {
-							if (item instanceof LiquidMetal || item instanceof MissileWeapon || item instanceof ScrollOfMetamorphosis){
+							if (shouldDetachWholeStack(item)){
 								inputs[i].item(item.detachAll(hero.belongings.backpack));
 							} else {
 								inputs[i].item(item.detach(hero.belongings.backpack));
@@ -630,6 +630,13 @@ public class AlchemyScene extends PixelScene {
 			}
 		}
 	};
+
+	private static boolean shouldDetachWholeStack(Item item) {
+		return item instanceof LiquidMetal
+				|| item instanceof MissileWeapon
+				|| item instanceof ScrollOfMetamorphosis
+				|| Recipe.weaponRecipeRequiresWholeStack(item.getClass());
+	}
 	
 	private<T extends Item> ArrayList<T> filterInput(Class<? extends T> itemClass){
 		ArrayList<T> filtered = new ArrayList<>();
@@ -868,7 +875,7 @@ public class AlchemyScene extends PixelScene {
 			ArrayList<Item> found = inventory.getAllSimilar(finding);
 			while (!found.isEmpty() && needed > 0){
 				Item detached;
-				if ((finding instanceof LiquidMetal )||(finding instanceof ScrollOfMetamorphosis )) {
+				if (shouldDetachWholeStack(finding)) {
 					detached = found.get(0).detachAll(inventory.backpack);
 				}else {
 					detached = found.get(0).detach(inventory.backpack);

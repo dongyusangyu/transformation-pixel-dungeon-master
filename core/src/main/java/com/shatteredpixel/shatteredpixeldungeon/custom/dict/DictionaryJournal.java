@@ -327,8 +327,10 @@ public enum DictionaryJournal {
         WEAPONS.d.put("melee_hundredtonhammer",    EXItemSpriteSheet.HUNDRED_TON_HAMMER);
         WEAPONS.d.put("melee_oracleterminal",      EXItemSpriteSheet.ORACLE_TERMINAL);
         WEAPONS.d.put("melee_demontailwhip",       EXItemSpriteSheet.DEMON_TAIL_WHIP);
+		WEAPONS.d.put("melee_venomoussickle",      EXItemSpriteSheet.VENOMOUS_SICKLE);
         WEAPONS.d.put("melee_mercuryblade",        EXItemSpriteSheet.MERCURY_BLADE);
         WEAPONS.d.put("melee_auxiliarycore",       EXItemSpriteSheet.AUXILIARY_CORE);
+        WEAPONS.d.put("melee_radiantgoldhalberd",  EXItemSpriteSheet.RADIANT_GOLD_HALBERD);
         //duelist ability
         WEAPONS.d.put("duelist_ability",    ItemSpriteSheet.WEAPON_HOLDER);
         //ench & curse
@@ -360,6 +362,7 @@ public enum DictionaryJournal {
         WEAPONS.d.put("missile_hammer",     ItemSpriteSheet.THROWING_HAMMER);
         WEAPONS.d.put("missile_trident",    ItemSpriteSheet.TRIDENT);
         WEAPONS.d.put("missile_gungnir",    EXItemSpriteSheet.GUNGNIR);
+        WEAPONS.d.put("missile_portableblackhole", EXItemSpriteSheet.PORTABLE_BLACK_HOLE);
         WEAPONS.d.put("missile_cube",       ItemSpriteSheet.FORCE_CUBE);
         WEAPONS.d.put("missile_spiritbow",  ItemSpriteSheet.SPIRIT_BOW);
         WEAPONS.d.put("missile_tatteki",  ItemSpriteSheet.TATTEKI);

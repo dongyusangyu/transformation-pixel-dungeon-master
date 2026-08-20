@@ -38,7 +38,7 @@ import java.util.Set;
 public class CorrosiveSwarm extends Swarm {
 
 	private static final float OOZE_DURATION = 2f;
-	private static final int SPLIT_HP_THRESHOLD = 10;
+	private static final int SPLIT_HP_THRESHOLD = 20;
 	private static final float BASE_LOOT_CHANCE = 1f / 8f;
 	private static final String SPLIT_DEPTH = "split_depth";
 

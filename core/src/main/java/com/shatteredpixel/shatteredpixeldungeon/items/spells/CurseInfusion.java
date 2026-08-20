@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.spells;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
@@ -68,8 +69,8 @@ public class CurseInfusion extends InventorySpell {
 		if (item instanceof Weapon) {
 			Weapon w = (Weapon) item;
 			if (w.enchantment != null) {
-				//if we are freshly applying curse infusion, don't replace an existing curse
-				if (w.hasGoodEnchant() || w.curseInfusionBonus) {
+				//Normal mode preserves an existing curse; random mode must reroll it into its curse pool.
+				if (shouldRerollExistingAffix(isRandomMode(), w.hasGoodEnchant(), w.curseInfusionBonus)) {
 					w.enchant(Weapon.Enchantment.randomCurse(w.enchantment.getClass()));
 				}
 			} else {
@@ -82,8 +83,8 @@ public class CurseInfusion extends InventorySpell {
 		} else if (item instanceof Armor){
 			Armor a = (Armor) item;
 			if (a.glyph != null){
-				//if we are freshly applying curse infusion, don't replace an existing curse
-				if (a.hasGoodGlyph() || a.curseInfusionBonus) {
+				//Normal mode preserves an existing curse; random mode must reroll it into its curse pool.
+				if (shouldRerollExistingAffix(isRandomMode(), a.hasGoodGlyph(), a.curseInfusionBonus)) {
 					a.inscribe(Armor.Glyph.randomCurse(a.glyph.getClass()));
 				}
 			} else {
@@ -98,6 +99,14 @@ public class CurseInfusion extends InventorySpell {
 		}
 		Badges.validateItemLevelAquired(item);
 		updateQuickslot();
+	}
+
+	static boolean shouldRerollExistingAffix(boolean randomMode, boolean hasGoodAffix, boolean curseInfusionBonus) {
+		return randomMode || hasGoodAffix || curseInfusionBonus;
+	}
+
+	private static boolean isRandomMode() {
+		return Dungeon.hero != null && Dungeon.hero.randomMode;
 	}
 	
 	@Override

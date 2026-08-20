@@ -715,6 +715,9 @@ public class InterlevelScene extends PixelScene {
 		} else {
 			level = Dungeon.newLevel();
 		}
+		if (level.shouldResetForSafeArrival()) {
+			level = Dungeon.newLevel();
+		}
 		Dungeon.switchLevel( level, level.fallCell( fallIntoPit ));
 	}
 
@@ -810,21 +813,21 @@ public class InterlevelScene extends PixelScene {
 
 
 		Level level;
-		if (Dungeon.branch == 0 && Dungeon.level.locked && Dungeon.bossLevel()
-				&& !Statistics.subLimation[Dungeon.depth/5-1]) {
+		if (shouldResetSealedBossOnUnblessedAnkh(Dungeon.level)) {
 			ArrayList<Item> preservedItems = Dungeon.level.getItemsToPreserveFromSealedResurrect();
 
 			Dungeon.hero.resurrect();
 			level = Dungeon.newLevel();
-			Dungeon.hero.pos = level.randomRespawnCell(Dungeon.hero);
+			level.onSealedResurrectionReset();
+			Dungeon.hero.pos = level.safeArrivalCell(Dungeon.hero);
 			if (Dungeon.hero.pos == -1) Dungeon.hero.pos = level.entrance();
 
 			for (Item i : preservedItems){
-				int pos = level.randomRespawnCell(null);
+				int pos = level.safeArrivalCell(null);
 				if (pos == -1) pos = level.entrance();
 				level.drop(i, pos);
 			}
-			int pos = level.randomRespawnCell(null);
+			int pos = level.safeArrivalCell(null);
 			if (pos == -1) pos = level.entrance();
 			level.drop(new LostBackpack(), pos);
 			//need to reset key replacement tracking as well
@@ -838,21 +841,26 @@ public class InterlevelScene extends PixelScene {
 			BArray.setFalse(level.visited);
 			BArray.setFalse(level.mapped);
 			int invPos = Dungeon.hero.pos;
-			int tries = 0;
-			do {
-				if(Dungeon.branch == 0 && Dungeon.bossLevel()
-						&& Statistics.subLimation[Dungeon.depth/5-1]){
-                    break;
-				}else{
-					Dungeon.hero.pos = level.randomRespawnCell(Dungeon.hero);
-				}
+			int safeRespawn = level.unblessedAnkhSafeRespawnCell(Dungeon.hero);
+			if (safeRespawn != -1) {
+				Dungeon.hero.pos = safeRespawn;
+			} else {
+				int tries = 0;
+				do {
+					if(Dungeon.branch == 0 && Dungeon.bossLevel()
+							&& Statistics.subLimation[Dungeon.depth/5-1]){
+						break;
+					}else{
+						Dungeon.hero.pos = level.randomRespawnCell(Dungeon.hero);
+					}
 
-				tries++;
+					tries++;
 
-			//prevents spawning on traps or plants, prefers farther locations first
-			} while (level.traps.get(Dungeon.hero.pos) != null
-					|| (level.plants.get(Dungeon.hero.pos) != null && tries < 500)
-					|| level.trueDistance(invPos, Dungeon.hero.pos) <= 30 - (tries/10));
+					//prevents spawning on traps or plants, prefers farther locations first
+				} while (level.traps.get(Dungeon.hero.pos) != null
+						|| (level.plants.get(Dungeon.hero.pos) != null && tries < 500)
+						|| level.trueDistance(invPos, Dungeon.hero.pos) <= 30 - (tries/10));
+			}
 
 			//directly trample grass
 			if (level.map[Dungeon.hero.pos] == Terrain.HIGH_GRASS || level.map[Dungeon.hero.pos] == Terrain.FURROWED_GRASS){
@@ -869,6 +877,13 @@ public class InterlevelScene extends PixelScene {
 		Notes.add(Notes.Landmark.LOST_PACK);
 
 		Dungeon.switchLevel( level, Dungeon.hero.pos );
+	}
+
+	static boolean shouldResetSealedBossOnUnblessedAnkh(Level level) {
+		if (level == null || !level.locked) return false;
+		if (level.shouldResetForSafeArrival()) return true;
+		return Dungeon.branch == 0 && Dungeon.bossLevel()
+				&& !Statistics.subLimation[Dungeon.depth / 5 - 1];
 	}
 
 	private void reset() throws IOException {

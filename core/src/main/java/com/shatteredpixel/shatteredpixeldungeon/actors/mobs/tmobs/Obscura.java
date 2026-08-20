@@ -51,7 +51,7 @@ public class Obscura extends Mob implements Stasis.ReleaseListener {
 
 	{
 		spriteClass = ObscuraSprite.class;
-		HP = HT = 150;
+		HP = HT = 200;
 		defenseSkill = 30;
 
 		EXP = 13;

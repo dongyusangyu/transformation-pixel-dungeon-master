@@ -10,6 +10,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
@@ -28,7 +29,7 @@ public class MimicCrocodile extends Mob {
 	public static final float LURKING_ALPHA = 0.2f;
 	private static final int NORMAL_DAMAGE_MIN = 20;
 	private static final int NORMAL_DAMAGE_MAX = 30;
-	private static final float AMBUSH_DAMAGE_MULTIPLIER = 3f;
+	private static final int AMBUSH_DAMAGE = 60;
 	private static final float CRIPPLE_DURATION = 3f;
 	private static final float MYSTERY_MEAT_DROP_CHANCE = 1f / 4f;
 	private static final float PHANTOM_MEAT_DROP_CHANCE = 1f / 100f;
@@ -56,7 +57,7 @@ public class MimicCrocodile extends Mob {
 	@Override
 	public int damageRoll() {
 		return ambushAttack
-				? Math.round(normalDamageMax() * AMBUSH_DAMAGE_MULTIPLIER)
+				? AMBUSH_DAMAGE
 				: Random.NormalIntRange(normalDamageMin(), normalDamageMax());
 	}
 
@@ -142,14 +143,21 @@ public class MimicCrocodile extends Mob {
 		ambushAttack = false;
 	}
 
+	protected boolean isPlayerTarget(Char target) {
+		return target == Dungeon.hero;
+	}
+
 	@Override
 	protected void onAttackResolved(
 			Char target, boolean hit, int damageDealt, DamageTag... damageTags) {
 		super.onAttackResolved(target, hit, damageDealt, damageTags);
 		if (hit && target != null && target.isAlive()) {
 			Buff.affect(target, Cripple.class, CRIPPLE_DURATION);
-			Buff.affect(target, Bleeding.class).set(
-					Math.max(1, Math.round(damageDealt * 0.5f)));
+			Bleeding bleeding = Buff.affect(target, Bleeding.class);
+			bleeding.set(Math.max(1, Math.round(damageDealt * 0.5f)));
+			if (ambushAttack && isPlayerTarget(target)) {
+				bleeding.extend(20f);
+			}
 		}
 		finishAmbushAttack();
 	}

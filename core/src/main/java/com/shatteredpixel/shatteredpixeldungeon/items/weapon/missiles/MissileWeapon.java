@@ -75,6 +75,7 @@ import com.watabou.utils.Reflection;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 abstract public class MissileWeapon extends Weapon {
 
@@ -89,9 +90,9 @@ abstract public class MissileWeapon extends Weapon {
 	}
 
 	public static final long UNASSIGNED_SET_ID = Long.MIN_VALUE;
+	private static final SecureRandom SET_ID_RANDOM = new SecureRandom();
 
-	//TODO maybe make this like actor IDs, instead of random? collisions unlikely, but it's messy
-	public long setID = UNASSIGNED_SET_ID;
+	public long setID = newSetID();
 
 	//whether or not this instance of the item exists purely to trigger its effect. i.e. no dropping
 	public boolean spawnedForEffect = false;
@@ -181,7 +182,7 @@ abstract public class MissileWeapon extends Weapon {
 			durability = MAX_DURABILITY;
 			extraThrownLeft = false;
 			quantity = defaultQuantity();
-			Buff.affect(Dungeon.hero, UpgradedSetTracker.class).levelThresholds.put(setID, trueLevel()+1);
+			UpgradedSetTracker.setCanonicalLevel(Dungeon.hero, this, trueLevel()+1);
 		}
 		//thrown weapons don't get curse weakened
 		boolean wasCursed = cursed;
@@ -201,9 +202,18 @@ abstract public class MissileWeapon extends Weapon {
 			durability = MAX_DURABILITY;
 			extraThrownLeft = false;
 			quantity = defaultQuantity();
-			Buff.affect(Dungeon.hero, UpgradedSetTracker.class).levelThresholds.put(setID, trueLevel()+1);
+			UpgradedSetTracker.setCanonicalLevel(Dungeon.hero, this, trueLevel()+1);
 		}
 		return super.upgrade();
+	}
+
+	@Override
+	public void recordUpgradeScrollUse() {
+		if (Dungeon.hero != null && hasAssignedSetID()) {
+			UpgradedSetTracker.recordUpgradeScrollUse(Dungeon.hero, this);
+		} else {
+			super.recordUpgradeScrollUse();
+		}
 	}
 
 	@Override
@@ -217,6 +227,10 @@ abstract public class MissileWeapon extends Weapon {
 	public boolean collect(Bag container) {
 		if (container != null && container.owner instanceof Hero){
 			ensureSetIDAssigned();
+			if (!UpgradedSetTracker.pickupValid((Hero) container.owner, this)) {
+				quantity(0);
+				return true;
+			}
 		}
 		if (container instanceof MagicalHolster) holster = true;
 		boolean collected = super.collect(container);
@@ -236,12 +250,7 @@ abstract public class MissileWeapon extends Weapon {
 
 		boolean thisAssigned = hasAssignedSetID();
 		boolean otherAssigned = other.hasAssignedSetID();
-		if (thisAssigned && otherAssigned){
-			return setID == other.setID;
-		}
-		return !thisAssigned && !otherAssigned
-				&& getClass() == other.getClass()
-				&& trueLevel() == other.trueLevel();
+		return thisAssigned && otherAssigned && setID == other.setID;
 	}
 	
 	@Override
@@ -889,6 +898,7 @@ abstract public class MissileWeapon extends Weapon {
 		spawnedForEffect = bundle.getBoolean(SPAWNED);
 		durability = bundle.getFloat(DURABILITY);
 		extraThrownLeft = bundle.getBoolean(EXTRA_LEFT);
+		ensureSetIDAssigned();
 	}
 
 	public static class PlaceHolder extends MissileWeapon {
@@ -920,20 +930,153 @@ abstract public class MissileWeapon extends Weapon {
 	public static class UpgradedSetTracker extends Buff {
 
 		public HashMap<Long, Integer> levelThresholds = new HashMap<>();
+		public HashMap<Long, Integer> upgradeScrollCredits = new HashMap<>();
+		private HashSet<Long> unresolvedLegacyCredits = new HashSet<>();
+		private boolean legacyCreditLedger;
+		private boolean rejectUntrackedLocalCredits;
 
 		public static boolean pickupValid(Hero h, MissileWeapon w){
-			if (h.buff(UpgradedSetTracker.class) != null){
-				HashMap<Long, Integer> levelThresholds = h.buff(UpgradedSetTracker.class).levelThresholds;
-				if (levelThresholds.containsKey(w.setID)){
-					return w.trueLevel() >= levelThresholds.get(w.setID);
+			if (h == null || w == null) return true;
+			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
+			return tracker == null || tracker.synchronizeMember(w);
+		}
+
+		public static int availableUpgradeScrollUses(Hero h, MissileWeapon w) {
+			if (h == null || w == null || !w.hasAssignedSetID()) {
+				return w == null ? 0 : Math.max(0, w.upgradeScrollUses);
+			}
+			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
+			return tracker == null
+					? Math.max(0, w.upgradeScrollUses)
+					: tracker.availableUpgradeScrollUses(w);
+		}
+
+		public static int consumeUpgradeScrollUses(Hero h, MissileWeapon w) {
+			if (w == null) return 0;
+			if (h == null || !w.hasAssignedSetID()) {
+				int credits = Math.max(0, w.upgradeScrollUses);
+				w.upgradeScrollUses = 0;
+				return credits;
+			}
+			UpgradedSetTracker tracker = Buff.affect(h, UpgradedSetTracker.class);
+			if (tracker == null) {
+				int credits = Math.max(0, w.upgradeScrollUses);
+				w.upgradeScrollUses = 0;
+				return credits;
+			}
+			return tracker.consumeUpgradeScrollUses(w);
+		}
+
+		public static void recordUpgradeScrollUse(Hero h, MissileWeapon w) {
+			if (w == null) return;
+			if (h == null || !w.hasAssignedSetID()) {
+				w.upgradeScrollUses++;
+				return;
+			}
+			UpgradedSetTracker tracker = Buff.affect(h, UpgradedSetTracker.class);
+			if (tracker == null) {
+				w.upgradeScrollUses++;
+				return;
+			}
+			tracker.recordUpgradeScrollUse(w);
+		}
+
+		public static void setCanonicalLevel(Hero h, MissileWeapon w, int level) {
+			if (h == null || w == null || !w.hasAssignedSetID()) return;
+			UpgradedSetTracker tracker = Buff.affect(h, UpgradedSetTracker.class);
+			if (tracker != null) tracker.setCanonicalLevel(w, level);
+		}
+
+		public static void resetForNewCycle(Hero h) {
+			if (h == null) return;
+			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
+			if (tracker != null) {
+				tracker.resetLedger(true);
+			}
+		}
+
+		public static void resetLegacyForNewCycle(Hero h) {
+			if (h == null) return;
+			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
+			if (tracker != null) tracker.resetLegacyForNewCycle();
+		}
+
+		public void resetLegacyForNewCycle() {
+			if (legacyCreditLedger) resetLedger(true);
+		}
+
+		private void resetLedger(boolean rejectUntrackedLocalCredits) {
+			levelThresholds.clear();
+			upgradeScrollCredits.clear();
+			unresolvedLegacyCredits.clear();
+			legacyCreditLedger = false;
+			this.rejectUntrackedLocalCredits = rejectUntrackedLocalCredits;
+		}
+
+		public int availableUpgradeScrollUses(MissileWeapon w) {
+			return w == null ? 0 : resolveUpgradeScrollCredits(w);
+		}
+
+		public int consumeUpgradeScrollUses(MissileWeapon w) {
+			if (w == null) return 0;
+			int credits = resolveUpgradeScrollCredits(w);
+			upgradeScrollCredits.put(w.setID, 0);
+			unresolvedLegacyCredits.remove(w.setID);
+			w.upgradeScrollUses = 0;
+			return credits;
+		}
+
+		public void recordUpgradeScrollUse(MissileWeapon w) {
+			if (w == null) return;
+			int credits = resolveUpgradeScrollCredits(w) + 1;
+			upgradeScrollCredits.put(w.setID, credits);
+			w.upgradeScrollUses = credits;
+		}
+
+		public void setCanonicalLevel(MissileWeapon w, int level) {
+			if (w != null) levelThresholds.put(w.setID, level);
+		}
+
+		private int resolveUpgradeScrollCredits(MissileWeapon w) {
+			if (unresolvedLegacyCredits.remove(w.setID)) {
+				Integer canonicalLevel = levelThresholds.get(w.setID);
+				int credits = canonicalLevel != null
+						&& canonicalLevel != Integer.MAX_VALUE
+						&& w.trueLevel() == canonicalLevel
+						? Math.max(0, w.upgradeScrollUses)
+						: 0;
+				upgradeScrollCredits.put(w.setID, credits);
+			} else if (!upgradeScrollCredits.containsKey(w.setID)) {
+				upgradeScrollCredits.put(w.setID, rejectUntrackedLocalCredits
+						? 0 : Math.max(0, w.upgradeScrollUses));
+			}
+			return upgradeScrollCredits.get(w.setID);
+		}
+
+		public boolean synchronizeMember(MissileWeapon w) {
+			Integer canonicalLevel = levelThresholds.get(w.setID);
+			if (canonicalLevel != null) {
+				if (canonicalLevel == Integer.MAX_VALUE || w.trueLevel() < canonicalLevel) {
+					return false;
 				}
-				return true;
+				int credits = resolveUpgradeScrollCredits(w);
+				if (w.trueLevel() > canonicalLevel) {
+					w.degrade(w.trueLevel() - canonicalLevel);
+				}
+				w.upgradeScrollUses = credits;
+			} else {
+				w.upgradeScrollUses = resolveUpgradeScrollCredits(w);
 			}
 			return true;
 		}
 
 		public static final String SET_IDS = "set_ids";
 		public static final String SET_LEVELS = "set_levels";
+		private static final String CREDIT_SET_IDS = "credit_set_ids";
+		private static final String CREDIT_USES = "credit_uses";
+		private static final String UNRESOLVED_CREDIT_SET_IDS = "unresolved_credit_set_ids";
+		private static final String REJECT_UNTRACKED_LOCAL_CREDITS =
+				"reject_untracked_local_credits";
 
 		@Override
 		public void storeInBundle(Bundle bundle) {
@@ -948,6 +1091,23 @@ abstract public class MissileWeapon extends Weapon {
 			}
 			bundle.put(SET_IDS, IDs);
 			bundle.put(SET_LEVELS, levels);
+
+			long[] creditIDs = new long[upgradeScrollCredits.size()];
+			int[] credits = new int[upgradeScrollCredits.size()];
+			i = 0;
+			for (Long ID : upgradeScrollCredits.keySet()) {
+				creditIDs[i] = ID;
+				credits[i] = upgradeScrollCredits.get(ID);
+				i++;
+			}
+			bundle.put(CREDIT_SET_IDS, creditIDs);
+			bundle.put(CREDIT_USES, credits);
+
+			long[] unresolvedIDs = new long[unresolvedLegacyCredits.size()];
+			i = 0;
+			for (Long ID : unresolvedLegacyCredits) unresolvedIDs[i++] = ID;
+			bundle.put(UNRESOLVED_CREDIT_SET_IDS, unresolvedIDs);
+			bundle.put(REJECT_UNTRACKED_LOCAL_CREDITS, rejectUntrackedLocalCredits);
 		}
 
 		@Override
@@ -956,8 +1116,33 @@ abstract public class MissileWeapon extends Weapon {
 			long[] IDs = bundle.getLongArray(SET_IDS);
 			int[] levels = bundle.getIntArray(SET_LEVELS);
 			levelThresholds.clear();
-			for (int i = 0; i <IDs.length; i++){
+			for (int i = 0; IDs != null && levels != null
+					&& i < Math.min(IDs.length, levels.length); i++){
 				levelThresholds.put(IDs[i], levels[i]);
+			}
+
+			upgradeScrollCredits.clear();
+			unresolvedLegacyCredits.clear();
+			if (bundle.contains(CREDIT_SET_IDS) && bundle.contains(CREDIT_USES)) {
+				legacyCreditLedger = false;
+				rejectUntrackedLocalCredits = bundle.getBoolean(
+						REJECT_UNTRACKED_LOCAL_CREDITS);
+				long[] creditIDs = bundle.getLongArray(CREDIT_SET_IDS);
+				int[] credits = bundle.getIntArray(CREDIT_USES);
+				for (int i = 0; creditIDs != null && credits != null
+						&& i < Math.min(creditIDs.length, credits.length); i++) {
+					upgradeScrollCredits.put(creditIDs[i], Math.max(0, credits[i]));
+				}
+				if (bundle.contains(UNRESOLVED_CREDIT_SET_IDS)) {
+					long[] unresolvedIDs = bundle.getLongArray(UNRESOLVED_CREDIT_SET_IDS);
+					if (unresolvedIDs != null) {
+						for (long ID : unresolvedIDs) unresolvedLegacyCredits.add(ID);
+					}
+				}
+			} else {
+				legacyCreditLedger = true;
+				rejectUntrackedLocalCredits = false;
+				unresolvedLegacyCredits.addAll(levelThresholds.keySet());
 			}
 		}
 	}
@@ -972,8 +1157,16 @@ abstract public class MissileWeapon extends Weapon {
 
 	public void ensureSetIDAssigned(){
 		if (usesIndependentSetID() && setID == UNASSIGNED_SET_ID){
-			setID = new SecureRandom().nextLong();
+			setID = newSetID();
 		}
+	}
+
+	private static long newSetID(){
+		long id;
+		do {
+			id = SET_ID_RANDOM.nextLong();
+		} while (id == UNASSIGNED_SET_ID);
+		return id;
 	}
 
 	public static void sanitizeInventorySets(Hero hero, Item preferredSource){

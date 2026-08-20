@@ -16,11 +16,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
@@ -28,9 +31,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.utils.DungeonSeed;
 import com.watabou.utils.Reflection;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -95,6 +100,7 @@ public final class RankingRestart {
 			throw new IllegalStateException("Ranking record has no hero data");
 		}
 
+		sanitizeLegacyInventory(Dungeon.hero);
 		Preparation preparation = prepareHero(Dungeon.hero);
 		int newGold = calculateStartingGold(pendingRecord.score, preparation.convertedGold);
 
@@ -103,6 +109,7 @@ public final class RankingRestart {
 		Dungeon.customSeedText = "";
 		Dungeon.seed = nextNewCycleSeed();
 		Dungeon.reinit(false);
+		Ghost.Quest.complete();
 		identifyAnonymousItemTypes();
 		Dungeon.hero.belongings.identify();
 		claimCarriedArtifacts(Dungeon.hero.belongings);
@@ -115,12 +122,7 @@ public final class RankingRestart {
 		// action buffs again after the new-cycle state and talents are in place.
 		Dungeon.hero.ensureSubclassBuffs();
 		refreshHealthForNewCycle(Dungeon.hero);
-
-		ScrollOfUpgrade upgrades = new ScrollOfUpgrade();
-		upgrades.quantity(UPGRADE_SCROLLS);
-		if (!upgrades.collect()) {
-			Dungeon.hero.belongings.backpack.items.add(upgrades);
-		}
+		normalizeUpgradeScrolls(Dungeon.hero);
 	}
 
 	static void refreshHealthForNewCycle(Hero hero) {
@@ -141,10 +143,147 @@ public final class RankingRestart {
 				hero.belongings.misc,
 				hero.belongings.ring,
 				hero.belongings.secondWep);
+		prepareDriedRose(hero);
+		MissileWeapon.UpgradedSetTracker.resetForNewCycle(hero);
 
 		clearNegativeTalents(hero);
 		clearRandomMode(hero);
 		return preparation;
+	}
+
+	static void sanitizeLegacyInventory(Hero hero) {
+		if (hero == null || hero.belongings == null || hero.belongings.backpack == null) {
+			return;
+		}
+
+		ArrayList<ItemLocation> locations = new ArrayList<>();
+		collectItemLocations(hero.belongings.backpack, 0, locations);
+		normalizeWaterskins(locations);
+
+		removeLegacyFlattenedItems(hero.belongings.backpack, Wand.class);
+	}
+
+	private static void normalizeWaterskins(List<ItemLocation> locations) {
+		ArrayList<ItemLocation> waterskins = new ArrayList<>();
+		for (ItemLocation location : locations) {
+			if (location.item instanceof Waterskin) {
+				waterskins.add(location);
+			}
+		}
+		if (waterskins.size() <= 1) {
+			return;
+		}
+
+		ItemLocation canonical = waterskins.get(0);
+		for (ItemLocation location : waterskins) {
+			if (Dungeon.quickslot.contains(location.item)) {
+				canonical = location;
+				break;
+			}
+		}
+
+		Waterskin kept = (Waterskin) canonical.item;
+		for (ItemLocation location : waterskins) {
+			Waterskin candidate = (Waterskin) location.item;
+			kept.volume = Math.max(kept.volume, candidate.volume);
+			if (location != canonical) {
+				location.container.items.remove(candidate);
+				rebindQuickslot(candidate, kept);
+			}
+		}
+		rebindDetachedWaterskinSlots(kept);
+	}
+
+	static void removeLegacyFlattenedItems(Bag backpack,
+			Class<? extends Item> migratedItemType) {
+		if (backpack == null || migratedItemType == null) {
+			return;
+		}
+		ArrayList<ItemLocation> locations = new ArrayList<>();
+		collectItemLocations(backpack, 0, locations);
+		ArrayList<ItemLocation> nestedItems = new ArrayList<>();
+		for (ItemLocation location : locations) {
+			if (location.depth > 0 && migratedItemType.isInstance(location.item)) {
+				nestedItems.add(location);
+			}
+		}
+
+		for (ItemLocation location : locations) {
+			if (location.depth != 0 || !migratedItemType.isInstance(location.item)) {
+				continue;
+			}
+			for (ItemLocation nested : nestedItems) {
+				if (QuickSlot.rankingSnapshotMatches(location.item, nested.item)
+						&& quickslotContainsLegacyCopy(location.item, nested.item)) {
+					location.container.items.remove(location.item);
+					rebindQuickslot(location.item, nested.item);
+					rebindMatchingDetachedSlots(location.item, nested.item);
+					break;
+				}
+			}
+		}
+	}
+
+	private static boolean quickslotContainsLegacyCopy(Item first, Item second) {
+		for (int slot = 0; slot < QuickSlot.SIZE; slot++) {
+			Item quickslotItem = Dungeon.quickslot.getItem(slot);
+			if (quickslotItem == first || quickslotItem == second
+					|| QuickSlot.rankingSnapshotMatches(quickslotItem, first)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static void collectItemLocations(Bag container, int depth,
+			List<ItemLocation> locations) {
+		for (Item item : container.items) {
+			locations.add(new ItemLocation(container, item, depth));
+			if (item instanceof Bag) {
+				collectItemLocations((Bag) item, depth + 1, locations);
+			}
+		}
+	}
+
+	private static void rebindQuickslot(Item removed, Item kept) {
+		for (int slot = 0; slot < QuickSlot.SIZE; slot++) {
+			if (Dungeon.quickslot.getItem(slot) == removed) {
+				Dungeon.quickslot.setSlot(slot, kept);
+				return;
+			}
+		}
+	}
+
+	private static void rebindDetachedWaterskinSlots(Waterskin kept) {
+		for (int slot = 0; slot < QuickSlot.SIZE; slot++) {
+			Item item = Dungeon.quickslot.getItem(slot);
+			if (item instanceof Waterskin && item != kept) {
+				Dungeon.quickslot.setSlot(slot, kept);
+				return;
+			}
+		}
+	}
+
+	private static void rebindMatchingDetachedSlots(Item removed, Item kept) {
+		for (int slot = 0; slot < QuickSlot.SIZE; slot++) {
+			Item item = Dungeon.quickslot.getItem(slot);
+			if (item != kept && QuickSlot.rankingSnapshotMatches(item, removed)) {
+				Dungeon.quickslot.setSlot(slot, kept);
+				return;
+			}
+		}
+	}
+
+	private static final class ItemLocation {
+		final Bag container;
+		final Item item;
+		final int depth;
+
+		ItemLocation(Bag container, Item item, int depth) {
+			this.container = container;
+			this.item = item;
+			this.depth = depth;
+		}
 	}
 
 	static Preparation prepareInventory(Bag backpack, Item... equippedItems) {
@@ -160,6 +299,15 @@ public final class RankingRestart {
 			resetEquipmentLevel(item);
 		}
 		return new Preparation((int) Math.min(MAX_INVENTORY_GOLD, convertedGold));
+	}
+
+	private static void prepareDriedRose(Hero hero) {
+		DriedRose rose = hero.belongings.getItem(DriedRose.class);
+		if (rose != null) {
+			resetEquipmentLevel(rose.ghostWeapon());
+			resetEquipmentLevel(rose.ghostArmor());
+			rose.resetGhostForNewCycle();
+		}
 	}
 
 	private static long prepareBag(Bag bag) {
@@ -181,11 +329,46 @@ public final class RankingRestart {
 	}
 
 	private static boolean shouldKeep(Item item) {
-		return !isRemovedFromNewCycle(item.getClass())
+		return !(item instanceof ScrollOfUpgrade)
+				&& !isRemovedFromNewCycle(item.getClass())
 				&& (item.unique
 				|| item instanceof PotionOfStrength
 				|| item instanceof EquipableItem
 				|| item instanceof Wand);
+	}
+
+	static void normalizeUpgradeScrolls(Hero hero) {
+		if (hero == null || hero.belongings == null || hero.belongings.backpack == null) {
+			return;
+		}
+
+		ScrollOfUpgrade upgrades = new ScrollOfUpgrade();
+		normalizeUpgradeScrolls(hero, ScrollOfUpgrade.class, upgrades);
+	}
+
+	static void normalizeUpgradeScrolls(Hero hero, Class<? extends Item> upgradeScrollType, Item upgrades) {
+		if (hero == null || hero.belongings == null || hero.belongings.backpack == null
+				|| upgradeScrollType == null || upgrades == null) {
+			return;
+		}
+
+		removeUpgradeScrolls(hero.belongings.backpack, upgradeScrollType);
+		upgrades.quantity(UPGRADE_SCROLLS);
+		if (!upgrades.collect()) {
+			hero.belongings.backpack.items.add(upgrades);
+		}
+	}
+
+	private static void removeUpgradeScrolls(Bag bag, Class<? extends Item> upgradeScrollType) {
+		for (Item item : bag.items.toArray(new Item[0])) {
+			if (item instanceof Bag) {
+				removeUpgradeScrolls((Bag) item, upgradeScrollType);
+			}
+			if (upgradeScrollType.isInstance(item)) {
+				Dungeon.quickslot.clearItem(item);
+				bag.items.remove(item);
+			}
+		}
 	}
 
 	static boolean isRemovedFromNewCycle(Class<? extends Item> itemClass) {
@@ -198,6 +381,7 @@ public final class RankingRestart {
 				&& (item instanceof EquipableItem || item instanceof Wand)
 				&& item.isUpgradable()) {
 			item.level(0);
+			item.upgradeScrollUses = 0;
 		}
 	}
 

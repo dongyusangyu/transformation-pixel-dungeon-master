@@ -85,13 +85,18 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	public static final float FIRE_IMBUE_DURATION = FireImbue.DURATION * 0.3f;
 	public static final float FIRE_ABSORPTION_COOLDOWN = 20f;
 	public static final int BASE_NORMAL_SHOT_RANGE = 6;
+	public static final int STRONGER_BOSS_SHOT_RANGE = 8;
+	public static final int EXTREME_BOSS_SHOT_RANGE = 10;
+	public static final float STRONGER_BOSS_DAMAGE_MULTIPLIER = 1.2f;
+	public static final int HARSH_HAWK_HEALTH_INTERVAL = 75;
 	public static final int HAWK_RELAY_RADIUS = 4;
 	public static final int GALE_INTERVAL = 5;
 	public static final int GALE_RECOVERY_TURNS = 1;
 	public static final int ESCAPE_COOLDOWN = 4;
 	public static final int PLANT_HUNT_GRACE = 3;
 	public static final int PLANT_HUNT_DURATION = 5;
-	public static final float NATURE_HUNT_MOVE_MULTIPLIER = 2f;
+	public static final float NATURE_HUNT_MOVE_MULTIPLIER = 3f;
+	public static final float EXTREME_NATURE_HUNT_MOVE_MULTIPLIER = 5f;
 	public static final float NATURE_HUNT_ATTACK_DELAY_MULTIPLIER = 0.75f;
 	public static final int NATURE_HUNT_PLANT_CHANCE_DENOMINATOR = 4;
 	public static final int MAX_FADELEAF_ESCAPES = 3;
@@ -170,6 +175,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	private boolean meleeAttack;
 	private transient boolean ordinaryActionStarted;
 	private transient boolean claimedPlantThisAction;
+	private int challengeHawkThresholdsTriggered;
 
 	private static final String PHASE = "phase";
 	private static final String ENCOUNTER_DELAY = "encounter_delay";
@@ -192,6 +198,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	private static final String MARKED_PLANT_CELL = "marked_plant_cell";
 	private static final String PLANT_HUNT_TURNS = "plant_hunt_turns";
 	private static final String PLANT_GRACE_TURNS = "plant_grace_turns";
+	private static final String CHALLENGE_HAWK_THRESHOLDS_TRIGGERED =
+			"challenge_hawk_thresholds_triggered";
 
 	{
 		HUNTING = new Hunting();
@@ -365,7 +373,16 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	protected int normalShotRange() {
-		return BASE_NORMAL_SHOT_RANGE;
+		return challengeNormalShotRange(
+				Dungeon.isChallenged(Challenges.STRONGER_BOSSES),
+				Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT));
+	}
+
+	static int challengeNormalShotRange(boolean strongerBosses, boolean extreme) {
+		if (!strongerBosses) {
+			return BASE_NORMAL_SHOT_RANGE;
+		}
+		return extreme ? EXTREME_BOSS_SHOT_RANGE : STRONGER_BOSS_SHOT_RANGE;
 	}
 
 	private boolean natureHuntActive() {
@@ -375,7 +392,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 	@Override
 	public float speed() {
-		return natureHuntSpeed(super.speed(), natureHuntActive());
+		return natureHuntSpeed(super.speed(), natureHuntActive(),
+				Dungeon.isChallenged(Challenges.STRONGER_BOSSES),
+				Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT));
 	}
 
 	@Override
@@ -591,7 +610,26 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	static float natureHuntSpeed(float base, boolean active) {
-		return active ? base * NATURE_HUNT_MOVE_MULTIPLIER : base;
+		return natureHuntSpeed(base, active,
+				Dungeon.isChallenged(Challenges.STRONGER_BOSSES),
+				Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT));
+	}
+
+	static float natureHuntSpeed(float base, boolean active,
+			boolean strongerBosses, boolean extreme) {
+		if (!active) {
+			return base;
+		}
+		float multiplier = strongerBosses && extreme
+				? EXTREME_NATURE_HUNT_MOVE_MULTIPLIER
+				: NATURE_HUNT_MOVE_MULTIPLIER;
+		return base * multiplier;
+	}
+
+	static int challengeAdjustedDamage(int damage, boolean strongerBosses) {
+		return strongerBosses
+				? Math.round(damage * STRONGER_BOSS_DAMAGE_MULTIPLIER)
+				: damage;
 	}
 
 	static float natureHuntAttackDelay(float base, boolean active,
@@ -653,6 +691,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		bundle.put(MARKED_PLANT_CELL, markedPlantCell);
 		bundle.put(PLANT_HUNT_TURNS, plantHuntTurns);
 		bundle.put(PLANT_GRACE_TURNS, plantGraceTurns);
+		bundle.put(CHALLENGE_HAWK_THRESHOLDS_TRIGGERED,
+				challengeHawkThresholdsTriggered);
 	}
 
 	@Override
@@ -696,6 +736,11 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		plantGraceTurns = clamp(bundle.contains(PLANT_GRACE_TURNS)
 				? bundle.getInt(PLANT_GRACE_TURNS) : PLANT_HUNT_GRACE,
 				0, PLANT_HUNT_GRACE);
+		challengeHawkThresholdsTriggered = bundle.contains(
+				CHALLENGE_HAWK_THRESHOLDS_TRIGGERED)
+				? clamp(bundle.getInt(CHALLENGE_HAWK_THRESHOLDS_TRIGGERED),
+						0, HT / HARSH_HAWK_HEALTH_INTERVAL)
+				: Math.max(0, HT - HP) / HARSH_HAWK_HEALTH_INTERVAL;
 		if (legacyGaleTarget >= 0 && galeAimTarget < 0) {
 			if (!restoreLegacyGaleTarget(legacyGaleTarget)) {
 				clearGaleRhythm(GaleState.READY);
@@ -1457,13 +1502,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		}
 		final Ballistica gale = new Ballistica(pos, endpoint, Ballistica.STOP_SOLID);
 		final int destination = gale.collisionPos;
-		galeState = GaleState.RECOVERING;
-		galeRecoveryTurns = GALE_RECOVERY_TURNS;
-		galeAimDx = 0;
-		galeAimDy = 0;
-		galeAimOrigin = -1;
-		galeAimTarget = -1;
-		galeTarget = -1;
+		enterPostGaleState();
 		spend(attackDelay());
 
 		if (sprite != null && sprite.parent != null) {
@@ -1487,15 +1526,19 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	private boolean recoverFromInvalidGale() {
-		galeState = GaleState.RECOVERING;
-		galeRecoveryTurns = GALE_RECOVERY_TURNS;
-		galeAimDx = 0;
-		galeAimDy = 0;
-		galeAimOrigin = -1;
-		galeAimTarget = -1;
-		galeTarget = -1;
+		enterPostGaleState();
 		spend(TICK);
 		return true;
+	}
+
+	private void enterPostGaleState() {
+		if (isHarshStrongerBoss()) {
+			clearGaleRhythm(GaleState.HUNTING);
+			galeTurnsRemaining = GALE_INTERVAL;
+		} else {
+			clearGaleRhythm(GaleState.RECOVERING);
+			galeRecoveryTurns = GALE_RECOVERY_TURNS;
+		}
 	}
 
 	private void launchProjectile(int destination, boolean gale, Callback callback) {
@@ -1685,7 +1728,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	@Override
 	public int damageRoll() {
 		int[] range = damageRange(phase, meleeAttack, galeShot);
-		return Random.NormalIntRange(range[0], range[1]);
+		return challengeAdjustedDamage(Random.NormalIntRange(range[0], range[1]),
+				Dungeon.isChallenged(Challenges.STRONGER_BOSSES));
 	}
 
 	static int[] damageRange(Phase phase, boolean meleeAttack, boolean galeShot) {
@@ -1722,10 +1766,34 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			lock.addTime(Dungeon.isChallenged(Challenges.STRONGER_BOSSES)
 					? damageTaken / 2f : damageTaken);
 		}
+		spawnChallengeHawksForHealthLoss();
 		if (isAlive() && HP * 2 <= HT && enterWardenPhase()) {
 			announceWardenTransition();
 			onWardenPhaseStarted();
 		}
+	}
+
+	private void spawnChallengeHawksForHealthLoss() {
+		if (!isAlive() || !isHarshStrongerBoss()) {
+			return;
+		}
+		int thresholdsReached = Math.max(0, HT - HP) / HARSH_HAWK_HEALTH_INTERVAL;
+		while (challengeHawkThresholdsTriggered < thresholdsReached) {
+			challengeHawkThresholdsTriggered++;
+			summonChallengeHawk();
+		}
+	}
+
+	protected void summonChallengeHawk() {
+		if (Dungeon.level instanceof HuntressBossLevel) {
+			((HuntressBossLevel) Dungeon.level).spawnChallengeHawk(this);
+		}
+	}
+
+	private static boolean isHarshStrongerBoss() {
+		return Dungeon.isChallenged(Challenges.STRONGER_BOSSES)
+				&& (Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)
+				|| Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT));
 	}
 
 	protected void announceWardenTransition() {
@@ -1788,10 +1856,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			Statistics.subLimation[2] = true;
 		}
 
-		Badges.validateBossSlain();
-		if (Statistics.qualifiedForBossChallengeBadge) {
-			Badges.validateBossChallengeCompleted();
-		}
+		Badges.validateHeroBossSlain();
 		Statistics.bossScores[2] += 3000;
 		LloydsBeacon beacon = Dungeon.hero.belongings.getItem(LloydsBeacon.class);
 		if (beacon != null) {

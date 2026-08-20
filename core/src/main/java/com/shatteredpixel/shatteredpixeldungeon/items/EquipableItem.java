@@ -170,4 +170,10 @@ public abstract class EquipableItem extends Item {
 
 	public void activate( Char ch ){}
 
+	/**
+	 * Called when the item becomes available or unavailable without being
+	 * physically moved out of an equipment slot, such as during lost inventory.
+	 */
+	public void onInventoryAvailabilityChanged( Hero hero ){}
+
 }

@@ -51,8 +51,36 @@ public class RogueBossTest {
 		assertTrue(source.contains("relocateWithSpriteSync(p);"));
 		assertTrue(source.contains("relocateWithSpriteSync(newPos);"));
 		assertTrue(source.contains("sprite.interruptMotion();"));
-		assertTrue(source.contains("sprite.place(from);"));
+		assertTrue(source.contains("sprite.place(destination);"));
 		assertTrue(source.contains("move(destination, false);"));
+	}
+
+	@Test
+	public void relocationCandidateMustBeInsidePassableUnoccupiedCell() {
+		assertTrue(RogueBoss.isValidRelocationCell(10, 100, true, false));
+		assertFalse(RogueBoss.isValidRelocationCell(-1, 100, true, false));
+		assertFalse(RogueBoss.isValidRelocationCell(100, 100, true, false));
+		assertFalse(RogueBoss.isValidRelocationCell(10, 100, false, false));
+		assertFalse(RogueBoss.isValidRelocationCell(10, 100, true, true));
+	}
+
+	@Test
+	public void specialRelocationUsesInstantPlacementInsteadOfMovementTween() throws IOException {
+		String source = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/actors/mobs/RogueBoss.java");
+
+		assertFalse(source.contains("sprite.move(from, destination);"));
+		assertTrue(source.contains("sprite.place(destination);"));
+	}
+
+	@Test
+	public void testModeRelocationUsesTheSameInstantPlacementRule() throws IOException {
+		String source = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/custom/testmode/testboss/TestRogueBoss.java");
+
+		assertFalse(source.contains("sprite.move(pos, newPos);"));
+		assertTrue(source.contains("move(destination, false);"));
+		assertTrue(source.contains("sprite.place(destination);"));
 	}
 
 	private static String readCoreSource(String relativePath) throws IOException {

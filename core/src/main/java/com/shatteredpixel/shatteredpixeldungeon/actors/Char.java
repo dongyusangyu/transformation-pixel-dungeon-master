@@ -144,6 +144,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Swiftness;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Viscosity;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.PrecognitiveEye;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfCleansing;
@@ -859,6 +860,11 @@ public abstract class Char extends Actor {
 			acuStat*=1.25f+0.25f*hero.pointsInTalent(Talent.SPECIAL_MARK);
 		}
 
+		if (MeleeWeapon.isForcedSurpriseAttack(attacker, defender)) {
+			hitMissIcon = FloatingText.getHitReasonIcon(attacker, INFINITE_ACCURACY, defender, 0);
+			return true;
+		}
+
 		//invisible chars always hit (for the hero this is surprise attacking)
 		if (attacker.invisible > 0 && attacker.canSurpriseAttack()){
 			acuStat = INFINITE_ACCURACY;
@@ -870,10 +876,21 @@ public abstract class Char extends Actor {
 			defStat = INFINITE_EVASION;
 		}
 
+		// The cursed eye scrambles its owner's vision before any other avoidance effect.
+		if (PrecognitiveEye.forcesEnemyHit(attacker, defender)) {
+			hitMissIcon = FloatingText.getHitReasonIcon(attacker, acuStat, defender, defStat);
+			return true;
+		}
+		if (PrecognitiveEye.consumeMomentaryForesight(attacker, defender)) {
+			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuStat, defender, defStat);
+			return false;
+		}
+
 		//if accuracy or evasion are large enough, treat them as infinite.
 		//note that infinite evasion beats infinite accuracy
 		if (defStat >= INFINITE_EVASION){
 			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuStat, defender, INFINITE_EVASION);
+			PrecognitiveEye.onEnemyAttackDodged(attacker, defender);
 			return false;
 		} else if (acuStat >= INFINITE_ACCURACY){
 			hitMissIcon = FloatingText.getHitReasonIcon(attacker, INFINITE_ACCURACY, defender, defStat);
@@ -892,7 +909,7 @@ public abstract class Char extends Actor {
 		acuRoll *= AscensionChallenge.statModifier(attacker);
 		acuRoll *= accMulti;
 		
-		float defRoll = Random.Float( defStat );
+		float defRoll = PrecognitiveEye.rollEvasion(attacker, defender, defStat);
 		if (defender.buff(Bless.class) != null) defRoll *= 1.25f;
 		if (defender.buff(  Hex.class) != null) defRoll *= 0.8f;
 		if (defender.buff( Daze.class) != null) defRoll *= 0.5f;
@@ -916,6 +933,7 @@ public abstract class Char extends Actor {
 			return true;
 		} else {
 			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuRoll, defender, defRoll);
+			PrecognitiveEye.onEnemyAttackDodged(attacker, defender);
 			return false;
 		}
 	}
@@ -1754,7 +1772,10 @@ public abstract class Char extends Actor {
 			if (!(Dungeon.level.passable[newPos] || Dungeon.level.avoid[newPos])
 					|| (properties().contains(Property.LARGE) && !Dungeon.level.openSpace[newPos])
 					|| Actor.findChar( newPos ) != null)
+			{
+				sprite.place(pos);
 				return;
+			}
 			else {
 				sprite.move(pos, newPos);
 				step = newPos;

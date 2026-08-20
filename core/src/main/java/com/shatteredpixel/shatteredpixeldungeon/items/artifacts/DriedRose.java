@@ -249,6 +249,10 @@ public class DriedRose extends Artifact {
 		return 13 + level()/2;
 	}
 
+	public boolean isMaxLevel() {
+		return level() >= levelCap;
+	}
+
 	@Override
 	public String desc() {
 		if (!Ghost.Quest.completed()
@@ -378,6 +382,11 @@ public class DriedRose extends Artifact {
 	
 	public Armor ghostArmor(){
 		return armor;
+	}
+
+	public void resetGhostForNewCycle() {
+		ghost = null;
+		ghostID = 0;
 	}
 
 	private static final String TALKEDTO =      "talkedto";

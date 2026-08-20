@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlo
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RuneSpinner;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
@@ -51,6 +52,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.SegmentedL
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StatuesRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.SpecialRoom;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.entrance.LibraryHallEntranceRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.exit.LibraryHallExitRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CorrosionTrap;
@@ -157,6 +159,9 @@ public class TowerLevel extends RegularLevel {
 		for (Class<? extends SpecialRoom> type : TowerSpecialRoomRules.roomTypesForFloor(
 				towerFloor(), Dungeon.seed, feeling == Feeling.LARGE)) {
 			result.add(Reflection.newInstance(type));
+		}
+		for (int i = 0; i < TowerGenerationRules.secretRoomCount(feeling); i++) {
+			result.add(SecretRoom.createRoom());
 		}
 		return result;
 	}
@@ -288,6 +293,32 @@ public class TowerLevel extends RegularLevel {
 			Dungeon.depth = actualDepth;
 			generationTowerFloor = -1;
 		}
+	}
+
+	@Override
+	protected int driedRosePetalProgressDepth() {
+		return TowerGenerationRules.driedRosePetalProgressDepth(towerFloor());
+	}
+
+	@Override
+	protected boolean driedRosePetalGenerationEnabled() {
+		return true;
+	}
+
+	@Override
+	protected boolean driedRosePetalGenerationAllowed(DriedRose rose) {
+		return TowerGenerationRules.driedRosePetalGenerationAllowed(
+				rose.droppedPetals, rose.isMaxLevel());
+	}
+
+	@Override
+	protected boolean shouldGenerateNaturalFood() {
+		return TowerGenerationRules.shouldGenerateNaturalFood(Dungeon.bossLevel());
+	}
+
+	@Override
+	protected boolean shouldGenerateLevelFeeling() {
+		return TowerGenerationRules.shouldGenerateLevelFeeling(towerFloor(), Dungeon.bossLevel());
 	}
 
 	@Override

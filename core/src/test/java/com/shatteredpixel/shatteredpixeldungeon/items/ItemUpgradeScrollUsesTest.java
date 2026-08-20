@@ -46,7 +46,7 @@ public class ItemUpgradeScrollUsesTest {
 				"com/shatteredpixel/shatteredpixeldungeon/items/spells/MagicalInfusion.java");
 
 		assertTrue(source.contains("((Armor) item).upgradeScrollCreditTarget()"));
-		assertTrue(source.contains("upgradeScrollCreditTarget.upgradeScrollUses++;"));
+		assertTrue(source.contains("upgradeScrollCreditTarget.recordUpgradeScrollUse();"));
 		assertFalse(source.contains("item.upgradeScrollUses++;"));
 	}
 
@@ -83,7 +83,7 @@ public class ItemUpgradeScrollUsesTest {
 				"com/shatteredpixel/shatteredpixeldungeon/items/scrolls/ScrollOfUpgrade.java");
 
 		assertTrue(source.contains("((Armor) item).upgradeScrollCreditTarget()"));
-		assertTrue(source.contains("upgradeScrollCreditTarget.upgradeScrollUses++;"));
+		assertTrue(source.contains("upgradeScrollCreditTarget.recordUpgradeScrollUse();"));
 		assertFalse(source.contains("item.upgradeScrollUses++;"));
 	}
 

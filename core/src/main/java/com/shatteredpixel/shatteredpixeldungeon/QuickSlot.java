@@ -128,6 +128,8 @@ public class QuickSlot {
 	private final String PLACEMENTS = "placements";
 	private final String RANKING_ITEMS = "ranking_quickslot_items";
 	private final String RANKING_PLACEMENTS = "ranking_quickslot_placements";
+	private static final String ITEM_BUNDLE_KEY = "item";
+	private static final String ITEM_QUICKSLOT_KEY = "quickslotpos";
 
 	/**
 	 * Placements array is used as order is preserved while bundling, but exact index is not, so if we
@@ -200,7 +202,12 @@ public class QuickSlot {
 			}
 			Item snapshot = (Item) bundled;
 			Item restored = matchingInventoryItem(inventory, snapshot, reboundItems);
-			setSlot(slot++, restored == null ? snapshot : restored);
+			if (restored != null) {
+				setSlot(slot, restored);
+			} else if (inventory == null) {
+				setSlot(slot, snapshot);
+			}
+			slot++;
 		}
 		return true;
 	}
@@ -210,12 +217,31 @@ public class QuickSlot {
 			return null;
 		}
 		for (Item item : inventory) {
+			if (!usedItems.contains(item) && rankingSnapshotMatches(item, snapshot)) {
+				usedItems.add(item);
+				return item;
+			}
+		}
+		for (Item item : inventory) {
 			if (!usedItems.contains(item) && item.isSimilar(snapshot)) {
 				usedItems.add(item);
 				return item;
 			}
 		}
 		return null;
+	}
+
+	static boolean rankingSnapshotMatches(Item item, Item snapshot) {
+		if (item == null || snapshot == null || item.getClass() != snapshot.getClass()) {
+			return false;
+		}
+		Bundle itemBundle = new Bundle();
+		Bundle snapshotBundle = new Bundle();
+		itemBundle.put(ITEM_BUNDLE_KEY, item);
+		snapshotBundle.put(ITEM_BUNDLE_KEY, snapshot);
+		itemBundle.getBundle(ITEM_BUNDLE_KEY).remove(ITEM_QUICKSLOT_KEY);
+		snapshotBundle.getBundle(ITEM_BUNDLE_KEY).remove(ITEM_QUICKSLOT_KEY);
+		return itemBundle.contentEquals(snapshotBundle);
 	}
 
 }

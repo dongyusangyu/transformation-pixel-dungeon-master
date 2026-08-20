@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.PrecognitiveEye;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
@@ -25,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.OptionSlider;
@@ -112,6 +114,7 @@ public class TestArtifact extends TestGenerator {
             case 14: return HolyTome.class;
             case 15: return InstructionTool.class;
             case 16: return SkeletonKey.class;
+			case 17: return PrecognitiveEye.class;
         }
     }
 
@@ -126,7 +129,7 @@ public class TestArtifact extends TestGenerator {
     private static ArrayList<Class<? extends Artifact>> artifactList = new ArrayList<Class<? extends Artifact>>();
     private void buildArtifactArray(){
         if(!artifactList.isEmpty()) return;
-        for(int i=0;i<17;++i){
+		for(int i=0;i<18;++i){
             artifactList.add(idToArtifact(i));
         }
     }
@@ -203,9 +206,7 @@ public class TestArtifact extends TestGenerator {
                         super.onClick();
                     }
                 };
-                Image im = new Image(Assets.Sprites.ITEMS);
-                im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(artifactList.get(i))).image));
-                im.scale.set(1f);
+                Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(artifactList.get(i))));
                 btn.icon(im);
                 left=0f;
                 btn.setRect(left + Math.floorMod(i,7) *  BTN_SIZE, top+(int)(i/7)*BTN_SIZE, BTN_SIZE, BTN_SIZE);

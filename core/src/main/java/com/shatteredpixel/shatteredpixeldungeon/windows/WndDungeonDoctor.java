@@ -10,6 +10,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DungeonDoctor;
 import com.shatteredpixel.shatteredpixeldungeon.custom.quiz.DungeonDoctorQuiz;
@@ -26,6 +27,7 @@ public class WndDungeonDoctor extends WndOptions {
 		START,
 		STATISTICS,
 		RESET,
+		TALENT_RESET,
 		LEAVE
 	}
 
@@ -43,6 +45,7 @@ public class WndDungeonDoctor extends WndOptions {
 				Messages.get(WndDungeonDoctor.class, "start"),
 				Messages.get(WndDungeonDoctor.class, "statistics"),
 				Messages.get(WndDungeonDoctor.class, "reset"),
+				Messages.get(WndDungeonDoctor.class, "talent_reset"),
 				Messages.get(WndDungeonDoctor.class, "leave"));
 		this.doctor = doctor;
 	}
@@ -59,6 +62,9 @@ public class WndDungeonDoctor extends WndOptions {
 				break;
 			case RESET:
 				confirmReset();
+				break;
+			case TALENT_RESET:
+				confirmTalentReset();
 				break;
 			case LEAVE:
 				break;
@@ -173,6 +179,44 @@ public class WndDungeonDoctor extends WndOptions {
 				Messages.get(WndDungeonDoctor.class, "close")));
 	}
 
+	private void confirmTalentReset() {
+		if (!doctor.canResetTalentPoints()) {
+			showTalentResetMessage("talent_reset_used_title", "talent_reset_used_body");
+			return;
+		}
+		if (DungeonDoctor.investedTalentPoints(Dungeon.hero) == 0) {
+			showTalentResetMessage("talent_reset_empty_title", "talent_reset_empty_body");
+			return;
+		}
+
+		GameScene.show(new WndOptions(
+				Messages.get(WndDungeonDoctor.class, "talent_reset_title"),
+				Messages.get(WndDungeonDoctor.class, "talent_reset_body"),
+				Messages.get(WndDungeonDoctor.class, "talent_reset_confirm"),
+				Messages.get(WndDungeonDoctor.class, "cancel")) {
+			@Override
+			protected void onSelect(int index) {
+				super.onSelect(index);
+				if (index == 0) {
+					int resetPoints = doctor.resetTalentPoints(Dungeon.hero);
+					if (resetPoints > 0) {
+						GameScene.show(new WndOptions(
+								Messages.get(WndDungeonDoctor.class, "talent_reset_complete_title"),
+								Messages.get(WndDungeonDoctor.class, "talent_reset_complete_body", resetPoints),
+								Messages.get(WndDungeonDoctor.class, "close")));
+					}
+				}
+			}
+		});
+	}
+
+	private void showTalentResetMessage(String titleKey, String bodyKey) {
+		GameScene.show(new WndOptions(
+				Messages.get(WndDungeonDoctor.class, titleKey),
+				Messages.get(WndDungeonDoctor.class, bodyKey),
+				Messages.get(WndDungeonDoctor.class, "close")));
+	}
+
 	static MainAction mainAction(int index) {
 		switch (index) {
 			case 0:
@@ -181,6 +225,8 @@ public class WndDungeonDoctor extends WndOptions {
 				return MainAction.STATISTICS;
 			case 2:
 				return MainAction.RESET;
+			case 3:
+				return MainAction.TALENT_RESET;
 			default:
 				return MainAction.LEAVE;
 		}

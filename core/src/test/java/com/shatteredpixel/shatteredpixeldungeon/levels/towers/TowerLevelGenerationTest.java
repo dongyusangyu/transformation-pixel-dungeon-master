@@ -7,8 +7,15 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfExtraction;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,6 +56,35 @@ public class TowerLevelGenerationTest {
 	}
 
 	@Test
+	public void nonBossTowerFloorsGenerateNaturalFood() {
+		assertTrue(TowerGenerationRules.shouldGenerateNaturalFood(false));
+		assertFalse(TowerGenerationRules.shouldGenerateNaturalFood(true));
+	}
+
+	@Test
+	public void towerAtmospheresMatchNormalNonBossFloorBoundaries() {
+		assertFalse(TowerGenerationRules.shouldGenerateLevelFeeling(1, false));
+		assertTrue(TowerGenerationRules.shouldGenerateLevelFeeling(2, false));
+		assertFalse(TowerGenerationRules.shouldGenerateLevelFeeling(5, true));
+		assertTrue(TowerGenerationRules.shouldGenerateLevelFeeling(101, false));
+	}
+
+	@Test
+	public void secretsAtmosphereAddsOneTowerSecretRoom() {
+		assertEquals(1, TowerGenerationRules.secretRoomCount(Level.Feeling.SECRETS));
+		assertEquals(0, TowerGenerationRules.secretRoomCount(Level.Feeling.WATER));
+	}
+
+	@Test
+	public void towerUsesTheSharedFeelingGenerationHook() throws IOException {
+		String levelSource = readCoreSource("com/shatteredpixel/shatteredpixeldungeon/levels/Level.java");
+		String towerSource = readCoreSource("com/shatteredpixel/shatteredpixeldungeon/levels/towers/TowerLevel.java");
+
+		assertTrue(levelSource.contains("if (shouldGenerateLevelFeeling())"));
+		assertTrue(towerSource.contains("shouldGenerateLevelFeeling()"));
+	}
+
+	@Test
 	public void specialRoomKeysAreReboundToTheActualTowerFloor() {
 		TestKey key = new TestKey();
 		key.depth = 21;
@@ -64,9 +100,39 @@ public class TowerLevelGenerationTest {
 		assertNull(TowerGenerationRules.prepareFloorSpawn(null, 7));
 	}
 
+	@Test
+	public void driedRoseProgressContinuesPastTowerContentDepthCap() {
+		assertEquals(26, TowerGenerationRules.driedRosePetalProgressDepth(1));
+		assertEquals(35, TowerGenerationRules.driedRosePetalProgressDepth(10));
+		assertEquals(46, TowerGenerationRules.driedRosePetalProgressDepth(21));
+	}
+
+	@Test
+	public void unfinishedRoseCanGenerateMissedPetalsInTowerOnly() {
+		assertTrue(TowerGenerationRules.driedRosePetalGenerationAllowed(11, false));
+		assertFalse(TowerGenerationRules.driedRosePetalGenerationAllowed(11, true));
+	}
+
+	@Test
+	public void rosePetalsOnlyGenerateOnMainAndTowerBranches() {
+		assertTrue(TowerGenerationRules.driedRosePetalGenerationEnabled(0));
+		assertFalse(TowerGenerationRules.driedRosePetalGenerationEnabled(1));
+		assertTrue(TowerGenerationRules.driedRosePetalGenerationEnabled(TowerLevel.BRANCH));
+	}
+
 	private static class TestKey extends Key {
 	}
 
 	private static class TestItem extends Item {
+	}
+
+	private static String readCoreSource(String relativePath) throws IOException {
+		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
+		Path coreDirectory = workingDirectory.resolve("core");
+		if (!Files.isDirectory(coreDirectory)) {
+			coreDirectory = workingDirectory;
+		}
+		Path source = coreDirectory.resolve("src/main/java").resolve(relativePath);
+		return new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
 	}
 }

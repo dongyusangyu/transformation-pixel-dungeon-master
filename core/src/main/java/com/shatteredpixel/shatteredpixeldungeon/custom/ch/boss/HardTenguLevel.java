@@ -558,13 +558,17 @@ public class HardTenguLevel extends Level {
 
     }
 
-    public void placeTrapsInTenguCell(float fill){
-
-        for (CustomTilemap vis : customTiles){
-            if (vis instanceof FadingTraps){
-                ((FadingTraps) vis).remove();
+    private void removeFadingTraps() {
+        for (CustomTilemap tile : customTiles.toArray(new CustomTilemap[0])) {
+            if (tile instanceof FadingTraps) {
+                ((FadingTraps) tile).remove();
             }
         }
+    }
+
+    public void placeTrapsInTenguCell(float fill){
+
+        removeFadingTraps();
 
         Point tenguPoint = cellToPoint(tengu.pos);
         Point heroPoint = cellToPoint(Dungeon.hero.pos);

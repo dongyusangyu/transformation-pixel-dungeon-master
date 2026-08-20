@@ -124,6 +124,54 @@ public class HuntressBossLevelTest {
 	}
 
 	@Test
+	public void fallingIntoUnstartedHuntressBossLevelUsesEntranceBuffer() {
+		HuntressBossLevel level = createSpawnTestLevel(123456L);
+		level.locked = true;
+		assertTrue(level.shouldResetForSafeArrival());
+		level.locked = false;
+
+		for (int i = 0; i < 8; i++) {
+			int fallCell = level.fallCell(false);
+			assertTrue(fallCell != -1);
+			assertFalse(level.isArenaCell(fallCell));
+			assertFalse(level.triggersFightAt(fallCell));
+		}
+	}
+
+	@Test
+	public void unstartedHuntressBossAnkhRespawnUsesEntranceBuffer() {
+		HuntressBossLevel level = createSpawnTestLevel(123456L);
+		level.locked = false;
+
+		int respawnCell = level.unblessedAnkhSafeRespawnCell(null);
+
+		assertTrue(respawnCell != -1);
+		assertFalse(level.isArenaCell(respawnCell));
+		assertFalse(level.triggersFightAt(respawnCell));
+	}
+
+	@Test
+	public void sealedResurrectionResetRemovesFreshEntranceDarts() {
+		HuntressBossLevel level = new HuntressBossLevel();
+		level.setSize(31, 32);
+		level.heaps = new com.watabou.utils.SparseArray<>();
+		for (int cell : new int[]{15 - 2 + (29 - 2) * level.width(),
+				15 + 2 + (29 - 2) * level.width()}) {
+			Heap heap = new Heap();
+			heap.pos = cell;
+			heap.items.add(allocateWithoutConstructor(BlindingDart.class));
+			level.heaps.put(cell, heap);
+		}
+		Dungeon.level = level;
+
+		assertEquals(2, entranceDartHeapCount(level));
+
+		level.onSealedResurrectionReset();
+
+		assertEquals(0, entranceDartHeapCount(level));
+	}
+
+	@Test
 	public void occupyCellRunsRealOpeningLifecycleAfterClosingGate() {
 		RecordingHuntressBossLevel level = createLifecycleTestLevel(123456L);
 		Hero hero = createTestHero(level.triggerCell());
@@ -271,7 +319,7 @@ public class HuntressBossLevelTest {
 				restoredBossState.getEnum("plant_hunt_state",
 						HuntressBoss.PlantHuntState.class));
 		assertEquals(plantCell, restoredBossState.getInt("marked_plant_cell"));
-		assertEquals(2f, restoredBoss.speed(), 0f);
+		assertEquals(3f, restoredBoss.speed(), 0f);
 		registerActor(restoredBoss);
 		RecordingMovementSprite movementSprite = new RecordingMovementSprite();
 		restoredBoss.sprite = movementSprite;
@@ -1845,6 +1893,16 @@ public class HuntressBossLevelTest {
 			}
 		}
 		return -1;
+	}
+
+	private static int entranceDartHeapCount(HuntressBossLevel level) {
+		int count = 0;
+		for (Heap heap : level.heaps.valueList()) {
+			if (heap.peek() instanceof BlindingDart) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 	private static int[] randomPairAroundCoverGeneration(boolean generateCovers) {

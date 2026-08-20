@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -104,12 +105,14 @@ public class EXItemSpriteSheetTest {
 				EXItemSpriteSheet.HUNDRED_TON_HAMMER,
 				EXItemSpriteSheet.ORACLE_TERMINAL,
 				EXItemSpriteSheet.DEMON_TAIL_WHIP,
+				EXItemSpriteSheet.VENOMOUS_SICKLE,
+				EXItemSpriteSheet.RADIANT_GOLD_HALBERD,
 				EXItemSpriteSheet.SEAL
 		};
 		int[] expectedIndices = {
 				0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 				10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-				32, 48, 145, 146, 147, 150, 151, 152, 153, 154, ItemSpriteSheet.SEAL
+				32, 48, 145, 146, 147, 150, 151, 152, 153, 154, 155, 156, ItemSpriteSheet.SEAL
 		};
 		int[][] expectedSizes = {
 				{14, 14}, {12, 14}, {15, 16}, {15, 16}, {14, 16},
@@ -117,7 +120,7 @@ public class EXItemSpriteSheetTest {
 				{13, 16}, {15, 16}, {11, 16}, {16, 16}, {11, 16},
 				{11, 16}, {15, 14}, {16, 16}, {11, 16}, {11, 16},
 				{15, 14}, {10, 15}, {15, 16}, {15, 16}, {16, 16},
-				{15, 16}, {14, 15}, {16, 16}, {16, 16}, {14, 14}, {16, 16}
+				{15, 16}, {14, 15}, {16, 16}, {16, 16}, {14, 14}, {16, 16}, {16, 16}
 		};
 
 		assertEquals(expectedIndices.length, frames.length);
@@ -221,10 +224,20 @@ public class EXItemSpriteSheetTest {
 		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.ORACLE_TERMINAL));
 
 		assertEquals(154, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.DEMON_TAIL_WHIP));
+		assertEquals(155, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(176, EXItemSpriteSheet.frameX(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.VENOMOUS_SICKLE));
 		assertEquals(160, EXItemSpriteSheet.frameX(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 		assertEquals(14, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 		assertEquals(14, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.DEMON_TAIL_WHIP));
+		assertEquals(156, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(192, EXItemSpriteSheet.frameX(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
 	}
 
 	@Test
@@ -240,7 +253,9 @@ public class EXItemSpriteSheetTest {
 		assertCrispSprite(sheet, 152, 0, 0, 15, 15, 7);
 		assertCrispSprite(sheet, 153, 0, 0, 15, 15, 9);
 		assertCrispSprite(sheet, 154, 0, 0, 13, 13, 8);
-		for (int index = 155; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 155, 0, 1, 14, 15, 10);
+		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
+		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
 	}
 
 	@Test
@@ -252,6 +267,29 @@ public class EXItemSpriteSheetTest {
 		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.ORACLE_TERMINAL));
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		assertCrispSprite(sheet, 153, 0, 0, 15, 15, 9);
+	}
+
+	@Test
+	public void venomousSickleUsesTheDedicatedCrispTierSixCell() throws IOException {
+		assertEquals(155, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(176, EXItemSpriteSheet.frameX(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.VENOMOUS_SICKLE));
+		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
+		assertCrispSprite(sheet, 155, 0, 1, 14, 15, 10);
+		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
+		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
+	}
+
+	@Test
+	public void radiantGoldHalberdUsesItsDedicatedTierSixCell() throws IOException {
+		assertEquals(156, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(192, EXItemSpriteSheet.frameX(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
+		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
+		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
 	}
 
 	@Test
@@ -270,16 +308,83 @@ public class EXItemSpriteSheetTest {
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		for (int index = 160; index < 208; index++) assertTransparentCell(sheet, index);
 		assertPixelArtCell(sheet, 208, 0, 0, 15, 15, 8);
-		for (int index = 209; index < 224; index++) assertTransparentCell(sheet, index);
+		assertEquals(209,
+				EXItemSpriteSheet.frameFor(EXItemSpriteSheet.PORTABLE_BLACK_HOLE));
+		assertEquals(16,
+				EXItemSpriteSheet.frameX(EXItemSpriteSheet.PORTABLE_BLACK_HOLE));
+		assertEquals(208,
+				EXItemSpriteSheet.frameY(EXItemSpriteSheet.PORTABLE_BLACK_HOLE));
+		assertEquals(15,
+				EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.PORTABLE_BLACK_HOLE));
+		assertEquals(15,
+				EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.PORTABLE_BLACK_HOLE));
+		assertPortableBlackHoleCell(sheet);
+		for (int index = 210; index < 224; index++) assertTransparentCell(sheet, index);
+	}
+
+	private static void assertPortableBlackHoleCell(BufferedImage sheet) {
+		Set<String> rgba = new HashSet<>();
+		int[] alphaHistogram = new int[256];
+		int visible = 0;
+		int minX = 16, minY = 16, maxX = -1, maxY = -1;
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+
+		for (int y = 0; y < 16; y++) {
+			for (int x = 0; x < 16; x++) {
+				int argb = sheet.getRGB(16 + x, 208 + y);
+				int alpha = (argb >>> 24) & 0xFF;
+				int red = (argb >>> 16) & 0xFF;
+				int green = (argb >>> 8) & 0xFF;
+				int blue = argb & 0xFF;
+				alphaHistogram[alpha]++;
+				digest.update((byte) alpha);
+				digest.update((byte) red);
+				digest.update((byte) green);
+				digest.update((byte) blue);
+				if (alpha > 0) {
+					visible++;
+					rgba.add(alpha + "," + red + "," + green + "," + blue);
+					minX = Math.min(minX, x);
+					minY = Math.min(minY, y);
+					maxX = Math.max(maxX, x);
+					maxY = Math.max(maxY, y);
+				}
+			}
+		}
+
+		assertEquals(153, visible);
+		assertEquals(11, rgba.size());
+		assertEquals(0, minX);
+		assertEquals(0, minY);
+		assertEquals(14, maxX);
+		assertEquals(14, maxY);
+		assertEquals(103, alphaHistogram[0]);
+		assertEquals(68, alphaHistogram[102]);
+		assertEquals(48, alphaHistogram[179]);
+		assertEquals(8, alphaHistogram[204]);
+		assertEquals(8, alphaHistogram[224]);
+		assertEquals(8, alphaHistogram[236]);
+		assertEquals(3, alphaHistogram[244]);
+		assertEquals(1, alphaHistogram[248]);
+		assertEquals(9, alphaHistogram[255]);
+		StringBuilder hex = new StringBuilder();
+		for (byte value : digest.digest()) hex.append(String.format("%02X", value));
+		assertEquals("E3940B0AF8BA6A1F107E9A04DEE2AACB5748E0ABF6B9A40631B932DD7E27BC47",
+				hex.toString());
 	}
 
 	@Test
-	public void twoHandedGreatswordUsesACrispTransparentSixteenthCell()
+	public void twoHandedGreatswordAndRadiantGoldHalberdUseCrispTierSixCells()
 			throws IOException {
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		assertCrispSprite(sheet, 148, 0, 1, 14, 15, 8);
-
-		for (int index = 155; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
+		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
 	}
 
 	private static void assertTransparentCell(BufferedImage sheet, int index) {

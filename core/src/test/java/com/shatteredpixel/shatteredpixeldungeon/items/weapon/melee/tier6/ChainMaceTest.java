@@ -343,6 +343,30 @@ public class ChainMaceTest {
 		assertTrue(source.contains("return AC_THROW"));
 	}
 
+	@Test
+	public void followerUsesEffectiveWeaponSlotsDuringLostInventory() throws IOException {
+		String source = source();
+
+		assertTrue(source.contains("KindOfWeapon primary = owner.belongings.weapon();"));
+		assertTrue(source.contains("KindOfWeapon secondary = owner.belongings.secondWep();"));
+		assertFalse(source.contains("KindOfWeapon primary = owner.belongings.weapon;"));
+		assertFalse(source.contains("KindOfWeapon secondary = owner.belongings.secondWep;"));
+	}
+
+	@Test
+	public void lostInventoryStateSynchronizesChainMaceFollowerImmediately() throws IOException {
+		String belongingsSource = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/hero/Belongings.java");
+		String equipableSource = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/EquipableItem.java");
+		String chainMaceSource = source();
+
+		assertTrue(equipableSource.contains("onInventoryAvailabilityChanged( Hero hero )"));
+		assertTrue(belongingsSource.contains("onInventoryAvailabilityChanged(owner)"));
+		assertTrue(chainMaceSource.contains("onInventoryAvailabilityChanged(Hero hero)"));
+		assertTrue(chainMaceSource.contains("removeFollower()"));
+	}
+
 	private static String source() throws IOException {
 		return sourceFile("src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/"
 				+ "tier6/ChainMace.java");

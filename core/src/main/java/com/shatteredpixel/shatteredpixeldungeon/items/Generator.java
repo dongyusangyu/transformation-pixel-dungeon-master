@@ -55,6 +55,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.PrecognitiveEye;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
@@ -210,8 +211,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.Hundred
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.RadiantGoldHalberd;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.VenomousSickle;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.DamageGear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
@@ -222,6 +225,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Javelin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Kunai;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.PortableBlackHole;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.RuneString;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Shuriken;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.SlimeBall;
@@ -539,9 +543,11 @@ public class Generator {
 					AuxiliaryCore.class,
 					HundredTonHammer.class,
 					DemonTailWhip.class,
-					OracleTerminal.class
+					OracleTerminal.class,
+					VenomousSickle.class,
+					RadiantGoldHalberd.class
 			};
-			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 			WEP_T6.probs = WEP_T6.defaultProbs.clone();
 			
 			//see Generator.randomArmor
@@ -618,9 +624,10 @@ public class Generator {
 			MIS_T5.probs = MIS_T5.defaultProbs.clone();
 
 			MIS_T6.classes = new Class<?>[]{
-					Gungnir.class
+					Gungnir.class,
+					PortableBlackHole.class
 			};
-			MIS_T6.defaultProbs = new float[]{ 1 };
+			MIS_T6.defaultProbs = new float[]{ 1, 1 };
 			MIS_T6.probs = MIS_T6.defaultProbs.clone();
 			
 			FOOD.classes = new Class<?>[]{
@@ -663,9 +670,10 @@ public class Generator {
 					Shuriken_Box.class,
 					InstructionTool.class,
 					CapeOfThorns.class,
-					LloydsBeacon.class
+					LloydsBeacon.class,
+					PrecognitiveEye.class
 			};
-			ARTIFACT.defaultProbs = new float[]{ 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1 };
+			ARTIFACT.defaultProbs = new float[]{ 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1 };
 			ARTIFACT.probs = ARTIFACT.defaultProbs.clone();
 
 			//Trinkets are unique like artifacts, but unlike them you can only have one at once

@@ -28,6 +28,7 @@ import com.watabou.input.KeyBindings;
 import com.watabou.input.KeyEvent;
 import com.watabou.input.PointerEvent;
 import com.watabou.noosa.Camera;
+import com.watabou.noosa.Group;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.PointerArea;
 import com.watabou.noosa.ui.Component;
@@ -100,10 +101,13 @@ public class Button extends Component {
 					if (key != 0){
 						text += " _(" + KeyBindings.getKeyName(key) + ")_";
 					}
-					hoverTip = new Tooltip(Button.this, text, 80);
-					Button.this.parent.addToFront(hoverTip);
-					hoverTip.camera = camera();
-					alignTooltip(hoverTip);
+					Group tooltipParent = tooltipParent();
+					if (tooltipParent != null) {
+						hoverTip = new Tooltip(Button.this, text, 80);
+						tooltipParent.addToFront(hoverTip);
+						hoverTip.camera = camera();
+						alignTooltip(hoverTip);
+					}
 				}
 			}
 
@@ -182,17 +186,41 @@ public class Button extends Component {
 		return null;
 	}
 
+	/**
+	 * Tooltips must share their input's camera, but need to render above every
+	 * sibling in a composite control such as an ItemButton.
+	 */
+	protected Group tooltipParent() {
+		Group tooltipParent = parent;
+		Camera tooltipCamera = camera();
+		while (tooltipParent != null && tooltipParent.parent != null
+				&& tooltipParent.parent.camera() == tooltipCamera) {
+			tooltipParent = tooltipParent.parent;
+		}
+		return tooltipParent;
+	}
+
 	//TODO might be nice for more flexibility here
 	private void alignTooltip( Tooltip tip ){
 		tip.setPos(x, y-tip.height()-1);
 		Camera cam = camera();
+		float viewportLeft = cam.scroll.x;
+		float viewportTop = cam.scroll.y;
+		float viewportRight = viewportLeft + cam.width;
+		float viewportBottom = viewportTop + cam.height;
 		//shift left if there's no room on the right
-		if (tip.right() > (cam.width+cam.scroll.x)){
-			tip.setPos(tip.left() - (tip.right() - (cam.width+cam.scroll.x)), tip.top());
+		if (tip.right() > viewportRight){
+			tip.setPos(tip.left() - (tip.right() - viewportRight), tip.top());
+		}
+		if (tip.left() < viewportLeft){
+			tip.setPos(viewportLeft, tip.top());
 		}
 		//move to the bottom if there's no room on top
-		if (tip.top() < 0){
+		if (tip.top() < viewportTop){
 			tip.setPos(tip.left(), bottom()+1);
+		}
+		if (tip.bottom() > viewportBottom && y-tip.height()-1 >= viewportTop){
+			tip.setPos(tip.left(), y-tip.height()-1);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.scrolls;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -10,22 +11,67 @@ final class UpgradeExtraction {
 	}
 
 	static boolean canExtract(Item item) {
-		return item.isUpgradable() && item.upgradeScrollUses > 0;
+		return !(item instanceof MissileWeapon)
+				&& item.isUpgradable() && item.upgradeScrollUses > 0;
+	}
+
+	static boolean canExtract(Item item, Hero hero) {
+		if (!item.isUpgradable()) return false;
+		if (item instanceof MissileWeapon) {
+			return MissileWeapon.UpgradedSetTracker.availableUpgradeScrollUses(
+					hero, (MissileWeapon) item) > 0;
+		}
+		return item.upgradeScrollUses > 0;
+	}
+
+	static boolean canExtract(Item item, MissileWeapon.UpgradedSetTracker tracker) {
+		if (!item.isUpgradable()) return false;
+		if (item instanceof MissileWeapon && tracker != null) {
+			return tracker.availableUpgradeScrollUses((MissileWeapon) item) > 0;
+		}
+		return item.upgradeScrollUses > 0;
 	}
 
 	static int extractUpgradeUses(Item item) {
-		return extractUpgradeUses(item, null);
-	}
-
-	static int extractUpgradeUses(Item item, Bag inventory) {
+		if (item instanceof MissileWeapon) {
+			throw new IllegalArgumentException("Missile extraction requires a set tracker");
+		}
 		int extracted = item.upgradeScrollUses;
 		degradeAndClear(item, extracted);
+		return extracted;
+	}
 
-		if (item instanceof MissileWeapon && inventory != null) {
+	static int extractUpgradeUses(Item item, Bag inventory, Hero hero) {
+		int extracted = item instanceof MissileWeapon
+				? MissileWeapon.UpgradedSetTracker.consumeUpgradeScrollUses(
+						hero, (MissileWeapon) item)
+				: item.upgradeScrollUses;
+		degradeAndClear(item, extracted);
+
+		if (item instanceof MissileWeapon) {
 			MissileWeapon selected = (MissileWeapon) item;
-			if (selected.setID != MissileWeapon.UNASSIGNED_SET_ID) {
+			if (inventory != null && selected.setID != MissileWeapon.UNASSIGNED_SET_ID) {
 				degradeMissileSet(inventory, selected, extracted);
 			}
+			MissileWeapon.UpgradedSetTracker.setCanonicalLevel(
+					hero, selected, selected.trueLevel());
+		}
+		return extracted;
+	}
+
+	static int extractUpgradeUses(Item item, Bag inventory,
+			MissileWeapon.UpgradedSetTracker tracker) {
+		int extracted = item instanceof MissileWeapon && tracker != null
+				? tracker.consumeUpgradeScrollUses((MissileWeapon) item)
+				: item.upgradeScrollUses;
+		degradeAndClear(item, extracted);
+
+		if (item instanceof MissileWeapon) {
+			MissileWeapon selected = (MissileWeapon) item;
+			if (inventory != null && selected.setID != MissileWeapon.UNASSIGNED_SET_ID) {
+				degradeMissileSet(inventory, selected, extracted);
+			}
+			if (tracker != null) tracker.setCanonicalLevel(selected, selected.trueLevel());
 		}
 		return extracted;
 	}

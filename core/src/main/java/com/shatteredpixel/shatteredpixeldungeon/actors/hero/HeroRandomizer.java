@@ -119,9 +119,24 @@ public class HeroRandomizer {
 	}
 
 	public static boolean randomInitialTalentNeedsMetaDesc(Hero hero, Talent talent) {
-		return hasRandomClassTalents(hero)
-				&& randomClassTalent(hero, talent)
-				&& !nativeClassTalent(hero.heroClass, talent);
+		if (hero == null || talent == null || nativeClassTalent(hero.heroClass, talent)) {
+			return false;
+		}
+		if (hasRandomClassTalents(hero) && randomClassTalent(hero, talent)) {
+			return true;
+		}
+		if (!Dungeon.newCycle || !talent.isCommonTalentType()) {
+			return false;
+		}
+		if (hero.talents == null) {
+			return false;
+		}
+		for (java.util.LinkedHashMap<Talent, Integer> tier : hero.talents) {
+			if (tier.containsKey(talent)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static HeroSubClass[] subClasses(Hero hero) {

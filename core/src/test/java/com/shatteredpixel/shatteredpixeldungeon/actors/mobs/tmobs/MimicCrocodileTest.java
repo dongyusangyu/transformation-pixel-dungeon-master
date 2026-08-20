@@ -87,7 +87,7 @@ public class MimicCrocodileTest {
 	}
 
 	@Test
-	public void firstAttackRevealsAndUsesTripleMaximumDamageAmbush() {
+	public void firstAttackRevealsAndUsesFixedSixtyDamageAmbush() {
 		TestCrocodile crocodile = new TestCrocodile();
 
 		assertTrue(crocodile.isLurking());
@@ -95,7 +95,7 @@ public class MimicCrocodileTest {
 
 		assertFalse(crocodile.isLurking());
 		assertEquals(Char.INFINITE_ACCURACY, crocodile.attackSkill(null));
-		assertEquals(90, crocodile.damageRoll());
+		assertEquals(60, crocodile.damageRoll());
 
 		crocodile.finishAttackForTest();
 		assertEquals(40, crocodile.attackSkill(null));
@@ -106,12 +106,12 @@ public class MimicCrocodileTest {
 	}
 
 	@Test
-	public void ambushDamageTracksThreeTimesNormalMaximumDamage() {
+	public void ambushDamageStaysSixtyWhenNormalMaximumChanges() {
 		ScalingDamageCrocodile crocodile = new ScalingDamageCrocodile();
 
 		crocodile.beginAttackForTest();
 
-		assertEquals(120, crocodile.damageRoll());
+		assertEquals(60, crocodile.damageRoll());
 	}
 
 	@Test
@@ -127,6 +127,40 @@ public class MimicCrocodileTest {
 		assertNotNull(bleeding);
 		assertEquals(3f, cripple.cooldown(), 0f);
 		assertEquals(5f, bleeding.level(), 0f);
+	}
+
+	@Test
+	public void ambushOnPlayerAddsTwentyBleedingAfterResolvedDamageBleed() {
+		TestCrocodile crocodile = new TestCrocodile();
+		TestTarget target = new TestTarget();
+		crocodile.playerTarget = target;
+		crocodile.beginAttackForTest();
+
+		crocodile.resolveAttackForTest(target, true, 40);
+
+		assertEquals(40f, target.buff(Bleeding.class).level(), 0f);
+	}
+
+	@Test
+	public void normalAttackOnPlayerKeepsHalfDamageBleeding() {
+		TestCrocodile crocodile = new TestCrocodile();
+		TestTarget target = new TestTarget();
+		crocodile.playerTarget = target;
+
+		crocodile.resolveAttackForTest(target, true, 40);
+
+		assertEquals(20f, target.buff(Bleeding.class).level(), 0f);
+	}
+
+	@Test
+	public void ambushOnNonPlayerKeepsHalfDamageBleeding() {
+		TestCrocodile crocodile = new TestCrocodile();
+		TestTarget target = new TestTarget();
+		crocodile.beginAttackForTest();
+
+		crocodile.resolveAttackForTest(target, true, 40);
+
+		assertEquals(20f, target.buff(Bleeding.class).level(), 0f);
 	}
 
 	@Test
@@ -183,7 +217,7 @@ public class MimicCrocodileTest {
 
 		assertFalse(restored.isLurking());
 		assertEquals(Char.INFINITE_ACCURACY, restored.attackSkill(null));
-		assertEquals(90, restored.damageRoll());
+		assertEquals(60, restored.damageRoll());
 	}
 
 	@Test
@@ -200,6 +234,7 @@ public class MimicCrocodileTest {
 	private static class TestCrocodile extends MimicCrocodile {
 
 		private boolean attackCompletesSynchronously;
+		private Char playerTarget;
 
 		@Override
 		public float resist(Class effect) {
@@ -221,6 +256,11 @@ public class MimicCrocodileTest {
 		@Override
 		protected boolean performAttack(Char target) {
 			return attackCompletesSynchronously;
+		}
+
+		@Override
+		protected boolean isPlayerTarget(Char target) {
+			return target == playerTarget;
 		}
 
 		@Override

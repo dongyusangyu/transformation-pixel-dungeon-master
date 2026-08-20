@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -75,6 +76,35 @@ public class RankingsQuickslotTest {
 		assertSame(restoredBackpackItem, Dungeon.quickslot.getItem(2));
 	}
 
+	@Test
+	public void rankingSnapshotPrefersItemWithMatchingPersistentState() {
+		PersistentStateItem saved = new PersistentStateItem(2);
+		Dungeon.quickslot.setSlot(2, saved);
+		Bundle rankingData = new Bundle();
+		Dungeon.quickslot.storeRankingSnapshot(rankingData);
+
+		PersistentStateItem other = new PersistentStateItem(0);
+		PersistentStateItem intended = (PersistentStateItem) saved.duplicate();
+		Bag backpack = new Bag();
+		backpack.items.add(other);
+		backpack.items.add(intended);
+		Dungeon.quickslot.reset();
+
+		assertTrue(Dungeon.quickslot.restoreRankingSnapshot(rankingData, backpack));
+		assertSame(intended, Dungeon.quickslot.getItem(2));
+	}
+
+	@Test
+	public void rankingSnapshotDoesNotKeepDetachedItemWhenInventoryIsProvided() {
+		Dungeon.quickslot.setSlot(2, new PersistentStateItem(2));
+		Bundle rankingData = new Bundle();
+		Dungeon.quickslot.storeRankingSnapshot(rankingData);
+		Dungeon.quickslot.reset();
+
+		assertTrue(Dungeon.quickslot.restoreRankingSnapshot(rankingData, new Bag()));
+		assertNull(Dungeon.quickslot.getItem(2));
+	}
+
 	public static class UpgradeLikeItem extends Item {
 	}
 
@@ -88,5 +118,29 @@ public class RankingsQuickslotTest {
 	}
 
 	public static class MaskLikeItem extends Item {
+	}
+
+	public static class PersistentStateItem extends Item {
+		private static final String STATE = "state";
+		int state;
+
+		public PersistentStateItem() {
+		}
+
+		PersistentStateItem(int state) {
+			this.state = state;
+		}
+
+		@Override
+		public void storeInBundle(Bundle bundle) {
+			super.storeInBundle(bundle);
+			bundle.put(STATE, state);
+		}
+
+		@Override
+		public void restoreFromBundle(Bundle bundle) {
+			super.restoreFromBundle(bundle);
+			state = bundle.getInt(STATE);
+		}
 	}
 }

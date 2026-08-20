@@ -109,7 +109,13 @@ public class Belongings implements Iterable<Item> {
 	//we cache whether belongings are lost to avoid lots of calls to hero.buff(LostInventory.class)
 	private boolean lostInvent;
 	public void lostInventory( boolean val ){
+		if (lostInvent == val) return;
 		lostInvent = val;
+
+		EquipableItem[] equippedItems = {weapon, armor, artifact, misc, ring, secondWep};
+		for (EquipableItem item : equippedItems) {
+			if (item != null) item.onInventoryAvailabilityChanged(owner);
+		}
 	}
 
 	public boolean lostInventory(){

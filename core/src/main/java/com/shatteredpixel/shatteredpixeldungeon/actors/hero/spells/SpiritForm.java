@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.PrecognitiveEye;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
@@ -258,6 +259,13 @@ public class SpiritForm extends ClericSpell {
 
 		} else if (effect instanceof TalismanOfForesight){
 			GameScene.selectCell(((TalismanOfForesight) effect).scry);
+			return true;
+
+		} else if (effect instanceof PrecognitiveEye) {
+			if (hero.buff(PrecognitiveEye.PrecognitiveOverheat.class) != null) return false;
+			Buff.affect(hero, PrecognitiveEye.MomentaryForesight.class)
+					.set(PrecognitiveEye.trinityDodgeUses(hero.pointsInTalent(Talent.SPIRIT_FORM)), false);
+			hero.spendAndNext(1f);
 			return true;
 
 		} else if (effect instanceof TimekeepersHourglass){

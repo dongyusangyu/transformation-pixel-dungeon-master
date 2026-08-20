@@ -376,7 +376,7 @@ public abstract class RegularLevel extends Level {
 		while (true) {
 			
 			if (++count > 30) {
-				return -1;
+				return super.randomDestination(ch);
 			}
 			
 			Room room = Random.element( rooms );
@@ -531,13 +531,15 @@ public abstract class RegularLevel extends Level {
 
 		Random.pushGenerator( Random.Long() );
 			DriedRose rose = Dungeon.hero.belongings.getItem( DriedRose.class );
-			if (rose != null && rose.isIdentified() && !rose.cursed && Ghost.Quest.completed()){
+			if (driedRosePetalGenerationEnabled()
+					&& rose != null && rose.isIdentified() && !rose.cursed && Ghost.Quest.completed()){
 				//aim to drop 1 petal every 2 floors
-				int petalsNeeded = (int) Math.ceil((float)((Dungeon.depth / 2) - rose.droppedPetals) / 3);
+				int petalsNeeded = (int) Math.ceil((float)((driedRosePetalProgressDepth() / 2)
+						- rose.droppedPetals) / 3);
 
 				for (int i=1; i <= petalsNeeded; i++) {
 					//the player may miss a single petal and still max their rose.
-					if (rose.droppedPetals < 11) {
+					if (driedRosePetalGenerationAllowed(rose)) {
 						Item item = new DriedRose.Petal();
 						int cell = randomDropCell();
 						drop( item, cell ).type = Heap.Type.HEAP;
@@ -715,6 +717,18 @@ public abstract class RegularLevel extends Level {
 		}
 		Random.popGenerator();
 
+	}
+
+	protected int driedRosePetalProgressDepth() {
+		return Dungeon.depth;
+	}
+
+	protected boolean driedRosePetalGenerationEnabled() {
+		return Dungeon.branch == 0;
+	}
+
+	protected boolean driedRosePetalGenerationAllowed(DriedRose rose) {
+		return rose.droppedPetals < 11;
 	}
 
 	private static HashMap<Document, Dungeon.LimitedDrops> limitedDocs = new HashMap<>();

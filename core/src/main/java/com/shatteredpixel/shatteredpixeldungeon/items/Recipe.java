@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MeatPie;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.StewedMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.AquaBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.BlizzardBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.CausticBrew;
@@ -46,6 +47,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMi
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfToxicEssence;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
@@ -68,7 +70,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
@@ -381,6 +385,12 @@ public abstract class Recipe {
 					new int[]{3},
 					5,
 					GreatGreatGreatsword.class,
+					0),
+			new WeaponRecipe(
+					new Class[]{Trident.class, PotionOfHealing.class, ScrollOfRetribution.class},
+					new int[]{3, 1, 2},
+					5,
+					Gungnir.class,
 					0)
 	};
 
@@ -390,6 +400,19 @@ public abstract class Recipe {
 			result.add(recipe);
 		}
 		return result;
+	}
+
+	public static boolean weaponRecipeRequiresWholeStack(Class<? extends Item> itemClass) {
+		if (itemClass == null) return false;
+
+		for (WeaponRecipe recipe : weaponRecipes) {
+			for (int i = 0; i < recipe.inputs.length; i++) {
+				if (recipe.inputs[i] == itemClass && recipe.inQuantity[i] > 1) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	private static Recipe[] oneIngredientRecipes = new Recipe[]{
@@ -510,5 +533,3 @@ public abstract class Recipe {
 		return false;
 	}
 }
-
-

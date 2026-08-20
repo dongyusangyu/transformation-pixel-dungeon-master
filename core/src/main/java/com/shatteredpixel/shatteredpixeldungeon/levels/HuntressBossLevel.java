@@ -839,6 +839,10 @@ public class HuntressBossLevel extends Level {
 		scheduleEncounterMob(hawk, 1f);
 	}
 
+	public void spawnChallengeHawk(HuntressBoss boss) {
+		spawnHawk(boss);
+	}
+
 	private void populateWardenArena(HuntressBoss boss) {
 		WardenArenaApplication application = applyWardenArenaFeatures(
 				boss == null ? Char.Alignment.ENEMY : boss.alignment);
@@ -1250,6 +1254,55 @@ public class HuntressBossLevel extends Level {
 	@Override
 	public int randomRespawnCell(Char ch) {
 		return randomArenaCell(ch, Dungeon.hero == null ? -1000 : Dungeon.hero.pos);
+	}
+
+	@Override
+	public int safeArrivalCell(Char ch) {
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = entrance() + offset;
+			if (cell >= 0 && cell < length() && passable[cell]
+					&& Actor.findChar(cell) == null
+					&& (!Char.hasProp(ch, Char.Property.LARGE) || openSpace[cell])) {
+				candidates.add(cell);
+			}
+		}
+		if (!candidates.isEmpty()) {
+			return Random.element(candidates);
+		}
+		return passable[entrance()] && Actor.findChar(entrance()) == null
+				&& (!Char.hasProp(ch, Char.Property.LARGE) || openSpace[entrance()])
+				? entrance() : -1;
+	}
+
+	@Override
+	public int unblessedAnkhSafeRespawnCell(Char ch) {
+		return state == State.START ? safeArrivalCell(ch) : -1;
+	}
+
+	@Override
+	public void onSealedResurrectionReset() {
+		int leftSupply = ENTRANCE_X - 2 + (ENTRANCE_Y - 2) * width();
+		int rightSupply = ENTRANCE_X + 2 + (ENTRANCE_Y - 2) * width();
+		for (int cell : new int[]{leftSupply, rightSupply}) {
+			Heap heap = heaps.get(cell);
+			if (heap == null || heap.type != Heap.Type.HEAP) {
+				continue;
+			}
+			for (Item item : heap.items.toArray(new Item[0])) {
+				if (item.getClass() == entranceSupplyItemClass()) {
+					heap.items.remove(item);
+				}
+			}
+			if (heap.items.isEmpty()) {
+				heap.destroy();
+			}
+		}
+	}
+
+	@Override
+	public boolean shouldResetForSafeArrival() {
+		return locked && state != State.WON;
 	}
 
 	public void onBossDefeated() {

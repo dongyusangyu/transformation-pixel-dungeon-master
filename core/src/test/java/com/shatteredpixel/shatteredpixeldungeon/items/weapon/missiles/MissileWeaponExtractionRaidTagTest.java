@@ -13,10 +13,11 @@ public class MissileWeaponExtractionRaidTagTest {
 
 	@Test
 	public void similarityRequiresMatchingExtractionRaidOrigin() {
-		TestMissile raid = missile(5L);
-		TestMissile sameRaid = missile(5L);
-		TestMissile otherRaid = missile(6L);
+		TestMissile raid = missile(5L, 42L);
+		TestMissile sameRaid = missile(5L, 42L);
+		TestMissile otherRaid = missile(6L, 42L);
 		TestMissile unmarked = new TestMissile();
+		unmarked.setID = 42L;
 
 		assertTrue(raid.isSimilar(sameRaid));
 		assertFalse(raid.isSimilar(otherRaid));
@@ -26,8 +27,9 @@ public class MissileWeaponExtractionRaidTagTest {
 	@Test
 	public void heapKeepsMissilesFromDifferentOriginsAsSeparateStacks() {
 		Heap heap = new Heap();
-		TestMissile raid = missile(5L);
+		TestMissile raid = missile(5L, 42L);
 		TestMissile unmarked = new TestMissile();
+		unmarked.setID = 42L;
 
 		heap.drop(raid);
 		heap.drop(unmarked);
@@ -40,8 +42,9 @@ public class MissileWeaponExtractionRaidTagTest {
 	@Test
 	public void pinCushionKeepsMissilesFromDifferentOriginsAsSeparateStacks() {
 		PinCushion pinCushion = new PinCushion();
-		TestMissile raid = missile(5L);
+		TestMissile raid = missile(5L, 42L);
 		TestMissile unmarked = new TestMissile();
+		unmarked.setID = 42L;
 
 		pinCushion.stick(raid);
 		pinCushion.stick(unmarked);
@@ -51,8 +54,9 @@ public class MissileWeaponExtractionRaidTagTest {
 		assertTrue(pinCushion.getStuckItems().contains(unmarked));
 	}
 
-	private static TestMissile missile(long raidId) {
+	private static TestMissile missile(long raidId, long setID) {
 		TestMissile missile = new TestMissile();
+		missile.setID = setID;
 		missile.markForExtractionRaid(raidId);
 		return missile;
 	}

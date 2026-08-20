@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Blowpipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.RadiantGoldHalberd;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.FishingSpear;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
@@ -139,6 +140,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 		ANGULAR_SPEEDS.put(GreatShoperSprite.MissileGold.class,   0);
 		ANGULAR_SPEEDS.put(Tatteki.Tamaru.class,   0);
         ANGULAR_SPEEDS.put(Gungnir.class,   0);
+		ANGULAR_SPEEDS.put(RadiantGoldHalberd.class, 0);
 
 		//720 is default
 
@@ -150,6 +152,16 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 		
 		ANGULAR_SPEEDS.put(Shuriken.class,                  2160);
 		ANGULAR_SPEEDS.put(TenguSprite.TenguShuriken.class, 2160);
+	}
+
+	static int angularSpeedFor(Item item) {
+		if (item == null) return DEFAULT_ANGULAR_SPEED;
+		for (Class<? extends Item> cls : ANGULAR_SPEEDS.keySet()){
+			if (cls.isAssignableFrom(item.getClass())){
+				return ANGULAR_SPEEDS.get(cls);
+			}
+		}
+		return DEFAULT_ANGULAR_SPEED;
 	}
 
 	//TODO it might be nice to have a source and destination angle, to improve thrown weapon visuals
@@ -170,13 +182,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 		PointF d = PointF.diff( to, from );
 		speed.set(d).normalize().scale(SPEED);
 		
-		angularSpeed = DEFAULT_ANGULAR_SPEED;
-		for (Class<?extends Item> cls : ANGULAR_SPEEDS.keySet()){
-			if (cls.isAssignableFrom(item.getClass())){
-				angularSpeed = ANGULAR_SPEEDS.get(cls);
-				break;
-			}
-		}
+		angularSpeed = angularSpeedFor(item);
 		
 		angle = 135 - (float)(Math.atan2( d.x, d.y ) / 3.1415926 * 180);
 		

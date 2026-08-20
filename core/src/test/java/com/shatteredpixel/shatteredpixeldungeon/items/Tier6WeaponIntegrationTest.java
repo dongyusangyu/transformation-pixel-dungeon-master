@@ -11,8 +11,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.Mercury
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.VenomousSickle;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.RadiantGoldHalberd;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.PortableBlackHole;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 
 import org.junit.Test;
@@ -43,9 +46,11 @@ public class Tier6WeaponIntegrationTest {
 				AuxiliaryCore.class,
 				HundredTonHammer.class,
 				DemonTailWhip.class,
-				OracleTerminal.class
+				OracleTerminal.class,
+				VenomousSickle.class,
+				RadiantGoldHalberd.class
 		}, tierSix.classes);
-		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
+		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
 		assertEquals(6, Generator.wepTiers.length);
 		assertEquals(tierSix, Generator.wepTiers[5]);
 	}
@@ -118,14 +123,17 @@ public class Tier6WeaponIntegrationTest {
 				AuxiliaryCore.class,
 				HundredTonHammer.class,
 				DemonTailWhip.class,
-				OracleTerminal.class
+				OracleTerminal.class,
+				VenomousSickle.class,
+				RadiantGoldHalberd.class
 		}, tierSix);
 	}
 
 	@Test
-	public void tierSixMissilePoolContainsGungnir() throws Exception {
+	public void tierSixMissilePoolContainsGungnirAndPortableBlackHole() throws Exception {
 		Generator.Category tierSix = Generator.Category.valueOf("MIS_T6");
-		assertArrayEquals(new Class<?>[]{Gungnir.class}, tierSix.classes);
+		assertArrayEquals(new Class<?>[]{Gungnir.class, PortableBlackHole.class}, tierSix.classes);
+		assertArrayEquals(new float[]{1f, 1f}, tierSix.defaultProbs, 0f);
 		assertEquals(6, Generator.misTiers.length);
 
 		Method availableTier = Generator.class.getDeclaredMethod("availableMissileTier", int.class);

@@ -40,6 +40,30 @@ public class ReturnTeleportPolicyTest {
 	}
 
 	@Test
+	public void passageDestinationPreservesTowerBranch() {
+		assertEquals(0, Dungeon.passageReturnBranch(0));
+		assertEquals(TowerLevel.BRANCH,
+				Dungeon.passageReturnBranch(TowerLevel.BRANCH));
+	}
+
+	@Test
+	public void passageDestinationUsesTheCurrentRegionStart() {
+		assertEquals(1, Dungeon.passageReturnDepth(3));
+		assertEquals(6, Dungeon.passageReturnDepth(8));
+		assertEquals(21, Dungeon.passageReturnDepth(26));
+		assertEquals(26, Dungeon.passageReturnDepth(27));
+	}
+
+	@Test
+	public void towerPassageTargetBeyondMainDungeonLimitRemainsAllowed() {
+		int targetDepth = Dungeon.passageReturnDepth(27);
+		int targetBranch = Dungeon.passageReturnBranch(TowerLevel.BRANCH);
+
+		assertTrue(Dungeon.returnTeleportLocationAllowed(targetDepth, targetBranch));
+		assertFalse(Dungeon.returnTeleportLocationAllowed(targetDepth, 0));
+	}
+
+	@Test
 	public void markerMustHaveBeenSetOnAnAllowedFloor() {
 		assertTrue(Dungeon.returnTeleportMarkerAllowed(1, TowerLevel.BRANCH, true));
 		assertTrue(Dungeon.returnTeleportMarkerAllowed(
@@ -74,6 +98,9 @@ public class ReturnTeleportPolicyTest {
 		assertTrue(Dungeon.returnTeleportRouteAllowed(
 				5, 0, false, true,
 				4, 0, true));
+		assertFalse(Dungeon.returnTeleportRouteAllowed(
+				5, TowerLevel.BRANCH, true, true,
+				1, TowerLevel.BRANCH, true));
 	}
 
 	@Test

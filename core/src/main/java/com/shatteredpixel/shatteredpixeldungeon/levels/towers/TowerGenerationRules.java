@@ -19,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfExtraction;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 
 final class TowerGenerationRules {
 	static final Class<? extends Item> GUARANTEED_SHOP_ITEM = ScrollOfExtraction.class;
@@ -31,8 +32,32 @@ final class TowerGenerationRules {
 		return floor >= 1 && (floor - 1) % 5 == 0;
 	}
 
+	static boolean shouldGenerateNaturalFood(boolean bossFloor) {
+		return !bossFloor;
+	}
+
+	static boolean shouldGenerateLevelFeeling(int towerFloor, boolean bossFloor) {
+		return towerFloor > 1 && !bossFloor;
+	}
+
+	static int secretRoomCount(Level.Feeling feeling) {
+		return feeling == Level.Feeling.SECRETS ? 1 : 0;
+	}
+
 	static int shopPriceDepth(int floor) {
 		return 35 + 5 * ((Math.max(1, floor) - 1) / 5);
+	}
+
+	static int driedRosePetalProgressDepth(int towerFloor) {
+		return 25 + Math.max(1, towerFloor);
+	}
+
+	static boolean driedRosePetalGenerationAllowed(int droppedPetals, boolean roseMaxLevel) {
+		return droppedPetals < 11 || !roseMaxLevel;
+	}
+
+	static boolean driedRosePetalGenerationEnabled(int branch) {
+		return branch == 0 || branch == TowerLevel.BRANCH;
 	}
 
 	static boolean isForbiddenNaturalItem(Item item) {

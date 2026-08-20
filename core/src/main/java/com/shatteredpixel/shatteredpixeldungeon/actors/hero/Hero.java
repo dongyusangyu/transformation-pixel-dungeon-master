@@ -304,6 +304,7 @@ public class Hero extends Char {
 	public HeroAction lastAction = null;
 
 	private Char enemy;
+	private boolean resolvingAttackAction;
 	
 	public boolean resting = false;
 	
@@ -460,6 +461,9 @@ public class Hero extends Char {
 		HTBoost = bundle.getInt(HTBOOST);
 
 		super.restoreFromBundle( bundle );
+		if (Dungeon.newCycle) {
+			MissileWeapon.UpgradedSetTracker.resetLegacyForNewCycle(this);
+		}
 
 		heroClass = bundle.getEnum( CLASS, HeroClass.class );
 		subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class );
@@ -785,11 +789,19 @@ public class Hero extends Char {
 	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
 			DamageTag... damageTags) {
 		KindOfWeapon attackWeapon = belongings.attackingWeapon();
+		MeleeWeapon meleeWeapon = attackWeapon instanceof MeleeWeapon
+				? (MeleeWeapon) attackWeapon : null;
 		boolean primaryMeleeAttack = attackWeapon instanceof MeleeWeapon
 				&& attackWeapon == belongings.weapon()
 				&& buff(MonkEnergy.MonkAbility.UnarmedAbilityTracker.class) == null
 				&& !RingOfForce.fightingUnarmed(this);
-		boolean result = super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
+		boolean result = false;
+		if (meleeWeapon != null) meleeWeapon.beforeHeroAttack(this, enemy);
+		try {
+			result = super.attack(enemy, dmgMulti, dmgBonus, accMulti, damageTags);
+		} finally {
+			if (meleeWeapon != null) meleeWeapon.afterHeroAttack(this, enemy, result);
+		}
 		if (primaryMeleeAttack) {
 			AlternatingWeapons.recordPrimaryAttack(this, attackWeapon);
 		}
@@ -1147,10 +1159,7 @@ public class Hero extends Char {
 			}
 		}
 		if (belongings.weapon() != null && !RingOfForce.fightingUnarmed(this))  {
-            int aEnc = ((Weapon)belongings.weapon()).STRReq()  - STR();
-            if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
-                aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
-            }
+            int aEnc = ((Weapon)belongings.weapon()).effectiveEncumbrance(this);
 
 			int wepDr=0;
 
@@ -2229,6 +2238,11 @@ public class Hero extends Char {
 	public Char enemy(){
 		return enemy;
 	}
+
+	/** True only while resolving the attack animation that spends this hero's attack delay. */
+	public boolean isResolvingAttackAction() {
+		return resolvingAttackAction;
+	}
 	
 	public void rest( boolean fullRest ) {
 		AgentMinDatasetRecorder.onWait(fullRest);
@@ -2783,8 +2797,14 @@ public class Hero extends Char {
 				Buff.affect(this, Talent.HandSlipVulnerability.class);
 			}
 			AgentMinDatasetRecorder.onHeroStep(step);
-			sprite.move(pos, step);
+			// Vertigo resolves the actual destination inside Char.move(). Do not
+			// place the sprite at the requested cell before that resolution.
+			if (buff(Vertigo.class) == null || !Dungeon.level.adjacent(pos, step)) {
+				sprite.move(pos, step);
+			}
+			int oldPos = pos;
 			move(step);
+			if (oldPos != pos) MeleeWeapon.notifyHeroStep(this, oldPos, pos);
             MarchForward.Forward f=buff(MarchForward.Forward.class);
             if(f!=null){
                 if(f.speed<1.0f+0.125f*pointsInTalent(Talent.SPEEDUP)){
@@ -2831,6 +2851,7 @@ public class Hero extends Char {
 		
 		Char ch = Actor.findChar( cell );
 		Heap heap = Dungeon.level.heaps.get( cell );
+		LevelTransition transition = Dungeon.level.getTransition( cell );
 
 		if (Dungeon.level.map[cell] == Terrain.ALCHEMY && cell != pos) {
 			
@@ -2883,12 +2904,12 @@ public class Hero extends Char {
 			
 			curAction = new HeroAction.Unlock( cell );
 			
-		} else if (Dungeon.level.getTransition(cell) != null
+		} else if (transition != null
 				//moving to a transition doesn't automatically trigger it when enemies are near
 				&& (visibleEnemies.size() == 0 || cell == pos)
 				&& !Dungeon.level.locked
 				&& !Dungeon.level.plants.containsKey(cell)
-				&& (Dungeon.depth < 26 || Dungeon.level.getTransition(cell).type == LevelTransition.Type.REGULAR_ENTRANCE) ) {
+				&& Dungeon.levelTransitionAllowed(Dungeon.depth, Dungeon.branch, transition.type)) {
 
 			curAction = new HeroAction.LvlTransition( cell );
 			
@@ -3349,7 +3370,11 @@ public class Hero extends Char {
 	@Override
 	public void onAttackComplete() {
 
+		KindOfWeapon completedWeapon = belongings.attackingWeapon();
 		if (enemy == null){
+			if (completedWeapon instanceof MeleeWeapon) {
+				((MeleeWeapon) completedWeapon).afterHeroAttackDelayResolved(this);
+			}
 			curAction = null;
 			super.onAttackComplete();
 			return;
@@ -3359,10 +3384,19 @@ public class Hero extends Char {
 		boolean wasEnemy = enemy.alignment == Alignment.ENEMY
 				|| (enemy instanceof Mimic && enemy.alignment == Alignment.NEUTRAL);
 
-		boolean hit = attack( enemy );
+		boolean hit;
+		resolvingAttackAction = true;
+		try {
+			hit = attack( enemy );
+		} finally {
+			resolvingAttackAction = false;
+		}
 		Invisibility.dispel();
 
         spend( attackDelay() );
+		if (completedWeapon instanceof MeleeWeapon) {
+			((MeleeWeapon) completedWeapon).afterHeroAttackDelayResolved(this);
+		}
 
 		if (hit && subClass.is(HeroSubClass.GLADIATOR) && wasEnemy){
 			Buff.affect(this, Combo.class).hit(enemy, sealComboBonus());

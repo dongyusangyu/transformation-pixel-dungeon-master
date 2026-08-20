@@ -79,6 +79,53 @@ public class Bundle {
 		return data.toString();
 	}
 
+	public boolean contentEquals(Bundle other) {
+		return other != null && jsonContentEquals(data, other.data);
+	}
+
+	private static boolean jsonContentEquals(Object first, Object second) {
+		if (first == second) {
+			return true;
+		}
+		if (first == null || second == null || first.getClass() != second.getClass()) {
+			return false;
+		}
+		try {
+			if (first instanceof JSONObject) {
+				JSONObject firstObject = (JSONObject) first;
+				JSONObject secondObject = (JSONObject) second;
+				if (firstObject.length() != secondObject.length()) {
+					return false;
+				}
+				Iterator<String> keys = firstObject.keys();
+				while (keys.hasNext()) {
+					String key = keys.next();
+					if (!secondObject.has(key)
+							|| !jsonContentEquals(firstObject.get(key), secondObject.get(key))) {
+						return false;
+					}
+				}
+				return true;
+			}
+			if (first instanceof JSONArray) {
+				JSONArray firstArray = (JSONArray) first;
+				JSONArray secondArray = (JSONArray) second;
+				if (firstArray.length() != secondArray.length()) {
+					return false;
+				}
+				for (int i = 0; i < firstArray.length(); i++) {
+					if (!jsonContentEquals(firstArray.get(i), secondArray.get(i))) {
+						return false;
+					}
+				}
+				return true;
+			}
+			return first.equals(second);
+		} catch (JSONException exception) {
+			return false;
+		}
+	}
+
 	private Bundle( JSONObject data ) {
 		this.data = data;
 	}

@@ -165,8 +165,8 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
             do {
                 count+=1;
                 p = Random.Int( level.length() );
-            } while (!level.passable[p] || Actor.findChar( p ) != null || count<100);
-            if(p!=-1){
+            } while ((!isValidRelocationCell(p) || count < 100) && count < 1000);
+            if (isValidRelocationCell(p)) {
                 relocateWithSpriteSync(p);
             }
         }
@@ -200,13 +200,13 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
             do {
                 newPos = Random.Int(Dungeon.level.length());
                 turns--;
-            } while ((!level.passable[newPos] ||
+            } while ((!isValidRelocationCell(newPos) ||
                     Dungeon.level.distance(newPos, enemy.pos) < 2 ||
                     Dungeon.level.distance(newPos, enemy.pos) > 3 ||
                     Dungeon.level.distance(newPos, Dungeon.hero.pos) < 2 ||
                     Dungeon.level.distance(newPos, Dungeon.hero.pos) > 3 ||
                             Actor.findChar(newPos) != null) && turns>0);
-            if(newPos !=-1 && level.passable[newPos]){
+            if (isValidRelocationCell(newPos)) {
                 relocateWithSpriteSync(newPos);
             }
 
@@ -216,9 +216,10 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
             if (enemy!=null && enemySeen) {
                 for (int i : PathFinder.NEIGHBOURS8) {
                     //寻找玩家身边安全位置
-                    if (Dungeon.level.passable[pos + i]
-                            && Actor.findChar(pos + i) == null) {
-                        execute(enemy.pos + i);
+                    int candidate = enemy.pos + i;
+                    if (isValidRelocationCell(candidate)
+                            && Dungeon.level.distance(candidate, enemy.pos) == 1) {
+                        execute(candidate);
                         break;
                     }
                 }
@@ -236,15 +237,36 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         return super.act();
     }
 
-    private void relocateWithSpriteSync(int destination) {
-        int from = pos;
+    private boolean relocateWithSpriteSync(int destination) {
+        if (!isValidRelocationCell(destination)) {
+            return false;
+        }
+
         if (sprite != null) {
-            // Reset an unfinished tween before starting the next relocation.
             sprite.interruptMotion();
-            sprite.place(from);
-            sprite.move(from, destination);
         }
         move(destination, false);
+        if (sprite != null) {
+            sprite.interruptMotion();
+            sprite.place(destination);
+            sprite.idle();
+        }
+        GameScene.sortMobSprites();
+        return pos == destination;
+    }
+
+    private boolean isValidRelocationCell(int cell) {
+        if (cell < 0 || cell >= level.length()) {
+            return false;
+        }
+        return isValidRelocationCell(cell, level.length(), level.passable[cell],
+                Actor.findChar(cell) != null)
+                && (!properties().contains(Property.LARGE) || level.openSpace[cell]);
+    }
+
+    public static boolean isValidRelocationCell(int cell, int levelLength,
+                                                boolean passable, boolean occupied) {
+        return cell >= 0 && cell < levelLength && passable && !occupied;
     }
 
     static boolean canAdvanceSpecialCounter(int paralysed, boolean sleeping) {
@@ -448,6 +470,10 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
     }
 
     public void execute(Integer target) {
+        if (target == null || !isValidRelocationCell(target)) {
+            return;
+        }
+
         //传送至玩家身边
         ShadowRogue.appear(this, target);
         int damage = (int) (enemy.HT*0.9);
@@ -743,8 +769,17 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
                 Sample.INSTANCE.play(Assets.Sounds.PUFF);
             }
 
-            ch.move( pos );
-            if (ch.pos == pos) ch.sprite.place( pos );
+            if (pos < 0 || pos >= Dungeon.level.length()
+                    || !isValidRelocationCell(pos, Dungeon.level.length(),
+                    Dungeon.level.passable[pos], Actor.findChar(pos) != null)) {
+                return;
+            }
+
+            ch.move(pos, false);
+            if (ch.pos == pos) {
+                ch.sprite.interruptMotion();
+                ch.sprite.place(pos);
+            }
 
             if (Dungeon.level.heroFOV[pos] || ch == Dungeon.hero ) {
                 ch.sprite.emitter().burst(SmokeParticle.FACTORY, 10);

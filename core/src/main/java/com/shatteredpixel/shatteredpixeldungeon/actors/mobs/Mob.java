@@ -979,6 +979,7 @@ public abstract class Mob extends Char {
 	}
 
 	public boolean surprisedBy( Char enemy, boolean attacking ){
+		if (MeleeWeapon.isForcedSurpriseAttack(enemy, this)) return true;
 		return enemy == hero
 				&& (enemy.invisible > 0 || !enemySeen || (fieldOfView != null && fieldOfView.length == Dungeon.level.length() && !fieldOfView[enemy.pos]))
 				&& (!attacking || enemy.canSurpriseAttack());
@@ -1453,31 +1454,30 @@ public abstract class Mob extends Char {
 			//can be awoken by the least stealthy hostile present, not necessarily just our target
 			if (enemyInFOV || (enemy != null && enemy.invisible > 0)) {
 
-				float highestChance = Float.POSITIVE_INFINITY;
+				float highestChance = 0f;
 				Char closestHostile = null;
 
 				for (Char ch : Actor.chars()){
 					if (fieldOfView[ch.pos] && ch.invisible == 0 && ch.alignment != alignment && ch.alignment != Alignment.NEUTRAL){
-						float bestChance = detectionChance(ch);
+						int distance = distance(ch);
+						boolean silentSteps = false;
 						//silent steps rogue talent, which also applies to rogue's shadow clone
 						if ((ch instanceof Hero || ch instanceof ShadowClone.ShadowAlly)
 								&& Dungeon.hero != null && Dungeon.hero.hasTalent(Talent.SILENT_STEPS)){
-							if (distance(ch) >= 4 - Dungeon.hero.pointsInTalent(Talent.SILENT_STEPS)) {
-								bestChance = Float.POSITIVE_INFINITY;
-							}
+							silentSteps = distance >= 4 - Dungeon.hero.pointsInTalent(Talent.SILENT_STEPS);
 						}
 						//flying characters are naturally stealthy
-						if (ch.flying && distance(ch) >= 2){
-							bestChance = Float.POSITIVE_INFINITY;
-						}
-						if (bestChance < highestChance){
+						boolean flying = ch.flying && distance >= 2;
+						float bestChance = sleepingDetectionChanceAtDistance(
+								distance, detectionChance(ch), silentSteps, flying);
+						if (shouldReplaceSleepingThreat(bestChance, highestChance)){
 							highestChance = bestChance;
 							closestHostile = ch;
 						}
 					}
 				}
 
-				if (closestHostile != null && Random.Float() < detectionChance(closestHostile)) {
+				if (closestHostile != null && Random.Float() < highestChance) {
 					awaken(enemyInFOV);
 					if (state == SLEEPING){
 						spend(TICK); //wait if we can't wake up for some reason
@@ -1537,6 +1537,21 @@ public abstract class Mob extends Char {
 			}
 			spend(TIME_TO_WAKE_UP);
 		}
+	}
+
+	static float sleepingDetectionChanceAtDistance(int distance, float calculatedChance,
+			boolean silentSteps, boolean flying) {
+		if (distance <= 1) {
+			return 1f;
+		}
+		if (silentSteps || flying) {
+			return 0f;
+		}
+		return Math.max(0f, Math.min(1f, calculatedChance));
+	}
+
+	static boolean shouldReplaceSleepingThreat(float candidateChance, float currentChance) {
+		return candidateChance > currentChance;
 	}
 
 	protected class Wandering implements AiState {

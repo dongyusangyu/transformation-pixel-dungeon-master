@@ -188,16 +188,7 @@ public class ScrollOfMetamorphosis extends Scroll {
 
 			top = text.bottom() + 2;
 
-			ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
-			Talent.initClassTalents(hero, talents, hero.metamorphedTalents, new LinkedHashMap<>());
-
-
-			for (LinkedHashMap<Talent, Integer> tier : talents) {
-				for (Talent talent : tier.keySet()) {
-					tier.put(talent, hero.pointsInTalent(talent));
-				}
-				tier.keySet().removeIf(Talent::excludedAsMetamorphSource);
-			}
+			ArrayList<LinkedHashMap<Talent, Integer>> talents = Talent.metamorphSources(hero);
 			if (Dungeon.isChallenged(Challenges.MAX_WHEAT)){
 				for (LinkedHashMap<Talent, Integer> tier : talents) {
 					for (Talent talent : Dungeon.hero.metamorphedTalents.values()) {

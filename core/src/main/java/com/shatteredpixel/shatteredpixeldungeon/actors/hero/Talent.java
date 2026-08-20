@@ -1606,6 +1606,27 @@ public enum Talent {
 				|| talent.type == TalentType.ARMOR;
 	}
 
+	/**
+	 * Returns the common talents the hero can currently replace. This must use the
+	 * stored layout rather than reconstructing the hero's default class tree, as a
+	 * new-cycle hero can inherit off-class talents.
+	 */
+	public static ArrayList<LinkedHashMap<Talent, Integer>> metamorphSources(Hero hero) {
+		ArrayList<LinkedHashMap<Talent, Integer>> sources = new ArrayList<>();
+		for (int i = 0; i < MAX_TALENT_TIERS; i++) {
+			LinkedHashMap<Talent, Integer> tier = new LinkedHashMap<>();
+			if (hero != null && hero.talents != null && i < hero.talents.size()) {
+				for (Talent talent : hero.talents.get(i).keySet()) {
+					if (!excludedAsMetamorphSource(talent)) {
+						tier.put(talent, hero.pointsInTalent(talent));
+					}
+				}
+			}
+			sources.add(tier);
+		}
+		return sources;
+	}
+
 	public static boolean forbiddenInCatalogOrMetamorphosis(Talent talent) {
 		switch (talent) {
 			case POTENTIAL_1:
@@ -1931,7 +1952,9 @@ public enum Talent {
 		if(hero.heroClass==HeroClass.FREEMAN){
 			max_item+=13;
 		}
-		onTalentUpgradedItem(hero,talent );
+		if (talent != null) {
+			onTalentUpgradedItem(hero, talent);
+		}
 
 		hero.updateHT(true);
 		MeleeWeapon.syncCharger(hero);
@@ -1945,6 +1968,19 @@ public enum Talent {
 
 			Buff.affect(hero, SmokeMask.class);
 			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
+			BuffIndicator.refreshHero();
+		}
+		if (!hero.hasTalent(SMOKE_MASK) && hero.buff(SmokeMask.class) != null) {
+			hero.buff(SmokeMask.class).detach();
+		}
+		if (talent == null) {
+			BrokenSeal.WarriorShield shield = hero.buff(BrokenSeal.WarriorShield.class);
+			if (shield != null && shield.maxShield() <= 0) {
+				shield.detach();
+			}
+			if (!hero.hasTalent(AQUATIC_RECOVER) && hero.buff(AquaticRecover.class) != null) {
+				hero.buff(AquaticRecover.class).detach();
+			}
 			BuffIndicator.refreshHero();
 		}
 
@@ -2014,7 +2050,8 @@ public enum Talent {
 		if (talent == TRAP_MASTER){
 			new ReclaimTrap().collect();
 		}
-		if (talent == HEIGHTENED_SENSES || talent == FARSIGHT || talent==SHORTSIGHTED){
+		if ((talent == HEIGHTENED_SENSES || talent == FARSIGHT || talent==SHORTSIGHTED
+				|| talent == null) && Dungeon.level != null){
 			Dungeon.observe();
 		}
 
@@ -5132,17 +5169,21 @@ public enum Talent {
 				}
 			}
 		}
-		if (hero.heroClass != null)     initClassTalents(hero);
-		if (hero.subClass != null)      initSubclassTalents(hero);
-		if (hero.armorAbility != null)  initArmorTalents(hero);
-
-		if(Dungeon.isChallenged(Challenges.NEGATIVE) || !hero.negativeTalents.isEmpty()){
-			Talent.initNegativeTalent(hero.heroClass,hero.talents,hero.negativeTalents);
-		}
-		boolean restoreCompleteLayout = Dungeon.newCycle
-				&& bundle.contains(COMPLETE_TALENT_LAYOUT)
+		boolean restoreCompleteLayout = bundle.contains(COMPLETE_TALENT_LAYOUT)
 				&& bundle.getBoolean(COMPLETE_TALENT_LAYOUT);
+		if (!restoreCompleteLayout) {
+			if (hero.heroClass != null)     initClassTalents(hero);
+			if (hero.subClass != null)      initSubclassTalents(hero);
+			if (hero.armorAbility != null)  initArmorTalents(hero);
+
+			if(Dungeon.isChallenged(Challenges.NEGATIVE) || !hero.negativeTalents.isEmpty()){
+				Talent.initNegativeTalent(hero.heroClass,hero.talents,hero.negativeTalents);
+			}
+		}
 		if (restoreCompleteLayout) {
+			while (hero.talents.size() < MAX_TALENT_TIERS) {
+				hero.talents.add(new LinkedHashMap<>());
+			}
 			for (LinkedHashMap<Talent, Integer> tier : hero.talents) {
 				tier.clear();
 			}
@@ -5166,7 +5207,7 @@ public enum Talent {
 						try {
 							Talent talent = Talent.valueOf(tName);
 
-							if (tier.containsKey(talent) || Dungeon.newCycle) {
+							if (tier.containsKey(talent) || restoreCompleteLayout || Dungeon.newCycle) {
 								tier.put(talent, Math.min(points, talent.maxPoints()));
 							}
 

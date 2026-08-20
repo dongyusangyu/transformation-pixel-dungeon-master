@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.scrolls;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
@@ -73,8 +74,12 @@ public class ScrollOfExtractionTest {
 		backpack.items.add(nestedBag);
 		nestedBag.items.add(nestedMember);
 		nestedBag.items.add(otherSet);
+		MissileWeapon.UpgradedSetTracker tracker =
+				new MissileWeapon.UpgradedSetTracker();
+		tracker.levelThresholds.put(41L, 4);
+		tracker.upgradeScrollCredits.put(41L, 2);
 
-		assertEquals(2, UpgradeExtraction.extractUpgradeUses(selected, backpack));
+		assertEquals(2, UpgradeExtraction.extractUpgradeUses(selected, backpack, tracker));
 
 		assertEquals(2, selected.trueLevel());
 		assertEquals(2, nestedMember.trueLevel());
@@ -87,6 +92,127 @@ public class ScrollOfExtractionTest {
 		assertEquals(3, otherSet.quantity());
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void missileExtractionRequiresSetTrackerContext() {
+		TestMissile missile = missile(43L, 2, 2, 1);
+
+		assertFalse(UpgradeExtraction.canExtract(missile));
+		UpgradeExtraction.extractUpgradeUses(missile);
+	}
+
+	@Test
+	public void thrownMissileMemberCannotRestoreConsumedUpgradeCredits() {
+		MissileWeapon.UpgradedSetTracker tracker =
+				new MissileWeapon.UpgradedSetTracker();
+		TestMissile carried = missile(51L, 3, 3, 2);
+		TestMissile thrown = missile(51L, 3, 3, 1);
+		Bag backpack = new Bag();
+		backpack.items.add(carried);
+		tracker.levelThresholds.put(51L, 3);
+		tracker.upgradeScrollCredits.put(51L, 3);
+
+		assertEquals(3, UpgradeExtraction.extractUpgradeUses(carried, backpack, tracker));
+		assertTrue(tracker.synchronizeMember(thrown));
+
+		assertEquals(0, thrown.trueLevel());
+		assertEquals(0, thrown.upgradeScrollUses);
+		assertFalse(UpgradeExtraction.canExtract(thrown, tracker));
+	}
+
+	@Test
+	public void onlyNewUpgradeCreditSurvivesAfterExtraction() {
+		MissileWeapon.UpgradedSetTracker tracker =
+				new MissileWeapon.UpgradedSetTracker();
+		TestMissile carried = missile(52L, 3, 3, 2);
+		TestMissile staleThrown = missile(52L, 3, 3, 1);
+		Bag backpack = new Bag();
+		backpack.items.add(carried);
+		tracker.levelThresholds.put(52L, 3);
+		tracker.upgradeScrollCredits.put(52L, 3);
+
+		assertEquals(3, UpgradeExtraction.extractUpgradeUses(carried, backpack, tracker));
+		carried.level(1);
+		tracker.levelThresholds.put(52L, 1);
+		tracker.recordUpgradeScrollUse(carried);
+
+		assertTrue(tracker.synchronizeMember(staleThrown));
+		assertEquals(1, staleThrown.trueLevel());
+		assertEquals(1, staleThrown.upgradeScrollUses);
+		assertTrue(UpgradeExtraction.canExtract(staleThrown, tracker));
+		assertEquals(1, UpgradeExtraction.extractUpgradeUses(staleThrown, null, tracker));
+		assertFalse(UpgradeExtraction.canExtract(staleThrown, tracker));
+	}
+
+	@Test
+	public void missileUpgradeCreditLedgerSurvivesSaveAndLoad() {
+		MissileWeapon.UpgradedSetTracker original =
+				new MissileWeapon.UpgradedSetTracker();
+		original.levelThresholds.put(53L, 4);
+		original.upgradeScrollCredits.put(53L, 2);
+		Bundle bundle = new Bundle();
+		original.storeInBundle(bundle);
+
+		MissileWeapon.UpgradedSetTracker restored =
+				new MissileWeapon.UpgradedSetTracker();
+		restored.restoreFromBundle(bundle);
+		TestMissile member = missile(53L, 4, 99, 1);
+
+		assertTrue(restored.synchronizeMember(member));
+		assertEquals(4, member.trueLevel());
+		assertEquals(2, member.upgradeScrollUses);
+	}
+
+	@Test
+	public void legacyStaleMemberDoesNotMigrateConsumedCredits() {
+		Bundle legacy = new Bundle();
+		legacy.put(MissileWeapon.UpgradedSetTracker.SET_IDS, new long[]{54L});
+		legacy.put(MissileWeapon.UpgradedSetTracker.SET_LEVELS, new int[]{0});
+		MissileWeapon.UpgradedSetTracker restored =
+				new MissileWeapon.UpgradedSetTracker();
+		restored.restoreFromBundle(legacy);
+		TestMissile stale = missile(54L, 3, 3, 1);
+
+		assertTrue(restored.synchronizeMember(stale));
+		assertEquals(0, stale.trueLevel());
+		assertEquals(0, stale.upgradeScrollUses);
+	}
+
+	@Test
+	public void lowerLevelDuplicateStillFailsSetSynchronization() {
+		MissileWeapon.UpgradedSetTracker tracker =
+				new MissileWeapon.UpgradedSetTracker();
+		tracker.levelThresholds.put(55L, 3);
+		tracker.upgradeScrollCredits.put(55L, 2);
+		TestMissile duplicate = missile(55L, 2, 2, 1);
+
+		assertFalse(tracker.synchronizeMember(duplicate));
+	}
+
+	@Test
+	public void legacyNewCycleResetKeepsZeroLevelMissileValid() {
+		Bundle legacy = new Bundle();
+		legacy.put(MissileWeapon.UpgradedSetTracker.SET_IDS, new long[]{56L});
+		legacy.put(MissileWeapon.UpgradedSetTracker.SET_LEVELS, new int[]{3});
+		MissileWeapon.UpgradedSetTracker restored =
+				new MissileWeapon.UpgradedSetTracker();
+		restored.restoreFromBundle(legacy);
+		restored.resetLegacyForNewCycle();
+		TestMissile resetForNewCycle = missile(56L, 0, 3, 3);
+
+		assertTrue(restored.synchronizeMember(resetForNewCycle));
+		assertEquals(0, resetForNewCycle.trueLevel());
+		assertEquals(0, resetForNewCycle.upgradeScrollUses);
+
+		Bundle migrated = new Bundle();
+		restored.storeInBundle(migrated);
+		MissileWeapon.UpgradedSetTracker reloaded =
+				new MissileWeapon.UpgradedSetTracker();
+		reloaded.restoreFromBundle(migrated);
+		TestMissile oldGroundMember = missile(57L, 0, 4, 1);
+		assertTrue(reloaded.synchronizeMember(oldGroundMember));
+		assertEquals(0, oldGroundMember.upgradeScrollUses);
+	}
+
 	@Test
 	public void extractionScrollUsesFixedKnownInventoryScrollFlow() throws IOException {
 		String source = readCoreSource(
@@ -96,8 +222,7 @@ public class ScrollOfExtractionTest {
 		assertTrue(source.contains("public boolean isKnown()"));
 		assertTrue(source.contains("image = EXItemSpriteSheet.SCROLL_EXTRACTION;"));
 		assertTrue(source.contains("new ScrollOfUpgrade().quantity(extracted)"));
-		assertTrue(source.contains(
-				"UpgradeExtraction.extractUpgradeUses(item, curUser.belongings.backpack)"));
+		assertTrue(source.contains("curUser.belongings.backpack, curUser"));
 		assertFalse(source.contains("anonymous = true"));
 	}
 

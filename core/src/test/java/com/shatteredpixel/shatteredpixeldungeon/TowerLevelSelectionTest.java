@@ -13,6 +13,11 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -161,7 +166,22 @@ public class TowerLevelSelectionTest {
 		assertTrue(Dungeon.levelTransitionAllowed(
 				26, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_EXIT));
 		assertTrue(Dungeon.levelTransitionAllowed(
+				100, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_EXIT));
+		assertTrue(Dungeon.levelTransitionAllowed(
+				100, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_ENTRANCE));
+		assertTrue(Dungeon.levelTransitionAllowed(
+				101, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_EXIT));
+		assertTrue(Dungeon.levelTransitionAllowed(
 				1_000_001, TowerLevel.BRANCH, LevelTransition.Type.REGULAR_EXIT));
+	}
+
+	@Test
+	public void heroUsesCentralTransitionPolicyForTowerExits() throws Exception {
+		String source = readCoreSource("actors/hero/Hero.java");
+
+		assertTrue(source.contains("Dungeon.levelTransitionAllowed("));
+		assertFalse(source.contains(
+				"Dungeon.depth < 26 || Dungeon.level.getTransition(cell).type"));
 	}
 
 	@Test
@@ -256,5 +276,15 @@ public class TowerLevelSelectionTest {
 		assertNotEquals(
 				Dungeon.generatedLevelKey(1000, 3),
 				Dungeon.generatedLevelKey(2000, 2));
+	}
+
+	private static String readCoreSource(String relativePath) throws Exception {
+		Path coreDirectory = Paths.get(System.getProperty("user.dir"));
+		if (!Files.isDirectory(coreDirectory.resolve("src/main/java"))) {
+			coreDirectory = coreDirectory.resolve("core");
+		}
+		return new String(Files.readAllBytes(coreDirectory.resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon")
+				.resolve(relativePath)), StandardCharsets.UTF_8);
 	}
 }

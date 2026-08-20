@@ -6,6 +6,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Dongyusangyu;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DungeonDoctor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SurfaceShopkeeper;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTileSheet;
 
 import org.junit.Test;
 
@@ -79,18 +81,19 @@ public class SurfaceTownLevelDongyusangyuTest {
 	}
 
 	@Test
-	public void usesDecorativeFloorPathsToConnectHouseEntrances() {
+	public void usesDirectionAwareTilesForTheConnectedVillagePaths() {
 		SurfaceTownLevel level = testLevel();
 
 		level.create();
 
-		assertTrue(countTerrain(level, Terrain.EMPTY_DECO) >= 100);
+		assertTrue(countTerrain(level, Terrain.EMPTY_DECO) >= 90);
 		assertEquals(countTerrain(level, Terrain.EMPTY_DECO),
 				connectedTerrainCount(level, Terrain.EMPTY_DECO));
 		for (int[] point : new int[][]{
 				{8, 10},
 				{22, 8},
 				{38, 11},
+				{32, 11},
 				{22, 21},
 				{8, 30},
 				{38, 30},
@@ -100,6 +103,54 @@ public class SurfaceTownLevelDongyusangyuTest {
 		for (int y = 10; y <= 30; y++) {
 			assertEquals(Terrain.EMPTY_DECO, level.map[cell(level, 32, y)]);
 		}
+
+		assertEquals(1, SurfaceTownLevel.SurfacePathTilemap.tileForConnections(
+				true, false, true, false));
+		assertEquals(6, SurfaceTownLevel.SurfacePathTilemap.tileForConnections(
+				false, true, false, true));
+		assertEquals(7, SurfaceTownLevel.SurfacePathTilemap.tileForConnections(
+				true, true, false, false));
+		assertEquals(7, SurfaceTownLevel.SurfacePathTilemap.tileForConnections(
+				true, true, true, true));
+		assertEquals(1, SurfaceTownLevel.SurfacePathTilemap.tileForCell(level, 13, 15));
+		assertEquals(6, SurfaceTownLevel.SurfacePathTilemap.tileForCell(level, 14, 10));
+		assertEquals(7, SurfaceTownLevel.SurfacePathTilemap.tileForCell(level, 13, 10));
+		assertEquals(7, SurfaceTownLevel.SurfacePathTilemap.tileForCell(level, 32, 11));
+		assertEquals(7, SurfaceTownLevel.SurfacePathTilemap.tileForCell(level, 38, 11));
+
+		boolean hasPathVisual = false;
+		for (CustomTilemap tile : level.customTiles) {
+			if (tile instanceof SurfaceTownLevel.SurfacePathTilemap) {
+				hasPathVisual = true;
+				break;
+			}
+		}
+		assertTrue(hasPathVisual);
+		for (int x = 7; x <= 39; x++) {
+			int terrain = level.map[cell(level, x, 31)];
+			assertFalse(terrain == Terrain.REGION_DECO || terrain == Terrain.REGION_DECO_ALT);
+		}
+	}
+
+	@Test
+	public void usesOneContinuousWoodTileForEveryIndoorFloor() {
+		SurfaceTownLevel level = testLevel();
+
+		level.create();
+
+		assertEquals(DungeonTileSheet.FLOOR_SP,
+				SurfaceTownLevel.SurfaceInteriorFloorTilemap.tileForTerrain(Terrain.EMPTY_SP));
+		assertEquals(-1,
+				SurfaceTownLevel.SurfaceInteriorFloorTilemap.tileForTerrain(Terrain.EMPTY));
+
+		boolean hasInteriorFloorVisual = false;
+		for (CustomTilemap tile : level.customTiles) {
+			if (tile instanceof SurfaceTownLevel.SurfaceInteriorFloorTilemap) {
+				hasInteriorFloorVisual = true;
+				break;
+			}
+		}
+		assertTrue(hasInteriorFloorVisual);
 	}
 
 	@Test
@@ -216,6 +267,17 @@ public class SurfaceTownLevelDongyusangyuTest {
 		for (int x = 5; x <= 10; x++) {
 			assertEquals(Terrain.BOOKSHELF, level.map[cell(level, x, 24)]);
 		}
+	}
+
+	@Test
+	public void placesAlchemyPotInsideDongyusangyuHouse() {
+		SurfaceTownLevel level = testLevel();
+
+		level.create();
+
+		assertEquals(1, countTerrain(level, Terrain.ALCHEMY));
+		assertEquals(Terrain.ALCHEMY, level.map[cell(level, 10, 27)]);
+		assertTrue(reachable(level, level.entrance, cell(level, 9, 27)));
 	}
 
 	private static int countTerrain(SurfaceTownLevel level, int terrain) {
