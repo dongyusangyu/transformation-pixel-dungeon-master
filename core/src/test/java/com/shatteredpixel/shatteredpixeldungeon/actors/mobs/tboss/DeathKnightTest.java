@@ -572,6 +572,7 @@ public class DeathKnightTest {
     @Test
     public void coverBreakRunsAfterAllDamageAndOnlyOncePerResolution() {
         TestDeathKnight boss = new TestDeathKnight();
+        boss.suppressAftermath = true;
         RecordingBombardmentTarget target = new RecordingBombardmentTarget();
         target.pos = 10;
         boss.coverTarget = target;
@@ -592,6 +593,7 @@ public class DeathKnightTest {
     @Test
     public void cancelledOrPausedBombardmentDoesNotBreakCover() {
         TestDeathKnight boss = new TestDeathKnight();
+        boss.suppressAftermath = true;
         boss.forcePhaseForTest(DeathKnight.Phase.BREAK_FORMATION, 1);
         boss.setPendingForTest(DeathKnight.Skill.EXECUTION, new int[]{10}, 2);
         boss.armTransitionForTest();
@@ -607,6 +609,7 @@ public class DeathKnightTest {
                 DeathKnight.Skill.CROSS, DeathKnight.Skill.RING,
                 DeathKnight.Skill.SOUL_LINE, DeathKnight.Skill.EXECUTION}) {
             TestDeathKnight boss = new TestDeathKnight();
+            boss.suppressAftermath = true;
             RecordingBombardmentTarget target = new RecordingBombardmentTarget();
             target.pos = 10;
             boss.coverTarget = target;
@@ -688,6 +691,7 @@ public class DeathKnightTest {
         RecordingBombardmentTarget coverTarget;
         int coverBreakCalls;
         int coverBreakDamageAtCall = -1;
+        boolean suppressAftermath;
 
         @Override
         protected float baseResist(Class effect) {
@@ -697,6 +701,7 @@ public class DeathKnightTest {
         @Override
         protected void applySkillAftermath(DeathKnight.Skill skill, Char target,
                                             DeathKnightBombardment.Band band) {
+            if (!suppressAftermath) super.applySkillAftermath(skill, target, band);
         }
 
         @Override

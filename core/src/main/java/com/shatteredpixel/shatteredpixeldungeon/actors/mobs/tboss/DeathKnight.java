@@ -140,7 +140,7 @@ public class DeathKnight extends TowerBoss {
 
     @Override
     public float attackDelay() {
-        return super.attackDelay();
+        return super.attackDelay() * 0.5f;
     }
 
     @Override
