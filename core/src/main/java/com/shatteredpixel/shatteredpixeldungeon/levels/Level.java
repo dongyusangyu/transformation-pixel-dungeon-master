@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SacrificialFire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SmokeScreen;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Web;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.RuneWeb;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WellWater;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Awareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -272,49 +273,12 @@ public abstract class Level implements Bundlable {
 				Dungeon.LimitedDrops.TRINKET_CATA.drop();
 				addItemToSpawn( new TrinketCatalyst());
 			}
-			
-			if (Dungeon.depth > 1) {
-				//50% chance of getting a level feeling
-				//~7.15% chance for each feeling
-				switch (Random.Int( 14 )) {
-					case 0:
-						feeling = Feeling.CHASM;
-						break;
-					case 1:
-						feeling = Feeling.WATER;
-						break;
-					case 2:
-						feeling = Feeling.GRASS;
-						break;
-					case 3:
-						feeling = Feeling.DARK;
-						viewDistance = Math.round(5*viewDistance/8f);
-						break;
-					case 4:
-						feeling = Feeling.LARGE;
-						addItemToSpawn(Generator.random(Generator.Category.FOOD));
-						break;
-					case 5:
-						feeling = Feeling.TRAPS;
-						break;
-					case 6:
-						feeling = Feeling.SECRETS;
-						break;
-					default:
-						//if-else statements are fine here as only one chance can be above 0 at a time
-						if(Random.Float() < 1/7 && Dungeon.isChallenged(Challenges.DARKNESS) && Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)){
-							feeling = Feeling.DARK;
-							viewDistance = Math.round(5*viewDistance/8f);
-							break;
-						}else if (Random.Float() < MossyClump.overrideNormalLevelChance()){
-							feeling = MossyClump.getNextFeeling();
-						} else if (Random.Float() < TrapMechanism.overrideNormalLevelChance()) {
-							feeling = TrapMechanism.getNextFeeling();
-						} else {
-							feeling = Feeling.NONE;
-						}
-				}
-			}
+		} else if (shouldGenerateNaturalFood()) {
+			addItemToSpawn(Generator.random(Generator.Category.FOOD));
+		}
+
+		if (shouldGenerateLevelFeeling()) {
+			generateLevelFeeling();
 		}
 		
 		do {
@@ -339,6 +303,63 @@ public abstract class Level implements Bundlable {
 		createItems();
 
 		Random.popGenerator();
+	}
+
+	/**
+	 * Controls the guaranteed food drop that is separate from random item drops.
+	 * Branches can opt in without inheriting the main dungeon's progression drops.
+	 */
+	protected boolean shouldGenerateNaturalFood() {
+		return !Dungeon.bossLevel() && Dungeon.branch == 0;
+	}
+
+	/** Branches opt in to the standard non-boss floor atmosphere roll. */
+	protected boolean shouldGenerateLevelFeeling() {
+		return !Dungeon.bossLevel() && Dungeon.branch == 0 && Dungeon.depth > 1;
+	}
+
+	private void generateLevelFeeling() {
+		//50% chance of getting a level feeling
+		//~7.15% chance for each feeling
+		switch (Random.Int(14)) {
+			case 0:
+				feeling = Feeling.CHASM;
+				break;
+			case 1:
+				feeling = Feeling.WATER;
+				break;
+			case 2:
+				feeling = Feeling.GRASS;
+				break;
+			case 3:
+				feeling = Feeling.DARK;
+				viewDistance = Math.round(5 * viewDistance / 8f);
+				break;
+			case 4:
+				feeling = Feeling.LARGE;
+				addItemToSpawn(Generator.random(Generator.Category.FOOD));
+				break;
+			case 5:
+				feeling = Feeling.TRAPS;
+				break;
+			case 6:
+				feeling = Feeling.SECRETS;
+				break;
+			default:
+				// Only one fallback atmosphere override can apply per floor.
+				if (Random.Float() < 1 / 7
+						&& Dungeon.isChallenged(Challenges.DARKNESS)
+						&& Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)) {
+					feeling = Feeling.DARK;
+					viewDistance = Math.round(5 * viewDistance / 8f);
+				} else if (Random.Float() < MossyClump.overrideNormalLevelChance()) {
+					feeling = MossyClump.getNextFeeling();
+				} else if (Random.Float() < TrapMechanism.overrideNormalLevelChance()) {
+					feeling = TrapMechanism.getNextFeeling();
+				} else {
+					feeling = Feeling.NONE;
+				}
+		}
 	}
 
 	protected long levelSeed() {
@@ -857,6 +878,36 @@ public abstract class Level implements Bundlable {
 		return cell;
 	}
 
+	/**
+	 * Selects a safe landing cell for arrivals from another level. Combat respawns
+	 * and teleports should continue to use {@link #randomRespawnCell(Char)}.
+	 */
+	public int safeArrivalCell( Char ch ) {
+		return randomRespawnCell(ch);
+	}
+
+	/**
+	 * Returns a forced safe cell for an unblessed ankh resurrection, or -1 to
+	 * use the normal distant random respawn behavior.
+	 */
+	public int unblessedAnkhSafeRespawnCell(Char ch) {
+		return -1;
+	}
+
+	/**
+	 * Allows a sealed boss level to remove newly generated one-time supplies
+	 * after its map is rebuilt for an unblessed ankh resurrection.
+	 */
+	public void onSealedResurrectionReset() {
+	}
+
+	/**
+	 * Whether an unfinished special encounter must be rebuilt before a safe arrival.
+	 */
+	public boolean shouldResetForSafeArrival() {
+		return false;
+	}
+
 	public boolean isBossTeleportPositionAllowed(int pos) {
 		return pos >= 0 && pos < length();
 	}
@@ -1214,7 +1265,7 @@ public abstract class Level implements Bundlable {
 	public int fallCell( boolean fallIntoPit ) {
 		int result;
 		do {
-			result = randomRespawnCell( null );
+			result = safeArrivalCell( null );
 			if (result == -1) return -1;
 		} while (traps.get(result) != null
 				|| findMob(result) != null);
@@ -1225,6 +1276,11 @@ public abstract class Level implements Bundlable {
 		if (!ch.isImmune(Web.class) && Blob.volumeAt(ch.pos, Web.class) > 0){
 			blobs.get(Web.class).clear(ch.pos);
 			Web.affectChar( ch );
+		}
+
+		if (ch == Dungeon.hero && Blob.volumeAt(ch.pos, RuneWeb.class) > 0){
+			blobs.get(RuneWeb.class).clear(ch.pos);
+			RuneWeb.affectChar(ch);
 		}
 
 		if (Blob.volumeAt(ch.pos, SacrificialFire.class) > 0 && ch.buff( SacrificialFire.Marked.class ) == null){

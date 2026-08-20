@@ -4,16 +4,23 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroRandomizer;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.warrior.HeroicLeap;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.items.Amulet;
 import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.watabou.utils.Bundle;
 
 import org.junit.After;
@@ -32,6 +39,7 @@ import java.util.LinkedHashSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class RankingRestartTest {
@@ -42,7 +50,9 @@ public class RankingRestartTest {
 		Dungeon.challenges = 0;
 		Dungeon.newCycle = false;
 		Dungeon.newCycleSourceGameID = null;
+		Dungeon.quickslot.reset();
 		Dungeon.hero = null;
+		Ghost.Quest.reset();
 		Generator.fullReset();
 	}
 
@@ -60,6 +70,91 @@ public class RankingRestartTest {
 	}
 
 	@Test
+	public void legacyInventoryKeepsOneQuickslottedWaterskinWithHighestVolume() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		Waterskin quickslotted = waterskin(4);
+		Waterskin duplicate = waterskin(15);
+		hero.belongings.backpack.items.add(quickslotted);
+		hero.belongings.backpack.items.add(duplicate);
+		Dungeon.quickslot.setSlot(2, quickslotted);
+
+		RankingRestart.sanitizeLegacyInventory(hero);
+
+		assertEquals(1, hero.belongings.getAllItems(Waterskin.class).size());
+		assertSame(quickslotted, hero.belongings.getItem(Waterskin.class));
+		assertEquals(15, quickslotted.volume);
+		assertSame(quickslotted, Dungeon.quickslot.getItem(2));
+	}
+
+	@Test
+	public void legacyInventoryRemovesQuickslottedTopLevelCopyOfNestedItem() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		PersistentStateItem nested = new PersistentStateItem(7);
+		PersistentStateItem duplicate = (PersistentStateItem) nested.duplicate();
+		assertTrue(QuickSlot.rankingSnapshotMatches(nested, duplicate));
+		Bag holder = new Bag();
+		holder.items.add(nested);
+		hero.belongings.backpack.items.add(holder);
+		hero.belongings.backpack.items.add(duplicate);
+		Dungeon.quickslot.setSlot(1, duplicate);
+		assertTrue(QuickSlot.rankingSnapshotMatches(nested, duplicate));
+
+		RankingRestart.removeLegacyFlattenedItems(
+				hero.belongings.backpack, PersistentStateItem.class);
+
+		assertTrue(holder.items.contains(nested));
+		assertFalse(hero.belongings.backpack.items.contains(duplicate));
+		assertEquals(1, hero.belongings.getAllItems(PersistentStateItem.class).size());
+		assertSame(nested, Dungeon.quickslot.getItem(1));
+	}
+
+	@Test
+	public void legacyInventoryKeepsDifferentSameClassItems() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		PersistentStateItem nested = new PersistentStateItem(0);
+		PersistentStateItem topLevel = new PersistentStateItem(1);
+		Bag holder = new Bag();
+		holder.items.add(nested);
+		hero.belongings.backpack.items.add(holder);
+		hero.belongings.backpack.items.add(topLevel);
+		Dungeon.quickslot.setSlot(1, topLevel);
+
+		RankingRestart.removeLegacyFlattenedItems(
+				hero.belongings.backpack, PersistentStateItem.class);
+
+		assertEquals(2, hero.belongings.getAllItems(PersistentStateItem.class).size());
+		assertTrue(holder.items.contains(nested));
+		assertTrue(hero.belongings.backpack.items.contains(topLevel));
+		assertSame(topLevel, Dungeon.quickslot.getItem(1));
+	}
+
+	@Test
+	public void legacyInventoryKeepsUnslottedIdenticalItems() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		PersistentStateItem nested = new PersistentStateItem(7);
+		PersistentStateItem topLevel = (PersistentStateItem) nested.duplicate();
+		Bag holder = new Bag();
+		holder.items.add(nested);
+		hero.belongings.backpack.items.add(holder);
+		hero.belongings.backpack.items.add(topLevel);
+
+		RankingRestart.removeLegacyFlattenedItems(
+				hero.belongings.backpack, PersistentStateItem.class);
+
+		assertEquals(2, hero.belongings.getAllItems(PersistentStateItem.class).size());
+		assertTrue(holder.items.contains(nested));
+		assertTrue(hero.belongings.backpack.items.contains(topLevel));
+	}
+
+	@Test
+	public void newCycleSanitizerAppliesFlattenedItemMigrationToWands() throws Exception {
+		String source = readCoreSource("RankingRestart.java");
+
+		assertTrue(source.contains("removeLegacyFlattenedItems("
+				+ "hero.belongings.backpack, Wand.class)"));
+	}
+
+	@Test
 	public void newCycleIdentifiesEveryAnonymousItemTypeAfterReset() throws Exception {
 		String source = readCoreSource("RankingRestart.java");
 
@@ -71,6 +166,24 @@ public class RankingRestartTest {
 				< source.indexOf("identifyAnonymousItemTypes();"));
 		assertTrue(source.indexOf("identifyAnonymousItemTypes();")
 				< source.indexOf("Dungeon.hero.belongings.identify();"));
+	}
+
+	@Test
+	public void completingGhostQuestAlwaysProducesCompletedState() {
+		Ghost.Quest.reset();
+		Notes.reset();
+
+		Ghost.Quest.complete();
+
+		assertTrue(Ghost.Quest.completed());
+	}
+
+	@Test
+	public void newCycleCompletesGhostQuestAfterReinitializingDungeon() throws Exception {
+		String source = readCoreSource("RankingRestart.java");
+
+		assertTrue(source.indexOf("Dungeon.reinit(false);")
+				< source.indexOf("Ghost.Quest.complete();"));
 	}
 
 	@Test
@@ -245,6 +358,53 @@ public class RankingRestartTest {
 	}
 
 	@Test
+	public void restartPreparationDoesNotKeepUnusedUpgradeScrolls() throws Exception {
+		String source = readCoreSource("RankingRestart.java");
+		assertTrue(source.contains("!(item instanceof ScrollOfUpgrade)"));
+	}
+
+	@Test
+	public void normalizeUpgradeScrollsKeepsExactlyFifteenAcrossNestedBags() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		Dungeon.hero = hero;
+
+		TestUpgradeScroll first = new TestUpgradeScroll();
+		first.quantity(8);
+		TestUpgradeScroll second = new TestUpgradeScroll();
+		second.quantity(7);
+		Bag scrollHolder = new Bag();
+		scrollHolder.items.add(second);
+		hero.belongings.backpack.items.add(first);
+		hero.belongings.backpack.items.add(scrollHolder);
+
+		RankingRestart.normalizeUpgradeScrolls(hero, TestUpgradeScroll.class, new TestUpgradeScroll());
+
+		assertEquals(1, hero.belongings.getAllItems(TestUpgradeScroll.class).size());
+		assertEquals(15, hero.belongings.getItem(TestUpgradeScroll.class).quantity());
+	}
+
+	@Test
+	public void restartPreparationResetsDriedRoseStoredEquipment() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		MeleeWeapon weapon = (MeleeWeapon) unsafe().allocateInstance(MeleeWeapon.class);
+		weapon.level(4);
+		weapon.upgradeScrollUses = 4;
+		Armor armor = (Armor) unsafe().allocateInstance(Armor.class);
+		armor.level(3);
+		armor.upgradeScrollUses = 3;
+		DriedRose rose = roseWithStoredEquipment(weapon, armor, 42);
+		hero.belongings.artifact = rose;
+
+		RankingRestart.prepareHero(hero);
+
+		assertEquals(0, rose.ghostWeapon().trueLevel());
+		assertEquals(0, rose.ghostWeapon().upgradeScrollUses);
+		assertEquals(0, rose.ghostArmor().trueLevel());
+		assertEquals(0, rose.ghostArmor().upgradeScrollUses);
+		assertEquals(0, storedGhostId(rose));
+	}
+
+	@Test
 	public void startingGoldUsesScoreAndCapsConvertedInventoryValue() {
 		assertEquals(25_000, RankingRestart.calculateStartingGold(2_000_000, 8_000));
 		assertEquals(20_000, RankingRestart.calculateStartingGold(2_000_000, 0));
@@ -392,6 +552,51 @@ public class RankingRestartTest {
 	}
 
 	@Test
+	public void completeNewCycleLayoutRestoresBeforeGlobalNewCycleFlag() throws Exception {
+		Hero original = headlessHero();
+		original.heroClass = HeroClass.WARRIOR;
+		original.subClass = HeroSubClass.BERSERKER;
+		original.armorAbility = new HeroicLeap();
+		for (int i = 0; i < Talent.MAX_TALENT_TIERS; i++) {
+			original.talents.add(new LinkedHashMap<>());
+		}
+		original.talents.get(0).put(Talent.EMPOWERING_MEAL, 1);
+		original.talents.get(0).put(Talent.BACKUP_BARRIER, 0);
+		Talent.initSubclassTalents(original);
+		Talent.initArmorTalents(original);
+
+		Talent subclassTalent = original.talents.get(2).keySet().iterator().next();
+		Talent armorTalent = original.armorAbility.talents()[0];
+		original.talents.get(2).put(subclassTalent, 2);
+		original.talents.get(3).put(armorTalent, 3);
+
+		Bundle bundle = new Bundle();
+		Dungeon.newCycle = true;
+		Talent.storeTalentsInBundle(bundle, original);
+
+		Hero restored = headlessHero();
+		restored.heroClass = original.heroClass;
+		restored.subClass = original.subClass;
+		restored.armorAbility = new HeroicLeap();
+		// Dungeon.loadGame used to restore this flag only after rebuilding the hero.
+		Dungeon.newCycle = false;
+		Talent.restoreTalentsFromBundle(bundle, restored);
+
+		for (int i = 0; i < Talent.MAX_TALENT_TIERS; i++) {
+			assertEquals(original.talents.get(i).keySet(), restored.talents.get(i).keySet());
+		}
+		assertEquals(1, (int) restored.talents.get(0).get(Talent.EMPOWERING_MEAL));
+		assertEquals(2, (int) restored.talents.get(2).get(subclassTalent));
+		assertEquals(3, (int) restored.talents.get(3).get(armorTalent));
+
+		ArrayList<LinkedHashMap<Talent, Integer>> sources = Talent.metamorphSources(restored);
+		assertTrue(sources.get(0).containsKey(Talent.EMPOWERING_MEAL));
+		assertFalse(sources.get(0).containsKey(Talent.POTENTIAL_1));
+		Dungeon.newCycle = true;
+		assertTrue(HeroRandomizer.randomInitialTalentNeedsMetaDesc(restored, Talent.EMPOWERING_MEAL));
+	}
+
+	@Test
 	public void legacyNewCycleRestoreKeepsInvestedInheritedTalents() throws Exception {
 		Hero original = headlessHero();
 		original.heroClass = HeroClass.WARRIOR;
@@ -469,6 +674,34 @@ public class RankingRestartTest {
 		return (Unsafe) unsafeField.get(null);
 	}
 
+	private static Waterskin waterskin(int volume) throws Exception {
+		Waterskin waterskin = (Waterskin) unsafe().allocateInstance(Waterskin.class);
+		waterskin.volume = volume;
+		return waterskin;
+	}
+
+	private static DriedRose roseWithStoredEquipment(
+			MeleeWeapon weapon, Armor armor, int ghostId) throws Exception {
+		DriedRose rose = (DriedRose) unsafe().allocateInstance(DriedRose.class);
+		setField(DriedRose.class, rose, "weapon", weapon);
+		setField(DriedRose.class, rose, "armor", armor);
+		setField(DriedRose.class, rose, "ghostID", ghostId);
+		return rose;
+	}
+
+	private static int storedGhostId(DriedRose rose) throws Exception {
+		Field ghostId = DriedRose.class.getDeclaredField("ghostID");
+		ghostId.setAccessible(true);
+		return ghostId.getInt(rose);
+	}
+
+	private static void setField(Class<?> type, Object target, String fieldName, Object value)
+			throws Exception {
+		Field field = type.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		field.set(target, value);
+	}
+
 	private static String readCoreSource(String fileName) throws Exception {
 		Path coreDirectory = Paths.get(System.getProperty("user.dir"));
 		if (!Files.isDirectory(coreDirectory.resolve("src/main/java"))) {
@@ -511,6 +744,33 @@ public class RankingRestartTest {
 	private static class UniqueItem extends Item {
 		UniqueItem() {
 			unique = true;
+		}
+	}
+
+	private static class TestUpgradeScroll extends Item {
+	}
+
+	public static class PersistentStateItem extends Item {
+		private static final String STATE = "state";
+		int state;
+
+		public PersistentStateItem() {
+		}
+
+		PersistentStateItem(int state) {
+			this.state = state;
+		}
+
+		@Override
+		public void storeInBundle(Bundle bundle) {
+			super.storeInBundle(bundle);
+			bundle.put(STATE, state);
+		}
+
+		@Override
+		public void restoreFromBundle(Bundle bundle) {
+			super.restoreFromBundle(bundle);
+			state = bundle.getInt(STATE);
 		}
 	}
 

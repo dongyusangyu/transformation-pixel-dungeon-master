@@ -46,12 +46,17 @@ public class AlchemyJournalTest {
 				"com/shatteredpixel/shatteredpixeldungeon/ui/QuickRecipe.java");
 		String recipes = readCoreSource(
 				"com/shatteredpixel/shatteredpixeldungeon/items/Recipe.java");
+		String alchemyScene = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/scenes/AlchemyScene.java");
 
 		assertTrue(quickRecipe.contains("case 9:"));
 		assertTrue(quickRecipe.contains("Recipe.weaponRecipes()"));
 		assertTrue(quickRecipe.contains("quickAlchemyEnabled = false"));
 		assertTrue(recipes.contains("GreatGreatGreatsword.class"));
+		assertTrue(recipes.contains("Gungnir.class"));
 		assertTrue(recipes.contains("public static ArrayList<WeaponRecipe> weaponRecipes()"));
+		assertTrue(alchemyScene.contains("shouldDetachWholeStack(item)"));
+		assertTrue(alchemyScene.contains("shouldDetachWholeStack(finding)"));
 	}
 
 	@Test

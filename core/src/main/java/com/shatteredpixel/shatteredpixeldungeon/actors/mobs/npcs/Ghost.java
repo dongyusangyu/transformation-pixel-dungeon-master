@@ -411,8 +411,13 @@ public class Ghost extends NPC {
 		}
 		
 		public static void complete() {
+			spawned = true;
+			given = true;
+			processed = true;
 			weapon = null;
 			armor = null;
+			enchant = null;
+			glyph = null;
 			
 			Notes.remove( Notes.Landmark.GHOST );
 		}

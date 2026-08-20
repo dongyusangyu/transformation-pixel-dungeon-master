@@ -113,16 +113,7 @@ public class TestTalent  extends TestGenerator {
 
             top = text.bottom() + 2;
 
-            ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
-            Talent.initClassTalents(hero, talents, hero.metamorphedTalents, new LinkedHashMap<>());
-
-
-            for (LinkedHashMap<Talent, Integer> tier : talents) {
-                for (Talent talent : tier.keySet()) {
-                    tier.put(talent, hero.pointsInTalent(talent));
-                }
-                tier.keySet().removeIf(Talent::excludedAsMetamorphSource);
-            }
+            ArrayList<LinkedHashMap<Talent, Integer>> talents = Talent.metamorphSources(hero);
 
 
             pane = new TalentsPane(TalentButton.Mode.METAMORPH_ALL, talents);

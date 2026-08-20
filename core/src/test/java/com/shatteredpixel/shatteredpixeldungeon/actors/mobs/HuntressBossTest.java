@@ -1,5 +1,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Challenges;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Badges.Badge;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -89,6 +92,51 @@ public class HuntressBossTest {
 	}
 
 	@Test
+	public void huntressSlainAwardsItsDedicatedHeroBossBadgeInsteadOfThirdBossBadges()
+			throws ReflectiveOperationException {
+		int previousDepth = Dungeon.depth;
+		String previousCustomSeed = Dungeon.customSeedText;
+		Field globalBadges = Badges.class.getDeclaredField("global");
+		globalBadges.setAccessible(true);
+		Object previousGlobalBadges = globalBadges.get(null);
+		Bundle previousLocalBadges = new Bundle();
+		Badges.saveLocal(previousLocalBadges);
+		try {
+			Dungeon.depth = 15;
+			Dungeon.customSeedText = "huntress-badge-test";
+			Badges.loadLocal(new Bundle());
+			globalBadges.set(null, new HashSet<Badge>());
+
+			Badges.validateHeroBossSlain();
+
+			Bundle savedBadges = new Bundle();
+			Badges.saveLocal(savedBadges);
+			Set<Badge> awarded = Badges.restore(savedBadges);
+			assertTrue(awarded.contains(Badge.HEROBOSS_SLAIN_3));
+			assertEquals(Badges.gold + 26, Badge.HEROBOSS_SLAIN_3.image);
+			assertFalse(awarded.contains(Badge.BOSS_SLAIN_3));
+			assertFalse(awarded.contains(Badge.BOSS_CHALLENGE_3));
+		} finally {
+			Badges.loadLocal(previousLocalBadges);
+			globalBadges.set(null, previousGlobalBadges);
+			Dungeon.customSeedText = previousCustomSeed;
+			Dungeon.depth = previousDepth;
+		}
+	}
+
+	@Test
+	public void huntressHeroBossBadgeHasLocalizedNameAndDescription() throws IOException {
+		String key = "badges$badge.heroboss_slain_3";
+		Properties english = loadMessages("misc", "misc.properties");
+		assertEquals("End of the Hunt", english.getProperty(key + ".title"));
+		assertEquals("Defeat Huntress?", english.getProperty(key + ".desc"));
+
+		Properties chinese = loadMessages("misc", "misc_zh.properties");
+		assertEquals("猎风终结", chinese.getProperty(key + ".title"));
+		assertEquals("击败女猎手？", chinese.getProperty(key + ".desc"));
+	}
+
+	@Test
 	public void huntRhythmMessagesExistInEnglishAndChinese() throws IOException {
 		String prefix = "actors.mobs.huntressboss.";
 		String[] keys = {"gale_recover", "contact_warning", "plant_marked",
@@ -111,6 +159,8 @@ public class HuntressBossTest {
 		assertTrue(english.contains("five effective ordinary actions"));
 		assertTrue(english.contains("continued contact"));
 		assertTrue(english.contains("five natural-hunt actions"));
+		assertTrue(english.contains("moves at triple speed"));
+		assertFalse(english.contains("moves at double speed"));
 		assertTrue(english.contains("25% chance"));
 		assertFalse(english.contains("75%%"));
 		assertFalse(english.contains("25%%"));
@@ -121,6 +171,8 @@ public class HuntressBossTest {
 		assertTrue(chinese.contains("五个有效普通行动"));
 		assertTrue(chinese.contains("确定性地翻越脱离"));
 		assertTrue(chinese.contains("五个自然狩猎行动"));
+		assertTrue(chinese.contains("移动速度提升至三倍"));
+		assertFalse(chinese.contains("移动速度翻倍"));
 		assertTrue(chinese.contains("25%概率"));
 		assertFalse(chinese.contains("75%%"));
 		assertFalse(chinese.contains("25%%"));
@@ -131,11 +183,127 @@ public class HuntressBossTest {
 	}
 
 	@Test
+	public void strongerBossDescriptionDocumentsAllHuntressChallengeTiers()
+			throws IOException {
+		String key = "challenges.stronger_bosses_desc";
+		String english = loadMessages("misc", "misc.properties").getProperty(key);
+		assertTrue(english.contains("_Huntress?:_"));
+		assertTrue(english.contains("range increases from 6 to 8"));
+		assertTrue(english.contains("damage +20%"));
+		assertTrue(english.contains("￡"));
+		assertTrue(english.contains("every 75 health lost"));
+		assertTrue(english.contains("removes her gale recovery action"));
+		assertTrue(english.contains("￥"));
+		assertTrue(english.contains("range increases to 10"));
+		assertTrue(english.contains("Plant-hunt movement speed increases to 5x"));
+
+		String chinese = loadMessages("misc", "misc_zh.properties").getProperty(key);
+		assertTrue(chinese.contains("_女猎手？：_"));
+		assertTrue(chinese.contains("射击距离由6格提升至8格"));
+		assertTrue(chinese.contains("各类伤害+20%"));
+		assertTrue(chinese.contains("￡每损失75点生命就会召唤1只飞鹰￡"));
+		assertTrue(chinese.contains("￡贯风箭不再需要收弓行动￡"));
+		assertTrue(chinese.contains("￥射击距离提升至10格￥"));
+		assertTrue(chinese.contains("￥植物争夺时的移动速度提升至5倍￥"));
+	}
+
+	@Test
 	public void incomingDamageIsCappedAtThirty() {
 		assertEquals(0, HuntressBoss.cappedIncomingDamage(0));
 		assertEquals(30, HuntressBoss.cappedIncomingDamage(30));
 		assertEquals(30, HuntressBoss.cappedIncomingDamage(31));
 		assertEquals(30, HuntressBoss.cappedIncomingDamage(100));
+	}
+
+	@Test
+	public void challengeTiersAdjustShotRangeDamageAndNatureHuntSpeed() {
+		assertEquals(6, HuntressBoss.challengeNormalShotRange(false, false));
+		assertEquals(6, HuntressBoss.challengeNormalShotRange(false, true));
+		assertEquals(8, HuntressBoss.challengeNormalShotRange(true, false));
+		assertEquals(10, HuntressBoss.challengeNormalShotRange(true, true));
+
+		for (int[] pair : new int[][]{
+				{6, 7}, {14, 17}, {10, 12}, {16, 19},
+				{20, 24}, {28, 34}, {12, 14}}) {
+			assertEquals(pair[0], HuntressBoss.challengeAdjustedDamage(pair[0], false));
+			assertEquals(pair[1], HuntressBoss.challengeAdjustedDamage(pair[0], true));
+		}
+
+		assertEquals(3f, HuntressBoss.natureHuntSpeed(
+				1f, true, false, false), 0f);
+		assertEquals(3f, HuntressBoss.natureHuntSpeed(
+				1f, true, false, true), 0f);
+		assertEquals(3f, HuntressBoss.natureHuntSpeed(
+				1f, true, true, false), 0f);
+		assertEquals(5f, HuntressBoss.natureHuntSpeed(
+				1f, true, true, true), 0f);
+		assertEquals(1f, HuntressBoss.natureHuntSpeed(
+				1f, false, true, true), 0f);
+	}
+
+	@Test
+	public void liveChallengeMaskDrivesShotRangeAndHarshGaleRecovery() {
+		int previousChallenges = Dungeon.challenges;
+		Level previousLevel = Dungeon.level;
+		try {
+			TestHuntress boss = new TestHuntress();
+
+			Dungeon.challenges = 0;
+			assertEquals(6, boss.normalShotRangeForTest());
+			Dungeon.challenges = Challenges.EXTREME_ENVIRONMENT;
+			assertEquals(6, boss.normalShotRangeForTest());
+			Dungeon.challenges = Challenges.STRONGER_BOSSES;
+			assertEquals(8, boss.normalShotRangeForTest());
+			Dungeon.challenges = Challenges.STRONGER_BOSSES
+					| Challenges.EXTREME_ENVIRONMENT;
+			assertEquals(10, boss.normalShotRangeForTest());
+
+			Dungeon.level = testLevel(9, 5);
+			boss.pos = 20;
+			boss.prepareAimedGale(24);
+			assertTrue(boss.actForTest());
+			assertEquals(HuntressBoss.GaleState.HUNTING, boss.galeState());
+			assertEquals(HuntressBoss.GALE_INTERVAL, boss.galeTurnsRemaining());
+			assertEquals(0, boss.galeRecoveryTurns());
+			assertEquals(0, boss.galeRecoveryAnnouncements);
+		} finally {
+			Dungeon.challenges = previousChallenges;
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
+	public void harshStrongerBossSummonsOneHawkPerSeventyFiveHealthLostAndPersistsProgress() {
+		int previousChallenges = Dungeon.challenges;
+		try {
+			Dungeon.challenges = Challenges.STRONGER_BOSSES
+					| Challenges.HARSH_ENVIRONMENT;
+			ChallengeHawkHuntress boss = new ChallengeHawkHuntress();
+			for (int i = 0; i < 5; i++) {
+				boss.takeThirtyDamage();
+			}
+			assertEquals(250, boss.HP);
+			assertEquals(2, boss.challengeHawkSpawnRequests);
+
+			Bundle saved = new Bundle();
+			boss.storeInBundle(saved);
+			ChallengeHawkHuntress restored = new ChallengeHawkHuntress();
+			restored.restoreFromBundle(saved);
+			for (int i = 0; i < 3; i++) {
+				restored.takeThirtyDamage();
+			}
+			assertEquals(160, restored.HP);
+			assertEquals(1, restored.challengeHawkSpawnRequests);
+
+			Dungeon.challenges = Challenges.HARSH_ENVIRONMENT;
+			ChallengeHawkHuntress noStrongerBoss = new ChallengeHawkHuntress();
+			for (int i = 0; i < 3; i++) {
+				noStrongerBoss.takeThirtyDamage();
+			}
+			assertEquals(0, noStrongerBoss.challengeHawkSpawnRequests);
+		} finally {
+			Dungeon.challenges = previousChallenges;
+		}
 	}
 
 	@Test
@@ -476,7 +644,7 @@ public class HuntressBossTest {
 					reachable.plantHuntState());
 			assertEquals(plantCell, reachable.markedPlantCell());
 			assertEquals(4, reachable.plantHuntTurns());
-			assertEquals(2f, reachable.speed(), 0f);
+			assertEquals(3f, reachable.speed(), 0f);
 			assertEquals(0.75f, reachable.attackDelay(), 0f);
 		} finally {
 			Dungeon.level = previousLevel;
@@ -2694,7 +2862,7 @@ public class HuntressBossTest {
 
 	@Test
 	public void natureHuntAppliesExactMovementAttackAndPlantProcRules() {
-		assertEquals(2f, HuntressBoss.natureHuntSpeed(1f, true), 0f);
+		assertEquals(3f, HuntressBoss.natureHuntSpeed(1f, true), 0f);
 		assertEquals(1f, HuntressBoss.natureHuntSpeed(1f, false), 0f);
 		assertEquals(0.75f,
 				HuntressBoss.natureHuntAttackDelay(1f, true, false, false), 0f);
@@ -2827,7 +2995,7 @@ public class HuntressBossTest {
 			PathFinder.buildDistanceMap(plantCell, level.passable);
 			int before = PathFinder.distance[boss.pos];
 
-			assertEquals(2f, boss.speed(), 0f);
+			assertEquals(3f, boss.speed(), 0f);
 			assertTrue(boss.actForTest());
 
 			PathFinder.buildDistanceMap(plantCell, level.passable);
@@ -3844,6 +4012,35 @@ public class HuntressBossTest {
 		}
 	}
 
+	private static class ChallengeHawkHuntress extends HuntressBoss {
+
+		private int challengeHawkSpawnRequests;
+
+		private void takeThirtyDamage() {
+			damage(30, this);
+		}
+
+		@Override
+		public float resist(Class effect) {
+			return 1f;
+		}
+
+		@Override
+		protected void summonChallengeHawk() {
+			challengeHawkSpawnRequests++;
+		}
+
+		@Override
+		protected void announceWardenTransition() {
+			// Headless tests verify challenge dispatch, not UI presentation.
+		}
+
+		@Override
+		protected void onWardenPhaseStarted() {
+			// The fixed phase-transition hawk is independent of threshold hawks.
+		}
+	}
+
 	private static TestLevel testLevel(int width, int height) {
 		TestLevel level = new TestLevel();
 		level.setSize(width, height);
@@ -4014,6 +4211,10 @@ public class HuntressBossTest {
 			setPrivateInt("galeAimTarget", -1);
 			setPrivateInt("galeRecoveryTurns", 0);
 			setGaleTargetForTest(-1);
+		}
+
+		private int normalShotRangeForTest() {
+			return normalShotRange();
 		}
 
 		private void prepareAimedGale(int targetCell) {
@@ -4384,10 +4585,15 @@ public class HuntressBossTest {
 	}
 
 	private static Properties loadActorMessages(String fileName) throws IOException {
+		return loadMessages("actors", fileName);
+	}
+
+	private static Properties loadMessages(String folder, String fileName)
+			throws IOException {
 		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
 		Path coreDirectory = Files.isDirectory(workingDirectory.resolve("core"))
 				? workingDirectory.resolve("core") : workingDirectory;
-		Path source = coreDirectory.resolve("src/main/assets/messages/actors")
+		Path source = coreDirectory.resolve("src/main/assets/messages").resolve(folder)
 				.resolve(fileName);
 		Properties messages = new Properties();
 		try (Reader reader = Files.newBufferedReader(source, StandardCharsets.UTF_8)) {

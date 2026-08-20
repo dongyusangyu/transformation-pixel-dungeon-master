@@ -149,7 +149,7 @@ public class ScrollOfUpgrade extends InventoryScroll {
 		if (upgradeScrollCreditTarget == originalItem) {
 			upgradeScrollCreditTarget = item;
 		}
-		upgradeScrollCreditTarget.upgradeScrollUses++;
+		upgradeScrollCreditTarget.recordUpgradeScrollUse();
 		Badges.validateItemLevelAquired( item );
 		Statistics.upgradesUsed++;
 		Badges.validateMageUnlock();

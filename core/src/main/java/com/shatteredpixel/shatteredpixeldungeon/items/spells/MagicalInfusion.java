@@ -112,7 +112,7 @@ public class MagicalInfusion extends InventorySpell {
 		if (upgradeScrollCreditTarget == originalItem) {
 			upgradeScrollCreditTarget = item;
 		}
-		upgradeScrollCreditTarget.upgradeScrollUses++;
+		upgradeScrollCreditTarget.recordUpgradeScrollUse();
 		GLog.p( Messages.get(this, "infuse") );
 		Badges.validateItemLevelAquired(item);
 

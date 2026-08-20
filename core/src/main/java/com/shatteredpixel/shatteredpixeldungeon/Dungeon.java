@@ -665,6 +665,14 @@ public class Dungeon {
 		return firstDepth == secondDepth && firstBranch == secondBranch;
 	}
 
+	public static int passageReturnDepth(int depth) {
+		return Math.max(1, depth - 1 - (depth - 2) % 5);
+	}
+
+	public static int passageReturnBranch(int branch) {
+		return branch == TowerLevel.BRANCH ? TowerLevel.BRANCH : 0;
+	}
+
 	static boolean returnTeleportRouteAllowed(int sourceDepth, int sourceBranch,
 			boolean sourceFloorLocked, boolean sourcePositionAllowed,
 			int targetDepth, int targetBranch, boolean targetPositionAllowed) {
@@ -1221,6 +1229,10 @@ public class Dungeon {
 
 		Dungeon.challenges = bundle.getInt( CHALLENGES );
 		Dungeon.mobsToChampion = bundle.getInt( MOBS_TO_CHAMPION );
+		// Hero talent restoration needs this state before the hero is deserialized.
+		newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
+		newCycleSourceGameID = newCycle && bundle.contains(NEW_CYCLE_SOURCE_GAME_ID)
+				? bundle.getString(NEW_CYCLE_SOURCE_GAME_ID) : null;
 		
 		Dungeon.level = null;
 		Dungeon.depth = -1;
@@ -1320,10 +1332,6 @@ public class Dungeon {
         }else{
             droneVison = true;
         }
-		newCycle = bundle.contains(NEW_CYCLE) && bundle.getBoolean(NEW_CYCLE);
-		newCycleSourceGameID = newCycle && bundle.contains(NEW_CYCLE_SOURCE_GAME_ID)
-				? bundle.getString(NEW_CYCLE_SOURCE_GAME_ID) : null;
-
 		droppedItems = new SparseArray<>();
 		for (int i=1; i <= 26; i++) {
 			

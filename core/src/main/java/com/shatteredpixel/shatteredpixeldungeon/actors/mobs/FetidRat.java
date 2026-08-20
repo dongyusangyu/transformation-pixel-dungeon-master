@@ -99,12 +99,16 @@ public class FetidRat extends Rat {
 			int pos1 = super.randomDestination();
 			int pos2 = super.randomDestination();
 			PathFinder.buildDistanceMap(Dungeon.hero.pos, Dungeon.level.passable);
-			if (PathFinder.distance[pos2] < PathFinder.distance[pos1]){
-				return pos2;
-			} else {
-				return pos1;
-			}
+			return chooseCloserDestination(pos1, pos2, PathFinder.distance);
 		}
+	}
+
+	private static int chooseCloserDestination(int pos1, int pos2, int[] distance) {
+		boolean valid1 = pos1 >= 0 && pos1 < distance.length;
+		boolean valid2 = pos2 >= 0 && pos2 < distance.length;
+		if (!valid1) return valid2 ? pos2 : -1;
+		if (!valid2) return pos1;
+		return distance[pos2] < distance[pos1] ? pos2 : pos1;
 	}
 	
 	{

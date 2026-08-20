@@ -201,6 +201,9 @@ public class BuffIndicator extends Component {
 
     public static final int HUXIFA = 144;
     public static final int JIASUWEILAI = 145;
+    public static final int PRECOGNITIVE_EYE = 146;
+    public static final int PRECOGNITIVE_OVERHEAT = 147;
+    public static final int MOMENTARY_FORESIGHT = 148;
 
 
 

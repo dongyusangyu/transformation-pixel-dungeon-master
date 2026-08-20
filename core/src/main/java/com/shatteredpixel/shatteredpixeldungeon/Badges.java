@@ -197,6 +197,7 @@ public class Badges {
 		ENEMY_HAZARDS               ( gold+23 ),
 		HEROBOSS_SLAIN_1             (gold+24 ),
 		HEROBOSS_SLAIN_2            (gold+25 ),
+		HEROBOSS_SLAIN_3            (gold+26 ),
 		HEROBOSS_COUNTER_1             (gold+28 ),
 		HEROBOSS_COUNTER_2             (gold+29 ),
 		HEROBOSS_COUNTER_3             (gold+30 ),
@@ -980,6 +981,11 @@ public class Badges {
             displayBadge(Badge.HEROBOSS_SLAIN_2);
             unlock(Badge.HEROBOSS_SLAIN_2);
         }
+		if (Dungeon.depth == 15) {
+			local.add(Badge.HEROBOSS_SLAIN_3);
+			displayBadge(Badge.HEROBOSS_SLAIN_3);
+			unlock(Badge.HEROBOSS_SLAIN_3);
+		}
 	}
 	
 	public static void validateBossSlain() {

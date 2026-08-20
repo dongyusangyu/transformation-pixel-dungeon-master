@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -219,12 +220,27 @@ public class TestRogueBoss extends Mob {
         int center = target == null ? pos : target.pos;
         int newPos = TestBossUtil.randomSpawnCellNear(center, 2, 3);
         if (newPos != -1) {
-            if (sprite != null) {
-                sprite.move(pos, newPos);
-            }
-            move(newPos);
-            Dungeon.level.occupyCell(this);
+            relocateWithSpriteSync(newPos);
         }
+    }
+
+    private boolean relocateWithSpriteSync(int destination) {
+        if (destination < 0 || destination >= Dungeon.level.length()
+                || !RogueBoss.isValidRelocationCell(destination, Dungeon.level.length(),
+                Dungeon.level.passable[destination], Actor.findChar(destination) != null)) {
+            return false;
+        }
+
+        if (sprite != null) {
+            sprite.interruptMotion();
+        }
+        move(destination, false);
+        if (sprite != null) {
+            sprite.interruptMotion();
+            sprite.place(destination);
+            sprite.idle();
+        }
+        return pos == destination;
     }
 
     @Override

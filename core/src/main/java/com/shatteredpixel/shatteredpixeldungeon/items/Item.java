@@ -511,6 +511,10 @@ public class Item implements Bundlable {
 		
 		return this;
 	}
+
+	public void recordUpgradeScrollUse() {
+		upgradeScrollUses++;
+	}
 	
 	final public Item upgrade( int n ) {
 		for (int i=0; i < n; i++) {

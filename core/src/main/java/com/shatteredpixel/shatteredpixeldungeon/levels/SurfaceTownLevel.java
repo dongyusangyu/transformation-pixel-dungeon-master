@@ -55,8 +55,11 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTileSheet;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Tilemap;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
@@ -146,14 +149,13 @@ public class SurfaceTownLevel extends Level {
 				SHOP_DOOR_X, SHOP_BOTTOM,false);
 		paintHouse(4, 23, 8, 7, 8, 29,true);
 		paintHouse(35, 24, 7, 6, 38, 29,true);
-		for (int x = 32; x <= SHOP_DOOR_X; x++) {
-			paintPath(x, SHOP_BOTTOM + 1);
-		}
 		paintLockedManor();
 		paintDongyusangyuHouseBookshelves();
 		paintTownDetails();
+		customTiles.add(new SurfacePathTilemap());
+		customTiles.add(new SurfaceInteriorFloorTilemap());
 
-		entrance = cell(23, 32);
+		entrance = cell(22, 32);
 		exit = cell(MANOR_STAIR_X, MANOR_STAIR_Y);
 		map[entrance] = Terrain.EXIT;
 		map[exit] = Terrain.ENTRANCE;
@@ -225,31 +227,38 @@ public class SurfaceTownLevel extends Level {
 	}
 
 	private void paintVillagePaths() {
-		for (int x = 8; x <= 38; x++) {
-			paintPath(x, 10);
+		// Keep a clear row below the southern road so tree canopies do not cover it.
+		for (int x = 7; x <= 39; x++) {
+			map[cell(x, 31)] = Terrain.GRASS;
 		}
-		for (int x = 8; x <= 38; x++) {
-			paintPath(x, 30);
-		}
-		for (int y = 10; y <= 30; y++) {
-			paintPath(13, y);
-			paintPath(32, y);
-		}
-		for (int y = 8; y <= 10; y++) {
-			paintPath(22, y);
-		}
-		for (int y = 21; y <= 32; y++) {
-			paintPath(22, y);
-			paintPath(23, y);
+
+		paintHorizontalPath(8, 38, 10, false);
+		paintHorizontalPath(8, 38, 30, false);
+		paintHorizontalPath(32, SHOP_DOOR_X, SHOP_BOTTOM + 1, true);
+		paintVerticalPath(13, 10, 30);
+		paintVerticalPath(32, 10, 30);
+		paintVerticalPath(22, 8, 10);
+		paintVerticalPath(22, 21, 32);
+	}
+
+	private void paintHorizontalPath(int left, int right, int y, boolean carveWater) {
+		for (int x = left; x <= right; x++) {
+			paintPath(x, y, carveWater);
 		}
 	}
 
-	private void paintPath(int x, int y) {
+	private void paintVerticalPath(int x, int top, int bottom) {
+		for (int y = top; y <= bottom; y++) {
+			paintPath(x, y, false);
+		}
+	}
+
+	private void paintPath(int x, int y, boolean carveWater) {
 		if (x <= 0 || y <= 0 || x >= width() - 1 || y >= height() - 1) {
 			return;
 		}
 		int pos = cell(x, y);
-		if (map[pos] != Terrain.WATER) {
+		if (carveWater || map[pos] != Terrain.WATER) {
 			map[pos] = Terrain.EMPTY_DECO;
 		}
 	}
@@ -277,10 +286,7 @@ public class SurfaceTownLevel extends Level {
 				map[cell(x, y)] = edge ? Terrain.WALL_DECO : Terrain.EMPTY_SP;
 			}
 		}
-
-		map[cell(MANOR_DOOR_X, MANOR_DOOR_Y)] = Terrain.DOOR;
-		// A non-wall tile behind the door is required for the front-facing locked-door visual.
-		//map[cell(MANOR_DOOR_X, MANOR_DOOR_Y - 1)] = Terrain.EMPTY_SP;
+        map[cell(MANOR_DOOR_X, MANOR_DOOR_Y)] = Terrain.DOOR;
 		map[cell(MANOR_STAIR_X, MANOR_STAIR_Y)] = Terrain.ENTRANCE;
 
 		map[cell(MANOR_LEFT + 3, bottom - 2)] = Terrain.STATUE_SP;
@@ -292,6 +298,7 @@ public class SurfaceTownLevel extends Level {
 		for (int x = 5; x <= 10; x++) {
 			map[cell(x, 24)] = Terrain.BOOKSHELF;
 		}
+		map[cell(10, 27)] = Terrain.ALCHEMY;
 	}
 
 	private void paintTownDetails() {
@@ -311,6 +318,102 @@ public class SurfaceTownLevel extends Level {
 			if (map[pos] == Terrain.GRASS) {
 				map[pos] = Terrain.HIGH_GRASS;
 			}
+		}
+	}
+
+	public static class SurfacePathTilemap extends CustomTilemap {
+
+		{
+			texture = Assets.Environment.TILES_SURFACE_LUSH;
+			tileW = WIDTH;
+			tileH = HEIGHT;
+		}
+
+		@Override
+		public Tilemap create() {
+			Tilemap visual = super.create();
+			Level level = Dungeon.level;
+			int[] data = new int[tileW * tileH];
+
+			for (int y = 0; y < tileH; y++) {
+				for (int x = 0; x < tileW; x++) {
+					int index = x + y * tileW;
+					if (level.map[index] != Terrain.EMPTY_DECO) {
+						data[index] = -1;
+						continue;
+					}
+
+					data[index] = tileForCell(level, x, y);
+				}
+			}
+
+			visual.map(data, tileW);
+			return visual;
+		}
+
+		static int tileForConnections(boolean top, boolean right, boolean bottom, boolean left) {
+			boolean vertical = top || bottom;
+			boolean horizontal = left || right;
+			if (vertical && !horizontal) {
+				return DungeonTileSheet.FLOOR_DECO;
+			}
+			if (horizontal && !vertical) {
+				return DungeonTileSheet.FLOOR_ALT_1;
+			}
+			return DungeonTileSheet.FLOOR_DECO_ALT;
+		}
+
+		static int tileForCell(Level level, int x, int y) {
+			return tileForConnections(
+					connectsToPath(level, x, y - 1),
+					connectsToPath(level, x + 1, y),
+					connectsToPath(level, x, y + 1),
+					connectsToPath(level, x - 1, y));
+		}
+
+		private static boolean connectsToPath(Level level, int x, int y) {
+			if (x < 0 || y < 0 || x >= level.width() || y >= level.height()) {
+				return false;
+			}
+			int terrain = level.map[x + y * level.width()];
+			return terrain == Terrain.EMPTY_DECO
+					|| terrain == Terrain.DOOR
+					|| terrain == Terrain.OPEN_DOOR
+					|| terrain == Terrain.LOCKED_DOOR
+					|| terrain == Terrain.HERO_LKD_DR
+					|| terrain == Terrain.CRYSTAL_DOOR
+					|| terrain == Terrain.ENTRANCE
+					|| terrain == Terrain.EXIT;
+		}
+	}
+
+	public static class SurfaceInteriorFloorTilemap extends CustomTilemap {
+
+		{
+			texture = Assets.Environment.TILES_SURFACE_LUSH;
+			tileW = WIDTH;
+			tileH = HEIGHT;
+		}
+
+		@Override
+		public Tilemap create() {
+			Tilemap visual = super.create();
+			Level level = Dungeon.level;
+			int[] data = new int[tileW * tileH];
+
+			for (int y = 0; y < tileH; y++) {
+				for (int x = 0; x < tileW; x++) {
+					int index = x + y * tileW;
+					data[index] = tileForTerrain(level.map[index]);
+				}
+			}
+
+			visual.map(data, tileW);
+			return visual;
+		}
+
+		static int tileForTerrain(int terrain) {
+			return terrain == Terrain.EMPTY_SP ? DungeonTileSheet.FLOOR_SP : -1;
 		}
 	}
 

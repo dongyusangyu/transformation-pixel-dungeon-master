@@ -415,15 +415,7 @@ abstract public class Weapon extends KindOfWeapon {
 	
 	@Override
 	public float accuracyFactor(Char owner, Char target) {
-		
-		int encumbrance = 0;
-		
-		if( owner instanceof Hero ){
-			encumbrance = STRReq() - ((Hero)owner).STR();
-			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
-				encumbrance = Math.max(0, encumbrance - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
-			}
-		}
+		int encumbrance = owner instanceof Hero ? effectiveEncumbrance((Hero) owner) : 0;
 
 		float ACC = this.ACC;
 
@@ -446,16 +438,27 @@ abstract public class Weapon extends KindOfWeapon {
 			delay *= magicDelayMultiplier(RCH);
 		}
 		if (owner instanceof Hero) {
-			int encumbrance = STRReq() - ((Hero)owner).STR();
-			if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
-				encumbrance = Math.max(0, encumbrance - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
-			}
+			int encumbrance = effectiveEncumbrance((Hero) owner);
 			if (encumbrance > 0){
 				delay *= Math.pow( 1.2, encumbrance );
 			}
 		}
 
 		return delay;
+	}
+
+	static int adjustedEncumbrance(int strengthRequirement, int strength, int reduction) {
+		return Math.max(0, strengthRequirement - strength - Math.max(0, reduction));
+	}
+
+	protected int falsehoodPowerEncumbranceReduction(Hero owner) {
+		return owner.hasTalent(Talent.FALSEHOOD_POWER)
+				? owner.pointsInTalent(Talent.FALSEHOOD_POWER) + 2 : 0;
+	}
+
+	public int effectiveEncumbrance(Hero owner) {
+		return adjustedEncumbrance(STRReq(), owner.STR(),
+				falsehoodPowerEncumbranceReduction(owner));
 	}
 
 	protected float speedMultiplier(Char owner ){

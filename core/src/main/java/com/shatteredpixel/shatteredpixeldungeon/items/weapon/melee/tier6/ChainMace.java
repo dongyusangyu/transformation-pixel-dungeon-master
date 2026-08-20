@@ -144,11 +144,28 @@ public class ChainMace extends MeleeWeapon {
 	public void activate(Char ch) {
 		super.activate(ch);
 		if (ch instanceof Hero) {
-			BallFollower ball = ensureFollower((Hero) ch);
-			if (ball != null && commandState.isReturning()) {
-				ball.returning = true;
-				ball.followHero();
-			}
+			syncFollower((Hero) ch);
+		}
+	}
+
+	@Override
+	public void onInventoryAvailabilityChanged(Hero hero) {
+		syncFollower(hero);
+	}
+
+	private void syncFollower(Hero hero) {
+		if (!isEquipped(hero)) {
+			cancelActiveCommand(hero);
+			removeFollower();
+			commandState.finishReturn();
+			commandLevel = null;
+			return;
+		}
+
+		BallFollower ball = ensureFollower(hero);
+		if (ball != null && commandState.isReturning()) {
+			ball.returning = true;
+			ball.followHero();
 		}
 	}
 
@@ -796,10 +813,10 @@ public class ChainMace extends MeleeWeapon {
 
 		private ChainMace linkedWeapon() {
 			if (owner == null) return null;
-			KindOfWeapon primary = owner.belongings.weapon;
+			KindOfWeapon primary = owner.belongings.weapon();
 			if (primary instanceof ChainMace
 					&& ((ChainMace) primary).followerID == id()) return (ChainMace) primary;
-			KindOfWeapon secondary = owner.belongings.secondWep;
+			KindOfWeapon secondary = owner.belongings.secondWep();
 			if (secondary instanceof ChainMace
 					&& ((ChainMace) secondary).followerID == id()) return (ChainMace) secondary;
 			return null;

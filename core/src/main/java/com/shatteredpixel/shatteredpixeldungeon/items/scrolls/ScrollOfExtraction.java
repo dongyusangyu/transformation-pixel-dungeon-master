@@ -3,7 +3,6 @@ package com.shatteredpixel.shatteredpixeldungeon.items.scrolls;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -35,20 +34,13 @@ public class ScrollOfExtraction extends InventoryScroll {
 
 	@Override
 	protected boolean usableOnItem(Item item) {
-		return UpgradeExtraction.canExtract(item);
+		return UpgradeExtraction.canExtract(item, curUser);
 	}
 
 	@Override
 	protected void onItemSelected(Item item) {
-		int extracted = UpgradeExtraction.extractUpgradeUses(item, curUser.belongings.backpack);
-		if (item instanceof MissileWeapon) {
-			MissileWeapon missile = (MissileWeapon) item;
-			MissileWeapon.UpgradedSetTracker tracker =
-					curUser.buff(MissileWeapon.UpgradedSetTracker.class);
-			if (tracker != null && tracker.levelThresholds.containsKey(missile.setID)) {
-				tracker.levelThresholds.put(missile.setID, missile.trueLevel());
-			}
-		}
+		int extracted = UpgradeExtraction.extractUpgradeUses(
+				item, curUser.belongings.backpack, curUser);
 		Item upgrades = new ScrollOfUpgrade().quantity(extracted);
 		if (!upgrades.collect(curUser.belongings.backpack)) {
 			Dungeon.level.drop(upgrades, curUser.pos);

@@ -55,8 +55,10 @@ public class WndDungeonDoctorTest {
 				WndDungeonDoctor.mainAction(1));
 		assertEquals(WndDungeonDoctor.MainAction.RESET,
 				WndDungeonDoctor.mainAction(2));
-		assertEquals(WndDungeonDoctor.MainAction.LEAVE,
+		assertEquals(WndDungeonDoctor.MainAction.TALENT_RESET,
 				WndDungeonDoctor.mainAction(3));
+		assertEquals(WndDungeonDoctor.MainAction.LEAVE,
+				WndDungeonDoctor.mainAction(4));
 	}
 
 	@Test

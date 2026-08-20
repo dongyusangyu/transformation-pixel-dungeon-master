@@ -6,6 +6,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocki
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
 
 import org.junit.Test;
 
@@ -15,6 +19,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -42,6 +47,80 @@ public class WeaponRecipeTest {
 		assertEquals(5, found.cost);
 		assertEquals(GreatGreatGreatsword.class, found.output);
 		assertEquals(0, found.baseLevel);
+	}
+
+	@Test
+	public void tridentPotionAndRetributionScrollCraftGungnirRecipeIsRegistered()
+			throws ReflectiveOperationException {
+		Field recipesField = Recipe.class.getDeclaredField("weaponRecipes");
+		recipesField.setAccessible(true);
+		Recipe.WeaponRecipe[] registered =
+				(Recipe.WeaponRecipe[]) recipesField.get(null);
+
+		Recipe.WeaponRecipe found = null;
+		for (Recipe.WeaponRecipe recipe : registered) {
+			if (recipe.output == Gungnir.class) {
+				found = recipe;
+				break;
+			}
+		}
+
+		assertNotNull(found);
+		assertArrayEquals(new Class[]{Trident.class, PotionOfHealing.class,
+				ScrollOfRetribution.class}, found.inputs);
+		assertArrayEquals(new int[]{3, 1, 2}, found.inQuantity);
+		assertEquals(5, found.cost);
+		assertEquals(Gungnir.class, found.output);
+		assertEquals(0, found.baseLevel);
+	}
+
+	@Test
+	public void tridentRecipeRequiresAFullTridentSetAndTwoRetributionScrolls() {
+		Recipe.WeaponRecipe recipe = new Recipe.WeaponRecipe(
+				new Class[]{InputWeaponA.class, TestIngredient.class, TestIngredientC.class},
+				new int[]{3, 1, 2}, 5, OutputWeapon.class, 0);
+
+		assertTrue(recipe.testIngredients(ingredients(
+				identified(new InputWeaponA().quantity(3)),
+				identified(new TestIngredient()),
+				identified(new TestIngredientC().quantity(2)))));
+		assertFalse(recipe.testIngredients(ingredients(
+				identified(new InputWeaponA().quantity(2)),
+				identified(new TestIngredient()),
+				identified(new TestIngredientC().quantity(2)))));
+		assertFalse(recipe.testIngredients(ingredients(
+				identified(new InputWeaponA().quantity(3)),
+				identified(new TestIngredient()),
+				identified(new TestIngredientC()))));
+	}
+
+	@Test
+	public void weaponRecipeConsumesRequiredQuantitiesAndProducesOneIdentifiedWeapon() {
+		Recipe.WeaponRecipe recipe = new Recipe.WeaponRecipe(
+				new Class[]{InputWeaponA.class, TestIngredient.class, TestIngredientC.class},
+				new int[]{3, 1, 2}, 5, OutputWeapon.class, 0);
+		InputWeaponA trident = (InputWeaponA) identified(new InputWeaponA().quantity(3));
+		trident.level(4);
+		TestIngredient potion = identified(new TestIngredient());
+		TestIngredientC scroll = identified(new TestIngredientC());
+		scroll.quantity(4);
+
+		Weapon output = (Weapon) recipe.brew(ingredients(trident, potion, scroll));
+
+		assertEquals(OutputWeapon.class, output.getClass());
+		assertEquals(1, output.quantity());
+		assertEquals(3, output.trueLevel());
+		assertTrue(output.isIdentified());
+		assertEquals(0, trident.quantity());
+		assertEquals(0, potion.quantity());
+		assertEquals(2, scroll.quantity());
+	}
+
+	@Test
+	public void weaponRecipeMarksMultiQuantityIngredientsForWholeStackInput() {
+		assertTrue(Recipe.weaponRecipeRequiresWholeStack(ScrollOfRetribution.class));
+		assertTrue(Recipe.weaponRecipeRequiresWholeStack(Trident.class));
+		assertFalse(Recipe.weaponRecipeRequiresWholeStack(PotionOfHealing.class));
 	}
 
 	@Test
@@ -136,6 +215,11 @@ public class WeaponRecipeTest {
 		return weapon;
 	}
 
+	private static <T extends Item> T identified(T item) {
+		item.identify(false);
+		return item;
+	}
+
 	private static ArrayList<Item> ingredients(Item... items) {
 		return new ArrayList<>(Arrays.asList(items));
 	}
@@ -165,5 +249,8 @@ public class WeaponRecipeTest {
 	}
 
 	public static class TestIngredient extends Item {
+	}
+
+	public static class TestIngredientC extends Item {
 	}
 }

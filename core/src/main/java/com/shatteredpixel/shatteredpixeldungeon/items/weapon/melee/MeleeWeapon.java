@@ -128,10 +128,7 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public void execute(Hero hero, String action) {
 		super.execute(hero, action);
-		int aEnc = STRReq() -hero.STR();
-		if(hero.hasTalent(Talent.FALSEHOOD_POWER)){
-			aEnc = Math.max(0, aEnc - hero.pointsInTalent(Talent.FALSEHOOD_POWER)-2);
-		}
+		int aEnc = effectiveEncumbrance(hero);
 		if (action.equals(AC_ABILITY)){
 			usesTargeting = false;
 			if (!isEquipped(hero)) {
@@ -188,6 +185,32 @@ public class MeleeWeapon extends Weapon {
 			Buff.affect(enemy, Terror.class,hero.pointsInTalent(Talent.WEIRD_THROW));
 		}
 		super.onThrow(cell);
+	}
+
+	/** Hooks for melee weapons with state that spans a hero attack. */
+	public void beforeHeroAttack(Hero hero, Char target) {}
+	public void afterHeroAttack(Hero hero, Char target, boolean hit) {}
+	public void afterHeroAttackDelayResolved(Hero hero) {}
+	public void onHeroStep(Hero hero, int from, int to) {}
+
+	public boolean forcesSurpriseAttack(Hero hero, Char target) {
+		return false;
+	}
+
+	public static boolean isForcedSurpriseAttack(Char attacker, Char defender) {
+		if (!(attacker instanceof Hero)) return false;
+		KindOfWeapon weapon = ((Hero) attacker).belongings.attackingWeapon();
+		return weapon instanceof MeleeWeapon
+				&& ((MeleeWeapon) weapon).forcesSurpriseAttack((Hero) attacker, defender);
+	}
+
+	/** Notifies the actual main/off-hand melee instances once each after normal walking. */
+	public static void notifyHeroStep(Hero hero, int from, int to) {
+		if (hero == null || from == to) return;
+		KindOfWeapon main = hero.belongings.weapon();
+		KindOfWeapon off = hero.belongings.secondWep();
+		if (main instanceof MeleeWeapon) ((MeleeWeapon) main).onHeroStep(hero, from, to);
+		if (off instanceof MeleeWeapon && off != main) ((MeleeWeapon) off).onHeroStep(hero, from, to);
 	}
 
 	//leave null for no targeting
