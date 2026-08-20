@@ -130,6 +130,7 @@ public class TowerBossLevelTest {
 		assertFalse(TowerBossLayout.isProtectedCell(cell(10, 10)));
 	}
 
+
 	private static void assertValidNaturalTerrain(int[] map) {
 		int water = 0;
 		int vegetation = 0;
@@ -318,6 +319,7 @@ public class TowerBossLevelTest {
 			Random.popGenerator();
 		}
 	}
+
 
 	private static int cell(int x, int y) {
 		return TowerBossLayout.cell(x, y);

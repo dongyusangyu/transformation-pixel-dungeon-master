@@ -108,6 +108,26 @@ public class TowerBossLevel extends TowerLevel {
 		if (locked) {
 			return randomArenaTeleportCell(ch, true);
 		}
+		return randomSafeZoneCell(ch);
+	}
+
+	@Override
+	public int safeArrivalCell(Char ch) {
+		int cell = randomSafeZoneCell(ch);
+		if (cell != -1) return cell;
+
+		cell = entrance();
+		return passable[cell] && Actor.findChar(cell) == null
+				&& (ch == null || !Char.hasProp(ch, Char.Property.LARGE) || openSpace[cell])
+				? cell : -1;
+	}
+
+	@Override
+	public boolean shouldResetForSafeArrival() {
+		return TowerBossLayout.shouldResetForSafeArrival(locked, bossEncounterDefeated());
+	}
+
+	private int randomSafeZoneCell(Char ch) {
 		for (int attempts = 0; attempts < 20; attempts++) {
 			int x = Random.Int(13, 16);
 			int y = Random.Int(31, 34);
@@ -142,6 +162,27 @@ public class TowerBossLevel extends TowerLevel {
 
 	public boolean isBossTeleportPositionAllowed(int pos) {
 		return TowerBossLayout.isArenaCell(pos);
+	}
+
+	public boolean isBossArenaCell(int cell) {
+		return TowerBossLayout.isArenaCell(cell);
+	}
+
+	public boolean isDestructibleBossCover(int cell) {
+		return cell >= 0 && cell < length()
+				&& TowerBossLayout.isArenaCell(cell)
+				&& !TowerBossLayout.isProtectedCell(cell)
+				&& TowerBossLayout.isDestructibleTerrain(map[cell])
+				&& (pestilenceArena == null
+				|| pestilenceArena.purifierCell() != cell);
+	}
+
+	public boolean destroyBossCover(int cell) {
+		if (!isDestructibleBossCover(cell)) return false;
+		destroy(cell);
+		GameScene.updateMap(cell);
+		Dungeon.observe();
+		return map[cell] == Terrain.EMBERS;
 	}
 
 	@Override
