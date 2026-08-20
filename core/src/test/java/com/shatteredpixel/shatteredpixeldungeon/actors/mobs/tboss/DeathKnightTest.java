@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
@@ -568,6 +569,60 @@ public class DeathKnightTest {
         assertTrue(boss.bombardmentReadyForTest());
     }
 
+    @Test
+    public void coverBreakRunsAfterAllDamageAndOnlyOncePerResolution() {
+        TestDeathKnight boss = new TestDeathKnight();
+        RecordingBombardmentTarget target = new RecordingBombardmentTarget();
+        target.pos = 10;
+        boss.coverTarget = target;
+        Actor.add(target);
+        try {
+            boss.setPendingForTest(DeathKnight.Skill.LINE, new int[]{10}, 1);
+
+            assertTrue(boss.advancePendingForTest());
+            assertTrue(target.lastDamage >= 45 && target.lastDamage <= 60);
+            assertEquals(1, boss.coverBreakCalls);
+            assertEquals(target.lastDamage, boss.coverBreakDamageAtCall);
+            assertEquals(DeathKnight.Skill.NONE, boss.pendingSkillForTest());
+        } finally {
+            Actor.remove(target);
+        }
+    }
+
+    @Test
+    public void cancelledOrPausedBombardmentDoesNotBreakCover() {
+        TestDeathKnight boss = new TestDeathKnight();
+        boss.forcePhaseForTest(DeathKnight.Phase.BREAK_FORMATION, 1);
+        boss.setPendingForTest(DeathKnight.Skill.EXECUTION, new int[]{10}, 2);
+        boss.armTransitionForTest();
+
+        assertTrue(boss.advanceTransitionForTest());
+        assertEquals(0, boss.coverBreakCalls);
+    }
+
+    @Test
+    public void allResolvedSkillKindsUseTheSameCoverBreakHook() {
+        for (DeathKnight.Skill skill : new DeathKnight.Skill[]{
+                DeathKnight.Skill.LINE, DeathKnight.Skill.CONE,
+                DeathKnight.Skill.CROSS, DeathKnight.Skill.RING,
+                DeathKnight.Skill.SOUL_LINE, DeathKnight.Skill.EXECUTION}) {
+            TestDeathKnight boss = new TestDeathKnight();
+            RecordingBombardmentTarget target = new RecordingBombardmentTarget();
+            target.pos = 10;
+            boss.coverTarget = target;
+            Actor.add(target);
+            try {
+                int turns = skill == DeathKnight.Skill.EXECUTION ? 2 : 1;
+                boss.setPendingForTest(skill, new int[]{10}, turns);
+                boss.advancePendingForTest();
+                if (skill == DeathKnight.Skill.EXECUTION) boss.advancePendingForTest();
+                assertEquals(skill.name(), 1, boss.coverBreakCalls);
+            } finally {
+                Actor.remove(target);
+            }
+        }
+    }
+
     private static DeathKnight transitionedToSecondPhase() {
         DeathKnight boss = new DeathKnight();
         boss.HP = DeathKnight.FIRST_LOCK_HP;
@@ -602,10 +657,18 @@ public class DeathKnightTest {
         int bombardmentPushCalls;
         Char lastBombardmentPushTarget;
         Char fallbackTarget;
+        RecordingBombardmentTarget coverTarget;
+        int coverBreakCalls;
+        int coverBreakDamageAtCall = -1;
 
         @Override
         protected float baseResist(Class effect) {
             return 1f;
+        }
+
+        @Override
+        protected void applySkillAftermath(DeathKnight.Skill skill, Char target,
+                                            DeathKnightBombardment.Band band) {
         }
 
         @Override
@@ -646,6 +709,13 @@ public class DeathKnightTest {
         protected void pushBombardmentTarget(Char target) {
             bombardmentPushCalls++;
             lastBombardmentPushTarget = target;
+        }
+
+        @Override
+        protected boolean breakNearbyCoverAfterResolution(int fallbackTargetCell) {
+            coverBreakCalls++;
+            coverBreakDamageAtCall = coverTarget == null ? -1 : coverTarget.lastDamage;
+            return true;
         }
 
         @Override
