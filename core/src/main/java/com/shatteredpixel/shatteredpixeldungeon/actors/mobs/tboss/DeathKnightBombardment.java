@@ -22,14 +22,26 @@ public final class DeathKnightBombardment {
         public final boolean[] passable;
         public final boolean[] solid;
         public final boolean[] occupied;
+        public final boolean[] arena;
+        public final boolean[] destructibleCover;
 
         public Grid(int width, int height, boolean[] passable,
                     boolean[] solid, boolean[] occupied) {
+            this(width, height, passable, solid, occupied,
+                    filled(width * height, true),
+                    new boolean[width * height]);
+        }
+
+        public Grid(int width, int height, boolean[] passable,
+                    boolean[] solid, boolean[] occupied,
+                    boolean[] arena, boolean[] destructibleCover) {
             int length = width * height;
             if (width <= 0 || height <= 0
                     || passable == null || passable.length != length
                     || solid == null || solid.length != length
-                    || occupied == null || occupied.length != length) {
+                    || occupied == null || occupied.length != length
+                    || arena == null || arena.length != length
+                    || destructibleCover == null || destructibleCover.length != length) {
                 throw new IllegalArgumentException("Grid arrays must match its dimensions");
             }
             this.width = width;
@@ -37,6 +49,14 @@ public final class DeathKnightBombardment {
             this.passable = passable;
             this.solid = solid;
             this.occupied = occupied;
+            this.arena = arena;
+            this.destructibleCover = destructibleCover;
+        }
+
+        private static boolean[] filled(int length, boolean value) {
+            boolean[] result = new boolean[length];
+            Arrays.fill(result, value);
+            return result;
         }
 
         public int length() {
@@ -273,7 +293,7 @@ public final class DeathKnightBombardment {
         ArrayList<Integer> cells = new ArrayList<>();
         ArrayList<Band> bands = new ArrayList<>();
         for (int cell = 0; cell < grid.length(); cell++) {
-            if (!grid.passable[cell] || grid.solid[cell] || !visible(grid, origin, cell)) continue;
+            if (!grid.passable[cell] || grid.solid[cell] || !grid.arena[cell]) continue;
             int rx = grid.x(cell) - ox;
             int ry = grid.y(cell) - oy;
             double perpendicular = Math.abs(rx * uy - ry * ux);
@@ -282,6 +302,41 @@ public final class DeathKnightBombardment {
                     : perpendicular <= 1.5d + EPSILON ? Band.INNER : Band.OUTER);
         }
         return new Plan(toIntArray(cells), bands.toArray(new Band[0]), -1);
+    }
+
+    public static int[] nearbyCoverCandidates(Grid grid, int[] blastCells, int targetCell) {
+        if (grid == null || blastCells == null || blastCells.length == 0
+                || !grid.valid(targetCell)) return new int[0];
+
+        LinkedHashSet<Integer> nearby = new LinkedHashSet<>();
+        for (int blastCell : blastCells) {
+            if (!grid.valid(blastCell)) continue;
+            int baseX = grid.x(blastCell);
+            int baseY = grid.y(blastCell);
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    int x = baseX + dx;
+                    int y = baseY + dy;
+                    if (grid.inside(x, y)) nearby.add(grid.cell(x, y));
+                }
+            }
+        }
+
+        int targetX = grid.x(targetCell);
+        int targetY = grid.y(targetCell);
+        int nearest = Integer.MAX_VALUE;
+        ArrayList<Integer> result = new ArrayList<>();
+        for (int cell : nearby) {
+            if (!grid.valid(cell) || !grid.destructibleCover[cell]) continue;
+            int distance = Math.max(Math.abs(grid.x(cell) - targetX),
+                    Math.abs(grid.y(cell) - targetY));
+            if (distance < nearest) {
+                nearest = distance;
+                result.clear();
+            }
+            if (distance == nearest) result.add(cell);
+        }
+        return toIntArray(result);
     }
 
     public static int scaledDamage(int damage, Band band) {

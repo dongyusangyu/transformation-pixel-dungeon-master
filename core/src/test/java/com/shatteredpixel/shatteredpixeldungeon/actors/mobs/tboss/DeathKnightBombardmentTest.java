@@ -178,12 +178,69 @@ public class DeathKnightBombardmentTest {
                 grid, cell(7, 10), cell(7, 1)));
     }
 
+    @Test
+    public void nearbyCoverCandidatesPreferNearestChebyshevDistance() {
+        DeathKnightBombardment.Grid grid = coverGrid();
+        int[] blast = {cell(7, 7)};
+        grid.destructibleCover[cell(6, 7)] = true;
+        grid.destructibleCover[cell(8, 7)] = true;
+        grid.destructibleCover[cell(10, 7)] = true;
+
+        assertArrayEquals(new int[]{cell(6, 7), cell(8, 7)},
+                DeathKnightBombardment.nearbyCoverCandidates(
+                        grid, blast, cell(7, 7)));
+    }
+
+    @Test
+    public void nearbyCoverCandidatesIncludeBlastNeighborsAndSoftCover() {
+        DeathKnightBombardment.Grid grid = coverGrid();
+        grid.destructibleCover[cell(9, 9)] = true;
+        assertArrayEquals(new int[]{cell(9, 9)},
+                DeathKnightBombardment.nearbyCoverCandidates(
+                        grid, new int[]{cell(8, 8)}, cell(12, 12)));
+    }
+
+    @Test
+    public void nearbyCoverCandidatesReturnEmptyWhenNoCoverIsNearby() {
+        DeathKnightBombardment.Grid grid = coverGrid();
+        grid.destructibleCover[cell(1, 1)] = true;
+        assertEquals(0, DeathKnightBombardment.nearbyCoverCandidates(
+                grid, new int[]{cell(7, 7)}, cell(7, 7)).length);
+    }
+
+    @Test
+    public void executionIgnoresInternalSolidCoverButRespectsArenaMask() {
+        DeathKnightBombardment.Grid grid = coverGrid();
+        grid.solid[cell(7, 5)] = true;
+        grid.passable[cell(7, 5)] = false;
+        DeathKnightBombardment.Plan execution = DeathKnightBombardment.execution(
+                grid, cell(7, 1), cell(7, 7));
+
+        assertTrue(execution.contains(cell(7, 6)));
+        grid.arena[cell(7, 6)] = false;
+        assertFalse(DeathKnightBombardment.execution(
+                grid, cell(7, 1), cell(7, 7)).contains(cell(7, 6)));
+    }
+
     private static DeathKnightBombardment.Grid openGrid() {
         boolean[] passable = new boolean[WIDTH * WIDTH];
         Arrays.fill(passable, true);
         return new DeathKnightBombardment.Grid(
                 WIDTH, WIDTH, passable,
                 new boolean[WIDTH * WIDTH], new boolean[WIDTH * WIDTH]);
+    }
+
+    private static DeathKnightBombardment.Grid coverGrid() {
+        boolean[] passable = new boolean[WIDTH * WIDTH];
+        boolean[] arena = new boolean[WIDTH * WIDTH];
+        Arrays.fill(passable, true);
+        Arrays.fill(arena, true);
+        return new DeathKnightBombardment.Grid(
+                WIDTH, WIDTH, passable,
+                new boolean[WIDTH * WIDTH],
+                new boolean[WIDTH * WIDTH],
+                arena,
+                new boolean[WIDTH * WIDTH]);
     }
 
     private static int cell(int x, int y) {
