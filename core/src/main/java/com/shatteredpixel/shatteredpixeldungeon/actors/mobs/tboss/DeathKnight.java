@@ -19,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.DeathKnightSprite;
 import com.watabou.utils.Bundle;
@@ -51,10 +52,12 @@ public class DeathKnight extends TowerBoss {
     private static final String LAST_EXECUTION = "last_execution";
     private static final String PENDING_BANDS = "pending_bands";
     private static final String PENDING_LANDING_CELL = "pending_landing_cell";
+    private static final String PENDING_TARGET_CELL = "pending_target_cell";
     private static final String PENDING_PAUSED = "pending_paused";
     private static final String REWARD_DROPPED = "reward_dropped";
     private static final String NOTICE_ANNOUNCED = "notice_announced";
     private static final String LANDED_MELEE_ATTACKS = "landed_melee_attacks";
+    private static final String COVER_BREAK_NOTICE = "cover_break_notice";
 
     private Phase phase = Phase.QUESTION;
     private int phaseLocks;
@@ -63,6 +66,7 @@ public class DeathKnight extends TowerBoss {
     private int[] pendingCells = new int[0];
     private DeathKnightBombardment.Band[] pendingBands = new DeathKnightBombardment.Band[0];
     private int pendingLandingCell = -1;
+    private int pendingTargetCell = -1;
     private int pendingTurns;
     private int skillIndex;
     private int normalActions;
@@ -77,6 +81,7 @@ public class DeathKnight extends TowerBoss {
     private int landedMeleeAttacks;
     private boolean rewardDropped;
     private boolean noticeAnnounced;
+    private boolean coverBreakNoticeAnnounced;
 
     private static final Skill[] QUESTION_SEQUENCE = {
             Skill.LINE, Skill.CONE
@@ -207,7 +212,8 @@ public class DeathKnight extends TowerBoss {
             Skill skill = nextSkill();
             DeathKnightBombardment.Plan plan = createPlan(skill, bombardmentTarget);
             if (plan != null && plan.cells.length > 0) {
-                return telegraph(skill, plan.cells, plan.bands, plan.landingCell);
+                return telegraph(skill, plan.cells, plan.bands, plan.landingCell,
+                        bombardmentTarget.pos);
             }
         }
         boolean completed = super.act();
@@ -370,17 +376,33 @@ public class DeathKnight extends TowerBoss {
         for (Char ch : com.shatteredpixel.shatteredpixeldungeon.actors.Actor.chars()) {
             if (ch != this && ch.pos >= 0 && ch.pos < occupied.length) occupied[ch.pos] = true;
         }
+        boolean[] arena = new boolean[Dungeon.level.length()];
+        boolean[] covers = new boolean[Dungeon.level.length()];
+        TowerBossLevel bossLevel = Dungeon.level instanceof TowerBossLevel
+                ? (TowerBossLevel) Dungeon.level : null;
+        for (int cell = 0; cell < arena.length; cell++) {
+            arena[cell] = bossLevel != null && bossLevel.isBossArenaCell(cell);
+            covers[cell] = bossLevel != null && bossLevel.isDestructibleBossCover(cell);
+        }
         return new DeathKnightBombardment.Grid(Dungeon.level.width(), Dungeon.level.height(),
-                Dungeon.level.passable.clone(), Dungeon.level.solid.clone(), occupied);
+                Dungeon.level.passable.clone(), Dungeon.level.solid.clone(), occupied,
+                arena, covers);
     }
 
     private boolean telegraph(Skill skill, int[] cells,
                               DeathKnightBombardment.Band[] bands, int landingCell) {
+        return telegraph(skill, cells, bands, landingCell, -1);
+    }
+
+    private boolean telegraph(Skill skill, int[] cells,
+                              DeathKnightBombardment.Band[] bands, int landingCell,
+                              int targetCell) {
         if (skill == null || skill == Skill.NONE || cells == null || cells.length == 0) return false;
         pendingSkill = skill;
         pendingCells = cells.clone();
         pendingBands = normalizedBands(bands, pendingCells.length);
         pendingLandingCell = landingCell;
+        pendingTargetCell = targetCell;
         pendingTurns = telegraphTurns(skill);
         pendingPaused = false;
         if (sprite instanceof DeathKnightSprite) ((DeathKnightSprite) sprite).charge();
@@ -416,6 +438,7 @@ public class DeathKnight extends TowerBoss {
             damageWithBombardment(target, raw);
             applySkillAftermath(skill, target, band);
         }
+        breakNearbyCoverAfterResolution(pendingTargetCell);
         finishBombardment(skill);
         if ((skill == Skill.SOUL_LINE
                 || (skill == Skill.LINE && phase == Phase.DEATH_DUEL))
@@ -423,6 +446,27 @@ public class DeathKnight extends TowerBoss {
             return beginLeapResolution(landingCell);
         }
         return true;
+    }
+
+    protected boolean breakNearbyCoverAfterResolution(int fallbackTargetCell) {
+        if (!(Dungeon.level instanceof TowerBossLevel)) return false;
+        TowerBossLevel level = (TowerBossLevel) Dungeon.level;
+        int targetCell = Dungeon.hero != null && Dungeon.hero.isAlive()
+                ? Dungeon.hero.pos : fallbackTargetCell;
+        int[] candidates = DeathKnightBombardment.nearbyCoverCandidates(
+                currentGrid(), pendingCells, targetCell);
+        if (candidates.length == 0) return false;
+        int cell = candidates[Random.Int(candidates.length)];
+        if (!level.destroyBossCover(cell)) return false;
+        showCoverBreak(cell);
+        if (!coverBreakNoticeAnnounced) {
+            coverBreakNoticeAnnounced = true;
+            yell(Messages.get(this, "cover_break"));
+        }
+        return true;
+    }
+
+    private void showCoverBreak(int cell) {
     }
 
     private void showBombardmentFx() {
@@ -629,7 +673,7 @@ public class DeathKnight extends TowerBoss {
                 DamageTag.PHYSICAL, DamageTag.RANGED, DamageTag.NO_ARMOR);
     }
 
-    private void applySkillAftermath(Skill skill, Char target,
+    protected void applySkillAftermath(Skill skill, Char target,
                                      DeathKnightBombardment.Band band) {
         if (skill == Skill.LINE) pushBombardmentTarget(target);
         if (skill == Skill.CONE) {
@@ -797,6 +841,10 @@ public class DeathKnight extends TowerBoss {
     void setPendingForTest(Skill skill, int[] cells, int turns) {
         pendingSkill = skill;
         pendingCells = cells == null ? new int[0] : cells.clone();
+        pendingBands = new DeathKnightBombardment.Band[pendingCells.length];
+        for (int i = 0; i < pendingBands.length; i++) {
+            pendingBands[i] = DeathKnightBombardment.Band.NONE;
+        }
         pendingTurns = turns;
     }
 
