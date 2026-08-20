@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -13,6 +14,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Sleep;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.effects.DeathKnightSlash;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.BlastParticle;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
@@ -25,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.DeathKnightSprite;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
+import com.watabou.noosa.audio.Sample;
 
 import java.util.ArrayList;
 
@@ -467,6 +471,9 @@ public class DeathKnight extends TowerBoss {
     }
 
     private void showCoverBreak(int cell) {
+        if (Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length()) return;
+        CellEmitter.center(cell).burst(BlastParticle.FACTORY, 12);
+        Sample.INSTANCE.play(Assets.Sounds.ROCKS);
     }
 
     private void showBombardmentFx() {
@@ -899,6 +906,22 @@ public class DeathKnight extends TowerBoss {
         return skillIndex;
     }
 
+    void setPendingTargetForTest(int cell) {
+        pendingTargetCell = cell;
+    }
+
+    void markCoverBreakNoticeForTest() {
+        coverBreakNoticeAnnounced = true;
+    }
+
+    int pendingTargetCellForTest() {
+        return pendingTargetCell;
+    }
+
+    boolean coverBreakNoticeAnnouncedForTest() {
+        return coverBreakNoticeAnnounced;
+    }
+
     void forcePhaseForTest(Phase value, int locks) {
         phase = value;
         phaseLocks = locks;
@@ -1016,10 +1039,12 @@ public class DeathKnight extends TowerBoss {
         for (int i = 0; i < pendingBands.length; i++) bandOrdinals[i] = pendingBands[i].ordinal();
         bundle.put(PENDING_BANDS, bandOrdinals);
         bundle.put(PENDING_LANDING_CELL, pendingLandingCell);
+        bundle.put(PENDING_TARGET_CELL, pendingTargetCell);
         bundle.put(PENDING_PAUSED, pendingPaused);
         bundle.put(REWARD_DROPPED, rewardDropped);
         bundle.put(NOTICE_ANNOUNCED, noticeAnnounced);
         bundle.put(LANDED_MELEE_ATTACKS, landedMeleeAttacks);
+        bundle.put(COVER_BREAK_NOTICE, coverBreakNoticeAnnounced);
     }
 
     @Override
@@ -1062,9 +1087,14 @@ public class DeathKnight extends TowerBoss {
                 ? bundle.getInt(PENDING_LANDING_CELL) : -1;
         if (pendingLandingCell < -1 || (Dungeon.level != null
                 && pendingLandingCell >= Dungeon.level.length())) pendingLandingCell = -1;
+        pendingTargetCell = bundle.contains(PENDING_TARGET_CELL)
+                ? bundle.getInt(PENDING_TARGET_CELL) : -1;
+        if (pendingTargetCell < -1 || (Dungeon.level != null
+                && pendingTargetCell >= Dungeon.level.length())) pendingTargetCell = -1;
         pendingPaused = bundle.getBoolean(PENDING_PAUSED);
         rewardDropped = bundle.getBoolean(REWARD_DROPPED);
         noticeAnnounced = bundle.getBoolean(NOTICE_ANNOUNCED);
+        coverBreakNoticeAnnounced = bundle.getBoolean(COVER_BREAK_NOTICE);
         landedMeleeAttacks = Math.floorMod(bundle.getInt(LANDED_MELEE_ATTACKS), 2);
         if (pendingSkill == Skill.NONE || pendingCells.length == 0) clearPendingSkill();
         else restoreGrace = true;

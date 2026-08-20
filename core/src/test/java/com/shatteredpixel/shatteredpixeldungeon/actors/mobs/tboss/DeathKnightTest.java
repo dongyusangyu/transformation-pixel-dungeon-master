@@ -623,6 +623,34 @@ public class DeathKnightTest {
         }
     }
 
+    @Test
+    public void pendingTargetAndCoverNoticeSurviveBundleRoundTrip() {
+        DeathKnight original = new DeathKnight();
+        original.setPendingTargetForTest(17);
+        original.markCoverBreakNoticeForTest();
+
+        Bundle bundle = new Bundle();
+        original.storeInBundle(bundle);
+
+        DeathKnight restored = new DeathKnight();
+        restored.restoreFromBundle(bundle);
+
+        assertEquals(17, restored.pendingTargetCellForTest());
+        assertTrue(restored.coverBreakNoticeAnnouncedForTest());
+    }
+
+    @Test
+    public void invalidPendingTargetFallsBackWithoutBreakingRestore() {
+        Bundle bundle = new Bundle();
+        new DeathKnight().storeInBundle(bundle);
+        bundle.put("pending_target_cell", -999);
+
+        DeathKnight restored = new DeathKnight();
+        restored.restoreFromBundle(bundle);
+
+        assertEquals(-1, restored.pendingTargetCellForTest());
+    }
+
     private static DeathKnight transitionedToSecondPhase() {
         DeathKnight boss = new DeathKnight();
         boss.HP = DeathKnight.FIRST_LOCK_HP;
