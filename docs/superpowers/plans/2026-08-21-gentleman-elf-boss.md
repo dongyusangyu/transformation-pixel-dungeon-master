@@ -6,7 +6,7 @@
 
 **架构：** `GentlemanElf` 只保存 Boss 状态机与技能调度；`GentlemanElfArena` 管理全局回合计时、酒杯/幻影实体和清场；`GentlemanElfTelegraph` 纯计算技能区域；醉意/昂扬通过通用伤害修改接口参与普通伤害。所有动画均遵循“先提交状态、可见时回调、不可见时同步完成”的现有 Boss 模式。
 
-**技术栈：** Java、Shattered Pixel Dungeon Actor/Buff/Bundle、JUnit 4、Gradle、Noosa 精灵动画、PNG 像素素材。
+**技术栈：** Java、Shattered Pixel Dungeon Actor/Buff/Bundle、JUnit 4、Gradle、Noosa 精灵动画、ImageIO/Pillow 图集校验、imagegen 概念参考、`pixel-art-sprites` 像素工作流。
 
 ---
 
@@ -21,12 +21,16 @@
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElfIllusion.java`：两次正伤害后消失的幻影。
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/ElfWineCup.java`：第二阶段中立酒杯与最后一击归属。
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/towers/GentlemanElfArena.java`：全局 20 回合宴饮、酒杯重生、实体重新绑定与清理。
-- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/GreenGlowFruit.java`：3 次、150 回合冷却、醉意与 40 Barrier。
-- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/SourWineAroma.java`：敌人首次进入 5×5 时施加 5 回合 Vertigo。
+- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/ElfWine.java`：精灵酒的杂物 Item 表示，用于场景、投掷和物品图像。
+- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/GreenGlowFruit.java`：一次性可堆叠消耗品，醉意与 40 Barrier。
+- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/SourWineAroma.java`：零回合一次性消耗品，9×9 范围施加 Vertigo。
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss/GentlemanElfSprite.java`：Boss/幻影动画和投酒、突进接口。
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss/ElfWineCupSprite.java`：绿色酒杯动画。
-- `core/src/main/assets/sprites/gentleman_elf.png`：32×32 帧表。
-- `core/src/main/assets/sprites/elf_wine_cup.png`：绿色酒杯帧表。
+- `docs/art/gentleman_elf/gentleman_elf_turnaround.png`：以指定 JPG 生成的正/侧/背三视图参考板。
+- `docs/art/gentleman_elf/gentleman_elf_action_board.png`：同一角色的八类动作参考板。
+- `core/src/main/assets/sprites/gentleman_elf.png`：800×32、25 帧的 32×32 Boss 帧表。
+- `core/src/main/assets/sprites/elf_wine_cup.png`：16×16 单帧酒杯随从。
+- `tools/art/insert_gentleman_elf_assets.py`：拒绝覆盖非空目标格的确定性图集插入脚本。
 
 **修改生产文件**
 
@@ -35,6 +39,12 @@
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/towers/TowerBossLevel.java`：挂载/保存/恢复 `GentlemanElfArena`。
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/towers/TowerBossMusic.java`：绅士精灵音乐回退到通用 Boss 曲目，未提供专曲时不新增音频。
 - `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java`：Boss、酒杯精灵常量。
+- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/EXItemSpriteSheet.java`：声明精灵酒、绿光果实、酸味酒香的 20～22 帧。
+- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/ui/BuffIndicator.java`：只声明醉意、昂扬的 149～150 图标，保持 127 为 NONE、151 未使用。
+- `core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Catalog.java`：将两个奖励加入杂项消耗品。
+- `core/src/main/assets/sprites/ex_items.png`：在藏品之后插入 20～22 三张 16×16 图标。
+- `core/src/main/assets/interfaces/buffs.png`：只在 149～150 插入两张 7×7 小图。
+- `core/src/main/assets/interfaces/large_buffs.png`：只在 149～150 插入两张 16×16 大图。
 - `core/src/main/assets/messages/actors/actors.properties`、`actors_zh.properties`：Boss、幻影、酒杯、Buff、技能提示。
 - `core/src/main/assets/messages/items/items.properties`、`items_zh.properties`：两件奖励文案。
 
@@ -44,7 +54,8 @@
 - `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElfTelegraphTest.java`
 - `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElfTest.java`
 - `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/levels/towers/GentlemanElfArenaTest.java`
-- `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/GentlemanElfRewardsTest.java`
+- `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/GentlemanElfRewardsTest.java`
+- `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/sprites/GentlemanElfAtlasPlacementTest.java`
 - `core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss/GentlemanElfSpriteAssetTest.java`
 
 ## 任务 1：建立双向伤害倍率接缝
@@ -100,7 +111,7 @@ git commit -m "feat: add generic damage multiplier buffs"
 
 - [ ] **步骤 1：编写失败测试**
 
-覆盖以下断言：`Drunkenness.affect(target)` 后无昂扬；`Exhilaration.affect(target)` 会移除醉意；重复施加不叠层；两个 Buff 不随 `act()` 衰减；倍率分别为 0.8/0.8 和 1.2/1.2。
+覆盖以下断言：`Drunkenness.affect(target)` 后无昂扬；`Exhilaration.affect(target)` 会移除醉意；重复施加不叠层；两个 Buff 不随 `act()` 衰减；倍率分别为 0.8/0.8 和 1.2/1.2；醉意 `icon()` 返回 149、昂扬返回 150，且 `BuffIndicator.NONE` 仍为 127。
 
 ```java
 assertEquals(0.8f, drunk.outgoingDamageMultiplier(null), 0.001f);
@@ -333,23 +344,43 @@ git commit -m "feat: add gentleman elf mirror finale"
 ## 任务 9：实现两件专属奖励
 
 **文件：**
-- 创建：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/GreenGlowFruit.java`
-- 创建：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/SourWineAroma.java`
-- 测试：`core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/GentlemanElfRewardsTest.java`
+- 创建：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/ElfWine.java`
+- 创建：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/GreenGlowFruit.java`
+- 创建：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/SourWineAroma.java`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElf.java`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Catalog.java`
+- 测试：`core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/GentlemanElfRewardsTest.java`
 
 - [ ] **步骤 1：编写失败测试**
 
-测试果实 3 次、每次 150 冷却、醉意+40 Barrier；酒香对首次进入 5×5 的敌人施加 5 Vertigo，同敌人不重复、离开本层清跟踪、多件不叠加；已有酒香时掉落必为果实；50/50 阈值两侧。
+覆盖以下行为：
+
+```java
+assertTrue(new GreenGlowFruit().stackable);
+assertEquals(2, useOneFruitFromStackOfThree());
+assertNotNull(hero.buff(Drunkenness.class));
+assertEquals(40, hero.buff(Barrier.class).shielding());
+
+assertEquals(0f, new SourWineAroma().useTimeForTest(), 0f);
+assertNotNull(enemyAtChebyshevDistanceFour.buff(Vertigo.class));
+assertNull(enemyAtChebyshevDistanceFive.buff(Vertigo.class));
+assertNotNull(hiddenEnemyBehindWall.buff(Vertigo.class));
+
+assertEquals(3, bossDropWithRoll(0.49f, alreadyHoldingAroma).quantity());
+assertTrue(bossDropWithRoll(0.50f, alreadyHoldingAroma) instanceof SourWineAroma);
+```
+
+同时断言 `ElfWine` 没有 USE 动作、不加入 Catalog；`GreenGlowFruit`、`SourWineAroma` 位于 `Catalog.MISC_CONSUMABLES` 中 `ScrollOfExtraction` 之后，调用使用动作会增加 Catalog 使用次数。
 
 - [ ] **步骤 2：运行测试验证失败**
 
 ```powershell
-./gradlew.bat :core:test --tests com.shatteredpixel.shatteredpixeldungeon.items.artifacts.GentlemanElfRewardsTest --no-daemon
+./gradlew.bat :core:test --tests com.shatteredpixel.shatteredpixeldungeon.items.GentlemanElfRewardsTest --no-daemon
 ```
 
 - [ ] **步骤 3：最小实现**
 
-果实使用 Artifact 充能字段表示剩余次数和冷却。酒香保存当前层已触发 Actor ID 集合，Actor 不存在或换层时清理。Boss `die()` 在 `super.die()` 前生成一次专属奖励，使用可注入 roll 接缝测试 0.5 阈值。
+三个类都继承普通 `Item`。`GreenGlowFruit` 与 `SourWineAroma` 设 `stackable = true`、默认动作为 USE；成功使用后 `detach(curUser.belongings.backpack)` 消耗一个并调用 `Catalog.countUse(getClass())`。果实先给予醉意和 40 `Barrier`，再 `hero.spendAndNext(Actor.TICK)`；酒香遍历 `Dungeon.level.mobs` 的稳定快照，筛选存活、敌对、`max(abs(dx),abs(dy)) <= 4` 的单位并施加 5 回合 `Vertigo`，不调用任何 spend/next。`SourWineAroma` 提供包内可见的 `float useTimeForTest()`，返回生产常量 0f，测试同时用 Hero cooldown 证明真实执行路径未推进时间。`GentlemanElf.die()` 的果实分支返回 `new GreenGlowFruit().quantity(3)`，酒香分支返回单个酒香；roll 不读取英雄背包。
 
 - [ ] **步骤 4：运行测试验证通过**
 
@@ -358,7 +389,7 @@ git commit -m "feat: add gentleman elf mirror finale"
 - [ ] **步骤 5：Commit**
 
 ```powershell
-git add core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/GreenGlowFruit.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/SourWineAroma.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/GentlemanElfRewardsTest.java
+git add core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/ElfWine.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/GreenGlowFruit.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/SourWineAroma.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElf.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Catalog.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/GentlemanElfRewardsTest.java
 git commit -m "feat: add gentleman elf rewards"
 ```
 
@@ -396,9 +427,91 @@ git add core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/tower
 git commit -m "feat: register gentleman elf tower boss"
 ```
 
-## 任务 11：绘制并接线精灵、警告和动画
+## 任务 11：确定性插入 Buff 与物品图集
 
 **文件：**
+- 创建：`tools/art/insert_gentleman_elf_assets.py`
+- 修改：`core/src/main/assets/interfaces/buffs.png`
+- 修改：`core/src/main/assets/interfaces/large_buffs.png`
+- 修改：`core/src/main/assets/sprites/ex_items.png`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/ui/BuffIndicator.java`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/EXItemSpriteSheet.java`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/buffs/tboss/Drunkenness.java`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/buffs/tboss/Exhilaration.java`
+- 测试：`core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/sprites/GentlemanElfAtlasPlacementTest.java`
+
+- [ ] **步骤 1：编写失败的图集测试**
+
+测试固定常量和像素哈希：
+
+```java
+private static final String EXPECTED_DRUNK_SMALL_SHA256 =
+        "6391668942696398653d35e690bb2ea77d7d6b11301ecb6bdf6ce9b57474d8a3";
+private static final String EXPECTED_AROMA_RGBA_SHA256 =
+        "3a1f73f68d97cbf50d0bb27734ba1cb7d3d165e9847ee9a6556b821fdf161d72";
+
+assertEquals(127, BuffIndicator.NONE);
+assertEquals(149, BuffIndicator.DRUNKENNESS);
+assertEquals(150, BuffIndicator.EXHILARATION);
+assertTrue(frameIsTransparent("interfaces/buffs.png", 127, 7, 18));
+assertTrue(frameIsTransparent("interfaces/large_buffs.png", 127, 16, 16));
+assertTrue(frameIsTransparent("interfaces/buffs.png", 151, 7, 18));
+assertTrue(frameIsTransparent("interfaces/large_buffs.png", 151, 16, 16));
+assertEquals(EXPECTED_DRUNK_SMALL_SHA256, frameHash("interfaces/buffs.png", 149, 7, 18));
+assertEquals(EXPECTED_AROMA_RGBA_SHA256, frameHash("sprites/ex_items.png", 22, 16, 16));
+```
+
+测试同时保存除目标格外整张图集的像素哈希，断言 149～150、20～22 之外没有任何像素变化；151 仍透明，且项目中不存在守护图标常量或守护 Buff 生产类。
+
+- [ ] **步骤 2：运行测试验证失败**
+
+```powershell
+./gradlew.bat :core:test --tests com.shatteredpixel.shatteredpixeldungeon.sprites.GentlemanElfAtlasPlacementTest --no-daemon
+```
+
+预期：常量和目标像素尚不存在。
+
+- [ ] **步骤 3：编写并运行拒绝覆盖的插图脚本**
+
+脚本输入固定为：
+
+```text
+D:\桌面\绅士精灵设计资料\醉意 昂扬 守护.png
+D:\桌面\绅士精灵设计资料\精灵酒.png
+D:\桌面\绅士精灵设计资料\绿光果实.png
+D:\桌面\绅士精灵设计资料\酸味的酒香.png
+```
+
+脚本先验证来源尺寸分别为 48×23、16×16、16×16、16×16；再验证小/大 Buff 图集 149～150、EX 图集 20～22 全透明且 127 全透明，并记录 151 的原始哈希。任何验证失败时不写任何目标文件；全部通过后用临时副本逐像素粘贴并原子替换目标。Buff 只切片：小图 `(0,0,7,7)`、`(7,0,14,7)`；大图 `(0,7,16,23)`、`(16,7,32,23)`。第三组守护区域不读取、不写入。写完后断言 151 哈希不变。
+
+- [ ] **步骤 4：声明常量并接入 Buff/Item**
+
+在 `BuffIndicator` 只添加 149～150，保留 `NONE=127` 且不声明 151；在 `EXItemSpriteSheet` 添加：
+
+```java
+public static final int ELF_WINE = encode(20, 16, 16);
+public static final int GREEN_GLOW_FRUIT = encode(21, 16, 16);
+public static final int SOUR_WINE_AROMA = encode(22, 16, 16);
+```
+
+醉意/昂扬 `icon()` 分别返回 149/150；守护素材不进入项目，151 保持空白。
+
+- [ ] **步骤 5：运行测试验证通过**
+
+运行步骤 2，预期全部通过；另外运行脚本的临时图集测试，先故意向目标格写 1 像素，断言脚本非零退出且文件哈希不变。
+
+- [ ] **步骤 6：Commit**
+
+```powershell
+git add tools/art/insert_gentleman_elf_assets.py core/src/main/assets/interfaces/buffs.png core/src/main/assets/interfaces/large_buffs.png core/src/main/assets/sprites/ex_items.png core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/ui/BuffIndicator.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/EXItemSpriteSheet.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/buffs/tboss/Drunkenness.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/buffs/tboss/Exhilaration.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/sprites/GentlemanElfAtlasPlacementTest.java
+git commit -m "feat: add gentleman elf interface and item art"
+```
+
+## 任务 12：生成参考板并绘制 32×32 Boss 帧表
+
+**文件：**
+- 创建：`docs/art/gentleman_elf/gentleman_elf_turnaround.png`
+- 创建：`docs/art/gentleman_elf/gentleman_elf_action_board.png`
 - 创建：`core/src/main/assets/sprites/gentleman_elf.png`
 - 创建：`core/src/main/assets/sprites/elf_wine_cup.png`
 - 创建：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss/GentlemanElfSprite.java`
@@ -408,7 +521,7 @@ git commit -m "feat: register gentleman elf tower boss"
 
 - [ ] **步骤 1：编写失败素材测试**
 
-使用 ImageIO 断言 PNG 存在、单帧不超过 32×32、每个声明帧非空、透明背景、动画索引不越界；源代码断言 IDLE/RUN/ATTACK/THROW/DASH/HIT/DIE 都已定义。
+断言参考板存在；Boss PNG 恰为 800×32，25 个 32×32 帧全部非空，脚底基线偏差不超过 1px；静态酒杯 PNG 恰为 16×16 且仅 1 帧；动画索引严格为 idle 0～2、run 3～6、attack 7～9、throw 10～12、dash 13～15、jump 16～18、hit 19、die 20～24。扫描半透明边缘，禁止混入黑色/JPG 底色光晕。
 
 - [ ] **步骤 2：运行测试验证失败**
 
@@ -416,22 +529,36 @@ git commit -m "feat: register gentleman elf tower boss"
 ./gradlew.bat :core:test --tests com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.GentlemanElfSpriteAssetTest --no-daemon
 ```
 
-- [ ] **步骤 3：绘制并实现动画**
+- [ ] **步骤 3：用 imagegen 生成三视图参考板**
 
-按原概念图制作 32×32 帧：绿色半透明黏液绅士、黑领带、手持酒杯、背部晶莹翅片；腿和肩形成稳定轮廓，滴液只占边缘。酒杯为 16×16。`throwWine(int cell, int color, Callback cb)`、`dash(int cell, Callback cb)` 和 `jump(int cell, Callback cb)` 必须在不可见时直接调用回调。
+调用 `image_gen.imagegen`，唯一参考图使用 `D:\桌面\绅士精灵设计资料\绅士精灵原始形象.jpg`，提示词固定要求：白/浅灰纯背景、正面/严格侧面/背面并排、相同比例与绿色黏液体型、黑领带、酒杯、四片晶莹翅片、无透视夸张、无新增服饰、完整脚部、角色设计稿而非像素图。保存为 `docs/art/gentleman_elf/gentleman_elf_turnaround.png`。
 
-- [ ] **步骤 4：运行测试并人工查看帧表**
+- [ ] **步骤 4：用 imagegen 生成动作参考板**
 
-运行步骤 2；再打开两张 PNG，确认没有切帧错位、悬空像素、错误半透明边缘和方向跳变。
+继续以原始 JPG 和已生成三视图为参考，生成待机、移动、普通攻击、投酒、突进、jump、受击、死亡八个清晰关键姿势；同一角色比例、单一光源、每格无遮挡、动作标签不压住身体。保存为 `docs/art/gentleman_elf/gentleman_elf_action_board.png`。
 
-- [ ] **步骤 5：Commit**
+- [ ] **步骤 5：使用 pixel-art-sprites 绘制最终帧表**
+
+按技能约束先做纯色轮廓，再做 12～16 色有限色板和左上光源，最后补 1px 选择性外轮廓。每帧严格 32×32、透明背景、整数像素，不缩放参考图、不使用 JPEG、不对背景抗锯齿。用 1×、2×、4×检查酒杯、领带、翅片和动作方向；左右朝向由引擎镜像，不另画方向帧。
+
+从 `精灵酒.png` 复制得到独立 `elf_wine_cup.png`，保持 16×16 原像素。`ElfWineCupSprite` 的 idle/run/attack/die 全部引用帧 0，移动、受击和死亡只追加酒液粒子或缩放特效。
+
+- [ ] **步骤 6：实现动画与异步回退**
+
+`GentlemanElfSprite` 的 `throwWine(int,int,Callback)`、`dash(int,Callback)`、`jump(int,Callback)` 对应独立动画；不可见或 `parent == null` 时直接调用回调。`onComplete` 只对当前待完成动作回调一次并回 idle，避免异步卡死。
+
+- [ ] **步骤 7：运行测试并逐帧审查**
+
+运行步骤 2；用本地查看工具分别查看帧表原始大小和 4×最近邻放大图，确认无切帧错位、悬空像素、枕头式阴影、光晕、脚底漂移和不一致像素尺度。
+
+- [ ] **步骤 8：Commit**
 
 ```powershell
-git add core/src/main/assets/sprites/gentleman_elf.png core/src/main/assets/sprites/elf_wine_cup.png core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss/GentlemanElfSpriteAssetTest.java
+git add docs/art/gentleman_elf core/src/main/assets/sprites/gentleman_elf.png core/src/main/assets/sprites/elf_wine_cup.png core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/sprites/tboss/GentlemanElfSpriteAssetTest.java
 git commit -m "feat: add gentleman elf pixel animations"
 ```
 
-## 任务 12：文案、开场选择、日志与整体回归
+## 任务 13：文案、开场选择、日志与整体回归
 
 **文件：**
 - 修改：`core/src/main/assets/messages/actors/actors.properties`
@@ -439,11 +566,13 @@ git commit -m "feat: add gentleman elf pixel animations"
 - 修改：`core/src/main/assets/messages/items/items.properties`
 - 修改：`core/src/main/assets/messages/items/items_zh.properties`
 - 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Bestiary.java`
+- 修改：`core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Catalog.java`
 - 修改测试：`core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElfTest.java`
+- 修改测试：`core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/GentlemanElfRewardsTest.java`
 
 - [ ] **步骤 1：补充失败测试**
 
-测试开场选择只出现一次；饮用给醉意、拒绝给昂扬；读档不重复；所有技能消息键存在；图鉴归入高塔 Boss 栏目且顺序位于该栏目末尾；全局宴饮 message 明确写“迷乱/随机移动”而非“麻痹”。
+测试开场选择只出现一次；饮用给醉意、拒绝给昂扬；读档不重复；所有技能消息键存在；图鉴归入高塔 Boss 栏目且顺序位于该栏目末尾；全局宴饮 message 明确写“迷乱/随机移动”而非“麻痹”；绿光果实、酸味酒香在杂项消耗品中位于提取卷轴之后，精灵酒不进入日志。
 
 - [ ] **步骤 2：运行测试验证失败**
 
@@ -451,12 +580,12 @@ git commit -m "feat: add gentleman elf pixel animations"
 
 - [ ] **步骤 3：实现文案和开场窗口**
 
-复用现有 Boss 开场对话窗口；Bundle 保存 `introResolved`。中英文都提供 name/desc/notice/defeated、阶段提示、TOAST/DEVOUR/CUP_DASH/TABLE_SHOCK、宴饮倒计时与结算、两种状态和奖励描述。
+复用现有 Boss 开场对话窗口；Bundle 保存 `introResolved`。中英文都提供 name/desc/notice/defeated、阶段提示、TOAST/DEVOUR/CUP_DASH/TABLE_SHOCK、宴饮倒计时与结算、两种状态、精灵酒杂物和两件一次性奖励描述；酒香描述明确写“使用不消耗回合、9×9、5回合随机移动”。
 
 - [ ] **步骤 4：运行完整目标回归**
 
 ```powershell
-./gradlew.bat :core:test --tests "com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.*" --tests "com.shatteredpixel.shatteredpixeldungeon.levels.towers.*" --tests "com.shatteredpixel.shatteredpixeldungeon.items.artifacts.GentlemanElfRewardsTest" --tests "com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.*" --no-daemon
+./gradlew.bat :core:test --tests "com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.*" --tests "com.shatteredpixel.shatteredpixeldungeon.levels.towers.*" --tests "com.shatteredpixel.shatteredpixeldungeon.items.GentlemanElfRewardsTest" --tests "com.shatteredpixel.shatteredpixeldungeon.sprites.GentlemanElfAtlasPlacementTest" --tests "com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.*" --no-daemon
 ```
 
 预期：0 failures、0 errors；JUnit XML 的 `system-err` 为空。
@@ -473,14 +602,17 @@ git diff --check
 - [ ] **步骤 6：Commit**
 
 ```powershell
-git add core/src/main/assets/messages core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Bestiary.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElfTest.java
+git add core/src/main/assets/messages core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Bestiary.java core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/journal/Catalog.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/GentlemanElfTest.java core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/items/GentlemanElfRewardsTest.java
 git commit -m "feat: finish gentleman elf boss encounter"
 ```
 
 ## 自检结果
 
 - 规格的基础面板、双状态、全局宴饮、三阶段、奖励、视觉、存档和清理均有对应任务。
-- `Vertigo` 在任务 7、9、12 中被明确引用；计划没有用 `Paralysis` 代替随机移动眩晕。
+- `Vertigo` 在任务 7、9、13 中被明确引用；计划没有用 `Paralysis` 代替随机移动眩晕。
 - `GentlemanElfArena` 是唯一全局计时器和实体所有者；Boss 状态机不重复生成酒杯或幻影。
 - 所有异步技能都要求同步回退和单次 `next()`，所有待结算技能都有取消路径。
+- 图集写入只允许 EX 20～22、Buff 149～150，脚本会拒绝非空目标；127 永远保留给 `NONE`，151 不写入。
+- 概念参考必须先于像素绘制，最终 Boss 25 帧全部为 32×32；酒杯随从只有一个 16×16 帧。
+- 两件奖励均为普通一次性消耗品：果实掉落 3 个，酒香 0 回合使用并覆盖 9×9；计划没有保留旧 Artifact、冷却、被动触发或持有替换掉落逻辑。
 - 计划没有遗留占位语句或未定义的类型名；核心接口名称在各任务中保持一致。
