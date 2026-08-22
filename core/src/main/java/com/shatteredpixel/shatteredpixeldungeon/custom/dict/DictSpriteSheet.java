@@ -246,10 +246,14 @@ public class DictSpriteSheet {
                 return new Image(Assets.Sprites.MARSH_SLIME, 0, 0, 14, 12);
             case TOWER_RUNE_SPINNER:
                 return new Image(Assets.Sprites.RUNE_SPINNER, 0, 0, 16, 16);
+            case TOWER_CHAIN_SHADOW_THIEF:
+                return new Image(Assets.Sprites.CHAIN_SHADOW_THIEF, 0, 0, 12, 13);
             case TOWER_PESTILENCE_KNIGHT:
                 return new Image(Assets.Sprites.PESTILENCE_KNIGHT, 0, 0, 32, 32);
             case TOWER_DEATH_KNIGHT:
                 return new Image(Assets.Sprites.DEATH_KNIGHT, 0, 0, 32, 32);
+            case TOWER_GENTLEMAN_ELF:
+                return new Image(Assets.Sprites.GENTLEMAN_ELF, 0, 0, 32, 32);
 
             case HERO:
                 return new Image(Assets.Sprites.ROGUE, 0, 15, 12, 15);
@@ -389,8 +393,10 @@ public class DictSpriteSheet {
     public static final int TOWER_HEAVY_CRABIFICATION       = 913 + 10000;
     public static final int TOWER_MARSH_SLIME               = 914 + 10000;
     public static final int TOWER_RUNE_SPINNER              = 915 + 10000;
+    public static final int TOWER_CHAIN_SHADOW_THIEF        = 918 + 10000;
     public static final int TOWER_PESTILENCE_KNIGHT         = 916 + 10000;
     public static final int TOWER_DEATH_KNIGHT              = 917 + 10000;
+    public static final int TOWER_GENTLEMAN_ELF             = 919 + 10000;
 
     public static final int SAD_GHOST       = 800 + 10000;
     public static final int WAND_MAKER      = 801 + 10000;

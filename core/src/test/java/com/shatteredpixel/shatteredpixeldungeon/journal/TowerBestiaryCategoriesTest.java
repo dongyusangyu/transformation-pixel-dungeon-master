@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.journal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
@@ -18,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TwistedMirror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.WildDread;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 
 import org.junit.Test;
 
@@ -60,7 +62,8 @@ public class TowerBestiaryCategoriesTest {
 				SoulCollector.class,
 				HeavyCrabification.class,
 				MarshSlime.class,
-				RuneSpinner.class
+				RuneSpinner.class,
+				ChainShadowThief.class
 		), new ArrayList<>(Bestiary.TOWER_MOBS.entities()));
 		assertTrue(!Bestiary.REGIONAL.entities().contains(CamouflageGnoll.class));
 		assertTrue(!Bestiary.REGIONAL.entities().contains(CorrosiveSwarm.class));
@@ -74,7 +77,8 @@ public class TowerBestiaryCategoriesTest {
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(WildDread.class));
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(TwistedMirror.class));
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(PowerfulWraith.class));
-		assertEquals(Arrays.asList(PestilenceKnight.class, DeathKnight.class),
+		assertEquals(Arrays.asList(PestilenceKnight.class, DeathKnight.class,
+				GentlemanElf.class),
 				new ArrayList<>(Bestiary.TOWER_BOSSES.entities()));
 	}
 
@@ -92,6 +96,7 @@ public class TowerBestiaryCategoriesTest {
 		assertEquals(30, new SoulCollector().maxLvl);
 		assertEquals(30, new MarshSlime().maxLvl);
 		assertEquals(30, new RuneSpinner().maxLvl);
+		assertEquals(30, new ChainShadowThief().maxLvl);
 		assertEquals(13, new AlienatedPrismaticGuard().EXP);
 		assertEquals(30, new WildDread().maxLvl);
 		assertEquals(30, new PowerfulWraith().maxLvl);
@@ -112,6 +117,24 @@ public class TowerBestiaryCategoriesTest {
 		assertEquals("符文蜘蛛", chinese.getProperty(key + "name"));
 		assertTrue(!chinese.getProperty(key + "desc", "").isEmpty());
 		assertTrue(detailsZh.getProperty("custom.dict.dict.tower_rune_spinner_d", "").contains("诅咒刻印"));
+	}
+
+	@Test
+	public void chainShadowThiefMessagesExistInDefaultAndChinese() throws IOException {
+		Properties defaults = loadActorMessages("actors.properties");
+		Properties chinese = loadActorMessages("actors_zh.properties");
+		Properties details = loadCustomMessages("custom.properties");
+		Properties detailsZh = loadCustomMessages("custom_zh.properties");
+		String prefix = "actors.mobs.tmobs.chainshadowthief.";
+
+		assertEquals("chain-shadow thief", defaults.getProperty(prefix + "name"));
+		assertTrue(defaults.getProperty(prefix + "desc", "").contains("chain"));
+		assertTrue(details.getProperty("custom.dict.dict.tower_chain_shadow_thief_d", "")
+				.contains("Stackable items"));
+		assertEquals("链影盗贼", chinese.getProperty(prefix + "name"));
+		assertTrue(chinese.getProperty(prefix + "desc", "").contains("锁链"));
+		assertTrue(detailsZh.getProperty("custom.dict.dict.tower_chain_shadow_thief_d", "")
+				.contains("可堆叠物品"));
 	}
 
 	@Test
@@ -186,8 +209,8 @@ public class TowerBestiaryCategoriesTest {
 		assertEquals("胧光怪",
 				chinese.getProperty("actors.mobs.tmobs.obscura.name"));
 		assertTrue(chinese.getProperty("actors.mobs.tmobs.obscura.desc", "")
-				.contains("野生惧魔"));
-		assertEquals("野生惧魔",
+				.contains("惧魔"));
+		assertEquals("寄生惧魔",
 				chinese.getProperty("actors.mobs.tmobs.wilddread.name"));
 		assertTrue(detailsZh.getProperty("custom.dict.dict.tower_wild_dread_d", "")
 				.contains("复活"));

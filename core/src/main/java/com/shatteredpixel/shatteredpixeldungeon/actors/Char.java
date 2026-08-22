@@ -215,6 +215,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.ShieldOfLight
 
 public abstract class Char extends Actor {
 
+	/** Optional, composable damage scaling used by persistent combat states. */
+	public interface DamageMultiplier {
+		default float outgoingDamageMultiplier(Object source, DamageTag... tags) { return 1f; }
+		default float incomingDamageMultiplier(Object source, DamageTag... tags) { return 1f; }
+	}
+
 	public interface HealingModifier {
 		float incomingHealingReduction();
 		default void afterIncomingHealing(int requested, int actual) {}
@@ -1481,7 +1487,22 @@ public abstract class Char extends Actor {
 
 	/** Last damage hook after mitigation and shield absorption, before HP is changed. */
 	protected int modifyFinalDamage(int damage, Object source, DamageTag... damageTags) {
-		return damage;
+		float multiplier = 1f;
+		if (source instanceof Char) {
+			for (Buff buff : ((Char) source).buffs()) {
+				if (buff instanceof DamageMultiplier) {
+					multiplier *= Math.max(0f,
+							((DamageMultiplier) buff).outgoingDamageMultiplier(source, damageTags));
+				}
+			}
+		}
+		for (Buff buff : buffs()) {
+			if (buff instanceof DamageMultiplier) {
+				multiplier *= Math.max(0f,
+						((DamageMultiplier) buff).incomingDamageMultiplier(source, damageTags));
+			}
+		}
+		return Math.round(damage * multiplier);
 	}
 
 	//these are misc. sources of physical damage which do not apply armor, they get a different icon

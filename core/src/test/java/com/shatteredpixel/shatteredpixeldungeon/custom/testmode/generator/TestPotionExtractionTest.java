@@ -21,14 +21,19 @@ import static org.junit.Assert.assertTrue;
 public class TestPotionExtractionTest {
 
 	@Test
-	public void extractionScrollIsDeclaredLastInMiscConsumables() throws IOException {
+	public void extractionScrollPrecedesGentlemanElfConsumables() throws IOException {
 		String source = readCoreSource(
 				"com/shatteredpixel/shatteredpixeldungeon/journal/Catalog.java");
 		int catalogStart = source.indexOf("MISC_CONSUMABLES.addItems(");
 		int catalogEnd = source.indexOf(");", catalogStart);
 		String declaration = source.substring(catalogStart, catalogEnd);
 
-		assertTrue(declaration.trim().endsWith("ScrollOfExtraction.class"));
+		int extraction = declaration.indexOf("ScrollOfExtraction.class");
+		int greenFruit = declaration.indexOf("GreenGlowFruit.class");
+		int sourAroma = declaration.indexOf("SourWineAroma.class");
+		assertTrue(extraction >= 0);
+		assertTrue(greenFruit > extraction);
+		assertTrue(sourAroma > greenFruit);
 	}
 
 	@Test

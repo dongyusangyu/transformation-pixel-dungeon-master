@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
@@ -275,6 +276,9 @@ public class TowerLevel extends RegularLevel {
 				break;
 			case RUNE_SPINNER:
 				mob = new RuneSpinner();
+				break;
+			case CHAIN_SHADOW_THIEF:
+				mob = new ChainShadowThief();
 				break;
 			default:
 				throw new IllegalStateException("Unknown tower mob selection");

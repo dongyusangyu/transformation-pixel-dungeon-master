@@ -44,6 +44,10 @@ public final class EXItemSpriteSheet {
 	public static final int ETHIOPIAN_PROCESSIONAL_CROSS = encode(17, 16, 16);
 	public static final int GREAT_ZIMBABWE_BIRD          = encode(18, 11, 16);
 	public static final int DJENNE_TERRACOTTA_FIGURE     = encode(19, 11, 16);
+	// Gentleman elf rewards and scene prop (reserved blank cells after collectibles).
+	public static final int ELF_WINE                     = encode(20, 16, 16);
+	public static final int GREEN_GLOW_FRUIT              = encode(21, 16, 16);
+	public static final int SOUR_WINE_AROMA               = encode(22, 16, 16);
 
 	public static final int SCROLL_EXTRACTION = encode(32, 15, 14);
 	public static final int META_INFUSE = encode(48, 10, 15);

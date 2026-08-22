@@ -12,7 +12,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -79,6 +83,28 @@ public class TowerBossLevelTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void gentlemanWineCupUsesRandomUnoccupiedArenaCells() throws Exception {
+		Method selector = TowerBossLayout.class.getDeclaredMethod(
+				"selectRandomGentlemanCupCell", ArrayList.class, ArrayList.class);
+		selector.setAccessible(true);
+		ArrayList<Integer> candidates = new ArrayList<>(Arrays.asList(
+				TowerBossLayout.cell(3, 6), TowerBossLayout.cell(7, 10),
+				TowerBossLayout.cell(18, 14), TowerBossLayout.cell(23, 25)));
+		Set<Integer> selected = new HashSet<>();
+		for (long seed = 1; seed <= 32; seed++) {
+			Random.pushGenerator(seed);
+			try {
+				int cell = (Integer) selector.invoke(null, candidates, new ArrayList<Integer>());
+				selected.add(cell);
+				assertTrue(candidates.contains(cell));
+			} finally {
+				Random.popGenerator();
+			}
+		}
+		assertTrue("cup placement must not always use one fixed cell", selected.size() > 1);
 	}
 
 	@Test

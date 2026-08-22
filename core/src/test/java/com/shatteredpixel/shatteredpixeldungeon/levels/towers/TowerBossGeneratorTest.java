@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.watabou.utils.Random;
 
@@ -20,15 +21,18 @@ public class TowerBossGeneratorTest {
     public void registeredBossesRotateDeterministicallyWithEqualWeights() {
         boolean sawPestilence = false;
         boolean sawDeath = false;
+        boolean sawGentleman = false;
         for (long seed = 0; seed < 64; seed++) {
             String first = TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH);
             String repeated = TowerBossGenerator.selectId(seed, 5, TowerLevel.BRANCH);
             assertEquals(first, repeated);
             sawPestilence |= TowerBossGenerator.PESTILENCE_KNIGHT_ID.equals(first);
             sawDeath |= TowerBossGenerator.DEATH_KNIGHT_ID.equals(first);
+            sawGentleman |= TowerBossGenerator.GENTLEMAN_ELF_ID.equals(first);
         }
         assertTrue(sawPestilence);
         assertTrue(sawDeath);
+        assertTrue(sawGentleman);
     }
 
     @Test
@@ -67,9 +71,10 @@ public class TowerBossGeneratorTest {
 
     @Test
     public void registryEntryKeepsFutureWeightAndFloorBounds() {
-        assertEquals(2, TowerBossGenerator.entries().size());
+        assertEquals(3, TowerBossGenerator.entries().size());
         TowerBossGenerator.Entry entry = TowerBossGenerator.entries().get(0);
         TowerBossGenerator.Entry death = TowerBossGenerator.entries().get(1);
+        TowerBossGenerator.Entry gentleman = TowerBossGenerator.entries().get(2);
 
         assertEquals(TowerBossGenerator.PESTILENCE_KNIGHT_ID, entry.id());
         assertTrue(entry.weight() > 0);
@@ -79,6 +84,10 @@ public class TowerBossGeneratorTest {
         assertEquals(entry.weight(), death.weight());
         assertEquals(1, death.minBossIndex());
         assertEquals(Integer.MAX_VALUE, death.maxBossIndex());
+        assertEquals(TowerBossGenerator.GENTLEMAN_ELF_ID, gentleman.id());
+        assertEquals(entry.weight(), gentleman.weight());
+        assertEquals(1, gentleman.minBossIndex());
+        assertEquals(Integer.MAX_VALUE, gentleman.maxBossIndex());
         assertFalse(TowerBossGenerator.entries().isEmpty());
     }
 
@@ -92,6 +101,10 @@ public class TowerBossGeneratorTest {
         TowerBoss death = TowerBossGenerator.create(TowerBossGenerator.DEATH_KNIGHT_ID);
         assertTrue(death instanceof DeathKnight);
         assertEquals(TowerBossGenerator.DEATH_KNIGHT_ID, death.towerBossId());
+
+        TowerBoss gentleman = TowerBossGenerator.create(TowerBossGenerator.GENTLEMAN_ELF_ID);
+        assertTrue(gentleman instanceof GentlemanElf);
+        assertEquals(TowerBossGenerator.GENTLEMAN_ELF_ID, gentleman.towerBossId());
     }
 
     @Test

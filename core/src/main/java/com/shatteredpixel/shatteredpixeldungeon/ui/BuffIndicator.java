@@ -47,6 +47,9 @@ public class BuffIndicator extends Component {
 	
 	//transparent icon
 	public static final int NONE    = 127;
+	/** Reserved tower-boss state icons; 127 remains the transparent NONE cell. */
+	public static final int DRUNKENNESS = 149;
+	public static final int EXHILARATION = 150;
 
 	//FIXME this is becoming a mess, should do a big cleaning pass on all of these
 	//and think about tinting options

@@ -706,6 +706,13 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     private void knockHeroIfInCells(int[] cells, int distance) {
         if (Dungeon.hero == null || !contains(cells, Dungeon.hero.pos)) return;
         Ballistica trajectory = new Ballistica(pos, Dungeon.hero.pos, Ballistica.MAGIC_BOLT);
+        // The first path aims at the hero; knockback must continue along the
+        // portion of that path beyond the hero, otherwise throwChar() moves the
+        // hero back toward the boss along the incoming trajectory.
+        if (trajectory.collisionPos == null || trajectory.collisionPos != Dungeon.hero.pos
+                || trajectory.path.size() <= trajectory.dist + 1) return;
+        trajectory = new Ballistica(trajectory.collisionPos,
+                trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
         WandOfBlastWave.throwChar(Dungeon.hero, trajectory, distance, false, false, this);
         Dungeon.hero.interrupt();
     }

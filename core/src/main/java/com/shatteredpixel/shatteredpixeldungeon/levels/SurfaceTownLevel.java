@@ -141,7 +141,7 @@ public class SurfaceTownLevel extends Level {
 	@Override
 	protected boolean build() {
 		setSize(WIDTH, HEIGHT);
-		//fill(Terrain.GRASS);
+		fill(Terrain.EMPTY);
 		paintForest();
 		paintLake();
 		paintVillagePaths();
@@ -327,6 +327,8 @@ public class SurfaceTownLevel extends Level {
 
          */
 
+
+
 	}
 
 	public static class SurfacePathTilemap extends CustomTilemap {
@@ -507,9 +509,7 @@ public class SurfaceTownLevel extends Level {
 		}
 
 		static int tileForTerrain(int terrain, int x, int y) {
-			if (terrain != Terrain.GRASS
-					&& terrain != Terrain.HIGH_GRASS
-					&& terrain != Terrain.FURROWED_GRASS) {
+			if (terrain != Terrain.EMPTY) {
 				return -1;
 			}
 

@@ -182,14 +182,6 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 	}
 
 	@Override
-	protected boolean doAttack(Char target) {
-		if (needsFlock(target)) {
-			return castAtTarget(CAST_FLOCK, target);
-		}
-		return super.doAttack(target);
-	}
-
-	@Override
 	public boolean doRangedAttack(Char target) {
 		int cast = needsFlock(target) ? CAST_FLOCK : CAST_FIREBLAST;
 		return castAtTarget(cast, target);
@@ -213,6 +205,7 @@ public class RoastLambWarlock extends Mob implements MagicalRangedAttack {
 	public boolean canRangedAttack(Char target) {
 		if (target == null
 				|| Dungeon.level == null
+				|| Dungeon.level.adjacent(pos, target.pos)
 				|| Dungeon.level.trueDistance(pos, target.pos) > fireblastDistance()) {
 			return false;
 		}

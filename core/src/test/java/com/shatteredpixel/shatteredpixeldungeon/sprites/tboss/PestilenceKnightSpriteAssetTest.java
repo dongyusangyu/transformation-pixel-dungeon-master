@@ -131,6 +131,18 @@ public class PestilenceKnightSpriteAssetTest {
     }
 
     @Test
+    public void paleChargeKnockbackUsesThePathBeyondTheHero() throws IOException {
+        Path root = coreDirectory().resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon");
+        String boss = read(root.resolve("actors/mobs/tboss/PestilenceKnight.java"));
+
+        assertTrue("charge knockback must extend the aim path past the hero",
+                boss.contains("trajectory = new Ballistica(trajectory.collisionPos")
+                        && boss.contains("trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE"));
+        assertTrue("charge knockback must apply the extended path to the hero",
+                boss.contains("WandOfBlastWave.throwChar(Dungeon.hero, trajectory, distance"));
+    }
+
+    @Test
     public void purifierMechanicsRemainInDetailedTowerReference() throws IOException {
         Path messages = coreDirectory().resolve("src/main/assets/messages");
         String levels = read(messages.resolve("levels/levels.properties"));

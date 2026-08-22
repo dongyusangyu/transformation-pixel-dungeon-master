@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.ArcaneResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Dewdrop;
 import com.shatteredpixel.shatteredpixeldungeon.items.EnergyCrystal;
+
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
@@ -39,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.LiquidMetal;
 import com.shatteredpixel.shatteredpixeldungeon.items.RedEnvelope;
 import com.shatteredpixel.shatteredpixeldungeon.items.ScrollOfSublimation;
 import com.shatteredpixel.shatteredpixeldungeon.items.SpecialPackage;
+import com.shatteredpixel.shatteredpixeldungeon.items.SourWineAroma;
 import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.TengusMask;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
@@ -64,6 +66,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.GreenGlowFruit;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MeatPie;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Pasty;
@@ -280,7 +283,7 @@ public enum Catalog {
 
 		FOOD.addItems( Food.class, Pasty.class, MysteryMeat.class, ChargrilledMeat.class,
 				StewedMeat.class, FrozenCarpaccio.class, SmallRation.class, Berry.class,
-				SupplyRation.class, Tincture.class, Blandfruit.class, PhantomMeat.class, MeatPie.class );
+				SupplyRation.class, Tincture.class, Blandfruit.class, PhantomMeat.class, MeatPie.class, GreenGlowFruit.class );
 
 		EXOTIC_POTIONS.addItems(ExoticPotion.exoToReg.keySet().toArray(new Class[0]));
 
@@ -309,7 +312,7 @@ public enum Catalog {
 				SealShard.class, BrokenStaff.class, CloakScrap.class, BowFragment.class, BrokenHilt.class,
 				TornPage.class,BrokenPackage.class, MatchaPudding.class, MetalFragment.class, BrokenTool.class, RoyalJewelry.class, BottledEnergy.class,
 				ScrollOfMetamorphosis.class,ScrollOfSublimation.class, RedEnvelope.class, SpecialPackage.class, RubbingsTome.class,
-				ScrollOfExtraction.class);
+				ScrollOfExtraction.class, SourWineAroma.class);
 
 		TREASURES.addItems(
 				MuiscaGoldenRaft.class,

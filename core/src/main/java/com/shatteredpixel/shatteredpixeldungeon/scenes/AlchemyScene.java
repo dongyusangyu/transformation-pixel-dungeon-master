@@ -854,12 +854,18 @@ public class AlchemyScene extends PixelScene {
 		updateState();
 		//we reset the quantity in case the result was merged into another stack in the backpack
 		result.quantity(resultQuantity);
-		outputs[0].item(result);
+		if (shouldShowCraftedResult(Recipe.findRecipes(filterInput(Item.class)).size())) {
+			outputs[0].item(result);
+		}
 		if(hero!=null && hero.pointsNegative(Talent.ALCHEMY_ACCIDENT)> Random.Int(10)){
 			Game.switchScene(GameScene.class);
 			//Game.instance.bombExplodePos=Dungeon.hero.pos;
 
 		}
+	}
+
+	static boolean shouldShowCraftedResult(int remainingRecipeCount) {
+		return remainingRecipeCount == 0;
 	}
 
 	static boolean returnsRemainderAfterCraft(Class<? extends Item> itemClass) {

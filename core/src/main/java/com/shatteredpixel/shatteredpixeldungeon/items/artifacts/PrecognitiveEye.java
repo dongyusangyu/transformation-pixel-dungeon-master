@@ -36,6 +36,9 @@ public class PrecognitiveEye extends Artifact {
 
 	public static final String AC_ACTIVATE = "ACTIVATE";
 	private static final int MAX_LEVEL = 10;
+	private static final int MOMENTARY_FORESIGHT_BASE_COST = 50;
+	private static final int MOMENTARY_FORESIGHT_COST_PER_LEVEL = 2;
+	private static final int ACTIVE_MOMENTARY_FORESIGHT_USES = 1;
 	private static final int HEAT_LIMIT = 10;
 	private static final int HEAT_DECAY_TURNS = 10;
 	private static final int OVERHEAT_TURNS = 100;
@@ -58,8 +61,13 @@ public class PrecognitiveEye extends Artifact {
 		return 100 + 50 * level;
 	}
 
-	public static int momentaryForesightUses(int level) {
-		return Math.max(1, (level + 1) / 2);
+	public static int momentaryForesightChargeCost(int level) {
+		int boundedLevel = Math.max(0, Math.min(MAX_LEVEL, level));
+		return MOMENTARY_FORESIGHT_BASE_COST - MOMENTARY_FORESIGHT_COST_PER_LEVEL * boundedLevel;
+	}
+
+	public static int activeMomentaryForesightUses() {
+		return ACTIVE_MOMENTARY_FORESIGHT_USES;
 	}
 
 	public static int trinityDodgeUses(int spiritFormPoints) {
@@ -92,9 +100,8 @@ public class PrecognitiveEye extends Artifact {
 			} else if (!canActivate(hero)) {
 				GLog.w(Messages.get(this, "cannot_activate"));
 			} else {
-				charge = 0;
-				partialCharge = 0;
-				Buff.affect(hero, MomentaryForesight.class).set(momentaryForesightUses(level()), true);
+				charge -= momentaryForesightChargeCost(level());
+				Buff.affect(hero, MomentaryForesight.class).set(activeMomentaryForesightUses(), true);
 				Talent.onArtifactUsed(hero);
 				hero.spendAndNext(Actor.TICK);
 				updateQuickslot();
@@ -103,7 +110,7 @@ public class PrecognitiveEye extends Artifact {
 	}
 
 	private boolean canActivate(Hero hero) {
-		return level() > 0 && charge >= chargeCap && isEquipped(hero) && !cursed
+		return charge >= momentaryForesightChargeCost(level()) && isEquipped(hero) && !cursed
 				&& hero.buff(MagicImmune.class) == null && hero.buff(PrecognitiveOverheat.class) == null;
 	}
 

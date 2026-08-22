@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ public final class TowerBossGenerator {
 
     public static final String PESTILENCE_KNIGHT_ID = "pestilence_knight";
     public static final String DEATH_KNIGHT_ID = "death_knight";
+    public static final String GENTLEMAN_ELF_ID = "gentleman_elf";
     private static final long SELECTION_SALT = 0x50455354494C454EL;
 
     private static final List<Entry> ENTRIES;
@@ -28,6 +30,8 @@ public final class TowerBossGenerator {
                 PestilenceKnight::new));
         entries.add(new Entry(DEATH_KNIGHT_ID, 1, 1, Integer.MAX_VALUE,
                 DeathKnight::new));
+        entries.add(new Entry(GENTLEMAN_ELF_ID, 1, 1, Integer.MAX_VALUE,
+                GentlemanElf::new));
         ENTRIES = Collections.unmodifiableList(entries);
 
         LinkedHashMap<String, Entry> byId = new LinkedHashMap<>();

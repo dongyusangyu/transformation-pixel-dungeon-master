@@ -34,8 +34,10 @@ public class TowerDictionaryEntriesTest {
 			"tower_heavy_crabification",
 			"tower_marsh_slime",
 			"tower_rune_spinner",
+			"tower_chain_shadow_thief",
 			"tower_pestilence_knight",
-			"tower_death_knight"
+			"tower_death_knight",
+			"tower_gentleman_elf"
 	);
 	private static final List<String> TOWER_ACTOR_KEYS = Arrays.asList(
 			"actors.mobs.tmobs.camouflagegnoll",
@@ -54,8 +56,10 @@ public class TowerDictionaryEntriesTest {
 			"actors.mobs.tmobs.heavycrabification",
 			"actors.mobs.tmobs.marshslime",
 			"actors.mobs.tmobs.runespinner",
+			"actors.mobs.tmobs.chainshadowthief",
 			"actors.mobs.tboss.pestilenceknight",
-			"actors.mobs.tboss.deathknight"
+			"actors.mobs.tboss.deathknight",
+			"actors.mobs.tboss.gentlemanelf"
 	);
 
 	@Test

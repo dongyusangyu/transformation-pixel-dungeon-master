@@ -3,7 +3,12 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -19,12 +24,34 @@ public class PrecognitiveEyeTest {
 	}
 
 	@Test
-	public void progressionAndMomentaryForesightUseSpecifiedThresholds() {
+	public void progressionAndMomentaryForesightUsesFixedActiveCount() {
 		assertEquals(100, PrecognitiveEye.expToNextLevel(0));
 		assertEquals(550, PrecognitiveEye.expToNextLevel(9));
-		assertEquals(1, PrecognitiveEye.momentaryForesightUses(1));
-		assertEquals(3, PrecognitiveEye.momentaryForesightUses(5));
-		assertEquals(5, PrecognitiveEye.momentaryForesightUses(10));
+		assertEquals(1, PrecognitiveEye.activeMomentaryForesightUses());
+	}
+
+	@Test
+	public void activeChargeCostScalesFromFiftyToThirty() {
+		assertEquals(50, PrecognitiveEye.momentaryForesightChargeCost(0));
+		assertEquals(48, PrecognitiveEye.momentaryForesightChargeCost(1));
+		assertEquals(40, PrecognitiveEye.momentaryForesightChargeCost(5));
+		assertEquals(30, PrecognitiveEye.momentaryForesightChargeCost(10));
+	}
+
+	@Test
+	public void activeChargeCostIsBoundedOutsideTheNormalLevelRange() {
+		assertEquals(50, PrecognitiveEye.momentaryForesightChargeCost(-1));
+		assertEquals(30, PrecognitiveEye.momentaryForesightChargeCost(11));
+	}
+
+	@Test
+	public void levelZeroIsNotBlockedFromArtifactCharging() throws IOException {
+		String source = sourceFile();
+		String canCharge = source.substring(source.indexOf("private boolean canCharge"),
+				source.indexOf("private void gainCharge"));
+
+		assertTrue(canCharge.contains("target.buff(MagicImmune.class)"));
+		assertFalse(canCharge.contains("level()"));
 	}
 
 	@Test
@@ -60,5 +87,14 @@ public class PrecognitiveEyeTest {
 		PrecognitiveEye.MomentaryForesight foresight = new PrecognitiveEye.MomentaryForesight().set(2);
 		assertTrue(foresight.consumeDodge());
 		assertEquals(1, foresight.uses());
+	}
+
+	private static String sourceFile() throws IOException {
+		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
+		Path coreDirectory = workingDirectory.resolve("core");
+		if (!Files.isDirectory(coreDirectory)) coreDirectory = workingDirectory;
+		return new String(Files.readAllBytes(coreDirectory.resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/artifacts/PrecognitiveEye.java")),
+				StandardCharsets.UTF_8);
 	}
 }

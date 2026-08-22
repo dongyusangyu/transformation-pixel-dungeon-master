@@ -37,7 +37,7 @@ import com.watabou.utils.Random;
 public class EarthlySerpent extends Mob {
 
 	private static final int BASE_HT = 240;
-	private static final int MAX_HT = BASE_HT * 2;
+	private static final int MAX_HT = 360;
 	private static final int MAX_GROWTH_DAMAGE = 120;
 	private static final float BASE_ATTACK_DELAY = 0.5f;
 	private static final float REGENERATION_INTERVAL = 1f;
@@ -159,7 +159,7 @@ public class EarthlySerpent extends Mob {
 		regenerationProgress += elapsed;
 		while (regenerationProgress >= REGENERATION_INTERVAL) {
 			regenerationProgress -= REGENERATION_INTERVAL;
-			heal((int) Math.ceil(HT * 0.1f), false);
+			heal((int) Math.ceil(HT * 0.05f), true);
 		}
 	}
 
