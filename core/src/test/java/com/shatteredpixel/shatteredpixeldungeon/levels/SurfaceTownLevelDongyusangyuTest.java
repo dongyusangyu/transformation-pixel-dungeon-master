@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.TestStatue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Dongyusangyu;
@@ -19,6 +20,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SurfaceTownLevelDongyusangyuTest {
+
+	@Test
+	public void selectsMatchingBaseTilesAndWaterForTheStartupSeason() {
+		SurfaceTownLevel level = testLevel();
+
+		SurfaceSeason.initializeForMonth(3);
+		assertEquals(Assets.Environment.TILES_SURFACE_LUSH, level.tilesTex());
+		assertEquals(Assets.Environment.WATER_SURFACE_LUSH, level.waterTex());
+
+		SurfaceSeason.initializeForMonth(11);
+		assertEquals(Assets.Environment.TILES_SURFACE_WINTER, level.tilesTex());
+		assertEquals(Assets.Environment.WATER_SURFACE_WINTER, level.waterTex());
+
+		SurfaceSeason.initializeForMonth(3);
+	}
 
 	@Test
 	public void buildsCompactForestTownWithoutDownstairs() {
@@ -151,6 +167,88 @@ public class SurfaceTownLevelDongyusangyuTest {
 			}
 		}
 		assertTrue(hasInteriorFloorVisual);
+	}
+
+	@Test
+	public void usesFiveDeterministicGrassTilesWithoutVarianceNoise() {
+		SurfaceTownLevel level = testLevel();
+
+		level.create();
+
+		int[] used = new int[5];
+		for (int y = 0; y < level.height(); y++) {
+			for (int x = 0; x < level.width(); x++) {
+				int tile = SurfaceTownLevel.SurfaceGrassTilemap.tileForCell(level, x, y);
+				if (tile == -1) {
+					continue;
+				}
+				int variant = SurfaceTownLevel.SurfaceGrassTilemap.variantForTile(tile);
+				assertTrue(variant >= 0 && variant < used.length);
+				used[variant]++;
+			}
+		}
+		for (int count : used) {
+			assertTrue("every surface grass tile should be used", count > 0);
+		}
+
+		assertEquals(
+				SurfaceTownLevel.SurfaceGrassTilemap.tileForTerrain(Terrain.GRASS, 3, 3),
+				SurfaceTownLevel.SurfaceGrassTilemap.tileForTerrain(Terrain.GRASS, 5, 5));
+		assertEquals(
+				SurfaceTownLevel.SurfaceGrassTilemap.tileForTerrain(Terrain.GRASS, 3, 3),
+				SurfaceTownLevel.SurfaceGrassTilemap.tileForTerrain(Terrain.GRASS, 3, 4));
+
+		boolean hasGrassVisual = false;
+		for (CustomTilemap tile : level.customTiles) {
+			if (tile instanceof SurfaceTownLevel.SurfaceGrassTilemap) {
+				hasGrassVisual = true;
+				break;
+			}
+		}
+		assertTrue(hasGrassVisual);
+	}
+
+	@Test
+	public void removesEmbeddedGrassSpecklesWithoutRemovingFlowers() {
+		assertEquals(0x549B42FF,
+				SurfaceTownLevel.SurfaceGrassTilemap.cleanGrassPixel(0x57A244FF));
+		assertEquals(0x549B42FF,
+				SurfaceTownLevel.SurfaceGrassTilemap.cleanGrassPixel(0x549B42FF));
+		assertEquals(0xD8FFBFFF,
+				SurfaceTownLevel.SurfaceGrassTilemap.cleanGrassPixel(0xD8FFBFFF));
+		assertEquals(0xEEFF7DFF,
+				SurfaceTownLevel.SurfaceGrassTilemap.cleanGrassPixel(0xEEFF7DFF));
+	}
+
+	@Test
+	public void keepsFloweredGrassSparseWhileUsingEveryFlowerVariant() {
+		int flowerBlocks = 0;
+		int totalBlocks = 0;
+		boolean[] flowerVariants = new boolean[3];
+
+		for (int blockY = 0; blockY < 30; blockY++) {
+			for (int blockX = 0; blockX < 30; blockX++) {
+				int tile = SurfaceTownLevel.SurfaceGrassTilemap.tileForTerrain(
+						Terrain.GRASS, blockX * 3, blockY * 3);
+				totalBlocks++;
+				if (tile == DungeonTileSheet.FLOOR) {
+					flowerBlocks++;
+					flowerVariants[0] = true;
+				} else if (tile == DungeonTileSheet.GRASS) {
+					flowerBlocks++;
+					flowerVariants[1] = true;
+				} else if (tile == DungeonTileSheet.EMBERS_ALT) {
+					flowerBlocks++;
+					flowerVariants[2] = true;
+				}
+			}
+		}
+
+		assertTrue(flowerBlocks * 5 >= totalBlocks * 9 / 10);
+		assertTrue(flowerBlocks * 4 <= totalBlocks);
+		for (boolean used : flowerVariants) {
+			assertTrue("every flowered grass tile should remain in use", used);
+		}
 	}
 
 	@Test
