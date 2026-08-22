@@ -37,6 +37,31 @@ public class SurfaceTownLevelDongyusangyuTest {
 	}
 
 	@Test
+	public void keepsEverySurfaceOverlayOnTheSameSeasonalTileset() {
+		SurfaceSeason.initializeForMonth(3);
+		assertEquals(Assets.Environment.TILES_SURFACE_LUSH,
+				SurfaceTownLevel.SurfacePathTilemap.tilesTexture());
+		assertEquals(Assets.Environment.TILES_SURFACE_LUSH,
+				SurfaceTownLevel.SurfaceGrassTilemap.tilesTexture());
+		assertEquals(Assets.Environment.TILES_SURFACE_LUSH,
+				SurfaceTownLevel.SurfaceInteriorFloorTilemap.tilesTexture());
+		assertEquals("surface-town-clean-grass-lush-v1",
+				SurfaceTownLevel.SurfaceGrassTilemap.cleanGrassTextureKey());
+
+		SurfaceSeason.initializeForMonth(11);
+		assertEquals(Assets.Environment.TILES_SURFACE_WINTER,
+				SurfaceTownLevel.SurfacePathTilemap.tilesTexture());
+		assertEquals(Assets.Environment.TILES_SURFACE_WINTER,
+				SurfaceTownLevel.SurfaceGrassTilemap.tilesTexture());
+		assertEquals(Assets.Environment.TILES_SURFACE_WINTER,
+				SurfaceTownLevel.SurfaceInteriorFloorTilemap.tilesTexture());
+		assertEquals("surface-town-clean-grass-winter-v1",
+				SurfaceTownLevel.SurfaceGrassTilemap.cleanGrassTextureKey());
+
+		SurfaceSeason.initializeForMonth(3);
+	}
+
+	@Test
 	public void buildsCompactForestTownWithoutDownstairs() {
 		SurfaceTownLevel level = testLevel();
 
@@ -188,7 +213,7 @@ public class SurfaceTownLevelDongyusangyuTest {
 			}
 		}
 		for (int count : used) {
-			assertTrue("every surface grass tile should be used", count > 0);
+			assertTrue("every surface grass tile should be used: " + java.util.Arrays.toString(used), count > 0);
 		}
 
 		assertEquals(
