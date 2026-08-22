@@ -45,7 +45,8 @@ public class Assets {
 		public static final String TILES_CAVES  = "environment/tiles_caves.png";
 		public static final String TILES_CITY   = "environment/tiles_city.png";
 		public static final String TILES_HALLS  = "environment/tiles_halls.png";
-		public static final String TILES_SURFACE_LUSH  = "environment/tiles_surface_lush.png";
+		public static final String TILES_SURFACE_LUSH   = "environment/tiles_surface_lush.png";
+		public static final String TILES_SURFACE_WINTER = "environment/tiles_surface_winter.png";
 		public static final String TILES_CHINESE_HALL  = "environment/tiles_chinese_hall.png";
 		public static final String TILES_GOTHIC_CASTLE = "environment/tiles_gothic_castle.png";
 		public static final String TILES_ASTRAL_LIBRARY = "environment/tiles_astral_library.png";
@@ -61,7 +62,8 @@ public class Assets {
 		public static final String WATER_CAVES  = "environment/water2.png";
 		public static final String WATER_CITY   = "environment/water3.png";
 		public static final String WATER_HALLS  = "environment/water4.png";
-		public static final String WATER_SURFACE_LUSH  = "environment/water_surface_lush.png";
+		public static final String WATER_SURFACE_LUSH   = "environment/water_surface_lush.png";
+		public static final String WATER_SURFACE_WINTER = "environment/water_surface_winter.png";
 		public static final String WATER_CHINESE_HALL  = "environment/water_chinese_hall.png";
 		public static final String WATER_GOTHIC_CASTLE = "environment/water_gothic_castle.png";
 		public static final String WATER_ASTRAL_LIBRARY = "environment/water_astral_library.png";
@@ -409,6 +411,7 @@ public class Assets {
 		public static final String HEAVY_CRABIFICATION = "sprites/heavy_crabification.png";
 		public static final String MARSH_SLIME = "sprites/marsh_slime.png";
 		public static final String RUNE_SPINNER = "sprites/rune_spinner.png";
+		public static final String CHAIN_SHADOW_THIEF = "sprites/chain_shadow_thief.png";
 		public static final String EARTHLY_SERPENT = "sprites/earthly_serpent.png";
 		public static final String OBSCURA = "sprites/obscura.png";
 		public static final String WILD_DREAD = "sprites/wild_dread.png";
@@ -416,6 +419,8 @@ public class Assets {
 		public static final String SOUL_COLLECTOR = "sprites/soul_collector.png";
 		public static final String PESTILENCE_KNIGHT = "sprites/pestilence_knight.png";
 		public static final String DEATH_KNIGHT = "sprites/death_knight.png";
+		public static final String GENTLEMAN_ELF = "sprites/gentleman_elf.png";
+		public static final String ELF_WINE_CUP = "sprites/elf_wine_cup.png";
 		public static final String GHOUL    = "sprites/ghoul.png";
 		public static final String RIPPER   = "sprites/ripper.png";
 		public static final String SPAWNER  = "sprites/spawner.png";
