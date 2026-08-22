@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
+import com.badlogic.gdx.graphics.Pixmap;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -58,6 +59,8 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTileSheet;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.watabou.gltextures.SmartTexture;
+import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Tilemap;
 import com.watabou.utils.Callback;
@@ -127,18 +130,18 @@ public class SurfaceTownLevel extends Level {
 
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_SURFACE_LUSH;
+		return SurfaceSeason.tilesTexture();
 	}
 
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_SURFACE_LUSH;
+		return SurfaceSeason.waterTexture();
 	}
 
 	@Override
 	protected boolean build() {
 		setSize(WIDTH, HEIGHT);
-		fill(Terrain.GRASS);
+		//fill(Terrain.GRASS);
 		paintForest();
 		paintLake();
 		paintVillagePaths();
@@ -152,6 +155,7 @@ public class SurfaceTownLevel extends Level {
 		paintLockedManor();
 		paintDongyusangyuHouseBookshelves();
 		paintTownDetails();
+		customTiles.add(new SurfaceGrassTilemap());
 		customTiles.add(new SurfacePathTilemap());
 		customTiles.add(new SurfaceInteriorFloorTilemap());
 
@@ -313,12 +317,16 @@ public class SurfaceTownLevel extends Level {
 				{14, 24}, {14, 25},
 				{30, 26}, {31, 26}
 		};
+        /*
 		for (int[] point : decorativeGrass) {
 			int pos = cell(point[0], point[1]);
 			if (map[pos] == Terrain.GRASS) {
 				map[pos] = Terrain.HIGH_GRASS;
 			}
 		}
+
+         */
+
 	}
 
 	public static class SurfacePathTilemap extends CustomTilemap {
@@ -384,6 +392,128 @@ public class SurfaceTownLevel extends Level {
 					|| terrain == Terrain.CRYSTAL_DOOR
 					|| terrain == Terrain.ENTRANCE
 					|| terrain == Terrain.EXIT;
+		}
+	}
+
+	public static class SurfaceGrassTilemap extends CustomTilemap {
+
+		private static final int GRASS_BLOCK_SIZE = 3;
+		private static final int GRASS_SPECKLE_RGBA = 0x57A244FF;
+		private static final int GRASS_BASE_RGBA = 0x549B42FF;
+		private static final String CLEAN_GRASS_TEXTURE = "surface-town-clean-grass-v1";
+		private static final int[] SURFACE_GRASS_TILES = {
+				DungeonTileSheet.FLOOR,
+				DungeonTileSheet.GRASS,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS_ALT
+		};
+		private static final int[] SURFACE_GRASS_PATTERN = {
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.FLOOR,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS_ALT
+		};
+
+		{
+			texture = Assets.Environment.TILES_SURFACE_LUSH;
+			tileW = WIDTH;
+			tileH = HEIGHT;
+		}
+
+		@Override
+		public Tilemap create() {
+			texture = cleanGrassTexture();
+			Tilemap visual = super.create();
+			Level level = Dungeon.level;
+			int[] data = new int[tileW * tileH];
+
+			for (int y = 0; y < tileH; y++) {
+				for (int x = 0; x < tileW; x++) {
+					int index = x + y * tileW;
+					data[index] = tileForCell(level, x, y);
+				}
+			}
+
+			visual.map(data, tileW);
+			return visual;
+		}
+
+		private static Object cleanGrassTexture() {
+			if (TextureCache.contains(CLEAN_GRASS_TEXTURE)) {
+				return CLEAN_GRASS_TEXTURE;
+			}
+
+			Pixmap source = TextureCache.getBitmap(Assets.Environment.TILES_SURFACE_LUSH);
+			if (source == null) {
+				return Assets.Environment.TILES_SURFACE_LUSH;
+			}
+
+			SmartTexture cleaned = TextureCache.create(
+					CLEAN_GRASS_TEXTURE, source.getWidth(), source.getHeight());
+			cleaned.filter(SmartTexture.NEAREST, SmartTexture.NEAREST);
+			cleaned.bitmap.setBlending(Pixmap.Blending.None);
+			cleaned.bitmap.drawPixmap(source, 0, 0);
+
+			int tilesPerRow = source.getWidth() / SIZE;
+			for (int tile : SURFACE_GRASS_TILES) {
+				int left = (tile % tilesPerRow) * SIZE;
+				int top = (tile / tilesPerRow) * SIZE;
+				for (int y = top; y < top + SIZE; y++) {
+					for (int x = left; x < left + SIZE; x++) {
+						int color = source.getPixel(x, y);
+						cleaned.bitmap.drawPixel(x, y, cleanGrassPixel(color));
+					}
+				}
+			}
+
+			source.dispose();
+			return CLEAN_GRASS_TEXTURE;
+		}
+
+		static int cleanGrassPixel(int color) {
+			return color == GRASS_SPECKLE_RGBA ? GRASS_BASE_RGBA : color;
+		}
+
+		static int tileForCell(Level level, int x, int y) {
+			if (x < 0 || y < 0 || x >= level.width() || y >= level.height()) {
+				return -1;
+			}
+			return tileForTerrain(level.map[x + y * level.width()], x, y);
+		}
+
+		static int tileForTerrain(int terrain, int x, int y) {
+			if (terrain != Terrain.GRASS
+					&& terrain != Terrain.HIGH_GRASS
+					&& terrain != Terrain.FURROWED_GRASS) {
+				return -1;
+			}
+
+			int blockX = x / GRASS_BLOCK_SIZE;
+			int blockY = y / GRASS_BLOCK_SIZE;
+			int hash = blockX * 0x1F1F1F1F ^ blockY * 0x5F356495;
+			hash ^= hash >>> 16;
+			return SURFACE_GRASS_PATTERN[Math.floorMod(hash, SURFACE_GRASS_PATTERN.length)];
+		}
+
+		static int variantForTile(int tile) {
+			for (int i = 0; i < SURFACE_GRASS_TILES.length; i++) {
+				if (SURFACE_GRASS_TILES[i] == tile) {
+					return i;
+				}
+			}
+			return -1;
 		}
 	}
 
@@ -558,7 +688,6 @@ public class SurfaceTownLevel extends Level {
 		items.add(missile);
 
 		items.add(TippedDart.randomTipped(2));
-		items.add(new Alchemize().quantity(Random.IntRange(2, 3)));
 		items.add(new PotionOfHealing());
 		items.add(Generator.randomUsingDefaults(Generator.Category.POTION));
 		items.add(Generator.randomUsingDefaults(Generator.Category.POTION));
@@ -586,8 +715,6 @@ public class SurfaceTownLevel extends Level {
 		}
 		items.add(new Ankh());
 		items.add(new StoneOfAugmentation());
-		items.add(new Torch());
-		items.add(new Torch());
 		items.add(new Torch());
 		items.add(new Stylus());
 		items.add(new ScrollOfSublimation().type("GOO"));
