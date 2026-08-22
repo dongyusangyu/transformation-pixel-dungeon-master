@@ -331,8 +331,12 @@ public class SurfaceTownLevel extends Level {
 
 	public static class SurfacePathTilemap extends CustomTilemap {
 
+		static String tilesTexture() {
+			return SurfaceSeason.tilesTexture();
+		}
+
 		{
-			texture = Assets.Environment.TILES_SURFACE_LUSH;
+			texture = tilesTexture();
 			tileW = WIDTH;
 			tileH = HEIGHT;
 		}
@@ -400,7 +404,6 @@ public class SurfaceTownLevel extends Level {
 		private static final int GRASS_BLOCK_SIZE = 3;
 		private static final int GRASS_SPECKLE_RGBA = 0x57A244FF;
 		private static final int GRASS_BASE_RGBA = 0x549B42FF;
-		private static final String CLEAN_GRASS_TEXTURE = "surface-town-clean-grass-v1";
 		private static final int[] SURFACE_GRASS_TILES = {
 				DungeonTileSheet.FLOOR,
 				DungeonTileSheet.GRASS,
@@ -409,25 +412,23 @@ public class SurfaceTownLevel extends Level {
 				DungeonTileSheet.EMBERS_ALT
 		};
 		private static final int[] SURFACE_GRASS_PATTERN = {
-				DungeonTileSheet.EMBERS,
-				DungeonTileSheet.GRASS_ALT,
-				DungeonTileSheet.EMBERS,
 				DungeonTileSheet.FLOOR,
-				DungeonTileSheet.GRASS_ALT,
-				DungeonTileSheet.EMBERS,
-				DungeonTileSheet.GRASS_ALT,
-				DungeonTileSheet.EMBERS,
 				DungeonTileSheet.GRASS,
-				DungeonTileSheet.GRASS_ALT,
-				DungeonTileSheet.EMBERS,
-				DungeonTileSheet.GRASS_ALT,
 				DungeonTileSheet.EMBERS,
 				DungeonTileSheet.GRASS_ALT,
 				DungeonTileSheet.EMBERS_ALT
 		};
 
+		static String tilesTexture() {
+			return SurfaceSeason.tilesTexture();
+		}
+
+		static String cleanGrassTextureKey() {
+			return SurfaceSeason.grassTextureCacheKey();
+		}
+
 		{
-			texture = Assets.Environment.TILES_SURFACE_LUSH;
+			texture = tilesTexture();
 			tileW = WIDTH;
 			tileH = HEIGHT;
 		}
@@ -451,17 +452,19 @@ public class SurfaceTownLevel extends Level {
 		}
 
 		private static Object cleanGrassTexture() {
-			if (TextureCache.contains(CLEAN_GRASS_TEXTURE)) {
-				return CLEAN_GRASS_TEXTURE;
+			String sourceTexture = tilesTexture();
+			String cacheKey = cleanGrassTextureKey();
+			if (TextureCache.contains(cacheKey)) {
+				return cacheKey;
 			}
 
-			Pixmap source = TextureCache.getBitmap(Assets.Environment.TILES_SURFACE_LUSH);
+			Pixmap source = TextureCache.getBitmap(sourceTexture);
 			if (source == null) {
-				return Assets.Environment.TILES_SURFACE_LUSH;
+				return sourceTexture;
 			}
 
 			SmartTexture cleaned = TextureCache.create(
-					CLEAN_GRASS_TEXTURE, source.getWidth(), source.getHeight());
+					cacheKey, source.getWidth(), source.getHeight());
 			cleaned.filter(SmartTexture.NEAREST, SmartTexture.NEAREST);
 			cleaned.bitmap.setBlending(Pixmap.Blending.None);
 			cleaned.bitmap.drawPixmap(source, 0, 0);
@@ -479,7 +482,7 @@ public class SurfaceTownLevel extends Level {
 			}
 
 			source.dispose();
-			return CLEAN_GRASS_TEXTURE;
+			return cacheKey;
 		}
 
 		static int cleanGrassPixel(int color) {
@@ -502,9 +505,8 @@ public class SurfaceTownLevel extends Level {
 
 			int blockX = x / GRASS_BLOCK_SIZE;
 			int blockY = y / GRASS_BLOCK_SIZE;
-			int hash = blockX * 0x1F1F1F1F ^ blockY * 0x5F356495;
-			hash ^= hash >>> 16;
-			return SURFACE_GRASS_PATTERN[Math.floorMod(hash, SURFACE_GRASS_PATTERN.length)];
+			int patternIndex = Math.floorMod(blockX * 3 + blockY * 2, SURFACE_GRASS_PATTERN.length);
+			return SURFACE_GRASS_PATTERN[patternIndex];
 		}
 
 		static int variantForTile(int tile) {
@@ -519,8 +521,12 @@ public class SurfaceTownLevel extends Level {
 
 	public static class SurfaceInteriorFloorTilemap extends CustomTilemap {
 
+		static String tilesTexture() {
+			return SurfaceSeason.tilesTexture();
+		}
+
 		{
-			texture = Assets.Environment.TILES_SURFACE_LUSH;
+			texture = tilesTexture();
 			tileW = WIDTH;
 			tileH = HEIGHT;
 		}
