@@ -48,6 +48,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -377,7 +378,11 @@ public class Heap implements Bundlable {
 	}
 	
 	public void destroy() {
-		Dungeon.level.heaps.remove( this.pos );
+		destroy(Dungeon.level);
+	}
+
+	public void destroy(Level owner) {
+		owner.heaps.remove( this.pos );
 		if (sprite != null) {
 			sprite.kill();
 		}

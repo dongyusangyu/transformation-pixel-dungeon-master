@@ -149,6 +149,6 @@ public class TwoHandedGreatsword extends Greatsword {
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return Messages.get(this, "upgrade_ability_stat");
+		return augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level));
 	}
 }

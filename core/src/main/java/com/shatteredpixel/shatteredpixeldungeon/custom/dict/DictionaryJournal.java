@@ -245,8 +245,10 @@ public enum DictionaryJournal {
         MOBS.d.put("tower_heavy_crabification",        DictSpriteSheet.TOWER_HEAVY_CRABIFICATION);
         MOBS.d.put("tower_marsh_slime",                DictSpriteSheet.TOWER_MARSH_SLIME);
         MOBS.d.put("tower_rune_spinner",               DictSpriteSheet.TOWER_RUNE_SPINNER);
+        MOBS.d.put("tower_chain_shadow_thief",         DictSpriteSheet.TOWER_CHAIN_SHADOW_THIEF);
         MOBS.d.put("tower_pestilence_knight",          DictSpriteSheet.TOWER_PESTILENCE_KNIGHT);
         MOBS.d.put("tower_death_knight",               DictSpriteSheet.TOWER_DEATH_KNIGHT);
+        MOBS.d.put("tower_gentleman_elf",              DictSpriteSheet.TOWER_GENTLEMAN_ELF);
 
 
         //ring

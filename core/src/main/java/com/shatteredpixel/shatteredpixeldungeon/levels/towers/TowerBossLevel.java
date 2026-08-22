@@ -21,7 +21,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.ElfWineCup;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfIllusion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
+import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
@@ -44,6 +52,7 @@ public class TowerBossLevel extends TowerLevel {
 	private PestilenceArenaController pestilenceArena;
 	private transient boolean purifierClearingMiasma;
 	private transient int reservedBossSpawnCell = -1;
+	private GentlemanElfArena gentlemanElfArena;
 
 	@Override
 	public String tilesTex() {
@@ -261,8 +270,136 @@ public class TowerBossLevel extends TowerLevel {
 
 	protected void launchBoss(TowerBoss boss) {
 		boss.aggro(Dungeon.hero);
-		BossHealthBar.assignBoss(boss);
 		GameScene.add(boss, 1f);
+		// Bind only after GameScene has inserted the boss into Dungeon.level.mobs.
+		// BossHealthBar.update() clears assignments that are not present in the level.
+		BossHealthBar.assignBoss(boss);
+		if (boss instanceof GentlemanElf && gentlemanElfArena != null) {
+			Actor.add(gentlemanElfArena);
+			((GentlemanElf) boss).notice();
+		}
+	}
+
+	public GentlemanElfArena prepareGentlemanElfArena(final GentlemanElf boss) {
+		gentlemanElfArena = new GentlemanElfArena(gentlemanElfHost(boss));
+		return gentlemanElfArena;
+	}
+
+	private GentlemanElfArena.Host gentlemanElfHost(final GentlemanElf boss) {
+		return new GentlemanElfArena.Host() {
+			@Override public GentlemanElf boss() { return boss; }
+			@Override public Iterable<Char> characters() { return Actor.chars(); }
+			@Override public Actor actorById(int id) {
+				if (boss.id() == id) return boss;
+				if (Dungeon.hero != null && Dungeon.hero.id() == id) return Dungeon.hero;
+				for (Mob mob : mobs) if (mob.id() == id) return mob;
+				return Actor.findById(id);
+			}
+			@Override public void warnBanquet(int turnsUntilResolution) {
+				if (boss.sprite != null) boss.yell(Messages.get(boss, "banquet"));
+				if (boss.sprite != null && boss.sprite.parent != null) {
+					for (int cell = 0; cell < length(); cell++) {
+						if (passable[cell] && TowerBossLayout.isArenaCell(cell)) {
+							boss.sprite.parent.addToBack(new TargetedCell(cell, 0x7560C9));
+						}
+					}
+				}
+			}
+			@Override public void resolveBanquet(Iterable<Char> targets) {
+				for (Char target : targets) {
+					target.damage(10, gentlemanElfArena,
+							com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag.MAGICAL);
+					com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff.affect(target,
+							com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo.class, 3f);
+					com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff.affect(target,
+							com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness.class, 3f);
+				}
+			}
+			@Override public boolean respawnCup() {
+				if (gentlemanElfArena == null || gentlemanElfArena.cupId() >= 0) return false;
+				for (Char character : Actor.chars()) {
+					if (character == boss || character instanceof GentlemanElfIllusion
+							|| character instanceof ElfWineCup) continue;
+					if (character.buff(Exhilaration.class) != null) Drunkenness.affect(character);
+				}
+				ElfWineCup cup = new ElfWineCup();
+				cup.listener(gentlemanElfArena);
+				int cell = selectGentlemanCupCell(boss);
+				if (cell < 0) return false;
+				cup.pos = cell;
+				GameScene.add(cup, 1f);
+				gentlemanElfArena.cupId(cup.id());
+				if (boss.sprite != null) boss.yell(Messages.get(boss, "cup_spawn"));
+				Splash.at(cell, 0x55CC66, 12);
+				return true;
+			}
+			@Override public void onCupDestroyed(Char lastHit) { boss.applyCupReward(lastHit); }
+			@Override public void showTrueBodyHint() {
+				if (Dungeon.hero != null && Dungeon.hero.buff(Drunkenness.class) != null) {
+					Splash.at(boss.pos, 0x4B8C50, 1);
+				}
+			}
+			@Override public void spawnIllusions() {
+				ArrayList<Integer> positions = new ArrayList<>();
+				positions.add(boss.pos);
+				for (int i = 0; i < 2; i++) {
+					int cell = selectGentlemanDerivedCell(boss.pos, positions);
+					if (cell < 0) break;
+					positions.add(cell);
+				}
+				Random.shuffle(positions);
+				int shuffledBossCell = positions.remove(0);
+				if (shuffledBossCell != boss.pos && boss.sprite != null) {
+					ScrollOfTeleportation.appear(boss, shuffledBossCell);
+				}
+				ArrayList<Integer> ids = new ArrayList<>();
+				for (int cell : positions) {
+					GentlemanElfIllusion illusion = new GentlemanElfIllusion(boss);
+					illusion.pos = cell;
+					GameScene.add(illusion, 1f);
+					ids.add(illusion.id());
+					Splash.at(cell, 0x55CC66, 8);
+				}
+				int[] values = new int[ids.size()];
+				for (int i = 0; i < ids.size(); i++) values[i] = ids.get(i);
+				gentlemanElfArena.illusionIds(values);
+				boss.syncActiveIllusions(values.length);
+			}
+		};
+	}
+
+	private int selectGentlemanCupCell(GentlemanElf boss) {
+		ArrayList<Integer> preferred = new ArrayList<>();
+		ArrayList<Integer> fallback = new ArrayList<>();
+		for (int cell = 0; cell < length(); cell++) {
+			if (!isValidGentlemanDerivedCell(cell) || Actor.findChar(cell) != null) continue;
+			fallback.add(cell);
+			if (Dungeon.hero != null && distance(cell, Dungeon.hero.pos) >= 3
+					&& distance(cell, boss.pos) >= 3) {
+				preferred.add(cell);
+			}
+		}
+		return TowerBossLayout.selectRandomGentlemanCupCell(preferred, fallback);
+	}
+
+	private int selectGentlemanDerivedCell(int center, ArrayList<Integer> used) {
+		int best = -1;
+		int bestDistance = Integer.MAX_VALUE;
+		for (int cell = 0; cell < length(); cell++) {
+			if (!isValidGentlemanDerivedCell(cell) || Actor.findChar(cell) != null || used.contains(cell)) continue;
+			int d = distance(center, cell);
+			if (d < bestDistance || d == bestDistance && (best < 0 || cell < best)) {
+				best = cell;
+				bestDistance = d;
+			}
+		}
+		return best;
+	}
+
+	private boolean isValidGentlemanDerivedCell(int cell) {
+		return cell >= 0 && cell < length() && passable[cell] && !solid[cell]
+				&& TowerBossLayout.isArenaCell(cell) && !TowerBossLayout.isProtectedCell(cell)
+				&& cell != entrance() && cell != exit();
 	}
 
 	protected int selectBossSpawnCell() {
@@ -442,6 +579,7 @@ public class TowerBossLevel extends TowerLevel {
 		super.storeInBundle(bundle);
 		encounter.storeInBundle(bundle);
 		if (pestilenceArena != null) bundle.put(PESTILENCE_ARENA, pestilenceArena);
+		if (gentlemanElfArena != null) bundle.put("gentleman_elf_arena", gentlemanElfArena);
 	}
 
 	@Override
@@ -450,6 +588,30 @@ public class TowerBossLevel extends TowerLevel {
 		pestilenceArena = bundle.contains(PESTILENCE_ARENA)
 				? (PestilenceArenaController) bundle.get(PESTILENCE_ARENA) : null;
 		if (pestilenceArena != null) pestilenceArena.syncPurifierVisual(this);
+		gentlemanElfArena = bundle.contains("gentleman_elf_arena")
+				? (GentlemanElfArena) bundle.get("gentleman_elf_arena") : null;
+		if (gentlemanElfArena != null) {
+			boolean rebound = false;
+			for (Mob mob : mobs) {
+				if (mob instanceof GentlemanElf) {
+					GentlemanElf boss = (GentlemanElf) mob;
+					BossHealthBar.assignBoss(boss);
+					boss.bindArena(gentlemanElfArena);
+					gentlemanElfArena.bind(gentlemanElfHost(boss));
+					rebound = true;
+					break;
+				}
+			}
+			if (rebound && gentlemanElfArena.active()) Actor.add(gentlemanElfArena);
+		}
+		// A restored boss is already in mobs, so restore the UI binding after the
+		// level has rebuilt its actors. This also covers the other tower bosses.
+		for (Mob mob : mobs) {
+			if (mob instanceof TowerBoss && mob.isAlive()) {
+				BossHealthBar.assignBoss(mob);
+				break;
+			}
+		}
 		boolean exitUnlocked = map[TowerBossLayout.EXIT_GATE] == Terrain.UNLOCKED_EXIT;
 		encounter.restoreFromBundle(bundle, Dungeon.seed, Dungeon.depth, Dungeon.branch,
 				locked, hasRestoredTowerBoss(), exitUnlocked);

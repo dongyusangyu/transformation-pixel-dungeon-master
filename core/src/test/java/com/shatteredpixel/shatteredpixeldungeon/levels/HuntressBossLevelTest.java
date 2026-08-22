@@ -151,7 +151,7 @@ public class HuntressBossLevelTest {
 	}
 
 	@Test
-	public void sealedResurrectionResetRemovesFreshEntranceDarts() {
+	public void sealedResurrectionResetUsesTargetLevelWhenDungeonLevelIsUnavailable() {
 		HuntressBossLevel level = new HuntressBossLevel();
 		level.setSize(31, 32);
 		level.heaps = new com.watabou.utils.SparseArray<>();
@@ -162,7 +162,7 @@ public class HuntressBossLevelTest {
 			heap.items.add(allocateWithoutConstructor(BlindingDart.class));
 			level.heaps.put(cell, heap);
 		}
-		Dungeon.level = level;
+		Dungeon.level = null;
 
 		assertEquals(2, entranceDartHeapCount(level));
 

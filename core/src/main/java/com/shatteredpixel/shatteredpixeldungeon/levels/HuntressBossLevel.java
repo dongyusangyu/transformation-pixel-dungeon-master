@@ -1295,7 +1295,7 @@ public class HuntressBossLevel extends Level {
 				}
 			}
 			if (heap.items.isEmpty()) {
-				heap.destroy();
+				heap.destroy(this);
 			}
 		}
 	}

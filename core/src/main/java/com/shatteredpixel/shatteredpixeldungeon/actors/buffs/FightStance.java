@@ -165,8 +165,26 @@ public class FightStance extends Buff implements ActionIndicator.Action {
         }
     }
     @Override
+    public void detach() {
+        super.detach();
+        ActionIndicator.clearAction(this);
+    }
+
+    @Override
+    public boolean usable() {
+        return target != null
+                && target == hero
+                && target.buff(FightStance.class) == this
+                && target.buff(Coordination.class) == null;
+    }
+
+    @Override
     public void doAction() {
-        if(target.buff(Coordination.class)==null) GameScene.show(new WndFightStance(this));
+        if (!usable()) {
+            ActionIndicator.clearAction(this);
+            return;
+        }
+        GameScene.show(new WndFightStance(this));
 
     }
     public static class  WndFightStance extends WndOptions {
@@ -190,6 +208,12 @@ public class FightStance extends Buff implements ActionIndicator.Action {
         }
         @Override
         protected void onSelect(int index) {
+            if (fightStance == null
+                    || fightStance.target != hero
+                    || hero.buff(FightStance.class) != fightStance) {
+                ActionIndicator.clearAction(fightStance);
+                return;
+            }
             fightStance.duration = 0;
             if(fightStance.stance==fightStance.parry){
                 FightStance.Focus focus = fightStance.target.buff(FightStance.Focus.class);
@@ -262,7 +286,8 @@ public class FightStance extends Buff implements ActionIndicator.Action {
 
         @Override
         protected boolean enabled(int index) {
-            if(hero.buff(FightStance.class).stance==index){
+            FightStance current = hero == null ? null : hero.buff(FightStance.class);
+            if(current != null && current.stance==index){
                 return false;
             }else{
                 return true;

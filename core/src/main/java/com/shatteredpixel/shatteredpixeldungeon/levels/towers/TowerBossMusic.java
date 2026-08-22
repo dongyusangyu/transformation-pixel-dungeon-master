@@ -14,6 +14,9 @@ final class TowerBossMusic {
 		if (TowerBossGenerator.DEATH_KNIGHT_ID.equals(bossId)) {
 			return Assets.Music.DEATH_KNIGHT_BOSS;
 		}
+		if (TowerBossGenerator.GENTLEMAN_ELF_ID.equals(bossId)) {
+			return Assets.Music.HALLS_BOSS;
+		}
 		return Assets.Music.HALLS_BOSS;
 	}
 }

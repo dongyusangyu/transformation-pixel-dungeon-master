@@ -208,7 +208,7 @@ public class RoastLambWarlockTest {
 	}
 
 	@Test
-	public void firstAttackOnlyFlocksAndDoesNotUsePhysicalAttack() {
+	public void adjacentUnflockedTargetIsAttackedPhysically() {
 		Level previousLevel = Dungeon.level;
 		try {
 			Dungeon.level = openLevel(7, 7);
@@ -218,8 +218,29 @@ public class RoastLambWarlockTest {
 			target.pos = 24;
 
 			assertTrue(warlock.attackTargetForTest(target));
-			assertFalse(warlock.physicalAttackCalled);
-			assertFalse(warlock.needsFlockForTest(target));
+			assertTrue(warlock.physicalAttackCalled);
+			assertTrue(warlock.needsFlockForTest(target));
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
+	public void adjacentFlockedTargetIsAttackedPhysically() {
+		Level previousLevel = Dungeon.level;
+		try {
+			Dungeon.level = openLevel(7, 7);
+			TestWarlock warlock = new TestWarlock();
+			warlock.pos = 23;
+			Gnoll target = new Gnoll();
+			target.pos = 24;
+			warlock.markFlockedForTest(target);
+			warlock.setVisibleForTest(target.pos);
+
+			assertFalse(warlock.canRangedAttackForTest(target));
+			assertTrue(warlock.attackTargetForTest(target));
+			assertTrue(warlock.physicalAttackCalled);
+			assertEquals(0, warlock.fireblastCastCount);
 		} finally {
 			Dungeon.level = previousLevel;
 		}
@@ -228,12 +249,14 @@ public class RoastLambWarlockTest {
 	@Test
 	public void visibleTargetIsFlockedOnceBeforeRepeatedFireblasts() {
 		Level previousLevel = Dungeon.level;
+		Actor.clear();
 		try {
 			Dungeon.level = openLevel(15, 9);
 			TestWarlock warlock = new TestWarlock();
 			warlock.pos = 64;
 			Gnoll target = new Gnoll();
 			target.pos = 68;
+			Actor.add(target);
 			warlock.setVisibleForTest(target.pos);
 
 			assertTrue(warlock.attackTargetForTest(target));
@@ -247,6 +270,7 @@ public class RoastLambWarlockTest {
 			assertEquals(1, warlock.fireblastCastCount);
 			assertFalse(warlock.needsFlockForTest(target));
 		} finally {
+			Actor.clear();
 			Dungeon.level = previousLevel;
 		}
 	}
@@ -381,16 +405,18 @@ public class RoastLambWarlockTest {
 	@Test
 	public void visibleCastsWaitForAnimationCallbackBeforeApplyingEffects() {
 		Level previousLevel = Dungeon.level;
+		Actor.clear();
 		try {
 			Dungeon.level = openLevel(9, 9);
 			TestWarlock warlock = new TestWarlock();
 			warlock.forceAnimatedCast = true;
 			warlock.pos = 39;
 			Gnoll target = new Gnoll();
-			target.pos = 40;
+			target.pos = 41;
+			Actor.add(target);
 
 			assertFalse(warlock.attackTargetForTest(target));
-			assertEquals(40, warlock.animatedTargetCell);
+			assertEquals(41, warlock.animatedTargetCell);
 			assertTrue(warlock.needsFlockForTest(target));
 
 			warlock.completeCastForTest();
@@ -404,6 +430,7 @@ public class RoastLambWarlockTest {
 			warlock.completeCastForTest();
 			assertEquals(43, warlock.fireblastTargetCell);
 		} finally {
+			Actor.clear();
 			Dungeon.level = previousLevel;
 		}
 	}

@@ -161,8 +161,10 @@ public class ActionIndicator extends Tag {
 	@Override
 	protected void onClick() {
 		super.onClick();
-		if (action != null && hero.ready) {
+		if (action != null && canShowAction(action) && hero != null && hero.ready) {
 			action.doAction();
+		} else if (action != null) {
+			clearAction(action);
 		}
 	}
 
@@ -205,6 +207,10 @@ public class ActionIndicator extends Tag {
 
 	public static boolean canShowAction(Action action) {
 		if (action == null || !action.usable()) return false;
+		if (action instanceof Buff) {
+			Buff buff = (Buff) action;
+			if (hero == null || buff.target != hero || !hero.buffs().contains(buff)) return false;
+		}
 		if (action instanceof MeleeWeapon.Charger) {
 			return hero != null && hero.subClass.is(HeroSubClass.CHAMPION);
 		}

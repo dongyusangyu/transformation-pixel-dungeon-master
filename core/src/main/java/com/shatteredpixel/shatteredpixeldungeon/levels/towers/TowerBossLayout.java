@@ -18,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Patch;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 final class TowerBossLayout {
@@ -112,6 +113,13 @@ final class TowerBossLayout {
 
 	static boolean isProtectedCell(int cell) {
 		return !isArenaCell(cell) || isReservedRoute(cell % WIDTH, cell / WIDTH);
+	}
+
+	static int selectRandomGentlemanCupCell(ArrayList<Integer> preferred,
+			ArrayList<Integer> fallback) {
+		ArrayList<Integer> candidates = preferred != null && !preferred.isEmpty()
+				? preferred : fallback;
+		return candidates == null || candidates.isEmpty() ? -1 : Random.element(candidates);
 	}
 
 	static boolean isSafeZoneCell(int cell) {

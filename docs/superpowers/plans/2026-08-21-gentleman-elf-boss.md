@@ -8,6 +8,23 @@
 
 **技术栈：** Java、Shattered Pixel Dungeon Actor/Buff/Bundle、JUnit 4、Gradle、Noosa 精灵动画、ImageIO/Pillow 图集校验、imagegen 概念参考、`pixel-art-sprites` 像素工作流。
 
+## 方案 A 修复增量（2026-08-22）
+
+本增量在原实现计划完成后执行，采用 Boss 单一技能仲裁：场地 Actor 只维护宴饮 CD，Boss 负责选择、预警和结算。
+
+- `GentlemanElfArena.act()` 将宴饮计时钳制在 20，不再自动调用 `warnBanquet()` 或 `resolveBanquet()`；新增 `banquetReady()`、`warnBanquetNow()`、`resolveBanquetNow()` 和 `banquetResolved()`。
+- `GentlemanElf` 新增 `BANQUET` 技能及低优先级选择路径；第一阶段投酒无敌对 `enemy` 时保持节奏节点；狂暴阶段在宴饮蓄满后的突进完成后开放一个宴饮窗口。
+- `GentlemanElf` 以 `Ballistica.PROJECTILE` 验证目标和酒杯路径；空目标突进使用不检查中间障碍的几何跳跃落点，扑杯选择距酒杯严格 3 格的路径点。
+- 待结算技能 Bundle 保存 `pendingAdvancesRhythm`；`BANQUET` 即使没有警告格数组也能恢复。
+- `TowerBossLevel.launchBoss()` 调整为先 `GameScene.add()` 后 `BossHealthBar.assignBoss()`；恢复楼层时扫描并重新绑定存活 Boss。
+- custom 图鉴新增 `tower_gentleman_elf` 的中英文条目、32×32 图像和索引 919。
+
+验证命令：
+
+```text
+./gradlew.bat --no-daemon --no-problems-report :core:test --tests com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfTest --tests com.shatteredpixel.shatteredpixeldungeon.levels.towers.GentlemanElfArenaTest --tests com.shatteredpixel.shatteredpixeldungeon.custom.dict.TowerDictionaryEntriesTest
+```
+
 ---
 
 ## 文件结构

@@ -76,8 +76,30 @@ public class Thief extends Mob {
 
 	@Override
 	public float speed() {
-		if (item != null) return (5*super.speed())/6;
+		if (item != null) return carryingSpeedMultiplier()*super.speed();
 		else return super.speed();
+	}
+
+	/**
+	 * Allows thief variants to change their movement speed while carrying loot
+	 * without duplicating the escape and item handling logic.
+	 */
+	protected float carryingSpeedMultiplier() {
+		return 5f/6f;
+	}
+
+	/**
+	 * Allows thief variants to reserve theft for a custom action.
+	 */
+	protected boolean canStealOnAttack() {
+		return true;
+	}
+
+	/**
+	 * Allows thief variants to use their own localized theft messages.
+	 */
+	protected Class<?> theftMessageClass() {
+		return Thief.class;
 	}
 
 	@Override
@@ -128,7 +150,7 @@ public class Thief extends Mob {
 	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {
 		damage = super.attackProc(enemy, damage, damageTags);
 		
-		if (alignment == Alignment.ENEMY && item == null
+		if (canStealOnAttack() && alignment == Alignment.ENEMY && item == null
 				&& enemy instanceof Hero && steal( (Hero)enemy )) {
 			state = FLEEING;
 		}
@@ -151,7 +173,7 @@ public class Thief extends Mob {
 
 		if (toSteal != null && !toSteal.unique && toSteal.level() < 1 ) {
 
-			GLog.w( Messages.get(Thief.class, "stole", toSteal.name()) );
+			GLog.w( Messages.get(theftMessageClass(), "stole", toSteal.name()) );
 			if (!toSteal.stackable) {
 				Dungeon.quickslot.convertToPlaceholder(toSteal);
 			}
@@ -181,7 +203,7 @@ public class Thief extends Mob {
 		return desc;
 	}
 	
-	private class Wandering extends Mob.Wandering {
+	protected class Wandering extends Mob.Wandering {
 		
 		@Override
 		public boolean act(boolean enemyInFOV, boolean justAlerted) {
@@ -221,7 +243,7 @@ public class Thief extends Mob {
 
 				}
 
-				if (item != null) GLog.n( Messages.get(Thief.class, "escapes", item.name()));
+				if (item != null) GLog.n( Messages.get(theftMessageClass(), "escapes", item.name()));
 				item = null;
 				state = WANDERING;
 			} else {

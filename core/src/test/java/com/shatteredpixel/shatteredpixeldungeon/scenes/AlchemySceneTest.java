@@ -10,11 +10,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class AlchemySceneTest {
-
 	@Test
 	public void onlyMetamorphosisScrollRemaindersReturnAfterCrafting() {
 		assertTrue(AlchemyScene.returnsRemainderAfterCraft(ScrollOfMetamorphosis.class));
 		assertFalse(AlchemyScene.returnsRemainderAfterCraft(ScrollOfTransmutation.class));
 		assertFalse(AlchemyScene.returnsRemainderAfterCraft(LiquidMetal.class));
+	}
+
+	@Test
+	public void craftedResultDoesNotReplacePreviewForRemainingRecipes() {
+		assertFalse(AlchemyScene.shouldShowCraftedResult(1));
+	}
+
+	@Test
+	public void craftedResultShowsWhenNoRecipesRemain() {
+		assertTrue(AlchemyScene.shouldShowCraftedResult(0));
 	}
 }

@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.custom.testmode;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
@@ -54,6 +55,7 @@ public class TowerMobPlacerTest {
 		assertTrue(placerMobs.contains(SoulCollector.class));
 		assertTrue(placerMobs.contains(HeavyCrabification.class));
 		assertTrue(placerMobs.contains(RuneSpinner.class));
+		assertTrue(placerMobs.contains(ChainShadowThief.class));
 		assertTrue(!placerMobs.contains(TwistedMirror.class));
 		assertTrue(!placerMobs.contains(PowerfulWraith.class));
 	}
@@ -89,6 +91,11 @@ public class TowerMobPlacerTest {
 		runeSpinner.state = runeSpinner.WANDERING;
 		TowerMobPlacer.applyInitialState(runeSpinner);
 		assertTrue(runeSpinner.state == runeSpinner.SLEEPING);
+
+		Mob chainShadowThief = new ChainShadowThief();
+		chainShadowThief.state = chainShadowThief.WANDERING;
+		TowerMobPlacer.applyInitialState(chainShadowThief);
+		assertTrue(chainShadowThief.state == chainShadowThief.SLEEPING);
 
 		Mob crocodile = new MimicCrocodile();
 		crocodile.state = crocodile.SLEEPING;

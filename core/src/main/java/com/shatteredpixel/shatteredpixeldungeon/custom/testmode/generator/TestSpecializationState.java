@@ -273,6 +273,9 @@ public final class TestSpecializationState {
 		T buff = hero.buff(buffClass);
 		if (buff != null) {
 			buff.detach();
+			if (buff instanceof ActionIndicator.Action) {
+				ActionIndicator.clearAction((ActionIndicator.Action) buff);
+			}
 		}
 	}
 
