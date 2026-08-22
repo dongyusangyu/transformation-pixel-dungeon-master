@@ -413,10 +413,20 @@ public class SurfaceTownLevel extends Level {
 		};
 		private static final int[] SURFACE_GRASS_PATTERN = {
 				DungeonTileSheet.FLOOR,
-				DungeonTileSheet.GRASS,
+				DungeonTileSheet.GRASS_ALT,
 				DungeonTileSheet.EMBERS,
 				DungeonTileSheet.GRASS_ALT,
-				DungeonTileSheet.EMBERS_ALT
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS,
+				DungeonTileSheet.GRASS_ALT,
+				DungeonTileSheet.EMBERS
 		};
 
 		static String tilesTexture() {
@@ -505,7 +515,7 @@ public class SurfaceTownLevel extends Level {
 
 			int blockX = x / GRASS_BLOCK_SIZE;
 			int blockY = y / GRASS_BLOCK_SIZE;
-			int patternIndex = Math.floorMod(blockX * 3 + blockY * 2, SURFACE_GRASS_PATTERN.length);
+			int patternIndex = Math.floorMod(blockX * 7 + blockY * 11, SURFACE_GRASS_PATTERN.length);
 			return SURFACE_GRASS_PATTERN[patternIndex];
 		}
 
