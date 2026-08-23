@@ -262,6 +262,10 @@ public class Item implements Bundlable {
 		}
 		return this;
 	}
+
+	protected void onCollectedByMerge(Item destination, int sourceQuantityBefore,
+			int destinationQuantityBefore) {
+	}
 	
 	public boolean collect( Bag container ) {
 
@@ -294,7 +298,10 @@ public class Item implements Bundlable {
 		if (stackable) {
 			for (Item item:items) {
 				if (hasSameExtractionRaidOrigin(item) && isSimilar( item )) {
+					int sourceQuantityBefore = quantity;
+					int destinationQuantityBefore = item.quantity;
 					item.merge( this );
+					onCollectedByMerge(item, sourceQuantityBefore, destinationQuantityBefore);
 					item.updateQuickslot();
 					if (hero != null && hero.isAlive()) {
 						Badges.validateItemLevelAquired( this );

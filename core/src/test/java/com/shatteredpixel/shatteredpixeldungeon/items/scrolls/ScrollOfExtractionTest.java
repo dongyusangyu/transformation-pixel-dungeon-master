@@ -178,16 +178,16 @@ public class ScrollOfExtractionTest {
 	}
 
 	@Test
-	public void lowerLevelDuplicateConvergesToSetSynchronization() {
+	public void lowerLevelDuplicateIsRejectedAsStale() {
 		MissileWeapon.UpgradedSetTracker tracker =
 				new MissileWeapon.UpgradedSetTracker();
 		tracker.levelThresholds.put(55L, 3);
 		tracker.upgradeScrollCredits.put(55L, 2);
 		TestMissile duplicate = missile(55L, 2, 2, 1);
 
-		assertTrue(tracker.synchronizeMember(duplicate));
-		assertEquals(3, duplicate.trueLevel());
-		assertEquals(2, duplicate.upgradeScrollUses);
+		assertFalse(tracker.synchronizeMember(duplicate));
+		assertEquals(2, duplicate.trueLevel());
+		assertEquals(0, duplicate.upgradeScrollUses);
 	}
 
 	@Test
