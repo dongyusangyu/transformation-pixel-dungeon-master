@@ -1,5 +1,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.bags;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.QuickSlot;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
@@ -15,6 +18,7 @@ import org.junit.Test;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,11 +38,14 @@ public class HikingBackpackTest {
 
 	private Hero previousHero;
 	private QuickSlot previousQuickslot;
+	private Application previousApplication;
 
 	@Before
 	public void setUp() {
 		previousHero = Dungeon.hero;
 		previousQuickslot = Dungeon.quickslot;
+		previousApplication = Gdx.app;
+		Gdx.app = mock(Application.class);
 		Dungeon.quickslot = new QuickSlot();
 	}
 
@@ -46,6 +53,7 @@ public class HikingBackpackTest {
 	public void tearDown() {
 		Dungeon.quickslot = previousQuickslot;
 		Dungeon.hero = previousHero;
+		Gdx.app = previousApplication;
 	}
 
 	@Test
@@ -230,6 +238,16 @@ public class HikingBackpackTest {
 	}
 
 	@Test
+	public void fullMiscSwapDetachesIncomingItemRecursivelyInsteadOfRawMainBackpackRemoval() throws Exception {
+		String source = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/items/KindofMisc.java");
+
+		assertTrue(source.contains("detachAll(hero.belongings.backpack)"));
+		assertFalse(source.contains("backpack.items.remove(KindofMisc.this)"));
+		assertFalse(source.contains("backpack.items.add(KindofMisc.this)"));
+	}
+
+	@Test
 	public void collectingAContainerReconcilesStaleMissileMembers() {
 		Hero hero = heroWith();
 		MissileWeapon.UpgradedSetTracker tracker =
@@ -248,6 +266,28 @@ public class HikingBackpackTest {
 		assertTrue(dropped.collect(hero.belongings.backpack));
 
 		assertEquals(0, stale.trueLevel());
+		assertEquals(0, stale.upgradeScrollUses);
+	}
+
+	@Test
+	public void collectingAContainerDustsLowerLevelMissileMembersAfterAnotherFragmentWasUpgraded() {
+		Hero hero = heroWith();
+		MissileWeapon.UpgradedSetTracker tracker =
+				Buff.affect(hero, MissileWeapon.UpgradedSetTracker.class);
+		TestMissile stale = new TestMissile();
+		stale.setID = 60L;
+		stale.level(0);
+		stale.upgradeScrollUses = 0;
+		tracker.levelThresholds.put(60L, 1);
+		tracker.upgradeScrollCredits.put(60L, 1);
+
+		HikingBackpack dropped = hiking();
+		dropped.quantity(1);
+		dropped.items.add(stale);
+		assertTrue(dropped.collect(hero.belongings.backpack));
+
+		assertFalse(dropped.items.contains(stale));
+		assertEquals(0, stale.quantity());
 		assertEquals(0, stale.upgradeScrollUses);
 	}
 
@@ -381,6 +421,24 @@ public class HikingBackpackTest {
 		Field field = declaringClass.getDeclaredField(name);
 		field.setAccessible(true);
 		field.set(target, value);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T mock(Class<T> type) {
+		return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
+				(proxy, method, args) -> {
+					if (method.getReturnType() == Preferences.class) return mock(Preferences.class);
+					if (!method.getReturnType().isPrimitive()) return null;
+					if (method.getReturnType() == boolean.class) return false;
+					if (method.getReturnType() == char.class) return '\0';
+					if (method.getReturnType() == byte.class) return (byte) 0;
+					if (method.getReturnType() == short.class) return (short) 0;
+					if (method.getReturnType() == int.class) return 0;
+					if (method.getReturnType() == long.class) return 0L;
+					if (method.getReturnType() == float.class) return 0f;
+					if (method.getReturnType() == double.class) return 0d;
+					return null;
+				});
 	}
 
 	@SuppressWarnings("unchecked")

@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles;
 
+import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
@@ -228,6 +229,7 @@ abstract public class MissileWeapon extends Weapon {
 		if (container != null && container.owner instanceof Hero){
 			ensureSetIDAssigned();
 			if (!UpgradedSetTracker.pickupValid((Hero) container.owner, this)) {
+				logDust(this);
 				quantity(0);
 				return true;
 			}
@@ -251,6 +253,21 @@ abstract public class MissileWeapon extends Weapon {
 		boolean thisAssigned = hasAssignedSetID();
 		boolean otherAssigned = other.hasAssignedSetID();
 		return thisAssigned && otherAssigned && setID == other.setID;
+	}
+
+	@Override
+	protected void onCollectedByMerge(Item destination, int sourceQuantityBefore,
+			int destinationQuantityBefore) {
+		if (!bundleRestoring && collectionLoss(sourceQuantityBefore, destinationQuantityBefore,
+				quantity, destination.quantity()) > 0) {
+			logDuplicateDust(this);
+		}
+	}
+
+	static int collectionLoss(int sourceQuantityBefore, int destinationQuantityBefore,
+			int sourceQuantityAfter, int destinationQuantityAfter) {
+		return Math.max(0, sourceQuantityBefore + destinationQuantityBefore
+				- sourceQuantityAfter - destinationQuantityAfter);
 	}
 	
 	@Override
@@ -751,7 +768,7 @@ abstract public class MissileWeapon extends Weapon {
 		if (!UpgradedSetTracker.pickupValid(hero, this)){
 			Sample.INSTANCE.play( Assets.Sounds.ITEM );
 			hero.spendAndNext(pickupDelay());
-			GLog.w(Messages.get(this, "dust"));
+			logDust(this);
 			quantity(0);
 			return true;
 		} else {
@@ -1146,6 +1163,10 @@ abstract public class MissileWeapon extends Weapon {
 			}
 			Integer canonicalLevel = levelThresholds.get(w.setID);
 			if (canonicalLevel != null) {
+				if (w.trueLevel() < canonicalLevel) {
+					w.upgradeScrollUses = 0;
+					return false;
+				}
 				int credits = resolveUpgradeScrollCredits(w);
 				if (w.trueLevel() != canonicalLevel) {
 					w.level(canonicalLevel);
@@ -1293,7 +1314,7 @@ abstract public class MissileWeapon extends Weapon {
 		}
 		UpgradedSetTracker tracker = hero.buff(UpgradedSetTracker.class);
 		if (tracker != null) {
-			reconcileInventoryMembers(hero.belongings.backpack, tracker);
+			reconcileInventoryMembers(hero.belongings.backpack, tracker, true, new boolean[]{false});
 		}
 		sanitizeInventorySets(hero.belongings.backpack, preferredSource, true);
 	}
@@ -1302,21 +1323,26 @@ abstract public class MissileWeapon extends Weapon {
 		if (hero == null || bag == null) return;
 		UpgradedSetTracker tracker = hero.buff(UpgradedSetTracker.class);
 		if (tracker == null) return;
-		reconcileInventoryMembers(bag, tracker);
-		sanitizeInventorySets(bag, null, false);
+		reconcileInventoryMembers(bag, tracker, true, new boolean[]{false});
+		sanitizeInventorySets(bag, null, true);
 	}
 
-	private static void reconcileInventoryMembers(Bag bag, UpgradedSetTracker tracker) {
+	private static void reconcileInventoryMembers(Bag bag, UpgradedSetTracker tracker,
+			boolean showWarning, boolean[] warned) {
 		for (Item item : bag.items.toArray(new Item[0])) {
 			if (item instanceof MissileWeapon) {
 				MissileWeapon missile = (MissileWeapon) item;
 				missile.ensureSetIDAssigned();
 				if (!tracker.synchronizeMember(missile)) {
+					if (showWarning && !warned[0]) {
+						logDust(missile);
+						warned[0] = true;
+					}
 					missile.detachAll(bag);
 					missile.quantity(0);
 				}
 			} else if (item instanceof Bag) {
-				reconcileInventoryMembers((Bag) item, tracker);
+				reconcileInventoryMembers((Bag) item, tracker, showWarning, warned);
 			}
 		}
 	}
@@ -1348,7 +1374,7 @@ abstract public class MissileWeapon extends Weapon {
 				if (weapon.quantity() <= 0) continue;
 
 				if (showWarning && !warned){
-					GLog.w(Messages.get(weapon, "duplicate_dust"));
+					logDuplicateDust(weapon);
 					warned = true;
 				}
 
@@ -1356,6 +1382,18 @@ abstract public class MissileWeapon extends Weapon {
 				weapon.detachAll(entry.container);
 				weapon.quantity(0);
 			}
+		}
+	}
+
+	private static void logDust(MissileWeapon weapon) {
+		if (Gdx.app != null && Gdx.files != null) {
+			GLog.w(Messages.get(weapon, "dust"));
+		}
+	}
+
+	private static void logDuplicateDust(MissileWeapon weapon) {
+		if (Gdx.app != null && Gdx.files != null) {
+			GLog.w(Messages.get(weapon, "duplicate_dust"));
 		}
 	}
 

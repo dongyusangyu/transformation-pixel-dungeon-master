@@ -60,7 +60,7 @@ public class MissileWeaponDuplicationTest {
 	}
 
 	@Test
-	public void activeLowerLevelMemberConvergesToCentralLevelInsteadOfBeingConsumed() {
+	public void activeLowerLevelMemberIsConsumedAsStaleDust() {
 		MissileWeapon.UpgradedSetTracker tracker = new MissileWeapon.UpgradedSetTracker();
 		TestMissileA member = new TestMissileA();
 		member.setID = 44L;
@@ -69,9 +69,9 @@ public class MissileWeaponDuplicationTest {
 		tracker.levelThresholds.put(44L, 1);
 		tracker.upgradeScrollCredits.put(44L, 1);
 
-		assertTrue(tracker.synchronizeMember(member));
-		assertEquals(1, member.trueLevel());
-		assertEquals(1, member.upgradeScrollUses);
+		assertFalse(tracker.synchronizeMember(member));
+		assertEquals(0, member.trueLevel());
+		assertEquals(0, member.upgradeScrollUses);
 	}
 
 	@Test
@@ -90,6 +90,16 @@ public class MissileWeaponDuplicationTest {
 		MissileWeapon.sanitizeInventorySets(backpack, null, false);
 
 		assertEquals(3, first.quantity() + second.quantity());
+	}
+
+	@Test
+	public void cappedCollectionReportsTheConsumedIncomingQuantity() {
+		assertEquals(1, MissileWeapon.collectionLoss(1, 3, 0, 3));
+	}
+
+	@Test
+	public void collectionAtOrBelowTheStackLimitDoesNotReportLoss() {
+		assertEquals(0, MissileWeapon.collectionLoss(1, 2, 0, 3));
 	}
 
 	@Test

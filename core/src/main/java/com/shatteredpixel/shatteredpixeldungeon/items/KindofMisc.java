@@ -114,12 +114,11 @@ public abstract class KindofMisc extends EquipableItem {
 						protected void onSelect(int index) {
 
 							KindofMisc equipped = miscs[index];
-							//we directly remove the item because we want to have inventory capacity
-							// to unequip the equipped one, but don't want to trigger any other
-							// item detaching logic
+							//Detach recursively so an item originating in a fallback bag cannot
+							//remain in that bag after it is equipped.
 							int slot = Dungeon.quickslot.getSlot(KindofMisc.this);
 							slotOfUnequipped = -1;
-							Dungeon.hero.belongings.backpack.items.remove(KindofMisc.this);
+							KindofMisc.this.detachAll(hero.belongings.backpack);
 							if (equipped.doUnequip(hero, true, false)) {
 								//swap out equip in misc slot if needed
 								if (index == 0 && KindofMisc.this instanceof Ring){
@@ -129,25 +128,23 @@ public abstract class KindofMisc extends EquipableItem {
                                     KindofMisc.this.activate(hero);
 									Talent.onItemEquipped(hero, KindofMisc.this);
 									cursedKnown = true;
-									if (cursed) {
-										equipCursed(hero);
-										GLog.n(Messages.get(KindofMisc.this, "equip_cursed", KindofMisc.this));
-									}
-                                    //doEquip(hero);
+                                    if (cursed) {
+									equipCursed(hero);
+									GLog.n(Messages.get(KindofMisc.this, "equip_cursed", KindofMisc.this));
+								}
                                     updateQuickslot();
-                                    //Dungeon.hero.belongings.backpack.items.add(KindofMisc.this);
+								 hero.belongings.backpack.rebalanceFallbackStorage();
                                     return;
 								} else if (index == 2 && KindofMisc.this instanceof Artifact){
 									hero.belongings.ring = (Ring) hero.belongings.misc;
 									hero.belongings.misc = null;
 								}
-								Talent.onItemEquipped(hero, KindofMisc.this);
-								Dungeon.hero.belongings.backpack.items.add(KindofMisc.this);
 								doEquip(hero);
 								cursedKnown = true;
 							} else {
-								Dungeon.hero.belongings.backpack.items.add(KindofMisc.this);
+								KindofMisc.this.collect(hero.belongings.backpack);
 							}
+							hero.belongings.backpack.rebalanceFallbackStorage();
 							if (slot != -1) {
 								Dungeon.quickslot.setSlot(slot, KindofMisc.this);
 							} else if (slotOfUnequipped != -1 && defaultAction() != null){
