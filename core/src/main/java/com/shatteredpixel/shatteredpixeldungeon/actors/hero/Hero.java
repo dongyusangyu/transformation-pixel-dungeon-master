@@ -470,8 +470,6 @@ public class Hero extends Char {
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
 		HeroRandomizer.restoreFromBundle( bundle, this );
 		Talent.restoreTalentsFromBundle( bundle, this );
-		Combo combo = buff(Combo.class);
-		if (combo != null) combo.updateActionIndicator();
 		if(heroClass==HeroClass.DM400){
 			addProperties(Char.Property.INORGANIC);
 		}
@@ -1706,6 +1704,7 @@ public class Hero extends Char {
 		AttackIndicator.updateState();
 
 		GameScene.ready();
+		GameScene.requestCheckpoint();
 		AgentMinRealtimeController.onHeroReady();
 		AgentMinDatasetRecorder.onHeroReady();
 	}

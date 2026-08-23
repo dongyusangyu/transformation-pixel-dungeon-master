@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class WeaponMagicAugmentTest {
@@ -54,6 +55,14 @@ public class WeaponMagicAugmentTest {
 		assertTrue(source.contains("DamageTag.MAGICAL"));
 		assertTrue(source.contains("reach += magicReachBonus(RCH)"));
 		assertTrue(source.contains("delay *= magicDelayMultiplier(RCH)"));
+	}
+
+	@Test
+	public void magicAugmentDoesNotAddDamageToTheAttackerItself() throws Exception {
+		String source = readMainSource("items/weapon/Weapon.java");
+		assertTrue(source.contains("attacker != defender"));
+		assertTrue(source.contains("&& attacker != defender"));
+		assertFalse(source.contains("ForceCube"));
 	}
 
 	@Test

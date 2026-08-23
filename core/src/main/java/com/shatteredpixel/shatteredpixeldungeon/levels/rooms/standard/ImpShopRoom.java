@@ -21,12 +21,15 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.ImpShopkeeper;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.ShopRoom;
@@ -66,6 +69,26 @@ public class ImpShopRoom extends ShopRoom {
 		if (itemsToSpawn == null) {
 			itemsToSpawn = generateItems();
 		}
+	}
+
+	static void appendHikingBackpackIfNeeded(ArrayList<Item> stock, Belongings belongings) {
+		if (shouldOfferHikingBackpack(belongings)) {
+			stock.add(new HikingBackpack());
+			Dungeon.LimitedDrops.HIKING_BACKPACK.drop();
+		}
+	}
+
+	static boolean shouldOfferHikingBackpack(Belongings belongings) {
+		return !Dungeon.LimitedDrops.HIKING_BACKPACK.dropped()
+				&& (belongings == null || belongings.getItem(HikingBackpack.class) == null);
+	}
+
+	@Override
+	protected ArrayList<Item> generateItems() {
+		ArrayList<Item> stock = super.generateItems();
+		appendHikingBackpackIfNeeded(stock,
+				Dungeon.hero == null ? null : Dungeon.hero.belongings);
+		return stock;
 	}
 
 	@Override

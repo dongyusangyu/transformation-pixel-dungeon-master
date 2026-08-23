@@ -119,10 +119,30 @@ public final class RankingRestart {
 		Dungeon.challenges = 0;
 		Dungeon.gold = newGold;
 		// reinit() calls hero.live() before newCycle is set; restore subclass-owned
-		// action buffs again after the new-cycle state and talents are in place.
+		// action and equipment buffs again after the new-cycle state and talents are in place.
 		Dungeon.hero.ensureSubclassBuffs();
+		reactivateEquippedItems(Dungeon.hero);
 		refreshHealthForNewCycle(Dungeon.hero);
 		normalizeUpgradeScrolls(Dungeon.hero);
+	}
+
+	static void reactivateEquippedItems(Hero hero) {
+		if (hero == null || hero.belongings == null) {
+			return;
+		}
+		EquipableItem[] equippedItems = {
+				hero.belongings.weapon,
+				hero.belongings.armor,
+				hero.belongings.artifact,
+				hero.belongings.misc,
+				hero.belongings.ring,
+				hero.belongings.secondWep
+		};
+		for (EquipableItem item : equippedItems) {
+			if (item != null) {
+				item.activate(hero);
+			}
+		}
 	}
 
 	static void refreshHealthForNewCycle(Hero hero) {

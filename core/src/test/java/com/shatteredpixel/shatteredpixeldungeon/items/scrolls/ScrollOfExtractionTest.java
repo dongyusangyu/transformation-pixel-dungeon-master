@@ -178,14 +178,50 @@ public class ScrollOfExtractionTest {
 	}
 
 	@Test
-	public void lowerLevelDuplicateStillFailsSetSynchronization() {
+	public void lowerLevelDuplicateConvergesToSetSynchronization() {
 		MissileWeapon.UpgradedSetTracker tracker =
 				new MissileWeapon.UpgradedSetTracker();
 		tracker.levelThresholds.put(55L, 3);
 		tracker.upgradeScrollCredits.put(55L, 2);
 		TestMissile duplicate = missile(55L, 2, 2, 1);
 
-		assertFalse(tracker.synchronizeMember(duplicate));
+		assertTrue(tracker.synchronizeMember(duplicate));
+		assertEquals(3, duplicate.trueLevel());
+		assertEquals(2, duplicate.upgradeScrollUses);
+	}
+
+	@Test
+	public void invalidatedSetCannotBeReopenedByAStaleMember() {
+		MissileWeapon.UpgradedSetTracker tracker =
+				new MissileWeapon.UpgradedSetTracker();
+		TestMissile stale = missile(58L, 5, 5, 1);
+
+		tracker.setCanonicalLevel(stale, 5);
+		tracker.invalidateSet(stale);
+		tracker.setCanonicalLevel(stale, 0);
+
+		assertFalse(tracker.synchronizeMember(stale));
+		assertEquals(0, stale.upgradeScrollUses);
+		assertEquals(0, tracker.availableUpgradeScrollUses(stale));
+	}
+
+	@Test
+	public void merchantAndContainerBoundariesUseTheCentralMissileLedger() throws IOException {
+		String tradeSource = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/windows/WndTradeItem.java");
+		String shopSource = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/actors/mobs/npcs/Shopkeeper.java");
+		String surfaceShopSource = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/actors/mobs/npcs/SurfaceShopkeeper.java");
+		String bagSource = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/items/bags/Bag.java");
+
+		assertFalse(tradeSource.contains("levelThresholds.put(((MissileWeapon) item).setID"));
+		assertFalse(shopSource.contains("levelThresholds.put(((MissileWeapon) returned).setID"));
+		assertFalse(surfaceShopSource.contains("levelThresholds.put(((MissileWeapon) returned).setID"));
+		assertTrue(bagSource.contains("MissileWeapon.sanitizeInventorySets"));
+		assertTrue(bagSource.contains("MissileWeapon.prepareIncomingBag"));
+		assertTrue(tradeSource.contains("UpgradedSetTracker.markSold"));
 	}
 
 	@Test

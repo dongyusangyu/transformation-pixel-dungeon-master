@@ -15,6 +15,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TerrainFeaturesTilemapTest {
 
@@ -36,5 +38,21 @@ public class TerrainFeaturesTilemapTest {
 		assertEquals(44, TerrainFeaturesTilemap.regionalVegetationVisual(Terrain.FURROWED_GRASS, 2, 75, false));
 		assertEquals(46, TerrainFeaturesTilemap.regionalVegetationVisual(Terrain.GRASS, 2, 75, false));
 		assertEquals(90, TerrainFeaturesTilemap.regionalVegetationVisual(Terrain.EMBERS, 2, 75, false));
+	}
+
+	@Test
+	public void grassOverhangDoesNotRenderIntoWater() {
+		assertFalse(DungeonWallsTilemap.grassOverhangAllowed(
+				Terrain.WATER, Terrain.HIGH_GRASS));
+		assertFalse(DungeonWallsTilemap.grassOverhangAllowed(
+				Terrain.WATER, Terrain.FURROWED_GRASS));
+	}
+
+	@Test
+	public void grassOverhangStillRendersOverOrdinaryFloor() {
+		assertTrue(DungeonWallsTilemap.grassOverhangAllowed(
+				Terrain.EMPTY, Terrain.HIGH_GRASS));
+		assertTrue(DungeonWallsTilemap.grassOverhangAllowed(
+				Terrain.GRASS, Terrain.FURROWED_GRASS));
 	}
 }

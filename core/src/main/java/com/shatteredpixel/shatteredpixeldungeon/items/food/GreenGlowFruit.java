@@ -28,7 +28,7 @@ public class GreenGlowFruit extends Food {
                 Buff.affect(hero, Healing.class).setHeal((int)(hero.HT/4),0.25f,0);
             }
         }
-        Drunkenness.affect(hero);
+        Drunkenness.affectTemporary(hero);
         Buff.affect(hero, Barrier.class).setShield(40);
         super.satisfy(hero);
 

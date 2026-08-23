@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SaveManager;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
@@ -178,6 +179,8 @@ import java.util.Locale;
 public class GameScene extends PixelScene {
 
 	static GameScene scene;
+	private static volatile boolean checkpointRequested;
+	private static volatile long checkpointRetryAfter;
 
 	private SkinnedBlock water;
 	private DungeonTerrainTilemap tiles;
@@ -266,6 +269,8 @@ public class GameScene extends PixelScene {
 		float largeInsetTop = Game.platform.getSafeInsets(PlatformSupport.INSET_LRG).scale(1f/defaultZoom).top;
 
 		scene = this;
+		checkpointRequested = false;
+		checkpointRetryAfter = 0L;
 
 		terrain = new Group();
 		add( terrain );
@@ -868,21 +873,39 @@ public class GameScene extends PixelScene {
 			return true;
 		}
 		synchronized (actorThread) {
+			if (Actor.threadIdle()) return true;
 			if (interrupt) actorThread.interrupt();
 			try {
 				actorThread.wait(msToWait);
 			} catch (InterruptedException e) {
 				ShatteredPixelDungeon.reportException(e);
 			}
-			return !Actor.processing();
+			return Actor.threadIdle();
 		}
+	}
+
+	private static boolean actorThreadIdle() {
+		return actorThread == null || !actorThread.isAlive() || Actor.threadIdle();
 	}
 
 	@Override
 	public synchronized void onPause() {
 		try {
-			if (!Dungeon.hero.ready) waitForActorThread(500, false);
-			Dungeon.saveAll();
+			if (!actorThreadIdle()) waitForActorThread(2000, false);
+			if (actorThreadIdle() && Dungeon.hero != null && Dungeon.hero.ready) {
+				checkpointRequested = false;
+				Dungeon.queueCheckpoint();
+				try {
+					if (!SaveManager.flushCheckpointSaves(2000)) {
+						Dungeon.saveAll();
+					}
+				} catch (IOException checkpointFailure) {
+					ShatteredPixelDungeon.reportException(checkpointFailure);
+					Dungeon.saveAll();
+				}
+			} else {
+				checkpointRequested = true;
+			}
 			Badges.saveGlobal();
 			Journal.saveGlobal();
 		} catch (IOException e) {
@@ -925,6 +948,8 @@ public class GameScene extends PixelScene {
 		if (hero == null || scene == null) {
 			return;
 		}
+
+		commitCheckpointIfSafe(hero);
 
 		super.update();
 
@@ -1530,6 +1555,40 @@ public class GameScene extends PixelScene {
 		}
 	}
 
+	static boolean canCommitCheckpoint(boolean requested, boolean actorIdle, boolean heroReady) {
+		return requested && actorIdle && heroReady;
+	}
+
+	private static void commitCheckpointIfSafe(Hero hero) {
+		IOException checkpointFailure = SaveManager.pollCheckpointFailure();
+		if (checkpointFailure != null) {
+			checkpointRequested = true;
+			checkpointRetryAfter = System.currentTimeMillis() + 1000L;
+			ShatteredPixelDungeon.reportException(checkpointFailure);
+		}
+		if (!canCommitCheckpoint(checkpointRequested, actorThreadIdle(), hero.ready)
+				|| System.currentTimeMillis() < checkpointRetryAfter) {
+			return;
+		}
+		checkpointRequested = false;
+		if (!queueCheckpointWhileActorIdle()) {
+			checkpointRequested = true;
+		}
+	}
+
+	private static boolean queueCheckpointWhileActorIdle() {
+		Thread thread = actorThread;
+		if (thread == null || !thread.isAlive()) {
+			Dungeon.queueCheckpoint();
+			return true;
+		}
+		synchronized (thread) {
+			if (!Actor.threadIdle()) return false;
+			Dungeon.queueCheckpoint();
+			return true;
+		}
+	}
+
 	public static void updateFog(int x, int y, int w, int h){
 		if (fogReady()) {
 			scene.fog.updateFogArea(x, y, w, h);
@@ -1999,6 +2058,10 @@ public class GameScene extends PixelScene {
 			tagDisappeared = false;
 			updateTags = true;
 		}
+	}
+
+	public static void requestCheckpoint() {
+		checkpointRequested = true;
 	}
 
 

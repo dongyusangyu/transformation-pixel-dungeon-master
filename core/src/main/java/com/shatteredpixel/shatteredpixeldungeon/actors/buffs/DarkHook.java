@@ -87,7 +87,10 @@ public class DarkHook extends Buff implements ActionIndicator.Action{
         GameScene.selectCell(caster);
     }
 
-
+    @Override
+    public boolean usable() {
+        return target != null && target.buff(Talent.DarkHookCooldown.class) == null;
+    }
 
     public CellSelector.Listener caster = new CellSelector.Listener(){
 

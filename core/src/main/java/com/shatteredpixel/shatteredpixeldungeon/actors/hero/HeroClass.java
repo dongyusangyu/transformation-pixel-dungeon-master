@@ -118,6 +118,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
@@ -815,7 +816,7 @@ public enum HeroClass {
                 return Badges.isUnlocked(Badges.Badge.UNLOCK_FRIAR);
 		}
 	}
-	public static void doChallengeSpawn(Hero hero) {new RubbingsTome().identify().collect();
+	public static void doChallengeSpawn(Hero hero) {
         //new DictBook().collect();
 			/*
 			Mana mana = new Mana();
@@ -828,7 +829,7 @@ public enum HeroClass {
 
         new TestBag().collect();
         new TestBag1().collect();
-
+        new HikingBackpack().collect();
         new ScrollOfDebug().collect();
 
         new MobPlacer().collect();
@@ -919,7 +920,7 @@ public enum HeroClass {
 			case DM400:
 				return 3;
 			case PRINCESS:
-				return 3;
+				return 2;
             case FRIAR:
                 return 2;
 			default:

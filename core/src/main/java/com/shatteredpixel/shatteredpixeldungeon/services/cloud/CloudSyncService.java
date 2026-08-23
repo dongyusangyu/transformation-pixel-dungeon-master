@@ -299,7 +299,7 @@ public class CloudSyncService {
                     || restoreToken == null
                     || restoreToken.isEmpty()
             ){
-                FileUtils.deleteFile(PENDING_RESTORE_FILE);
+			FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
                 restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
                 return;
             }
@@ -325,7 +325,7 @@ public class CloudSyncService {
             }
         } catch (Exception e){
             ShatteredPixelDungeon.reportException(e);
-            FileUtils.deleteFile(PENDING_RESTORE_FILE);
+			FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
             restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
         }
     }
@@ -386,7 +386,7 @@ public class CloudSyncService {
                                 callback
                         );
                     } else {
-                        FileUtils.deleteFile(PENDING_RESTORE_FILE);
+				FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
                         restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
                     }
                 } catch (Exception e){
@@ -468,7 +468,7 @@ public class CloudSyncService {
                 restoreLocalIdentity(restoredUUID, currentDeviceID);
                 applySyncResponse(response);
                 restoreLocalIdentity(restoredUUID, currentDeviceID);
-                FileUtils.deleteFile(PENDING_RESTORE_FILE);
+				FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
                 callback.onSuccess();
             } catch (Exception e){
                 ShatteredPixelDungeon.reportException(e);

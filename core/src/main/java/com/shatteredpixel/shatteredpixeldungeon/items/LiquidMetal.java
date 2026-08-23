@@ -216,7 +216,7 @@ public class LiquidMetal extends Item {
 								detachAll(hero.belongings.backpack);
 							}
 						} else {
-							GLog.w(Messages.get(LiquidMetal.class, "already_fixed"));
+							GLog.w(Messages.get(LiquidMetal.class, "already_fixed2"));
 							return;
 						}
 					} else {
@@ -271,7 +271,7 @@ public class LiquidMetal extends Item {
 			}
 
 			m.quantity(0);
-			Buff.affect(hero, MissileWeapon.UpgradedSetTracker.class).levelThresholds.put(m.setID, Integer.MAX_VALUE);
+			MissileWeapon.UpgradedSetTracker.invalidateSet(hero, m);
 
 			return result;
 		}

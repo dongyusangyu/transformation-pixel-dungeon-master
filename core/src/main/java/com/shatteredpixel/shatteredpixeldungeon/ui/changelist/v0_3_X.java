@@ -20,17 +20,26 @@ public class v0_3_X {
         ChangeInfo changes = new ChangeInfo("v0.3.0Alpha", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
-
-        changes = new ChangeInfo(Messages.get(ChangesScene.class, "new"), false, null);
+        changes = new ChangeInfo("v0.3.0Alpha2-Alpha3", false, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+
+
+        addButton(changes, Icons.STAIRS, "v0_3_0alpha.button_1.title", "v0_3_0alpha3.button_1.text");
+        addButton(changes, Icons.DISPLAY, "v0_3_0alpha.button_6.title", "v0_3_0alpha3.button_2.text");
+
+
+
+
+        addButton(changes, Icons.PREFS, "v0_3_0alpha.button_3.title", "v0_3_0alpha3.button_3.text");
+        addButton(changes, Icons.WARNING, "v0_3_0alpha.button_4.title", "v0_3_0alpha3.button_4.text");
+        changes = new ChangeInfo("v0.3.0Alpha1", false, "");
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+
+
         addButton(changes, Icons.STAIRS, "v0_3_0alpha.button_1.title", "v0_3_0alpha.button_1.text");
         addButton(changes, Icons.TALENT, "v0_3_0alpha.button_2.title", "v0_3_0alpha.button_2.text");
-
-
-        changes = new ChangeInfo(Messages.get(ChangesScene.class, "changes"), false, null);
-        changes.hardlight(CharSprite.WARNING);
-        changeInfos.add(changes);
 
         addButton(changes, Icons.PREFS, "v0_3_0alpha.button_3.title", "v0_3_0alpha.button_3.text");
         addButton(changes, new Image(Assets.Sprites.SPINNER, 144, 0, 16, 16), "v0_3_0alpha.button_4.title", "v0_3_0alpha.button_4.text");

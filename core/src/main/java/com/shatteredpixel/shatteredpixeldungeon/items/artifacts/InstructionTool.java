@@ -505,7 +505,6 @@ public class InstructionTool extends Artifact {
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            ActionIndicator.setAction(this);
         }
 
         @Override

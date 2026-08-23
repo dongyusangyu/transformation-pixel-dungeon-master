@@ -147,7 +147,7 @@ public class ActionIndicator extends Tag {
 				needsRefresh = false;
 			}
 
-			if (!hero.ready) {
+			if (hero == null || !hero.ready) {
 				if (primaryVis != null) primaryVis.alpha(0.5f);
 				if (secondVis != null) secondVis.alpha(0.5f);
 			} else {
@@ -212,9 +212,21 @@ public class ActionIndicator extends Tag {
 			if (hero == null || buff.target != hero || !hero.buffs().contains(buff)) return false;
 		}
 		if (action instanceof MeleeWeapon.Charger) {
-			return hero != null && hero.subClass.is(HeroSubClass.CHAMPION);
+			return hero != null && hero.subClass != null && hero.subClass.is(HeroSubClass.CHAMPION);
 		}
 		return true;
+	}
+
+	public static void reconcileActionState() {
+		synchronized (ActionIndicator.class) {
+			if (action != null && !canShowAction(action)) {
+				action = null;
+			}
+			if (action == null) {
+				findAction(false, null);
+			}
+			refresh();
+		}
 	}
 
 	// list of action buffs that we should replace it with.

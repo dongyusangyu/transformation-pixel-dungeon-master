@@ -174,6 +174,7 @@ public class AuxiliaryCore extends MeleeWeapon {
 			hero.belongings.weapon = null;
 		} else if (hero.belongings.secondWep == this) {
 			hero.belongings.secondWep = null;
+			hero.belongings.onSecondaryWeaponChanged();
 		} else {
 			detach(hero.belongings.backpack);
 		}

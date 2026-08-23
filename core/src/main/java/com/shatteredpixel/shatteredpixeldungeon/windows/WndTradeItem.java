@@ -248,9 +248,9 @@ public class WndTradeItem extends WndInfoItem {
 			return;
 		}
 		item.detachAll( hero.belongings.backpack );
-
-		if (item instanceof MissileWeapon && item.isUpgradable()){
-			Buff.affect(hero, MissileWeapon.UpgradedSetTracker.class).levelThresholds.put(((MissileWeapon) item).setID, Integer.MAX_VALUE);
+		if (item instanceof MissileWeapon) {
+			MissileWeapon.UpgradedSetTracker.markSold(hero, (MissileWeapon) item, shop != null);
+			MissileWeapon.sanitizeInventorySets(hero, null);
 		}
 
 		//selling items in the sell interface doesn't spend time
@@ -279,6 +279,10 @@ public class WndTradeItem extends WndInfoItem {
 			Hero hero = Dungeon.hero;
 			
 			item = item.detach( hero.belongings.backpack );
+			if (item instanceof MissileWeapon) {
+				MissileWeapon.UpgradedSetTracker.markSold(hero, (MissileWeapon) item, shop != null);
+				MissileWeapon.sanitizeInventorySets(hero, null);
+			}
 
 			//selling items in the sell interface doesn't spend time
 			hero.spend(-hero.cooldown());

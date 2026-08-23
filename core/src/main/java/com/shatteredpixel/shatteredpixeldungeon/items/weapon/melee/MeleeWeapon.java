@@ -821,7 +821,8 @@ public class MeleeWeapon extends Weapon {
 				return;
 			}
 
-			if (hero.belongings.secondWep == null && hero.belongings.backpack.items.size() >= hero.belongings.backpack.capacity()){
+			if (hero.belongings.secondWep == null
+					&& !hero.belongings.backpack.canReserveSecondaryWeaponSlot(hero.belongings.weapon)){
 				GLog.w(Messages.get(MeleeWeapon.class, "swap_full"));
 				return;
 			}
@@ -833,6 +834,7 @@ public class MeleeWeapon extends Weapon {
 			KindOfWeapon temp = hero.belongings.weapon;
 			hero.belongings.weapon = hero.belongings.secondWep;
 			hero.belongings.secondWep = temp;
+			hero.belongings.onSecondaryWeaponChanged();
 			if (alternating) AlternatingWeapons.trigger(hero);
 
 			hero.sprite.operate(hero.pos);

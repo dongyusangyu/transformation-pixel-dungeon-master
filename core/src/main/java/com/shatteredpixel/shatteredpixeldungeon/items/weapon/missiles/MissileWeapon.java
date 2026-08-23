@@ -929,8 +929,13 @@ abstract public class MissileWeapon extends Weapon {
 	//also used by liquid metal crafting to track when a set is consumed
 	public static class UpgradedSetTracker extends Buff {
 
+		public static final int ACTIVE = 0;
+		public static final int MERCHANT_HELD = 1;
+		public static final int CONSUMED = 2;
+
 		public HashMap<Long, Integer> levelThresholds = new HashMap<>();
 		public HashMap<Long, Integer> upgradeScrollCredits = new HashMap<>();
+		private HashMap<Long, Integer> setStates = new HashMap<>();
 		private HashSet<Long> unresolvedLegacyCredits = new HashSet<>();
 		private boolean legacyCreditLedger;
 		private boolean rejectUntrackedLocalCredits;
@@ -939,6 +944,18 @@ abstract public class MissileWeapon extends Weapon {
 			if (h == null || w == null) return true;
 			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
 			return tracker == null || tracker.synchronizeMember(w);
+		}
+
+		public static void markSold(Hero h, MissileWeapon w, boolean buybackable) {
+			if (h == null || w == null || !w.hasAssignedSetID()) return;
+			UpgradedSetTracker tracker = Buff.affect(h, UpgradedSetTracker.class);
+			if (tracker != null) tracker.markSold(w, buybackable);
+		}
+
+		public static void restoreFromMerchant(Hero h, MissileWeapon w) {
+			if (h == null || w == null || !w.hasAssignedSetID()) return;
+			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
+			if (tracker != null) tracker.restoreFromMerchant(w);
 		}
 
 		public static int availableUpgradeScrollUses(Hero h, MissileWeapon w) {
@@ -987,6 +1004,12 @@ abstract public class MissileWeapon extends Weapon {
 			if (tracker != null) tracker.setCanonicalLevel(w, level);
 		}
 
+		public static void invalidateSet(Hero h, MissileWeapon w) {
+			if (h == null || w == null || !w.hasAssignedSetID()) return;
+			UpgradedSetTracker tracker = Buff.affect(h, UpgradedSetTracker.class);
+			if (tracker != null) tracker.invalidateSet(w);
+		}
+
 		public static void resetForNewCycle(Hero h) {
 			if (h == null) return;
 			UpgradedSetTracker tracker = h.buff(UpgradedSetTracker.class);
@@ -1008,6 +1031,7 @@ abstract public class MissileWeapon extends Weapon {
 		private void resetLedger(boolean rejectUntrackedLocalCredits) {
 			levelThresholds.clear();
 			upgradeScrollCredits.clear();
+			setStates.clear();
 			unresolvedLegacyCredits.clear();
 			legacyCreditLedger = false;
 			this.rejectUntrackedLocalCredits = rejectUntrackedLocalCredits;
@@ -1019,6 +1043,10 @@ abstract public class MissileWeapon extends Weapon {
 
 		public int consumeUpgradeScrollUses(MissileWeapon w) {
 			if (w == null) return 0;
+			if (stateFor(w.setID) != ACTIVE) {
+				w.upgradeScrollUses = 0;
+				return 0;
+			}
 			int credits = resolveUpgradeScrollCredits(w);
 			upgradeScrollCredits.put(w.setID, 0);
 			unresolvedLegacyCredits.remove(w.setID);
@@ -1028,18 +1056,75 @@ abstract public class MissileWeapon extends Weapon {
 
 		public void recordUpgradeScrollUse(MissileWeapon w) {
 			if (w == null) return;
+			if (stateFor(w.setID) != ACTIVE) {
+				w.upgradeScrollUses = 0;
+				return;
+			}
 			int credits = resolveUpgradeScrollCredits(w) + 1;
 			upgradeScrollCredits.put(w.setID, credits);
 			w.upgradeScrollUses = credits;
 		}
 
 		public void setCanonicalLevel(MissileWeapon w, int level) {
-			if (w != null) levelThresholds.put(w.setID, level);
+			Integer currentLevel = w == null ? null : levelThresholds.get(w.setID);
+			if (w != null && stateFor(w.setID) != CONSUMED
+					&& (currentLevel == null || currentLevel != Integer.MAX_VALUE)) {
+				levelThresholds.put(w.setID, level);
+			}
+		}
+
+		public void invalidateSet(MissileWeapon w) {
+			if (w == null || !w.hasAssignedSetID()) return;
+			setStates.put(w.setID, CONSUMED);
+			levelThresholds.put(w.setID, Integer.MAX_VALUE);
+			upgradeScrollCredits.put(w.setID, 0);
+			unresolvedLegacyCredits.remove(w.setID);
+			w.upgradeScrollUses = 0;
+		}
+
+		public void markSold(MissileWeapon w) {
+			markSold(w, true);
+		}
+
+		public void markSold(MissileWeapon w, boolean buybackable) {
+			if (w == null || !w.hasAssignedSetID()) return;
+			if (stateFor(w.setID) == CONSUMED) return;
+			if (!levelThresholds.containsKey(w.setID)) {
+				levelThresholds.put(w.setID, w.trueLevel());
+			}
+			resolveUpgradeScrollCredits(w);
+			if (buybackable) {
+				setStates.put(w.setID, MERCHANT_HELD);
+			} else {
+				invalidateSet(w);
+			}
+		}
+
+		public boolean restoreFromMerchant(MissileWeapon w) {
+			if (w == null || !w.hasAssignedSetID()
+					|| stateFor(w.setID) != MERCHANT_HELD) return false;
+			setStates.put(w.setID, ACTIVE);
+			return synchronizeMember(w);
+		}
+
+		private int stateFor(long setID) {
+			Integer state = setStates.get(setID);
+			if (state != null) return state;
+			Integer level = levelThresholds.get(setID);
+			return level != null && level == Integer.MAX_VALUE ? CONSUMED : ACTIVE;
 		}
 
 		private int resolveUpgradeScrollCredits(MissileWeapon w) {
+			if (stateFor(w.setID) != ACTIVE) {
+				return 0;
+			}
+			Integer canonicalLevel = levelThresholds.get(w.setID);
+			if (canonicalLevel != null && canonicalLevel == Integer.MAX_VALUE) {
+				upgradeScrollCredits.put(w.setID, 0);
+				unresolvedLegacyCredits.remove(w.setID);
+				return 0;
+			}
 			if (unresolvedLegacyCredits.remove(w.setID)) {
-				Integer canonicalLevel = levelThresholds.get(w.setID);
 				int credits = canonicalLevel != null
 						&& canonicalLevel != Integer.MAX_VALUE
 						&& w.trueLevel() == canonicalLevel
@@ -1054,14 +1139,16 @@ abstract public class MissileWeapon extends Weapon {
 		}
 
 		public boolean synchronizeMember(MissileWeapon w) {
+			if (w == null) return false;
+			if (stateFor(w.setID) != ACTIVE) {
+				w.upgradeScrollUses = 0;
+				return false;
+			}
 			Integer canonicalLevel = levelThresholds.get(w.setID);
 			if (canonicalLevel != null) {
-				if (canonicalLevel == Integer.MAX_VALUE || w.trueLevel() < canonicalLevel) {
-					return false;
-				}
 				int credits = resolveUpgradeScrollCredits(w);
-				if (w.trueLevel() > canonicalLevel) {
-					w.degrade(w.trueLevel() - canonicalLevel);
+				if (w.trueLevel() != canonicalLevel) {
+					w.level(canonicalLevel);
 				}
 				w.upgradeScrollUses = credits;
 			} else {
@@ -1077,6 +1164,7 @@ abstract public class MissileWeapon extends Weapon {
 		private static final String UNRESOLVED_CREDIT_SET_IDS = "unresolved_credit_set_ids";
 		private static final String REJECT_UNTRACKED_LOCAL_CREDITS =
 				"reject_untracked_local_credits";
+		private static final String SET_STATES = "set_states";
 
 		@Override
 		public void storeInBundle(Bundle bundle) {
@@ -1108,6 +1196,17 @@ abstract public class MissileWeapon extends Weapon {
 			for (Long ID : unresolvedLegacyCredits) unresolvedIDs[i++] = ID;
 			bundle.put(UNRESOLVED_CREDIT_SET_IDS, unresolvedIDs);
 			bundle.put(REJECT_UNTRACKED_LOCAL_CREDITS, rejectUntrackedLocalCredits);
+
+			long[] stateIDs = new long[setStates.size()];
+			int[] states = new int[setStates.size()];
+			i = 0;
+			for (Long ID : setStates.keySet()) {
+				stateIDs[i] = ID;
+				states[i] = setStates.get(ID);
+				i++;
+			}
+			bundle.put(SET_STATES + "_ids", stateIDs);
+			bundle.put(SET_STATES, states);
 		}
 
 		@Override
@@ -1122,6 +1221,18 @@ abstract public class MissileWeapon extends Weapon {
 			}
 
 			upgradeScrollCredits.clear();
+			setStates.clear();
+			if (bundle.contains(SET_STATES + "_ids") && bundle.contains(SET_STATES)) {
+				long[] stateIDs = bundle.getLongArray(SET_STATES + "_ids");
+				int[] states = bundle.getIntArray(SET_STATES);
+				for (int i = 0; stateIDs != null && states != null
+						&& i < Math.min(stateIDs.length, states.length); i++) {
+					int state = states[i];
+					if (state >= ACTIVE && state <= CONSUMED) {
+						setStates.put(stateIDs[i], state);
+					}
+				}
+			}
 			unresolvedLegacyCredits.clear();
 			if (bundle.contains(CREDIT_SET_IDS) && bundle.contains(CREDIT_USES)) {
 				legacyCreditLedger = false;
@@ -1143,6 +1254,13 @@ abstract public class MissileWeapon extends Weapon {
 				legacyCreditLedger = true;
 				rejectUntrackedLocalCredits = false;
 				unresolvedLegacyCredits.addAll(levelThresholds.keySet());
+			}
+			for (Long ID : levelThresholds.keySet()) {
+				if (levelThresholds.get(ID) == Integer.MAX_VALUE) {
+					setStates.put(ID, CONSUMED);
+				} else if (!setStates.containsKey(ID)) {
+					setStates.put(ID, ACTIVE);
+				}
 			}
 		}
 	}
@@ -1173,7 +1291,34 @@ abstract public class MissileWeapon extends Weapon {
 		if (hero == null || hero.belongings == null || hero.belongings.backpack == null){
 			return;
 		}
+		UpgradedSetTracker tracker = hero.buff(UpgradedSetTracker.class);
+		if (tracker != null) {
+			reconcileInventoryMembers(hero.belongings.backpack, tracker);
+		}
 		sanitizeInventorySets(hero.belongings.backpack, preferredSource, true);
+	}
+
+	public static void prepareIncomingBag(Hero hero, Bag bag) {
+		if (hero == null || bag == null) return;
+		UpgradedSetTracker tracker = hero.buff(UpgradedSetTracker.class);
+		if (tracker == null) return;
+		reconcileInventoryMembers(bag, tracker);
+		sanitizeInventorySets(bag, null, false);
+	}
+
+	private static void reconcileInventoryMembers(Bag bag, UpgradedSetTracker tracker) {
+		for (Item item : bag.items.toArray(new Item[0])) {
+			if (item instanceof MissileWeapon) {
+				MissileWeapon missile = (MissileWeapon) item;
+				missile.ensureSetIDAssigned();
+				if (!tracker.synchronizeMember(missile)) {
+					missile.detachAll(bag);
+					missile.quantity(0);
+				}
+			} else if (item instanceof Bag) {
+				reconcileInventoryMembers((Bag) item, tracker);
+			}
+		}
 	}
 
 	static void sanitizeInventorySets(Bag inventory, Item preferredSource, boolean showWarning){
@@ -1207,6 +1352,7 @@ abstract public class MissileWeapon extends Weapon {
 					warned = true;
 				}
 
+				survivor.weapon.merge(weapon);
 				weapon.detachAll(entry.container);
 				weapon.quantity(0);
 			}

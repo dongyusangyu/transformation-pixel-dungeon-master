@@ -66,6 +66,19 @@ public class TestPotionExtractionTest {
 		assertTrue(!miscCase.contains("ItemSpriteSheet.film.get("));
 	}
 
+	@Test
+	public void testPotionRendersFoodItemsThroughExAwareItemSprite() throws IOException {
+		String source = readCoreSource(
+				"com/shatteredpixel/shatteredpixeldungeon/custom/testmode/generator/TestPotion.java");
+		int createImageStart = source.indexOf("private void createImage()");
+		int foodCaseStart = source.indexOf("case 10:", createImageStart);
+		int foodCaseEnd = source.indexOf("case 11:", foodCaseStart);
+		String foodCase = source.substring(foodCaseStart, foodCaseEnd);
+
+		assertTrue(foodCase.contains("createItemImage(foodList.get(i))"));
+		assertTrue(!foodCase.contains("ItemSpriteSheet.film.get("));
+	}
+
 	private static String readCoreSource(String relativePath) throws IOException {
 		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
 		Path coreDirectory = workingDirectory.resolve("core");

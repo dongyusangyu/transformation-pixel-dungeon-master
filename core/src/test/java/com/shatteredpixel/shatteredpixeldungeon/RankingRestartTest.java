@@ -512,6 +512,31 @@ public class RankingRestartTest {
 	}
 
 	@Test
+	public void newCycleReactivatesEveryEquippedItem() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		TrackingWeapon weapon = new TrackingWeapon();
+		TrackingArmor armor = new TrackingArmor();
+		TrackingArtifact artifact = new TrackingArtifact();
+		TrackingArtifact misc = new TrackingArtifact();
+		TrackingWeapon secondWeapon = new TrackingWeapon();
+		hero.belongings.weapon = weapon;
+		hero.belongings.armor = armor;
+		hero.belongings.artifact = artifact;
+		hero.belongings.misc = misc;
+		hero.belongings.secondWep = secondWeapon;
+
+		RankingRestart.reactivateEquippedItems(hero);
+
+		assertEquals(1, weapon.activationCount);
+		assertEquals(1, armor.activationCount);
+		assertEquals(1, artifact.activationCount);
+		assertEquals(1, misc.activationCount);
+		assertEquals(1, secondWeapon.activationCount);
+		assertTrue(readCoreSource("RankingRestart.java")
+				.contains("hero.belongings.ring"));
+	}
+
+	@Test
 	public void newCycleRestoreKeepsInheritedPositiveTalentTree() throws Exception {
 		Hero original = headlessHero();
 		original.heroClass = HeroClass.WARRIOR;
@@ -778,6 +803,37 @@ public class RankingRestartTest {
 		@Override
 		public boolean doEquip(Hero hero) {
 			return false;
+		}
+	}
+
+	private static class TrackingWeapon extends MeleeWeapon {
+		int activationCount;
+
+		@Override
+		public void activate(Char ch) {
+			activationCount++;
+		}
+	}
+
+	private static class TrackingArmor extends Armor {
+		int activationCount;
+
+		private TrackingArmor() {
+			super(1);
+		}
+
+		@Override
+		public void activate(Char ch) {
+			activationCount++;
+		}
+	}
+
+	private static class TrackingArtifact extends Artifact {
+		int activationCount;
+
+		@Override
+		public void activate(Char ch) {
+			activationCount++;
 		}
 	}
 

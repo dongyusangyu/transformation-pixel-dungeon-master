@@ -118,8 +118,9 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         lootChance = 0f;
         spriteClass = PestilenceKnightSprite.class;
         properties.add(Property.BOSS);
-        properties.add(Property.IMMOVABLE);
+        //properties.add(Property.IMMOVABLE);
         properties.add(Property.UNSLEEP);
+        //properties.add(Property.STATIC);
     }
 
     private static int growthForDepth(int depth) {

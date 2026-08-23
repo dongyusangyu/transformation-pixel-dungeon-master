@@ -1451,9 +1451,9 @@ public abstract class Mob extends Char {
 				}
 			}
 
-			//can be awoken by the least stealthy hostile present, not necessarily just our target
-			if (enemyInFOV || (enemy != null && enemy.invisible > 0)) {
-
+			//Neutral NPCs only wake from explicit interaction or other forced state changes.
+			if (alignment != Alignment.NEUTRAL) {
+				//can be awoken by the least stealthy hostile present, not necessarily just our target
 				float highestChance = 0f;
 				Char closestHostile = null;
 
@@ -1478,15 +1478,14 @@ public abstract class Mob extends Char {
 				}
 
 				if (closestHostile != null && Random.Float() < highestChance) {
-					awaken(enemyInFOV);
+					enemy = closestHostile;
+					awaken(true);
 					if (state == SLEEPING){
 						spend(TICK); //wait if we can't wake up for some reason
 					}
 					return true;
 				}
-
 			}
-
 			enemySeen = false;
 			spend( TICK );
 
@@ -1541,9 +1540,6 @@ public abstract class Mob extends Char {
 
 	static float sleepingDetectionChanceAtDistance(int distance, float calculatedChance,
 			boolean silentSteps, boolean flying) {
-		if (distance <= 1) {
-			return 1f;
-		}
 		if (silentSteps || flying) {
 			return 0f;
 		}

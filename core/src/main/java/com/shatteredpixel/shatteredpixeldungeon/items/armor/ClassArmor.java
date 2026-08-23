@@ -148,6 +148,7 @@ abstract public class ClassArmor extends Armor {
 		}
 		
 		classArmor.level(armor.trueLevel());
+		transferUpgradeScrollUses(classArmor, armor);
 		classArmor.tier = armor.tier;
 		classArmor.augment = armor.augment;
 		classArmor.inscribe(armor.glyph);
@@ -168,6 +169,16 @@ abstract public class ClassArmor extends Armor {
 		classArmor.charge = 50;
 		
 		return classArmor;
+	}
+
+	/**
+	 * Copies the upgrade-scroll credit that belongs to the source armor.
+	 *
+	 * This deliberately replaces the destination value: the destination's
+	 * previous level is replaced by the source armor during armor transfer.
+	 */
+	static void transferUpgradeScrollUses(ClassArmor destination, Armor source) {
+		destination.upgradeScrollUses = source == null ? 0 : Math.max(0, source.upgradeScrollUses);
 	}
 
 	private static final String ARMOR_TIER	= "armortier";
@@ -271,6 +282,7 @@ abstract public class ClassArmor extends Armor {
 									}
 								}
 								level(armor.trueLevel());
+								transferUpgradeScrollUses(ClassArmor.this, armor);
 								tier = armor.tier;
 								augment = armor.augment;
 								cursed = armor.cursed;

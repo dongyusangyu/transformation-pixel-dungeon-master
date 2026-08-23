@@ -22,6 +22,22 @@ public class GentlemanElfTelegraphTest {
 		assertTrue(line.length <= 6);
 		assertEquals(26, line[line.length - 1]);
 	}
+	@Test public void obstacleClearingSegmentIgnoresTerrainButExcludesEndpoints() {
+		Grid grid = new Grid(7, 7);
+		grid.blocked.add(25);
+		assertArrayEquals(new int[]{25, 26},
+				GentlemanElfTelegraph.intermediateSegment(grid, 24, 27));
+	}
+	@Test public void onlySolidFlammableTerrainCountsAsAnObstacle() {
+		assertTrue(GentlemanElf.isFlammableObstacle(
+				com.shatteredpixel.shatteredpixeldungeon.levels.Terrain.BARRICADE));
+		assertTrue(GentlemanElf.isFlammableObstacle(
+				com.shatteredpixel.shatteredpixeldungeon.levels.Terrain.BOOKSHELF));
+		assertFalse(GentlemanElf.isFlammableObstacle(
+				com.shatteredpixel.shatteredpixeldungeon.levels.Terrain.GRASS));
+		assertFalse(GentlemanElf.isFlammableObstacle(
+				com.shatteredpixel.shatteredpixeldungeon.levels.Terrain.WALL));
+	}
     private static boolean contains(int[] a,int v){for(int x:a)if(x==v)return true;return false;}
     private static class Grid implements GentlemanElfTelegraph.Grid {
         final int w,h; final Set<Integer>blocked=new HashSet<>(),occupied=new HashSet<>(); Grid(int w,int h){this.w=w;this.h=h;}

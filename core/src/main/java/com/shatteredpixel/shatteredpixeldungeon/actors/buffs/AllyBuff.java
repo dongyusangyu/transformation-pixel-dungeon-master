@@ -60,6 +60,9 @@ public abstract class AllyBuff extends Buff {
 	//for when applying an ally buff should also cause that enemy to give exp/loot as if they had died
 	//consider that chars with the ally alignment do not drop items or award exp on death
 	public static void affectAndLoot(Mob enemy, Hero hero, Class<?extends AllyBuff> buffCls){
+		// A target may die while its conversion pre-processing is running (for example,
+		// Corpse turns positive healing into damage). Do not convert or reward it again.
+		if (enemy == null || !enemy.isAlive()) return;
 		boolean wasEnemy = isConversionRewardEligible(enemy)
 				&& (enemy.alignment == Char.Alignment.ENEMY || enemy instanceof Mimic);
 		Buff.affect(enemy, buffCls);

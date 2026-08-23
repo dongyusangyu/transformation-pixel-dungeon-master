@@ -124,6 +124,7 @@ public class WornShortsword extends MeleeWeapon {
 			if (second){
 				//do this first so that the item can go to a full inventory
 				curUser.belongings.secondWep = null;
+				curUser.belongings.onSecondaryWeaponChanged();
 			}else{
 				curUser.belongings.weapon = null;
 			}

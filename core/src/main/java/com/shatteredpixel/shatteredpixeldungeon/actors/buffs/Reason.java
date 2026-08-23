@@ -240,6 +240,10 @@ public class Reason extends Buff implements ActionIndicator.Action {
         }
     }
 
+    static DamageTag[] deathDamageTags() {
+        return new DamageTag[]{DamageTag.REASON, DamageTag.UNAVOIDABLE};
+    }
+
     public static void VirtueReason(Char c,int gain) {
         Reason r=null;
         if(c!=null && c.buff(Reason.class)!=null){
@@ -275,7 +279,7 @@ public class Reason extends Buff implements ActionIndicator.Action {
         //GLog.i(kaoyan+"");
         if(reason<=0 && target.buff(TimekeepersHourglass.timeStasis.class) == null && (target.buff(Suffering.Fear.class)!=null || target.buff(Suffering.Despair.class)!=null  || target.buff(Suffering.Paranoia.class)!=null || target.buff(Suffering.Ecstasy.class)!=null )){
             target.HP=1;
-            target.damage(999999, this, DamageTag.PHYSICAL);
+            target.damage(999999, this, deathDamageTags());
             if (!target.isAlive()) {
                 Dungeon.fail( this );
                 GLog.n( Messages.get(this, "die") );
@@ -326,7 +330,6 @@ public class Reason extends Buff implements ActionIndicator.Action {
         super.restoreFromBundle(bundle);
         reason = bundle.getInt(REASON);
         kaoyan = bundle.getBoolean(KAOYAN);
-        ActionIndicator.setAction(this);
         if (reason>100){
             reason=100;
         }else if(reason<0){

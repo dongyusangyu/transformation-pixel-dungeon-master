@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
@@ -20,6 +21,7 @@ public class ElfWineCup extends Mob {
 		alignment = Alignment.NEUTRAL;
 		properties.add(Property.IMMOVABLE);
 		properties.add(Property.UNSLEEP);
+        properties.add(Property.BOSS);
 	}
 	@Override protected boolean act() { spend(TICK); return true; }
 	@Override public int attackSkill(Char target) { return 0; }
@@ -36,6 +38,15 @@ public class ElfWineCup extends Mob {
 	@Override public void die(Object cause) {
 		super.die(cause);
 		if (listener != null) listener.onCupDestroyed(this, lastHit);
+	}
+	/** Removes the cup and always starts its visual death lifecycle. */
+	public void dismiss() {
+		if (Dungeon.level != null) destroy();
+		else {
+			HP = 0;
+			Actor.remove(this);
+		}
+		if (sprite != null) sprite.die();
 	}
 	public Char lastHit() { return lastHit; }
 	public int lastHitId() { return lastHitId; }
