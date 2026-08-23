@@ -33,6 +33,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
@@ -45,6 +50,7 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 
 public class Belongings implements Iterable<Item> {
@@ -52,6 +58,9 @@ public class Belongings implements Iterable<Item> {
 	private Hero owner;
 
 	public static class Backpack extends Bag {
+
+		private boolean rebalancingFallbackStorage;
+
 		{
 			image = ItemSpriteSheet.BACKPACK;
 		}
@@ -62,21 +71,143 @@ public class Belongings implements Iterable<Item> {
 					cap++;
 				}
 			}
-			if (Dungeon.hero != null && Dungeon.hero.belongings.secondWep != null){
+			if (owner instanceof Hero && ((Hero) owner).belongings.secondWep != null){
 				//secondary weapons still occupy an inv. slot
 				cap--;
 			}
 			return cap;
 		}
+
+		public boolean canReserveSecondaryWeaponSlot(Item secondaryWeapon) {
+			if (items.size() < capacity() || items.contains(secondaryWeapon)) return true;
+
+			Bag fallback = fallbackStorage();
+			if (fallback == null) return false;
+			if (fallback.contains(secondaryWeapon)) return true;
+
+			Item overflow = lastDirectOrdinaryItem();
+			return overflow != null && fallback.canHold(overflow);
+		}
+
+		public void rebalanceFallbackStorage() {
+			if (rebalancingFallbackStorage || isLoading() || !(owner instanceof Hero)
+					|| owner.buff(LostInventory.class) != null) {
+				return;
+			}
+
+			Bag fallback = fallbackStorage();
+			if (fallback == null || fallback.isLoading()) return;
+
+			rebalancingFallbackStorage = true;
+			try {
+				// A secondary weapon reserves a main-backpack slot without being
+				// stored in the backpack list. Move the hidden item to the fallback bag.
+				while (items.size() > capacity()) {
+					Item overflow = null;
+					for (int i = items.size() - 1; i >= 0; i--) {
+						if (!(items.get(i) instanceof Bag)) {
+							overflow = items.get(i);
+							break;
+						}
+					}
+					if (overflow == null || !fallback.canHold(overflow)) break;
+
+					int quickslot = Dungeon.quickslot.getSlot(overflow);
+					overflow.detachAll(this);
+					if (!overflow.collect(fallback)) {
+						items.add(overflow);
+						break;
+					}
+					if (quickslot >= 0) {
+						Item stored = fallback.contains(overflow)
+								? overflow
+								: ((Hero) owner).belongings.getSimilar(overflow);
+						if (stored != null) Dungeon.quickslot.setSlot(quickslot, stored);
+					}
+				}
+
+				ArrayList<Item> ordered = new ArrayList<>(fallback.items);
+				Collections.sort(ordered, Item.itemComparator);
+				for (Item item : ordered) {
+					if (items.size() >= capacity() && !hasNonFallbackDestination(item)) {
+						continue;
+					}
+					int quickslot = Dungeon.quickslot.getSlot(item);
+					item.detachAll(fallback);
+					if (!item.collect(this)) {
+						fallback.items.add(item);
+						Collections.sort(fallback.items, Item.itemComparator);
+					}
+					if (quickslot >= 0) {
+						Item stored = contains(item)
+								? item
+								: ((Hero) owner).belongings.getSimilar(item);
+						if (stored != null) Dungeon.quickslot.setSlot(quickslot, stored);
+					}
+				}
+			} finally {
+				rebalancingFallbackStorage = false;
+			}
+		}
+
+		private boolean hasNonFallbackDestination(Item item) {
+			if (items.size() < capacity()) return true;
+			for (Item stored : items) {
+				if (stored instanceof Bag) {
+					Bag bag = (Bag) stored;
+					if (!bag.isFallbackStorage() && bag.canHold(item)) return true;
+				} else if (item.stackable && item.hasSameExtractionRaidOrigin(stored)
+						&& item.isSimilar(stored)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private Bag fallbackStorage() {
+			for (Item item : items) {
+				if (item instanceof Bag && ((Bag) item).isFallbackStorage()) {
+					return (Bag) item;
+				}
+			}
+			return null;
+		}
+
+		private Item lastDirectOrdinaryItem() {
+			for (int i = items.size() - 1; i >= 0; i--) {
+				Item item = items.get(i);
+				if (!(item instanceof Bag)) return item;
+			}
+			return null;
+		}
+
+		@Override
+		public void restoreFromBundle(Bundle bundle) {
+			super.restoreFromBundle(bundle);
+			rebalanceFallbackStorage();
+		}
 	}
 
 	public Backpack backpack;
+
+	@SuppressWarnings("unchecked")
+	private static final Class<? extends Bag>[] BAG_TAB_ORDER = new Class[]{
+			HikingBackpack.class,
+			VelvetPouch.class,
+			ScrollHolder.class,
+			PotionBandolier.class,
+			MagicalHolster.class
+	};
 	
 	public Belongings( Hero owner ) {
 		this.owner = owner;
 		
 		backpack = new Backpack();
 		backpack.owner = owner;
+	}
+
+	public void onSecondaryWeaponChanged() {
+		if (backpack != null) backpack.rebalanceFallbackStorage();
 	}
 
 	public KindOfWeapon weapon = null;
@@ -214,6 +345,7 @@ public class Belongings implements Iterable<Item> {
 
 		secondWep = (KindOfWeapon) bundle.get(SECOND_WEP);
 		if (secondWep() != null)    secondWep().activate(owner);
+		onSecondaryWeaponChanged();
 	}
 	
 	public static void preview( GamesInProgress.Info info, Bundle bundle ) {
@@ -235,9 +367,16 @@ public class Belongings implements Iterable<Item> {
 
 		result.add(backpack);
 
-		for (Item i : this){
-			if (i instanceof Bag){
-				result.add((Bag)i);
+		for (Class<? extends Bag> bagClass : BAG_TAB_ORDER) {
+			for (Item item : backpack.items) {
+				if (bagClass.isInstance(item) && !result.contains(item)) {
+					result.add((Bag) item);
+				}
+			}
+		}
+		for (Item item : backpack.items) {
+			if (item instanceof Bag && !result.contains(item)) {
+				result.add((Bag) item);
 			}
 		}
 
@@ -467,6 +606,7 @@ public class Belongings implements Iterable<Item> {
 				break;
 			case 5:
 				equipped[5] = secondWep = null;
+				onSecondaryWeaponChanged();
 				break;
 			default:
 				backpackIterator.remove();

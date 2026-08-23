@@ -110,6 +110,7 @@ public class DeathKnight extends TowerBoss {
         properties.add(Property.BOSS);
         //properties.add(Property.IMMOVABLE);
         properties.add(Property.UNSLEEP);
+        //properties.add(Property.STATIC);
     }
 
     @Override

@@ -2948,14 +2948,97 @@ public enum Talent {
 		return attacker instanceof Mob && attacker.alignment == Char.Alignment.ALLY;
 	}
 
+	public enum AttackProcChannel {
+		MELEE_DAMAGE,
+		MELEE_SPECIAL
+	}
+
+	/**
+	 * Immutable, attack-scoped facts used by talent procs. Inherited channels
+	 * never alter the real weapon or delivery type, so weapon-specific effects
+	 * can continue to distinguish an actual melee hit from an inherited one.
+	 */
+	public static final class AttackProcContext {
+
+		private final KindOfWeapon weapon;
+		private final DamageTag.Delivery delivery;
+		private final boolean inheritedMeleeDamage;
+		private final boolean inheritedMeleeSpecial;
+
+		private AttackProcContext(KindOfWeapon weapon, DamageTag.Delivery delivery,
+				boolean inheritedMeleeDamage, boolean inheritedMeleeSpecial) {
+			this.weapon = weapon;
+			this.delivery = delivery == null ? DamageTag.Delivery.NONE : delivery;
+			this.inheritedMeleeSpecial = inheritedMeleeSpecial;
+			this.inheritedMeleeDamage = inheritedMeleeDamage || inheritedMeleeSpecial;
+		}
+
+		public static AttackProcContext create(KindOfWeapon weapon, DamageTag.Delivery delivery,
+				boolean inheritedMeleeDamage, boolean inheritedMeleeSpecial) {
+			return new AttackProcContext(weapon, delivery,
+					inheritedMeleeDamage, inheritedMeleeSpecial);
+		}
+
+		public static AttackProcContext forAttack(Hero hero, boolean inheritedMeleeDamage,
+				boolean inheritedMeleeSpecial, DamageTag... damageTags) {
+			KindOfWeapon weapon = hero == null ? null : hero.belongings.attackingWeapon();
+			EnumSet<DamageTag> tags = DamageTag.of(damageTags);
+			DamageTag.Delivery delivery = DamageTag.physicalDelivery(tags);
+			if (delivery == DamageTag.Delivery.NONE && !tags.contains(DamageTag.MAGICAL)) {
+				if (weapon instanceof MissileWeapon) {
+					delivery = DamageTag.Delivery.RANGED;
+				} else if (weapon instanceof MeleeWeapon || weapon == null) {
+					delivery = DamageTag.Delivery.MELEE;
+				}
+			}
+			return create(weapon, delivery, inheritedMeleeDamage, inheritedMeleeSpecial);
+		}
+
+		public boolean allows(AttackProcChannel channel) {
+			return isActualMeleeAttack() || inherits(channel);
+		}
+
+		public boolean inherits(AttackProcChannel channel) {
+			return channel == AttackProcChannel.MELEE_DAMAGE
+					? inheritedMeleeDamage
+					: inheritedMeleeSpecial;
+		}
+
+		public boolean isActualMeleeAttack() {
+			return delivery == DamageTag.Delivery.MELEE
+					&& (weapon instanceof MeleeWeapon || weapon == null);
+		}
+
+		public boolean isActualMeleeWeapon() {
+			return weapon instanceof MeleeWeapon;
+		}
+
+		public boolean isActualUnarmedAttack() {
+			return isActualMeleeAttack() && weapon == null;
+		}
+
+		public KindOfWeapon weapon() {
+			return weapon;
+		}
+
+		public DamageTag.Delivery delivery() {
+			return delivery;
+		}
+	}
+
 	public static int onAttackProcMult( Hero hero, Char enemy, int dmg ){
-		if(hero.pointsInTalent(PUMP_ATTACK)>0 &&  Random.Int( 5 )==1 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
+		return onAttackProcMult(hero, enemy, dmg,
+				AttackProcContext.forAttack(hero, false, false));
+	}
+
+	public static int onAttackProcMult(Hero hero, Char enemy, int dmg, AttackProcContext context) {
+		if(hero.pointsInTalent(PUMP_ATTACK)>0 && Random.Int(5)==1 && context.allows(AttackProcChannel.MELEE_DAMAGE)){
 			dmg = Math.round(dmg * (1.0f + 1.0f*hero.pointsInTalent(PUMP_ATTACK)));
 			GLog.i("此一击积蓄了很强的力量，造成多倍伤害");
 		}
-		if (hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==1 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null) && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
+		if (hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==1 && context.allows(AttackProcChannel.MELEE_DAMAGE) && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
 			dmg*=1.3;
-		}else if(hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==2 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null) && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
+		}else if(hero.pointsInTalent(Talent.OVERLOAD_CHARGE)==2 && context.allows(AttackProcChannel.MELEE_DAMAGE) && (hero.buff(Recharging.class)!=null || hero.buff(ArtifactRecharge.class)!=null)){
 			dmg*=1.5;
 		}
 		if(hero.attackDelay()>1 && hero.pointsInTalent(Talent.OVERWHELMING)>=1){
@@ -2964,7 +3047,7 @@ public enum Talent {
 		if( hero.pointsInTalent(JUSTICE_PUNISH)>=1 && (enemy.properties().contains(Char.Property.UNDEAD)|| enemy.properties().contains(Char.Property.DEMONIC))){
 			dmg*=1.1+0.1*hero.pointsInTalent(JUSTICE_PUNISH);
 		}
-		if(hero.pointsInTalent(AMAZING_EYESIGHT)>0 && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null) && Dungeon.level.distance(hero.pos,enemy.pos)>=4-hero.pointsInTalent(AMAZING_EYESIGHT)){
+		if(hero.pointsInTalent(AMAZING_EYESIGHT)>0 && context.allows(AttackProcChannel.MELEE_DAMAGE) && Dungeon.level.distance(hero.pos,enemy.pos)>=4-hero.pointsInTalent(AMAZING_EYESIGHT)){
 			dmg*=1.35;
 		}
 		if(hero.hasTalent(Talent.RAGE_ATTACK)){
@@ -2996,7 +3079,7 @@ public enum Talent {
 		if(hero.pointsNegative(FEEBLE)>0){
 			dmg*=1-0.1f*hero.pointsNegative(FEEBLE);
 		}
-		if(hero.pointsInTalent(PRECISE_SHOT)>0 && !(hero.belongings.attackingWeapon() instanceof MeleeWeapon) && Dungeon.level.distance(hero.pos,enemy.pos)>=3){
+		if(hero.pointsInTalent(PRECISE_SHOT)>0 && !context.isActualMeleeWeapon() && Dungeon.level.distance(hero.pos,enemy.pos)>=3){
 			dmg*=1+0.1f*hero.pointsInTalent(PRECISE_SHOT);
 		}
 		if(hero.hasTalent(POISON_INBODY)){
@@ -3015,7 +3098,7 @@ public enum Talent {
 		}
 		if(hero.hasTalent(SHOOT_SATELLITE) && enemy.flying==true){
 			dmg*=1+0.1+0.1*hero.pointsInTalent(SHOOT_SATELLITE);
-			if(hero.belongings.attackingWeapon() instanceof ThrowingStone){
+			if(context.weapon() instanceof ThrowingStone){
 				dmg*=2;
 			}
 		}
@@ -3025,9 +3108,9 @@ public enum Talent {
 		if(hero.hasTalent(KONO_FUKUSA) && enemy instanceof Hero){
 			dmg*=1+0.2*hero.pointsInTalent(KONO_FUKUSA);
 		}
-		if(hero.buff(OneSword.OKU_OneSword.class)!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if(hero.buff(OneSword.OKU_OneSword.class)!=null && context.isActualMeleeWeapon()){
 			float onesword = 1.3f;
-			if((hero.belongings.attackingWeapon() instanceof Katana) || (hero.belongings.attackingWeapon() instanceof Wakizashi)){
+			if((context.weapon() instanceof Katana) || (context.weapon() instanceof Wakizashi)){
 				onesword+=0.2f;
 			}
 			if(hero.hasTalent(OFFENSIVE)){
@@ -3038,7 +3121,7 @@ public enum Talent {
 		if(enemy.buff(Decoy.ShadowMark.class)!=null && hero.hasTalent(Talent.ALLHUNTING)){
 			dmg*=1+0.15f*hero.pointsInTalent(Talent.ALLHUNTING);
 		}
-		if(hero.hasTalent(QIANFA_THROWING) && hero.pointsInTalent(QIANFA_THROWING)>Random.Int(10) && hero.belongings.attackingWeapon() instanceof MissileWeapon){
+		if(hero.hasTalent(QIANFA_THROWING) && hero.pointsInTalent(QIANFA_THROWING)>Random.Int(10) && context.weapon() instanceof MissileWeapon){
 			dmg *=3;
 		}
 		if(hero.subClass.is(HeroSubClass.AT400) && enemy.buff(InstructionTool.InstructionMark.class)!=null){
@@ -3060,8 +3143,8 @@ public enum Talent {
             }
 
         }
-        if(hero.hasTalent(MAGIC_ARROW)){
-            KindOfWeapon weapon = hero.belongings.attackingWeapon();
+		if(hero.hasTalent(MAGIC_ARROW)){
+			KindOfWeapon weapon = context.weapon();
             RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
             if(((weapon instanceof Weapon) && !(weapon instanceof MeleeWeapon) && ((Weapon)weapon).getEnchant()!=null) ||
                     (ring != null && ring.enchantment != null && !ring.cursed && ring.isEquipped(hero))){
@@ -3069,7 +3152,7 @@ public enum Talent {
             }
         }
 		if (hero.hasTalent(DEADLY_FOLLOWUP) && enemy.alignment == Char.Alignment.ENEMY
-				&& !(hero.belongings.attackingWeapon() instanceof MissileWeapon)
+				&& !(context.weapon() instanceof MissileWeapon)
 				&& hero.buff(DeadlyFollowupTracker.class) != null
 				&& hero.buff(DeadlyFollowupTracker.class).object == enemy.id()){
 			dmg = Math.round(dmg * (1.0f + .1f*hero.pointsInTalent(DEADLY_FOLLOWUP)));
@@ -3077,6 +3160,11 @@ public enum Talent {
 		return dmg;
 	}
 	public static int onAttackProcBonus( Hero hero, Char enemy){
+		return onAttackProcBonus(hero, enemy,
+				AttackProcContext.forAttack(hero, false, false));
+	}
+
+	public static int onAttackProcBonus(Hero hero, Char enemy, AttackProcContext context) {
 		int dmg =0;
 		if(hero.hasTalent(HEDONISM) && hero.buff(Hunger.class).level<300){
 			dmg += 2*hero.pointsInTalent(HEDONISM);
@@ -3084,7 +3172,7 @@ public enum Talent {
 		if (hero.hasTalent(CRYSTAL_GUNPOWDER)){
 			dmg += Math.min(2 * hero.pointsInTalent(CRYSTAL_GUNPOWDER), Dungeon.energy * hero.pointsInTalent(CRYSTAL_GUNPOWDER));
 		}
-		if (hero.belongings.attackingWeapon() instanceof Dart && hero.hasTalent(BULLSEYE) && enemy.alignment != hero.alignment){
+		if (context.weapon() instanceof Dart && hero.hasTalent(BULLSEYE) && enemy.alignment != hero.alignment){
 			dmg += hero.pointsInTalent(BULLSEYE) == 1 ? 3 : 5;
 		}
 		if( hero.pointsInTalent(FEAR_INCARNATION)>=1 && !enemy.buffs(Terror.class).isEmpty()){
@@ -3112,7 +3200,7 @@ public enum Talent {
 		}
 
 		if (hero.hasTalent(Talent.FOLLOWUP_STRIKE) && enemy.isAlive() && enemy.alignment == Char.Alignment.ENEMY) {
-			if (hero.belongings.attackingWeapon() instanceof MissileWeapon) {
+			if (context.weapon() instanceof MissileWeapon) {
 				Buff.prolong(hero, FollowupStrikeTracker.class, 5f).object = enemy.id();
 			} else if (hero.buff(FollowupStrikeTracker.class) != null
 					&& hero.buff(FollowupStrikeTracker.class).object == enemy.id()){
@@ -3130,7 +3218,8 @@ public enum Talent {
 
 		if (hero.hasTalent(PATIENT_STRIKE)){
 			if (hero.buff(PatientStrikeTracker.class) != null
-					&& !(hero.belongings.attackingWeapon() instanceof MissileWeapon)){
+					&& (!(context.weapon() instanceof MissileWeapon)
+					|| context.inherits(AttackProcChannel.MELEE_DAMAGE))){
 				hero.buff(PatientStrikeTracker.class).detach();
 				dmg += Random.IntRange(hero.pointsInTalent(Talent.PATIENT_STRIKE), 2);
 			}
@@ -3167,24 +3256,33 @@ public enum Talent {
 
 	public static int onAttackProc(Hero hero, Char attacker, Char enemy, int dmg,
 			DamageTag... damageTags) {
+		AttackProcContext context = attacker == hero
+				? AttackProcContext.forAttack(hero, false, false, damageTags)
+				: AttackProcContext.forAttack(hero, false, false);
+		return onAttackProc(hero, attacker, enemy, dmg, context, damageTags);
+	}
+
+	public static int onAttackProc(Hero hero, Char attacker, Char enemy, int dmg,
+			AttackProcContext context, DamageTag... damageTags) {
 		if(attacker==hero){
-			dmg = onAttackProcMult(hero,enemy,dmg)+onAttackProcBonus(hero,enemy);
+			dmg = onAttackProcMult(hero, enemy, dmg, context)
+					+ onAttackProcBonus(hero, enemy, context);
 		}
-		if(hero.buff(OneSword.OKU_OneSword.class)!=null && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+		if(hero.buff(OneSword.OKU_OneSword.class)!=null && context.isActualMeleeWeapon()){
 			Buff.affect(enemy,OneSword.Kill.class);
 		}
 		if (hero.hasTalent(DEADLY_FOLLOWUP) && enemy.alignment == Char.Alignment.ENEMY
-				&& hero.belongings.attackingWeapon() instanceof MissileWeapon
-				&& !(hero.belongings.attackingWeapon() instanceof SpiritBow.SpiritArrow)) {
+				&& context.weapon() instanceof MissileWeapon
+				&& !(context.weapon() instanceof SpiritBow.SpiritArrow)) {
 			Buff.prolong(hero, DeadlyFollowupTracker.class, 5f).object = enemy.id();
 		}
-		if(hero.hasTalent(OOZE_ATTACK)&& Random.Int( 4 )<=hero.pointsInTalent(OOZE_ATTACK) && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
+		if(hero.hasTalent(OOZE_ATTACK)&& Random.Int(4)<=hero.pointsInTalent(OOZE_ATTACK) && context.allows(AttackProcChannel.MELEE_SPECIAL)){
 			Buff.affect( enemy, Ooze.class ).set(15);
 			Viscosity.DeferedDamage deferred=Buff.affect( enemy, Viscosity.DeferedDamage.class );
 			deferred.prolong( 10 );
 			showOozeAttackEffect(enemy);
 		}
-		if( hero.pointsInTalent(STRONG_ATTACK)>=1 && attacker.buffs(Talent.StrAtkCooldown.class).isEmpty() && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
+		if( hero.pointsInTalent(STRONG_ATTACK)>=1 && attacker.buffs(Talent.StrAtkCooldown.class).isEmpty() && context.allows(AttackProcChannel.MELEE_SPECIAL)){
 			Buff.affect( enemy, Vulnerable.class ,1+hero.pointsInTalent(STRONG_ATTACK)*2);
 			Buff.affect(attacker,StrAtkCooldown.class,15);
 
@@ -3195,14 +3293,14 @@ public enum Talent {
 		if(hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT)>0 && !enemy.buffs(PinCushion.class).isEmpty()){
 			Buff.affect(enemy, Hex.class,hero.pointsInTalent(Talent.GHOLL_WITCHCRAFT)+1);
 		}
-		if (hero.hasTalent(COVER_SCAR) && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
+		if (hero.hasTalent(COVER_SCAR) && context.allows(AttackProcChannel.MELEE_SPECIAL)){
 			Buff.affect( enemy, Bleeding.class).set(hero.pointsInTalent(COVER_SCAR));
 		}
 		if(hero.hasTalent(ICE_BREAKING) && !enemy.buffs(Chill.class).isEmpty()  && enemy.isAlive()){
 			enemy.damage(hero.pointsInTalent(ICE_BREAKING), new WandOfMagicMissile(), DamageTag.MAGICAL);
 		}
 		if (hero.hasTalent(POSION_DAGGER) && MeleeWeapon.hasTrait(
-				hero.belongings.attackingWeapon(), MeleeWeapon.WeaponTrait.DAGGER, hero)) {
+				context.weapon(), MeleeWeapon.WeaponTrait.DAGGER, hero)) {
 			Buff.affect(enemy,Poison.class).set(hero.pointsInTalent(POSION_DAGGER)*2);
 		}
 		if(!attacker.buffs(YogFistPower.class).isEmpty()){
@@ -3239,8 +3337,8 @@ public enum Talent {
 			Buff.affect(enemy, Charm.class,10).object=hero.id();
 		}
 		if(hero.hasTalent(ASHES_BOW) && attacker.buffs(AshesBowCooldown.class).isEmpty() &&
-				(hero.belongings.attackingWeapon() instanceof MissileWeapon
-						|| hero.belongings.attackingWeapon() instanceof SpiritBow)){
+				(context.weapon() instanceof MissileWeapon
+						|| context.weapon() instanceof SpiritBow)){
 			Buff.affect(enemy, Burning.class).reignite(enemy,hero.pointsInTalent(ASHES_BOW));
 			Buff.affect(attacker,AshesBowCooldown.class,15);
 		}
@@ -3258,7 +3356,7 @@ public enum Talent {
 			hero.buff(Talent.SpiritBladesTracker.class).detach();
 		}
 		ComboPackage c = hero.buff(ComboPackage.class);
-		if(hero.hasTalent(COMBO_PACKAGE) && c!=null && attacker==hero  && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
+		if(hero.hasTalent(COMBO_PACKAGE) && c!=null && attacker==hero && context.allows(AttackProcChannel.MELEE_SPECIAL)){
 			c.left++;
 			if(c.left>=8-2*hero.pointsInTalent(COMBO_PACKAGE) ){
 				onFoodEaten(hero,0,new HornOfPlenty());
@@ -3267,7 +3365,7 @@ public enum Talent {
 					c.detach();
 				}
 			}
-		}else if(hero.hasTalent(COMBO_PACKAGE) && c==null && attacker==hero && ((hero.belongings.attackingWeapon() instanceof MeleeWeapon) || hero.belongings.attackingWeapon()==null)){
+		}else if(hero.hasTalent(COMBO_PACKAGE) && c==null && attacker==hero && context.allows(AttackProcChannel.MELEE_SPECIAL)){
 			Buff.affect(attacker,ComboPackage.class).left=1;
 		}
 
@@ -3284,11 +3382,11 @@ public enum Talent {
 				}
 			}
 		}
-		if(hero.subClass.is(HeroSubClass.TATTEKI_NINJA) && (hero.belongings.attackingWeapon() instanceof MissileWeapon)
-                && !(hero.belongings.attackingWeapon() instanceof Tatteki) && !(hero.belongings.attackingWeapon() instanceof Tatteki.Tamaru)){
+		if(hero.subClass.is(HeroSubClass.TATTEKI_NINJA) && (context.weapon() instanceof MissileWeapon)
+				&& !(context.weapon() instanceof Tatteki) && !(context.weapon() instanceof Tatteki.Tamaru)){
 			Buff.affect(enemy, Tatteki.Fix.class);
 		}
-		if(attacker==hero && hero.buff(Ninja_Energy.Throw_Skill.class)!=null && (hero.belongings.attackingWeapon() instanceof MissileWeapon) && enemy.isAlive()){
+		if(attacker==hero && hero.buff(Ninja_Energy.Throw_Skill.class)!=null && (context.weapon() instanceof MissileWeapon) && enemy.isAlive()){
 			Ninja_Energy.Throw_Skill b = hero.buff(Ninja_Energy.Throw_Skill.class);
 			b.detach();
 			if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){
@@ -3343,7 +3441,7 @@ public enum Talent {
 			Buff.affect(enemy, StoneOfAggression.Aggression.class,3);
 		}
 		if(hero.hasTalent(ROCKET_FIST)){
-			if(Random.Int(10)<6 && hero.belongings.attackingWeapon()==null){
+			if(Random.Int(10)<6 && context.isActualUnarmedAttack()){
 				Ballistica trajectory = new Ballistica(attacker.pos, enemy.pos, Ballistica.STOP_TARGET);
 				//trim it to just be the part that goes past them
 				trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size()-1), Ballistica.PROJECTILE);
@@ -3355,7 +3453,8 @@ public enum Talent {
 						true,
 						attacker);
 
-			}else if(Random.Int(10)<3 && hero.belongings.attackingWeapon() instanceof MeleeWeapon){
+			}else if(Random.Int(10)<3 && !context.isActualUnarmedAttack()
+					&& context.allows(AttackProcChannel.MELEE_SPECIAL)){
 				Ballistica trajectory = new Ballistica(attacker.pos, enemy.pos, Ballistica.STOP_TARGET);
 				//trim it to just be the part that goes past them
 				trajectory = new Ballistica(trajectory.collisionPos, trajectory.path.get(trajectory.path.size()-1), Ballistica.PROJECTILE);
@@ -3373,16 +3472,16 @@ public enum Talent {
 			Buff.affect(hero, Daze.class, 4*hero.pointsNegative(Talent.STEAM_BEAN));
 			Buff.affect(enemy,SteamBean.class);
 		}
-        if(hero.hasTalent(RUNE_BLADE) && enemy.isAlive()){
-            KindOfWeapon weapon = hero.belongings.attackingWeapon();
+		if(hero.hasTalent(RUNE_BLADE) && enemy.isAlive()){
+			KindOfWeapon weapon = context.weapon();
             RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
             if((weapon instanceof Weapon && ((Weapon)weapon).getEnchant()!=null) ||
                 (ring != null && ring.enchantment != null && !ring.cursed && ring.isEquipped(hero))){
                 enemy.damage(hero.pointsInTalent(RUNE_BLADE), new WandOfMagicMissile(), DamageTag.MAGICAL);
             }
         }
-        if(hero.hasTalent(MANA_WREATH)){
-            KindOfWeapon weapon = hero.belongings.attackingWeapon();
+		if(hero.hasTalent(MANA_WREATH)){
+			KindOfWeapon weapon = context.weapon();
             RingOfKing ring = hero.belongings.getItem(RingOfKing.class);
             if((weapon instanceof Weapon && ((Weapon)weapon).getEnchant()!=null) ||
                     (ring != null && ring.enchantment != null && !ring.cursed && ring.isEquipped(hero))){
@@ -3408,7 +3507,7 @@ public enum Talent {
 
             }
         }
-        if(hero.glyphLevel(Potential.class)>=0 && hero.subClass.is(HeroSubClass.COMBATMASTER) && (hero.belongings.attackingWeapon() instanceof MeleeWeapon)){
+		if(hero.glyphLevel(Potential.class)>=0 && hero.subClass.is(HeroSubClass.COMBATMASTER) && context.isActualMeleeWeapon()){
             int wands = hero.belongings.charge( 0.5f );
             if (wands > 0) {
                 hero.sprite.centerEmitter().burst(EnergyParticle.FACTORY, 10);
@@ -4510,6 +4609,13 @@ public enum Talent {
 			BuffIndicator.refreshHero();
 		}
 		@Override
+		public boolean usable() {
+			return target == Dungeon.hero
+					&& Dungeon.hero != null
+					&& Dungeon.hero.hasTalent(SMOKE_MASK)
+					&& target.buff(SmokeCooldown.class) == null;
+		}
+		@Override
 		public void storeInBundle(Bundle bundle) {
 			super.storeInBundle(bundle);
 
@@ -4518,8 +4624,6 @@ public enum Talent {
 		@Override
 		public void restoreFromBundle(Bundle bundle) {
 			super.restoreFromBundle(bundle);
-
-			ActionIndicator1.setAction(this);
 		}
 	}
 

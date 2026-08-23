@@ -110,13 +110,20 @@ public class DungeonWallsTilemap extends DungeonTilemap {
 			return DungeonTileSheet.ALCHEMY_POT_OVERHANG;
 		} else if (pos + mapWidth < size && map[pos+mapWidth] == Terrain.BARRICADE){
 			return DungeonTileSheet.BARRICADE_OVERHANG;
-		} else if (pos + mapWidth < size && map[pos+mapWidth] == Terrain.HIGH_GRASS){
-			return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.HIGH_GRASS_OVERHANG, pos + mapWidth);
-		} else if (pos + mapWidth < size && map[pos+mapWidth] == Terrain.FURROWED_GRASS){
-			return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.FURROWED_OVERHANG, pos + mapWidth);
+		} else if (pos + mapWidth < size && grassOverhangAllowed(tile, map[pos+mapWidth])) {
+			if (map[pos+mapWidth] == Terrain.HIGH_GRASS) {
+				return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.HIGH_GRASS_OVERHANG, pos + mapWidth);
+			} else {
+				return DungeonTileSheet.getVisualWithAlts(DungeonTileSheet.FURROWED_OVERHANG, pos + mapWidth);
+			}
 		}
 
 		return -1;
+	}
+
+	static boolean grassOverhangAllowed(int currentTile, int lowerTile) {
+		return currentTile != Terrain.WATER
+				&& (lowerTile == Terrain.HIGH_GRASS || lowerTile == Terrain.FURROWED_GRASS);
 	}
 
 	@Override

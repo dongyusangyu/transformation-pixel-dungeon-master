@@ -277,9 +277,6 @@ public class Momentum extends Buff implements ActionIndicator.Action {
 		momentumStacks = bundle.getInt(STACKS);
 		freerunTurns = bundle.getInt(FREERUN_TURNS);
 		freerunCooldown = bundle.getInt(FREERUN_CD);
-		if (momentumStacks > 0 && freerunTurns <= 0){
-			ActionIndicator.setAction(this);
-		}
 		movedLastTurn = false;
 	}
 
@@ -318,6 +315,11 @@ public class Momentum extends Buff implements ActionIndicator.Action {
 		momentumStacks = 0;
 		BuffIndicator.refreshHero();
 		ActionIndicator.clearAction(this);
+	}
+
+	@Override
+	public boolean usable() {
+		return momentumStacks > 0 && freerunTurns <= 0 && freerunCooldown <= 0;
 	}
 
 }

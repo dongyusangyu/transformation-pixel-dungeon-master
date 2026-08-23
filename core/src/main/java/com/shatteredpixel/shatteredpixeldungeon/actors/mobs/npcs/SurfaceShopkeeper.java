@@ -21,6 +21,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
@@ -47,7 +48,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScrol
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidRun;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -312,9 +312,9 @@ public class SurfaceShopkeeper extends Shopkeeper {
 		Item returned = buybackItems.remove(buybackIndex);
 		Dungeon.gold -= returned.value();
 		Statistics.goldCollected -= returned.value();
-		if (returned instanceof MissileWeapon && returned.isUpgradable()) {
-			Buff.affect(Dungeon.hero, MissileWeapon.UpgradedSetTracker.class)
-					.levelThresholds.put(((MissileWeapon) returned).setID, returned.level());
+		if (returned instanceof MissileWeapon) {
+			MissileWeapon.UpgradedSetTracker.restoreFromMerchant(
+					Dungeon.hero, (MissileWeapon) returned);
 		}
 		if (!returned.doPickUp(Dungeon.hero)) {
 			Dungeon.level.drop(returned, Dungeon.hero.pos);

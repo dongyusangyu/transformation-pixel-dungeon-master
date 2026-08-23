@@ -295,7 +295,7 @@ abstract public class Weapon extends KindOfWeapon {
 		}
 
 		 */
-		if (augment == Augment.MAGIC && defender.isAlive() && !becameAlly
+		if (augment == Augment.MAGIC && attacker != defender && defender.isAlive() && !becameAlly
 				&& weaponTier() >= 1 && weaponTier() <= 5) {
 			defender.damage(Random.IntRange(weaponTier(), magicDamageMax()),
 					this, DamageTag.MAGICAL);

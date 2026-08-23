@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MagicFeather;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SpearShield;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
@@ -156,6 +157,11 @@ abstract public class KindOfWeapon extends EquipableItem {
 	public boolean equipSecondary( Hero hero ){
 
 		isSwiftEquipping = false;
+		if (hero.belongings.secondWep == null
+				&& !hero.belongings.backpack.canReserveSecondaryWeaponSlot(this)) {
+			GLog.w(Messages.get(MeleeWeapon.class, "swap_full"));
+			return false;
+		}
 		if (hero.belongings.contains(this) && hero.hasTalent(Talent.SWIFT_EQUIP)){
 			if (hero.buff(Talent.SwiftEquipCooldown.class) == null
 					|| hero.buff(Talent.SwiftEquipCooldown.class).hasSecondUse()){
@@ -169,6 +175,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 		if (hero.belongings.secondWep == null || hero.belongings.secondWep.doUnequip( hero, true )) {
 
 			hero.belongings.secondWep = this;
+			hero.belongings.onSecondaryWeaponChanged();
 			activate( hero );
 			Talent.onItemEquipped(hero, this);
 			Badges.validateDuelistUnlock();
@@ -214,6 +221,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 			if (!second){
 				hero.belongings.weapon = null;
 			}
+			hero.belongings.onSecondaryWeaponChanged();
 			return true;
 
 		} else {
@@ -221,6 +229,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 			if (second){
 				hero.belongings.secondWep = this;
 			}
+			hero.belongings.onSecondaryWeaponChanged();
 			return false;
 
 		}

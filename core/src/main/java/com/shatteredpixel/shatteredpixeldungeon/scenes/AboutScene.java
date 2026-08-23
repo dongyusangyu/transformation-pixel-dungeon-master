@@ -97,7 +97,7 @@ public class AboutScene extends PixelScene {
 		CreditsBlock art = new CreditsBlock(false, Window.TPX_COLOR,
 				"Art:",
 				null,
-				"DM-216\n可则\n幻影の人食い雑魚\n放縦鵺\nLefted\n诺亚7385",
+				"DM-216\n可则\n幻影の人食い雑魚\n放縦鵺\nLefted\n诺亚7385\n狗emoji\nST秋叶",
 				null,
 				null);
 		if (landscape()){
@@ -111,7 +111,7 @@ public class AboutScene extends PixelScene {
 		CreditsBlock special = new CreditsBlock(false, Window.TPX_COLOR,
 				"Special:",
 				null,
-				"叶·凌卡缇娜·霜麟\n狗emoji\n咕\n才羽 桃井\n昭时赤\nOGC",
+				"叶·凌卡缇娜·霜麟\n咕\n才羽 桃井\n昭时赤\nOGC",
 				null,
 				null);
 		special.setRect(art.right()+10, art.top(), 50, 0);

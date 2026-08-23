@@ -135,10 +135,6 @@ public class MonkEnergy extends Buff implements ActionIndicator.Action {
 		super.restoreFromBundle(bundle);
 		energy = bundle.getFloat(ENERGY);
 		cooldown = bundle.getInt(COOLDOWN);
-
-		if (energy >= 1 && cooldown == 0){
-			ActionIndicator.setAction(this);
-		}
 	}
 
 	public void gainEnergy(Mob enemy ){
@@ -335,6 +331,11 @@ public class MonkEnergy extends Buff implements ActionIndicator.Action {
 	@Override
 	public void doAction() {
 		GameScene.show(new WndMonkAbilities(this));
+	}
+
+	@Override
+	public boolean usable() {
+		return energy >= 1 && cooldown == 0;
 	}
 
 	public static abstract class MonkAbility {

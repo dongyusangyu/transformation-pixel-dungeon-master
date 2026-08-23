@@ -275,16 +275,20 @@ public class Item implements Bundlable {
 			return true;
 		}
 
+		Bag fallback = null;
 		for (Item item:items) {
-			if (item instanceof Bag && ((Bag)item).canHold( this )) {
-				if (collect( (Bag)item )){
+			if (item instanceof Bag) {
+				Bag bag = (Bag) item;
+				if (bag.isFallbackStorage()) {
+					fallback = bag;
+				} else if (bag.canHold(this) && collect(bag)) {
 					return true;
 				}
 			}
 		}
 
 		if (!container.canHold(this)){
-			return false;
+			return fallback != null && fallback.canHold(this) && collect(fallback);
 		}
 		
 		if (stackable) {

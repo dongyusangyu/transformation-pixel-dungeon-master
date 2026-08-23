@@ -240,6 +240,12 @@ public abstract class Actor implements Bundlable {
 		return current != null;
 	}
 
+	private static volatile boolean threadIdle;
+
+	public static boolean threadIdle() {
+		return threadIdle;
+	}
+
 	public static int curActorPriority() {
 		return current != null ? current.actPriority : HERO_PRIO;
 	}
@@ -247,6 +253,7 @@ public abstract class Actor implements Bundlable {
 	public static boolean keepActorThreadAlive = true;
 	
 	public static void process() {
+		threadIdle = false;
 		
 		boolean doNext;
 		boolean interrupted = false;
@@ -317,17 +324,21 @@ public abstract class Actor implements Bundlable {
 					}
 
 					//signals to the gamescene that actor processing is finished for now
+					threadIdle = true;
 					Thread.currentThread().notify();
 					
 					try {
 						Thread.currentThread().wait();
 					} catch (InterruptedException e) {
 						interrupted = true;
+					} finally {
+						threadIdle = false;
 					}
 				}
 			}
 
 		} while (keepActorThreadAlive);
+		threadIdle = false;
 	}
 	
 	public static void add( Actor actor ) {

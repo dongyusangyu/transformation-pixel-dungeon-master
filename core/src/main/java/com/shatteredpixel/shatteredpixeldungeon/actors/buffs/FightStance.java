@@ -135,7 +135,6 @@ public class FightStance extends Buff implements ActionIndicator.Action {
         super.restoreFromBundle(bundle);
         stance = bundle.getInt(STANCE);
         duration = bundle.getFloat(DURATION);
-        ActionIndicator.setAction(this);
     }
 
     @Override
@@ -313,7 +312,6 @@ public class FightStance extends Buff implements ActionIndicator.Action {
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
-            ActionIndicator.clearAction();
         }
     }
 

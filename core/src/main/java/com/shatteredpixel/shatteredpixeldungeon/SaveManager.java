@@ -9,8 +9,9 @@ import com.watabou.utils.FileUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,17 +52,34 @@ public class SaveManager {
     // 配置
     public static final int MAX_SLOTS = 12;
     private static final String SAVE_FILE_PATTERN = "save-%03d.json";
+	private static final String CHECKPOINT_FILE_PATTERN = "save-%03d.checkpoint";
 
     private static final String LEVELS_KEY = "levels";
     private static final String BADGES_KEY = "badges";
     private static final String RANKINGS_KEY = "rankings";
     private static final String JOURNAL_KEY = "journal";
+	private static final String SAVE_REVISION_KEY = "save_revision";
     private static final String LEGACY_GLOBAL_FILE = "global.json";
     private static final String CLOUD_DEVICE_ID_KEY = "cloud_device_id";
     private static final String CLOUD_PLAYER_UUID_KEY = "cloud_player_uuid";
     private static final Pattern LEGACY_LEVEL_FILE = Pattern.compile("depth(\\d+)(?:-branch(\\d+))?\\.dat");
 
-    private static final HashMap<Integer, SaveInfo> saveInfoCache = new HashMap<>();
+	private static final ConcurrentHashMap<Integer, SaveInfo> saveInfoCache = new ConcurrentHashMap<>();
+	private static final AtomicLongArray checkpointEpochs = new AtomicLongArray(MAX_SLOTS + 1);
+	private static final CheckpointSaveQueue<CheckpointWrite> checkpointSaves =
+			new CheckpointSaveQueue<>("SHPD Checkpoint Writer", SaveManager::writeQueuedCheckpoint);
+
+	private static class CheckpointWrite {
+		final int slot;
+		final long epoch;
+		final Bundle bundle;
+
+		CheckpointWrite(int slot, long epoch, Bundle bundle) {
+			this.slot = slot;
+			this.epoch = epoch;
+			this.bundle = bundle;
+		}
+	}
 
 
     public static class SaveInfo {
@@ -72,6 +90,7 @@ public class SaveManager {
         public int gold;
         public long playTime;      // 游戏时长（毫秒）
         public long lastPlayed;    // 最后游玩时间
+		public long saveRevision;
         public boolean exists;
 
         public SaveInfo(int slot) {
@@ -91,6 +110,7 @@ public class SaveManager {
             this.gold = bundle.contains("gold") ? bundle.getInt("gold") : 0;
             this.playTime = bundle.contains("playTime") ? bundle.getLong("playTime") : 0L;
             this.lastPlayed = bundle.contains("lastPlayed") ? bundle.getLong("lastPlayed") : System.currentTimeMillis();
+			this.saveRevision = bundle.contains(SAVE_REVISION_KEY) ? bundle.getLong(SAVE_REVISION_KEY) : 0L;
             this.exists = true;
         }
 
@@ -103,7 +123,8 @@ public class SaveManager {
             bundle.put("depth", depth);
             bundle.put("gold", gold);
             bundle.put("playTime", playTime);
-            bundle.put("lastPlayed", lastPlayed);
+			bundle.put("lastPlayed", lastPlayed);
+			bundle.put(SAVE_REVISION_KEY, saveRevision);
         }
     }
 
@@ -118,8 +139,9 @@ public class SaveManager {
      * @param bundle 游戏数据Bundle
      * @throws IOException 保存失败
      */
-    public static void saveGame(int slot, Bundle bundle) throws IOException {
+    public static synchronized void saveGame(int slot, Bundle bundle) throws IOException {
         validateSlot(slot);
+		checkpointEpochs.incrementAndGet(slot);
 
         String filename = String.format(SAVE_FILE_PATTERN, slot);
 
@@ -129,13 +151,15 @@ public class SaveManager {
             // 添加元数据
             bundle.put("slot", slot);
             bundle.put("slot", slot);
-            bundle.put("lastPlayed", System.currentTimeMillis());
+			bundle.put("lastPlayed", System.currentTimeMillis());
+			bundle.put(SAVE_REVISION_KEY, nextSaveRevision(slot));
             if (!bundle.contains("version")) {
                 bundle.put("version", Game.versionCode);
             }
 
             // 写入文件
             FileUtils.bundleToFile(filename, bundle);
+			deleteCheckpointFiles(slot);
 
             // 更新缓存
             SaveInfo info = new SaveInfo(slot);
@@ -146,6 +170,55 @@ public class SaveManager {
             throw e;
         }
     }
+
+	public static synchronized void saveCheckpoint(int slot, Bundle bundle) throws IOException {
+		validateSlot(slot);
+		writeCheckpoint(slot, bundle);
+	}
+
+	public static void queueCheckpoint(int slot, Bundle bundle) {
+		queueCheckpoint(slot, checkpointEpoch(slot), bundle);
+	}
+
+	static long checkpointEpoch(int slot) {
+		validateSlot(slot);
+		return checkpointEpochs.get(slot);
+	}
+
+	static void queueCheckpoint(int slot, long epoch, Bundle bundle) {
+		validateSlot(slot);
+		checkpointSaves.submit(new CheckpointWrite(slot, epoch, bundle));
+	}
+
+	public static boolean flushCheckpointSaves(long timeoutMillis) throws IOException {
+		return checkpointSaves.flush(timeoutMillis);
+	}
+
+	public static IOException pollCheckpointFailure() {
+		return checkpointSaves.pollFailure();
+	}
+
+	private static void writeQueuedCheckpoint(CheckpointWrite write) throws IOException {
+		if (write.epoch != checkpointEpochs.get(write.slot)) return;
+		synchronized (SaveManager.class) {
+			if (write.epoch != checkpointEpochs.get(write.slot)) return;
+			writeCheckpoint(write.slot, write.bundle);
+		}
+	}
+
+	private static void writeCheckpoint(int slot, Bundle bundle) throws IOException {
+		bundle.put("slot", slot);
+		bundle.put("lastPlayed", System.currentTimeMillis());
+		bundle.put(SAVE_REVISION_KEY, nextSaveRevision(slot));
+		if (!bundle.contains("version")) {
+			bundle.put("version", Game.versionCode);
+		}
+
+		FileUtils.bundleToFile(String.format(CHECKPOINT_FILE_PATTERN, slot), bundle);
+		SaveInfo info = new SaveInfo(slot);
+		info.extractFromBundle(bundle);
+		saveInfoCache.put(slot, info);
+	}
 
     /**
      * 更新单个地图数据
@@ -169,7 +242,11 @@ public class SaveManager {
             return;
         }
 
-        Bundle existingLevels = existing.getBundle(LEVELS_KEY);
+		mergeLevels(existing, gameBundle);
+	}
+
+	private static void mergeLevels(Bundle existing, Bundle gameBundle) {
+		Bundle existingLevels = existing.getBundle(LEVELS_KEY);
         if (existingLevels == null || existingLevels.isNull()) {
             return;
         }
@@ -191,7 +268,7 @@ public class SaveManager {
         gameBundle.put(LEVELS_KEY, mergedLevels);
     }
 
-    public static void saveLevel(int slot, int depth, int branch, Bundle levelBundle) throws IOException {
+    public static synchronized void saveLevel(int slot, int depth, int branch, Bundle levelBundle) throws IOException {
         validateSlot(slot);
 
         Bundle bundle = loadGameOrNew(slot);
@@ -207,13 +284,46 @@ public class SaveManager {
      * @return 游戏数据Bundle
      * @throws IOException 加载失败
      */
-    public static Bundle loadGame(int slot) throws IOException {
+    public static synchronized Bundle loadGame(int slot) throws IOException {
         validateSlot(slot);
 
         String filename = String.format(SAVE_FILE_PATTERN, slot);
 
         try {
-            Bundle bundle = FileUtils.bundleFromFile(filename);
+			Bundle bundle = null;
+			IOException primaryFailure = null;
+			try {
+				bundle = FileUtils.bundleFromFile(filename);
+			} catch (IOException e) {
+				primaryFailure = e;
+			}
+			String checkpointFile = String.format(CHECKPOINT_FILE_PATTERN, slot);
+			if (FileUtils.fileExists(checkpointFile)) {
+				try {
+					Bundle checkpoint = FileUtils.bundleFromFile(checkpointFile);
+					long checkpointRevision = checkpoint.getLong(SAVE_REVISION_KEY);
+					long primaryRevision = bundle == null ? -1L : bundle.getLong(SAVE_REVISION_KEY);
+					boolean checkpointNewer = checkpointRevision > primaryRevision
+							|| (checkpointRevision == 0L && primaryRevision == 0L
+							&& checkpoint.getLong("lastPlayed") > bundle.getLong("lastPlayed"));
+					if (bundle == null || checkpointNewer) {
+						if (bundle != null) mergeLevels(bundle, checkpoint);
+						bundle = checkpoint;
+					} else {
+						deleteCheckpointFiles(slot);
+					}
+				} catch (IOException e) {
+					deleteCheckpointFiles(slot);
+					if (bundle == null) {
+						if (primaryFailure != null) e.addSuppressed(primaryFailure);
+						throw e;
+					}
+					Game.reportException(e);
+				}
+			}
+			if (bundle == null) {
+				throw primaryFailure != null ? primaryFailure : new IOException("No save data for slot " + slot);
+			}
 
             // 更新缓存
             SaveInfo info = new SaveInfo(slot);
@@ -253,12 +363,15 @@ public class SaveManager {
      * @param slot 存档槽（1-42）
      * @return 是否成功删除
      */
-    public static boolean deleteGame(int slot) {
+    public static synchronized boolean deleteGame(int slot) {
         validateSlot(slot);
+		checkpointEpochs.incrementAndGet(slot);
 
         String filename = String.format(SAVE_FILE_PATTERN, slot);
 
-        boolean success = FileUtils.deleteFile(filename);
+		boolean success = saveExists(slot);
+		deleteFileAndArtifacts(filename);
+		deleteCheckpointFiles(slot);
 
         if (success) {
             saveInfoCache.remove(slot);
@@ -269,6 +382,33 @@ public class SaveManager {
         return success;
     }
 
+	private static void deleteCheckpointFiles(int slot) {
+		deleteFileAndArtifacts(String.format(CHECKPOINT_FILE_PATTERN, slot));
+	}
+
+	private static long nextSaveRevision(int slot) {
+		SaveInfo previous = saveInfoCache.get(slot);
+		long revision = previous == null ? 0L : previous.saveRevision;
+		if (previous == null) {
+			revision = Math.max(revision, revisionFromFile(String.format(SAVE_FILE_PATTERN, slot)));
+			revision = Math.max(revision, revisionFromFile(String.format(CHECKPOINT_FILE_PATTERN, slot)));
+		}
+		return revision + 1L;
+	}
+
+	private static long revisionFromFile(String filename) {
+		if (!FileUtils.fileExists(filename)) return 0L;
+		try {
+			return FileUtils.bundleFromFile(filename).getLong(SAVE_REVISION_KEY);
+		} catch (IOException e) {
+			return 0L;
+		}
+	}
+
+	private static void deleteFileAndArtifacts(String filename) {
+		FileUtils.deleteBundleFile(filename);
+	}
+
     /**
      * 检查存档是否存在
      *
@@ -278,8 +418,8 @@ public class SaveManager {
     public static boolean saveExists(int slot) {
         validateSlot(slot);
 
-        String filename = String.format(SAVE_FILE_PATTERN, slot);
-        return FileUtils.fileExists(filename);
+		return FileUtils.fileExists(String.format(SAVE_FILE_PATTERN, slot))
+				|| FileUtils.fileExists(String.format(CHECKPOINT_FILE_PATTERN, slot));
     }
 
     /**
@@ -374,7 +514,7 @@ public class SaveManager {
                 SPDSettings.cloudPlayerUUID(playerUUID);
             }
             saveGlobal(global);
-            FileUtils.deleteFile(LEGACY_GLOBAL_FILE);
+			FileUtils.deleteBundleFile(LEGACY_GLOBAL_FILE);
         } catch (Exception e) {
             Game.reportException(new RuntimeException("Legacy global data migration failed", e));
         }

@@ -433,11 +433,6 @@ public abstract class Char extends Actor {
 		for (Bundlable b : bundle.getCollection( BUFFS )) {
 			if (b != null) {
 				((Buff)b).attachTo( this );
-				if(b instanceof DarkHook){
-					ActionIndicator.clearAction();
-				}else if(b instanceof Talent.SmokeMask){
-					ActionIndicator1.clearAction();
-				}
 			}
 		}
 	}
@@ -1920,7 +1915,7 @@ public abstract class Char extends Actor {
 				new HashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class) )),
 		MINIBOSS ( new HashSet<Class>(),
 				new HashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class) )),
-        UNSLEEP(new HashSet<Class>(Arrays.asList(Sleep.class,MagicalSleep.class, Drowsy.class)),
+        UNSLEEP(new HashSet<Class>(Arrays.asList(Sleep.class,MagicalSleep.class, Drowsy.class, Terror.class)),
                 new HashSet<Class>( Arrays.asList(Sleep.class,MagicalSleep.class, Drowsy.class) )),
 		BOSS_MINION,
 		UNDEAD,

@@ -25,6 +25,8 @@ package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.input.GameAction;
@@ -88,7 +90,9 @@ public class ActionIndicator1 extends Tag {
     public void update() {
         super.update();
 
-        synchronized (ActionIndicator.class) {
+        synchronized (ActionIndicator1.class) {
+            if (action != null && !canShowAction(action)) clearAction(action);
+
             if (!visible && action != null) {
                 visible = true;
                 needsRefresh = true;
@@ -124,7 +128,7 @@ public class ActionIndicator1 extends Tag {
                 needsRefresh = false;
             }
 
-            if (!Dungeon.hero.ready) {
+            if (Dungeon.hero == null || !Dungeon.hero.ready) {
                 if (primaryVis != null) primaryVis.alpha(0.5f);
                 if (secondVis != null) secondVis.alpha(0.5f);
             } else {
@@ -138,8 +142,11 @@ public class ActionIndicator1 extends Tag {
     @Override
     protected void onClick() {
         super.onClick();
-        if (action != null && Dungeon.hero.ready) {
+        if (action != null && canShowAction(action)
+                && Dungeon.hero != null && Dungeon.hero.ready) {
             action.doAction();
+        } else if (action != null) {
+            clearAction(action);
         }
     }
 
@@ -153,9 +160,37 @@ public class ActionIndicator1 extends Tag {
         }
     }
 
-    public static void setAction(Action action){
+    public static boolean setAction(Action action){
+        if (!canShowAction(action)) return false;
         synchronized (ActionIndicator1.class) {
             ActionIndicator1.action = action;
+            refresh();
+        }
+        return true;
+    }
+
+    public static boolean canShowAction(Action action) {
+        if (action == null || !action.usable()) return false;
+        if (action instanceof Buff) {
+            Buff buff = (Buff) action;
+            return Dungeon.hero != null
+                    && buff.target == Dungeon.hero
+                    && Dungeon.hero.buffs().contains(buff);
+        }
+        return true;
+    }
+
+    public static void reconcileActionState() {
+        synchronized (ActionIndicator1.class) {
+            if (action != null && !canShowAction(action)) {
+                action = null;
+            }
+            if (action == null && Dungeon.hero != null) {
+                Talent.SmokeMask smokeMask = Dungeon.hero.buff(Talent.SmokeMask.class);
+                if (smokeMask != null && canShowAction(smokeMask)) {
+                    action = smokeMask;
+                }
+            }
             refresh();
         }
     }
@@ -201,6 +236,8 @@ public class ActionIndicator1 extends Tag {
         int indicatorColor();
 
         void doAction();
+
+        default boolean usable() { return true; }
 
     }
 

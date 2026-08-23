@@ -33,6 +33,27 @@ public final class GentlemanElfTelegraph {
 
 	public static int[] line(Grid grid, int from, int to) {
 		if (grid == null || from < 0 || to < 0) return new int[0];
+		java.util.ArrayList<Integer> result = new java.util.ArrayList<>();
+		for (int cell : geometricLine(grid, from, to)) {
+			if (!grid.passable(cell)) break;
+			result.add(cell);
+		}
+		return result.stream().mapToInt(Integer::intValue).toArray();
+	}
+
+	/** Returns the geometric segment between two cells, excluding both endpoints. */
+	public static int[] intermediateSegment(Grid grid, int from, int to) {
+		int[] full = geometricLine(grid, from, to);
+		if (full.length <= 2) return new int[0];
+		int[] result = new int[full.length - 2];
+		System.arraycopy(full, 1, result, 0, result.length);
+		return result;
+	}
+
+	private static int[] geometricLine(Grid grid, int from, int to) {
+		if (grid == null || from < 0 || to < 0
+				|| from >= grid.width() * grid.height() || to >= grid.width() * grid.height())
+			return new int[0];
 		int x = from % grid.width(), y = from / grid.width();
 		int tx = to % grid.width(), ty = to / grid.width();
 		int dx = Math.abs(tx - x), dy = Math.abs(ty - y);
@@ -40,9 +61,7 @@ public final class GentlemanElfTelegraph {
 		int error = dx - dy;
 		java.util.ArrayList<Integer> result = new java.util.ArrayList<>();
 		while (true) {
-			int cell = y * grid.width() + x;
-			if (!grid.passable(cell)) break;
-			result.add(cell);
+			result.add(y * grid.width() + x);
 			if (x == tx && y == ty) break;
 			int doubled = error * 2;
 			if (doubled > -dy) { error -= dy; x += sx; }

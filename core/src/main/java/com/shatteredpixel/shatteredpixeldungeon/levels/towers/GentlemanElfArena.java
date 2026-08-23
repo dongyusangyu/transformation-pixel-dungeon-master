@@ -2,6 +2,9 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfIllusion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.ElfWineCup;
@@ -54,10 +57,12 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 	public void resolveBanquetNow() {
 		if (host == null || !banquetReady()) return;
 		LinkedHashSet<Char> targets = new LinkedHashSet<>();
+		GentlemanElf boss = host.boss();
 		for (Char ch : host.characters()) {
 			if (ch != null && ch.isAlive() && ch != host.boss()
 					&& !(ch instanceof GentlemanElfIllusion)
-					&& !(ch instanceof ElfWineCup)) targets.add(ch);
+					&& !(ch instanceof ElfWineCup)
+					&& (boss == null || ch.alignment != boss.alignment)) targets.add(ch);
 		}
 		host.resolveBanquet(targets);
 	}
@@ -122,18 +127,27 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 	}
 	public void cancelCup() {
 		Actor actor = actorById(cupId);
-		if (actor instanceof ElfWineCup) ((ElfWineCup) actor).destroy();
+		if (actor instanceof ElfWineCup) ((ElfWineCup) actor).dismiss();
 		cupId = -1;
 		cupRespawnTurns = -1;
 	}
 	public void clearIllusions() {
 		for (int id : illusionIds) {
 			Actor actor = actorById(id);
-			if (actor instanceof GentlemanElfIllusion) ((GentlemanElfIllusion) actor).destroy();
+			if (actor instanceof GentlemanElfIllusion) ((GentlemanElfIllusion) actor).dismiss();
 		}
 		illusionIds = new int[0];
 	}
-	public void cleanup() { cancelCup(); clearIllusions(); stop(); }
+	public void cleanup() {
+		if (host != null) {
+			for (Char character : host.characters()) {
+				if (character == null) continue;
+				Buff.detach(character, Drunkenness.class);
+				Buff.detach(character, Exhilaration.class);
+			}
+		}
+		cancelCup(); clearIllusions(); stop();
+	}
 	private void rebindDerivedEntities() {
 		Actor cupActor = actorById(cupId);
 		if (cupActor instanceof ElfWineCup) {

@@ -288,7 +288,6 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		turnsInvis = bundle.getInt(TURNS);
-		ActionIndicator.setAction(this);
 	}
 	
 	@Override
@@ -332,7 +331,15 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 	public void doAction() {
 		GameScene.selectCell(attack);
 	}
-	
+
+	@Override
+	public boolean usable() {
+		return target != null
+				&& target == Dungeon.hero
+				&& target.invisible > 0
+				&& AttackLevel.getLvl(turnsInvis).blinkDistance() > 0;
+	}
+
 	private CellSelector.Listener attack = new CellSelector.Listener() {
 		
 		@Override

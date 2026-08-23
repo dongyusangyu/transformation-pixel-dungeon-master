@@ -53,6 +53,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.SlimeMucus;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator1;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinBridgeConfig;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.curriculum.AgentMinCurriculum;
@@ -169,6 +171,7 @@ public class Dungeon {
 		SCROLL_HOLDER,
 		POTION_BANDOLIER,
 		MAGICAL_HOLSTER,
+		HIKING_BACKPACK,
 
 		//lore documents
 		LORE_SEWERS,
@@ -876,6 +879,8 @@ public class Dungeon {
 		Mob.restoreAllies( level, pos );
 
 		Actor.init();
+		ActionIndicator.reconcileActionState();
+		ActionIndicator1.reconcileActionState();
 
 		level.addRespawner();
 		
@@ -1082,6 +1087,18 @@ public class Dungeon {
 	
 	public static void saveGame( int save ) {
 		try {
+			saveGameOrThrow(save);
+		} catch (IOException e) {
+			GamesInProgress.setUnknown( save );
+			ShatteredPixelDungeon.reportException(e);
+		}
+	}
+
+	private static void saveGameOrThrow( int save ) throws IOException {
+		SaveManager.saveGame(save, gameBundle());
+	}
+
+	private static Bundle gameBundle() {
 			Bundle bundle = new Bundle();
 
 			bundle.put( INIT_VER, initialVersion );
@@ -1170,12 +1187,7 @@ public class Dungeon {
 				SaveManager.putLevel(bundle, depth, branch, levelBundle);
 			}
 
-			SaveManager.saveGame(save, bundle);
-			
-		} catch (IOException e) {
-			GamesInProgress.setUnknown( save );
-			ShatteredPixelDungeon.reportException(e);
-		}
+			return bundle;
 	}
 	
 	public static void saveLevel( int save ) throws IOException {
@@ -1189,10 +1201,30 @@ public class Dungeon {
 			
 			Actor.fixTime();
 			updateLevelExplored();
-			saveGame( GamesInProgress.curSlot );
+			saveGameOrThrow( GamesInProgress.curSlot );
 
 			GamesInProgress.set( GamesInProgress.curSlot );
 
+		}
+	}
+
+	public static void saveCheckpoint() throws IOException {
+		if (hero != null && (hero.isAlive() || WndResurrect.instance != null)) {
+			Actor.fixTime();
+			updateLevelExplored();
+			SaveManager.saveCheckpoint(GamesInProgress.curSlot, gameBundle());
+			GamesInProgress.set(GamesInProgress.curSlot);
+		}
+	}
+
+	public static void queueCheckpoint() {
+		if (hero != null && (hero.isAlive() || WndResurrect.instance != null)) {
+			Actor.fixTime();
+			updateLevelExplored();
+			int slot = GamesInProgress.curSlot;
+			long checkpointEpoch = SaveManager.checkpointEpoch(slot);
+			SaveManager.queueCheckpoint(slot, checkpointEpoch, gameBundle());
+			GamesInProgress.set(GamesInProgress.curSlot);
 		}
 	}
 	

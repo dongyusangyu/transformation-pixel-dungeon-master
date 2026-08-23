@@ -2,6 +2,8 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfToxicGas;
 
@@ -82,6 +84,17 @@ public class CorpseTest {
 		assertEquals(0, corpse.heal(-1, false));
 		assertEquals(1, corpse.HP);
 		assertTrue(corpse.isAlive());
+	}
+
+	@Test
+	public void deadCorpseCannotReceiveConversionRewards() {
+		Corpse corpse = new Corpse();
+		corpse.HP = 0;
+
+		AllyBuff.affectAndLoot(corpse, null, Corruption.class);
+
+		assertTrue(corpse.buff(Corruption.class) == null);
+		assertEquals(Char.Alignment.ENEMY, corpse.alignment);
 	}
 
 	private static class RecordingCorpse extends Corpse {

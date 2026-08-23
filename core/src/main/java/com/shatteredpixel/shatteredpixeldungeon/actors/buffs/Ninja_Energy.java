@@ -98,9 +98,6 @@ public class Ninja_Energy extends Buff implements ActionIndicator.Action {
         super.restoreFromBundle(bundle);
         energy = bundle.getFloat(ENERGY);
         partenergy = bundle.getInt(PARTENERGY);
-        if (energy >= 0){
-            ActionIndicator.setAction(this);
-        }
     }
 
     @Override
@@ -144,9 +141,15 @@ public class Ninja_Energy extends Buff implements ActionIndicator.Action {
         }
         BuffIndicator.refreshHero();
     }
+
     @Override
     public String actionName() {
         return Messages.get(this, "action");
+    }
+
+    @Override
+    public boolean usable() {
+        return energy >= 1;
     }
 
     @Override

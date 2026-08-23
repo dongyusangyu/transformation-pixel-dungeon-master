@@ -496,6 +496,12 @@ public class TestPotion extends TestGenerator {
             CATEGORY_BTM = TITLE_BTM + (rowNumber+1) * BTN_SIZE;
         }
 
+        private Image createItemImage(Class<? extends Item> itemClass) {
+            Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(itemClass)));
+            im.scale.set(1.0f);
+            return im;
+        }
+
         private void createImage() {
             float top = CATEGORY_BTM + GAP*3;
             int number = maxIndex(cateSelected);
@@ -524,16 +530,10 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     } break;
                     case 2:{
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(seedList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(seedList.get(i)));
                     } break;
                     case 3:{
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(dartList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(dartList.get(i)));
                     } break;
                     case 4:{
                         Image im = new Image(Assets.Sprites.ITEM_ICONS);
@@ -548,22 +548,13 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     } break;
                     case 6:{
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(stoneList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(stoneList.get(i)));
                     } break;
                     case 7:{
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(bombList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(bombList.get(i)));
                     } break;
                     case 8:{
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(brewList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(brewList.get(i)));
                     } break;
                     case 9: {
                         Image im = new ItemSprite(Objects.requireNonNull(
@@ -572,10 +563,7 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     } break;
                     case 10: {
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(foodList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(foodList.get(i)));
                     } break;
                     case 11: default:{
                         Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(miscList.get(i))));
@@ -583,22 +571,13 @@ public class TestPotion extends TestGenerator {
                         btn.icon(im);
                     } break;
                     case 12: {
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(remainList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(remainList.get(i)));
                     } break;
                     case 13: {
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(trinketList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(trinketList.get(i)));
                     }break;
                     case 14: {
-                        Image im = new Image(Assets.Sprites.ITEMS);
-                        im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(equipmentList.get(i))).image));
-                        im.scale.set(1.0f);
-                        btn.icon(im);
+                        btn.icon(createItemImage(equipmentList.get(i)));
                     } break;
                     case TREASURE_CATEGORY: {
                         Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(treasureList.get(i))));
@@ -656,6 +635,7 @@ public class TestPotion extends TestGenerator {
             for (IconButton button : buttonList.toArray(new IconButton[0])) {
                 button.destroy();
             }
+            buttonList.clear();
         }
 
         private void updateImage() {

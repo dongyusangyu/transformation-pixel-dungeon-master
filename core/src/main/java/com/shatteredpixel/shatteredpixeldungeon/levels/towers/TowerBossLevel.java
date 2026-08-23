@@ -333,7 +333,7 @@ public class TowerBossLevel extends TowerLevel {
 				Splash.at(cell, 0x55CC66, 12);
 				return true;
 			}
-			@Override public void onCupDestroyed(Char lastHit) { boss.applyCupReward(lastHit); }
+			@Override public void onCupDestroyed(Char lastHit) { boss.onArenaCupDestroyed(lastHit); }
 			@Override public void showTrueBodyHint() {
 				if (Dungeon.hero != null && Dungeon.hero.buff(Drunkenness.class) != null) {
 					Splash.at(boss.pos, 0x4B8C50, 1);

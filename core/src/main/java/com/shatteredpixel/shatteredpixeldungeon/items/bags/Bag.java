@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LostInventory;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndQuickBag;
 import com.watabou.utils.Bundlable;
@@ -82,8 +83,13 @@ public class Bag extends Item implements Iterable<Item> {
 	
 	@Override
 	public boolean collect( Bag container ) {
+		if (container != null && container.owner instanceof Hero) {
+			MissileWeapon.prepareIncomingBag((Hero) container.owner, this);
+		}
 
-		grabItems(container);
+		if (autoGrabOnCollect()) {
+			grabItems(container);
+		}
 
 		//if there are any quickslot placeholders that match items in this bag, assign them
 		for (Item item : items) {
@@ -95,6 +101,11 @@ public class Bag extends Item implements Iterable<Item> {
 			owner = container.owner;
 			
 			Badges.validateAllBagsBought( this );
+
+			if (owner instanceof Hero) {
+				MissileWeapon.sanitizeInventorySets((Hero) owner, this);
+				((Hero) owner).belongings.backpack.rebalanceFallbackStorage();
+			}
 			
 			return true;
 		} else {
@@ -112,9 +123,22 @@ public class Bag extends Item implements Iterable<Item> {
 	}
 
 	public void grabItems(){
-		if (owner != null && owner instanceof Hero && this != ((Hero) owner).belongings.backpack) {
-			grabItems(((Hero) owner).belongings.backpack);
+		if (owner instanceof Hero) {
+			com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings.Backpack backpack =
+					((Hero) owner).belongings.backpack;
+			if (this != backpack && !isFallbackStorage()) {
+				grabItems(backpack);
+			}
+			backpack.rebalanceFallbackStorage();
 		}
+	}
+
+	public boolean isFallbackStorage() {
+		return false;
+	}
+
+	protected boolean autoGrabOnCollect() {
+		return true;
 	}
 
 	public void grabItems( Bag container ){

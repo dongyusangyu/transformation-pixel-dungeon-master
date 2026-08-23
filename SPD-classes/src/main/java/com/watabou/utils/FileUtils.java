@@ -25,6 +25,7 @@ import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.GdxRuntimeException;
+import com.watabou.noosa.Game;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,50 +77,121 @@ public class FileUtils {
 		return cleanTempFiles("");
 	}
 
-	public static boolean cleanTempFiles( String dirName ){
+	public static synchronized boolean cleanTempFiles( String dirName ){
 		FileHandle dir = getFileHandle(dirName);
-		boolean foundTemp = false;
+		boolean recoveredFile = false;
+		for (FileHandle file : dir.list()) {
+			if (!file.isDirectory() && file.name().endsWith(".del")) {
+				FileHandle original = siblingWithoutSuffix(file, ".del");
+				if (deleteBundleArtifacts(original)) file.delete();
+				recoveredFile = true;
+			}
+		}
 		for (FileHandle file : dir.list()){
 			if (file.isDirectory()){
-				foundTemp = cleanTempFiles(dirName + file.name()) || foundTemp;
+				recoveredFile = cleanTempFiles(dirName + file.name() + "/") || recoveredFile;
 			} else if (file.length() == 0) {
 				file.delete();
-			} else {
-				if (file.name().endsWith(".tmp")){
-					FileHandle temp = file;
-					FileHandle original = getFileHandle( defaultFileType, "", temp.path().replace(".tmp", "") );
+			}
+		}
 
-					//replace the base file with the temp one if base is invalid or temp is valid and newer
-					try {
-						bundleFromStream(temp.read());
+		// Resolve interrupted writes before considering backups. Directory listing order is undefined.
+		for (FileHandle file : dir.list()) {
+			if (!file.isDirectory() && file.name().endsWith(".tmp")) {
+				FileHandle original = siblingWithoutSuffix(file, ".tmp");
+				if (siblingWithSuffix(original, ".del").exists()) continue;
+				if (isValidBundle(file)
+						&& (!isValidBundle(original) || file.lastModified() > original.lastModified())) {
+					promoteTemp(file, original);
+				} else {
+					file.delete();
+				}
+				recoveredFile = true;
+			}
+		}
 
-						try {
-							bundleFromStream(original.read());
-
-							if (temp.lastModified() > original.lastModified()) {
-								temp.moveTo(original);
-							} else {
-								temp.delete();
-							}
-
-						} catch (Exception e) {
-							temp.moveTo(original);
-						}
-
-					} catch (Exception e) {
-						temp.delete();
+		for (FileHandle file : dir.list()) {
+			if (!file.isDirectory() && file.name().endsWith(".bak")) {
+				FileHandle original = siblingWithoutSuffix(file, ".bak");
+				if (siblingWithSuffix(original, ".del").exists()) continue;
+				if (!isValidBundle(original)) {
+					if (isValidBundle(file)) {
+						restoreBackup(file, original);
+					} else {
+						file.delete();
 					}
-
-					foundTemp = true;
+					recoveredFile = true;
 				}
 			}
 		}
-		return foundTemp;
+		return recoveredFile;
+	}
+
+	private static FileHandle siblingWithoutSuffix(FileHandle file, String suffix) {
+		String path = file.path();
+		return getFileHandle(defaultFileType, "", path.substring(0, path.length() - suffix.length()));
+	}
+
+	private static FileHandle siblingWithSuffix(FileHandle file, String suffix) {
+		return getFileHandle(defaultFileType, "", file.path() + suffix);
+	}
+
+	private static boolean isValidBundle(FileHandle file) {
+		if (file == null || !file.exists() || file.isDirectory() || file.length() == 0) {
+			return false;
+		}
+		try {
+			bundleFromStream(file.read());
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	private static boolean promoteTemp(FileHandle temp, FileHandle target) {
+		FileHandle backup = siblingWithSuffix(target, ".bak");
+		boolean preserveTarget = isValidBundle(target);
+		try {
+			if (preserveTarget) {
+				if (backup.exists()) backup.delete();
+				target.moveTo(backup);
+			} else if (target.exists()) {
+				target.delete();
+			}
+			temp.moveTo(target);
+			if (!isValidBundle(target)) {
+				throw new IOException("Recovered temporary bundle failed validation");
+			}
+			return true;
+		} catch (Exception e) {
+			if (target.exists() && !isValidBundle(target)) target.delete();
+			if (isValidBundle(backup)) {
+				try {
+					backup.copyTo(target);
+				} catch (Exception restoreFailure) {
+					e.addSuppressed(restoreFailure);
+				}
+			}
+			Game.reportException(e);
+			return false;
+		}
+	}
+
+	private static boolean restoreBackup(FileHandle backup, FileHandle target) {
+		try {
+			if (target.exists()) target.delete();
+			backup.copyTo(target);
+			return isValidBundle(target);
+		} catch (Exception e) {
+			Game.reportException(e);
+			return false;
+		}
 	}
 	
 	public static boolean fileExists( String name ){
 		FileHandle file = getFileHandle( name );
-		return file.exists() && !file.isDirectory() && file.length() > 0;
+		return !getFileHandle(name + ".del").exists()
+				&& file.exists() && !file.isDirectory() && file.length() > 0;
 	}
 
 	//returns length of a file in bytes, or 0 if file does not exist
@@ -134,6 +206,32 @@ public class FileUtils {
 	
 	public static boolean deleteFile( String name ){
 		return getFileHandle( name ).delete();
+	}
+
+	public static synchronized boolean deleteBundleFile(String name) {
+		FileHandle file = getFileHandle(name);
+		FileHandle marker = getFileHandle(name + ".del");
+		boolean existed = file.exists()
+				|| getFileHandle(name + ".tmp").exists()
+				|| getFileHandle(name + ".bak").exists();
+		try {
+			marker.writeString("deleted", false);
+		} catch (Exception e) {
+			Game.reportException(e);
+			return false;
+		}
+		boolean deleted = deleteBundleArtifacts(file);
+		if (deleted) marker.delete();
+		return existed && deleted;
+	}
+
+	private static boolean deleteBundleArtifacts(FileHandle file) {
+		FileHandle temp = siblingWithSuffix(file, ".tmp");
+		FileHandle backup = siblingWithSuffix(file, ".bak");
+		if (file.exists()) file.delete();
+		if (temp.exists()) temp.delete();
+		if (backup.exists()) backup.delete();
+		return !file.exists() && !temp.exists() && !backup.exists();
 	}
 
 	//replaces a file with junk data, for as many bytes as given
@@ -175,41 +273,77 @@ public class FileUtils {
 	// bundle reading
 	
 	//only works for base path
-	public static Bundle bundleFromFile( String fileName ) throws IOException{
+	public static synchronized Bundle bundleFromFile( String fileName ) throws IOException{
+		if (getFileHandle(fileName + ".del").exists()) {
+			throw new IOException("file was explicitly deleted");
+		}
 		try {
 			FileHandle file = getFileHandle( fileName );
 			if (!file.exists() || file.isDirectory() || file.length() == 0) {
 				throw new IOException("file does not exist!");
 			}
 			return bundleFromStream(file.read());
-		} catch (GdxRuntimeException e){
-			//game classes expect an IO exception, so wrap the GDX exception in that
-			throw new IOException(e);
+		} catch (IOException | GdxRuntimeException failure){
+			if (!fileName.endsWith(".bak")) {
+				FileHandle backup = getFileHandle(fileName + ".bak");
+				if (isValidBundle(backup)) {
+					FileHandle file = getFileHandle(fileName);
+					try {
+						if (file.exists()) file.delete();
+						backup.copyTo(file);
+						return bundleFromStream(file.read());
+					} catch (Exception ignored) {
+						return bundleFromStream(backup.read());
+					}
+				}
+			}
+			//game classes expect an IO exception, so wrap GDX failures in one
+			if (failure instanceof IOException) throw (IOException) failure;
+			throw new IOException(failure);
 		}
 	}
 	
 	private static Bundle bundleFromStream( InputStream input ) throws IOException{
-		Bundle bundle = Bundle.read( input );
-		input.close();
-		return bundle;
+		try {
+			return Bundle.read( input );
+		} finally {
+			input.close();
+		}
 	}
 	
 	// bundle writing
 	
 	//only works for base path
-	public static void bundleToFile( String fileName, Bundle bundle ) throws IOException{
+	public static synchronized void bundleToFile( String fileName, Bundle bundle ) throws IOException{
+		FileHandle file = getFileHandle(fileName);
+		FileHandle temp = getFileHandle(fileName + ".tmp");
+		FileHandle backup = getFileHandle(fileName + ".bak");
+		FileHandle deletionMarker = getFileHandle(fileName + ".del");
 		try {
-			FileHandle file = getFileHandle(fileName);
+			if (temp.exists()) temp.delete();
+			bundleToStream(temp.write(false), bundle);
+			if (!isValidBundle(temp)) {
+				temp.delete();
+				throw new IOException("Temporary bundle validation failed: " + fileName);
+			}
+			if (deletionMarker.exists() && !deletionMarker.delete()) {
+				temp.delete();
+				throw new IOException("Could not clear deletion marker: " + fileName);
+			}
 
-			//write to a temp file, then move the files.
-			// This helps prevent save corruption if writing is interrupted
-			if (file.exists()){
-				FileHandle temp = getFileHandle(fileName + ".tmp");
-				bundleToStream(temp.write(false), bundle);
-				file.delete();
+			if (backup.exists()) backup.delete();
+			if (file.exists()) file.moveTo(backup);
+
+			try {
 				temp.moveTo(file);
-			} else {
-				bundleToStream(file.write(false), bundle);
+				if (!isValidBundle(file)) {
+					throw new IOException("Committed bundle validation failed: " + fileName);
+				}
+			} catch (Exception e) {
+				if (file.exists()) file.delete();
+				if (backup.exists()) backup.moveTo(file);
+				if (e instanceof IOException) throw (IOException) e;
+				throw new IOException(e);
 			}
 
 		} catch (GdxRuntimeException e){
@@ -219,8 +353,13 @@ public class FileUtils {
 	}
 	
 	private static void bundleToStream( OutputStream output, Bundle bundle ) throws IOException{
-		Bundle.write( bundle, output );
-		output.close();
+		try {
+			if (!Bundle.write(bundle, output)) {
+				throw new IOException("Bundle serialization failed");
+			}
+		} finally {
+			output.close();
+		}
 	}
 
 }
