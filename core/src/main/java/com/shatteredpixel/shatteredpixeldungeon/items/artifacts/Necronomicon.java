@@ -11,18 +11,34 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
+import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Image;
+import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.PathFinder;
+import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
@@ -63,6 +79,35 @@ public class Necronomicon extends Artifact {
 
 	public static float expChargeFromHeroProgress(float levelPortion) {
 		return levelPortion * 6f;
+	}
+
+	public static int summonLimit(int level) {
+		return 2 + Math.max(0, Math.min(MAX_LEVEL, level));
+	}
+
+	public static boolean isValidSummonCell(Level level, int cell) {
+		return level != null && cell >= 0 && cell < level.length()
+				&& !level.solid[cell] && Actor.findChar(cell) == null
+				&& level.getTransition(cell) == null;
+	}
+
+	public static ArrayList<Integer> summonCandidates(Level level, int landingCell) {
+		ArrayList<Integer> candidates = new ArrayList<>();
+		if (level == null) return candidates;
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = landingCell + offset;
+			if (isValidSummonCell(level, cell)) candidates.add(cell);
+		}
+		return candidates;
+	}
+
+	public static boolean isValidSoulBoundTarget(Mob target) {
+		if (target == null || target instanceof Wraith || target.alignment == null
+				|| !target.alignment.name().startsWith("ENEMY")) return false;
+		return !Char.hasProp(target, Char.Property.BOSS)
+				&& !Char.hasProp(target, Char.Property.MINIBOSS)
+				&& !Char.hasProp(target, Char.Property.BOSS_MINION)
+				&& !target.isImmune(Corruption.class);
 	}
 
 	@Override
@@ -132,8 +177,17 @@ public class Necronomicon extends Artifact {
 	public final CellSelector.Listener caster = new CellSelector.Listener() {
 		@Override
 		public void onSelect(Integer target) {
-			// Active targeting is implemented in the casting task; cancellation is
-			// intentionally side-effect free.
+			if (target == null || curUser == null || Dungeon.level == null) return;
+			if (target < 0 || target >= Dungeon.level.length()
+					|| (!Dungeon.level.visited[target] && !Dungeon.level.mapped[target])) return;
+
+			final Ballistica shot = new Ballistica(curUser.pos, target, Ballistica.MAGIC_BOLT);
+			final int cell = shot.collisionPos;
+			curUser.sprite.zap(cell);
+			MagicMissile.boltFromChar(curUser.sprite.parent, MagicMissile.SHADOW,
+					curUser.sprite, cell, () -> resolveCast((Hero) curUser, cell));
+			Sample.INSTANCE.play(Assets.Sounds.ZAP);
+			curUser.busy();
 		}
 
 		@Override
@@ -141,6 +195,52 @@ public class Necronomicon extends Artifact {
 			return Messages.get(Necronomicon.class, "prompt");
 		}
 	};
+
+	private boolean resolveCast(Hero hero, int cell) {
+		if (hero == null || Dungeon.level == null || !canCast(hero)
+				|| !isEquipped(hero)) {
+			if (hero != null) hero.next();
+			return false;
+		}
+
+		Char target = Actor.findChar(cell);
+		if (target instanceof Mob && isValidSoulBoundTarget((Mob) target)) {
+			if (charge < 1) {
+				hero.next();
+				return false;
+			}
+			Buff.affect(target, SoulBound.class);
+			charge -= 1;
+			Invisibility.dispel(hero);
+			Talent.onArtifactUsed(hero);
+			updateQuickslot();
+			hero.spendAndNext(Actor.TICK);
+			return true;
+		}
+
+		if (target != null) {
+			hero.next();
+			return false;
+		}
+
+		ArrayList<Integer> candidates = summonCandidates(Dungeon.level, cell);
+		if (candidates.isEmpty() || charge < 2) {
+			hero.next();
+			return false;
+		}
+		Random.shuffle(candidates);
+		int amount = Math.min(summonLimit(level()), candidates.size());
+		for (int i = 0; i < amount; i++) {
+			Wraith wraith = Wraith.spawnAt(candidates.get(i), Wraith.class);
+			if (wraith != null) Buff.affect(wraith, Corruption.class);
+		}
+		charge -= 2;
+		Invisibility.dispel(hero);
+		Talent.onArtifactUsed(hero);
+		updateQuickslot();
+		hero.spendAndNext(Actor.TICK);
+		return true;
+	}
 
 	public class BookRecharge extends ArtifactBuff {
 		@Override
@@ -167,6 +267,24 @@ public class Necronomicon extends Artifact {
 				GLog.p(Messages.get(this, "levelup"));
 			}
 			convertPartialCharge();
+		}
+	}
+
+	public static class SoulBound extends Buff {
+		{
+			type = buffType.NEGATIVE;
+			announced = true;
+			revivePersists = true;
+		}
+
+		@Override
+		public int icon() {
+			return BuffIndicator.CORRUPT;
+		}
+
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.65f, 0.65f, 0.65f);
 		}
 	}
 
