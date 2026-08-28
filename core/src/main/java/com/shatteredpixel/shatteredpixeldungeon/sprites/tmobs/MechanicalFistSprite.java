@@ -23,6 +23,12 @@ public class MechanicalFistSprite extends MobSprite {
 		super();
 
 		texture(Assets.Sprites.MECHANICAL_FIST);
+		updateMechanicalFistFrames();
+		play(idle);
+	}
+
+	/** Builds frames from the texture currently installed on this sprite. */
+	protected void updateMechanicalFistFrames() {
 		TextureFilm frames = new TextureFilm(texture, 24, 17);
 
 		idle = new Animation(2, true);
@@ -38,8 +44,6 @@ public class MechanicalFistSprite extends MobSprite {
 
 		die = new Animation(10, false);
 		die.frames(frames, 0, 2, 3, 4);
-
-		play(idle);
 	}
 
 	@Override

@@ -22,6 +22,8 @@ public class Tier6WeaponTextTest {
 			"melee_oracleterminal",
 			"melee_demontailwhip",
 			"melee_mercuryblade",
+			"melee_lakesword",
+			"melee_mountainguard",
 			"melee_auxiliarycore",
 			"missile_gungnir"
 	};
@@ -92,6 +94,61 @@ public class Tier6WeaponTextTest {
 		}
 		assertTrue(itemProperties.get(
 				"items.weapon.melee.tier6.chainmace.stats_desc").contains("四分之一"));
+	}
+
+	@Test
+	public void mountainGuardHasCompleteShortAndDetailedTextInBothLanguages() throws Exception {
+		Map<String, String> zhItems = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/items/items_zh.properties")), StandardCharsets.UTF_8));
+		Map<String, String> enItems = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/items/items.properties")), StandardCharsets.UTF_8));
+		Map<String, String> zhCustom = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/custom/custom_zh.properties")), StandardCharsets.UTF_8));
+		Map<String, String> enCustom = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/custom/custom.properties")), StandardCharsets.UTF_8));
+
+		String prefix = "items.weapon.melee.tier6.mountainguard.";
+		String[] itemKeys = {"name", "desc", "stats_desc", "ac_release", "ability_name",
+				"ability_desc"};
+		for (String key : itemKeys) {
+			assertTrue(key, zhItems.containsKey(prefix + key));
+			assertTrue(key, enItems.containsKey(prefix + key));
+		}
+		String[] buffKeys = {"$mountainenergytracker.name", "$mountainenergytracker.desc",
+				"$mountainwallcounter.name", "$mountainwallcounter.desc"};
+		for (String key : buffKeys) {
+			assertTrue(key, zhItems.containsKey(prefix.substring(0, prefix.length() - 1) + key));
+			assertTrue(key, enItems.containsKey(prefix.substring(0, prefix.length() - 1) + key));
+		}
+		String zhDetail = zhCustom.get("custom.dict.dict.melee_mountainguard_d");
+		String enDetail = enCustom.get("custom.dict.dict.melee_mountainguard_d");
+		assertTrue(zhDetail.contains("9×9"));
+		assertTrue(zhDetail.contains("UNAVOIDABLE"));
+		assertTrue(zhDetail.contains("_2_点充能"));
+		assertTrue(enDetail.contains("9×9"));
+		assertTrue(enDetail.contains("UNAVOIDABLE"));
+	}
+
+	@Test
+	public void venomousSickleExplainsItsPursuitInPlainLanguage() throws Exception {
+		Map<String, String> zhItems = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/items/items_zh.properties")), StandardCharsets.UTF_8));
+		Map<String, String> enItems = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/items/items.properties")), StandardCharsets.UTF_8));
+		Map<String, String> zhCustom = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/custom/custom_zh.properties")), StandardCharsets.UTF_8));
+		Map<String, String> enCustom = readProperties(new String(Files.readAllBytes(Paths.get(
+				"src/main/assets/messages/custom/custom.properties")), StandardCharsets.UTF_8));
+
+		assertTrue(zhItems.get("items.weapon.melee.tier6.venomoussickle.stats_desc").contains("移动并贴近"));
+		assertTrue(zhItems.get("items.weapon.melee.tier6.venomoussickle.stats_desc").contains("不消耗回合"));
+		assertTrue(zhItems.get("items.weapon.melee.tier6.venomoussickle.ability_name").contains("再次追击"));
+		assertTrue(zhItems.get("items.weapon.melee.tier6.venomoussickle.ability_desc").contains("下一次"));
+		assertTrue(zhCustom.get("custom.dict.dict.melee_venomoussickle_d").contains("移动后与同一目标相邻"));
+		assertTrue(enItems.get("items.weapon.melee.tier6.venomoussickle.stats_desc").contains("move next to"));
+		assertTrue(enItems.get("items.weapon.melee.tier6.venomoussickle.stats_desc").contains("no time"));
+		assertTrue(enItems.get("items.weapon.melee.tier6.venomoussickle.ability_name").contains("follow-up"));
+		assertTrue(enCustom.get("custom.dict.dict.melee_venomoussickle_d").contains("move next to the same target"));
 	}
 
 	private Map<String, String> readProperties(String text) {

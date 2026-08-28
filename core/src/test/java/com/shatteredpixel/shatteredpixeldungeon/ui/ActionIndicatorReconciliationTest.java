@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
+import com.watabou.noosa.Visual;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -192,6 +194,83 @@ public class ActionIndicatorReconciliationTest {
 		ActionIndicator1.reconcileActionState();
 
 		assertNull(ActionIndicator1.action);
+	}
+
+	@Test
+	public void primaryClickDoesNotClearValidActionWhileHeroIsBusy() throws Exception {
+		Hero hero = emptyHero();
+		Dungeon.hero = hero;
+		TestAction action = new TestAction();
+		assertTrue(ActionIndicator.setAction(action));
+
+		((TestActionIndicator) unsafe().allocateInstance(TestActionIndicator.class)).click();
+
+		assertSame(action, ActionIndicator.action);
+		assertEquals(0, action.calls);
+	}
+
+	@Test
+	public void secondaryClickDoesNotClearValidActionWhileHeroIsBusy() throws Exception {
+		Hero hero = emptyHero();
+		Dungeon.hero = hero;
+		TestAction action = new TestAction();
+		assertTrue(ActionIndicator1.setAction(action));
+
+		((TestActionIndicator1) unsafe().allocateInstance(TestActionIndicator1.class)).click();
+
+		assertSame(action, ActionIndicator1.action);
+		assertEquals(0, action.calls);
+	}
+
+	private static class TestAction implements ActionIndicator.Action, ActionIndicator1.Action {
+		int calls;
+
+		@Override
+		public String actionName() {
+			return "test";
+		}
+
+		@Override
+		public boolean usable() {
+			return true;
+		}
+
+		@Override
+		public Visual secondaryVisual() {
+			return null;
+		}
+
+		@Override
+		public Visual primaryVisual() {
+			return null;
+		}
+
+		@Override
+		public int actionIcon() {
+			return HeroIcon.NONE;
+		}
+
+		@Override
+		public int indicatorColor() {
+			return 0;
+		}
+
+		@Override
+		public void doAction() {
+			calls++;
+		}
+	}
+
+	private static class TestActionIndicator extends ActionIndicator {
+		void click() {
+			super.onClick();
+		}
+	}
+
+	private static class TestActionIndicator1 extends ActionIndicator1 {
+		void click() {
+			super.onClick();
+		}
 	}
 
 	private static Hero emptyHero(Talent... talents) throws Exception {

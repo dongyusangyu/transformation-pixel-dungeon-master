@@ -2,13 +2,8 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
@@ -21,6 +16,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
+import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -28,7 +24,6 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /** The ponderous tier-six radiant gold halberd. */
 public class RadiantGoldHalberd extends MeleeWeapon {
@@ -38,6 +33,7 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	public static final float DELAY = 2f;
 	public static final int RANGE = 3;
 	private static final int ABILITY_CHARGE_COST = 2;
+	private static final int MAX_SPLASH_TARGETS = 2;
 
 	{
 		image = EXItemSpriteSheet.RADIANT_GOLD_HALBERD;
@@ -60,7 +56,7 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 
 	public static int maxForLevel(int level) {
 		int l = effectiveLevel(level);
-		return 48 + 9 * l + 2 * (l / 3) + 2 * Math.max(0, l - 11);
+		return 48 + 9 * l + 2 * (l / 3) + 4 * Math.max(0, l - 11);
 	}
 
 	public static int strengthRequirementForLevel(int level) {
@@ -127,20 +123,21 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		return abilityMin(level) + "-" + abilityMax(level);
 	}
 
-	public static float controlChance(boolean surprised) {
-		return surprised ? 0.75f : 0.25f;
+	static float splashDamageMultiplier(int targetCount) {
+		if (targetCount <= 1) return 1.25f;
+		if (targetCount == 2) return 1.12f;
+		return 1f;
 	}
 
-	public static float dazeChance(boolean surprised) {
-		return surprised ? 0.45f : 0.15f;
+	static boolean canStartSplash(boolean abilityDamageActive, boolean splashResolving,
+			boolean heroAttacker) {
+		return !abilityDamageActive && !splashResolving && heroAttacker;
 	}
 
-	public static boolean triggers(float roll, float chance) {
-		return roll < chance;
-	}
-
-	public static int bleedingAmountForLevel(int level) {
-		return 3 * effectiveLevel(level);
+	static boolean splashTargetAllowed(boolean alive, Char.Alignment alignment,
+			boolean charmed, boolean primaryTarget, boolean attacker) {
+		return alive && alignment == Char.Alignment.ENEMY && !charmed
+				&& !primaryTarget && !attacker;
 	}
 
 	public static int falsehoodPowerReduction(boolean hasTalent) {
@@ -152,24 +149,12 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		return falsehoodPowerReduction(owner.hasTalent(Talent.FALSEHOOD_POWER));
 	}
 
-	public static void applyPassiveEffects(Char defender, int level, boolean surprised,
-			float controlRoll, float dazeRoll) {
-		int l = effectiveLevel(level);
-		if (triggers(controlRoll, controlChance(surprised))) {
-			Buff.prolong(defender, Cripple.class, 3f);
-			if (l > 0) {
-				Buff.affect(defender, Bleeding.class).set(bleedingAmountForLevel(l), RadiantGoldHalberd.class);
-			}
-		}
-		if (triggers(dazeRoll, dazeChance(surprised))) {
-			Buff.prolong(defender, Daze.class, 3f);
-		}
-	}
-
 	private transient boolean abilityResolving;
 	private transient boolean abilityDamageActive;
 	private transient int currentAbilityTargetId = -1;
-	private transient HashSet<Integer> abilitySurprisedTargetIds = new HashSet<>();
+	private transient boolean splashResolving;
+	private transient float activeSplashMultiplier = 1f;
+	private transient SplashAttack pendingSplash;
 
 	@Override
 	public int damageRoll(Char owner) {
@@ -185,11 +170,73 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		return damage;
 	}
 
-	private boolean isSurprisedHit(Char attacker, Char defender) {
-		if (abilityDamageActive && defender.id() == currentAbilityTargetId) {
-			return abilitySurprisedTargetIds.contains(defender.id());
+	ArrayList<Char> collectSplashTargets(Char attacker, Char primaryTarget) {
+		ArrayList<Char> targets = new ArrayList<>();
+		if (attacker == null || primaryTarget == null || Dungeon.level == null) return targets;
+
+		for (int offset : PathFinder.NEIGHBOURS4) {
+			int cell = primaryTarget.pos + offset;
+			if (!isCardinalNeighbor(primaryTarget.pos, cell)) continue;
+
+			Char candidate = Actor.findChar(cell);
+			if (candidate != null && splashTargetAllowed(candidate.isAlive(), candidate.alignment,
+					attacker.isCharmedBy(candidate), candidate == primaryTarget, candidate == attacker)) {
+				targets.add(candidate);
+			}
 		}
-		return defender instanceof Mob && ((Mob) defender).surprisedBy(attacker);
+
+		Random.shuffle(targets);
+		while (targets.size() > MAX_SPLASH_TARGETS) {
+			targets.remove(targets.size() - 1);
+		}
+		return targets;
+	}
+
+	private boolean isCardinalNeighbor(int center, int cell) {
+		if (Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length()
+				|| Dungeon.level.distance(center, cell) != 1) {
+			return false;
+		}
+		for (int offset : PathFinder.NEIGHBOURS4) {
+			if (center + offset == cell) return true;
+		}
+		return false;
+	}
+
+	@Override
+	public void beforeHeroAttack(Hero hero, Char target) {
+		if (!splashResolving) pendingSplash = null;
+	}
+
+	@Override
+	public void afterHeroAttack(Hero hero, Char target, boolean hit) {
+		if (splashResolving) return;
+
+		SplashAttack attack = pendingSplash;
+		pendingSplash = null;
+		if (!hit || attack == null || target == null || target.id() != attack.primaryTargetId) {
+			return;
+		}
+
+		splashResolving = true;
+		activeSplashMultiplier = attack.damageMultiplier;
+		try {
+			for (int targetId : attack.targetIds) {
+				Char splashTarget = Actor.findCharById(targetId);
+				if (splashTarget == null || !isCardinalNeighbor(attack.centerCell, splashTarget.pos)
+						|| !splashTargetAllowed(splashTarget.isAlive(), splashTarget.alignment,
+						hero.isCharmedBy(splashTarget), splashTarget == target,
+						splashTarget == hero)) {
+					continue;
+				}
+				hero.chooseEnemy(splashTarget);
+				hero.attack(splashTarget, 1f, 0f, Char.INFINITE_ACCURACY);
+			}
+		} finally {
+			hero.chooseEnemy(target);
+			activeSplashMultiplier = 1f;
+			splashResolving = false;
+		}
 	}
 
 	@Override
@@ -203,10 +250,6 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		hero.busy();
 		abilityResolving = true;
 		abilityDamageActive = false;
-		abilitySurprisedTargetIds.clear();
-		for (LineTarget target : line.targets) {
-			if (target.surprised) abilitySurprisedTargetIds.add(target.actorId);
-		}
 		Sample.INSTANCE.play(Assets.Sounds.MISS);
 		launchProjection(hero, line.endCell,
 				() -> resolveLineTarget(hero, line, 0));
@@ -262,10 +305,8 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 					? trajectory.path.get(nextIndex) : -1;
 			boolean boundary = nextCell < 0 || !Dungeon.level.insideMap(nextCell);
 			boolean obstacle = !boundary && terrainObstacle(nextCell);
-			boolean surprised = target instanceof Mob
-					&& ((Mob) target).surprisedBy(hero);
 			targets.add(new LineTarget(target.id(), target.pos, pathIndex, nextCell,
-					surprised, wallCollision(boundary, obstacle)));
+					wallCollision(boundary, obstacle)));
 		}
 		Collections.sort(targets, (left, right) ->
 				Integer.compare(right.pathIndex, left.pathIndex));
@@ -322,7 +363,6 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		abilityResolving = false;
 		abilityDamageActive = false;
 		currentAbilityTargetId = -1;
-		abilitySurprisedTargetIds.clear();
 		Invisibility.dispel();
 		hero.spendAndNext(hero.attackDelay());
 		afterAbilityUsed(hero);
@@ -337,16 +377,14 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		final int expectedCell;
 		final int pathIndex;
 		final int nextCell;
-		final boolean surprised;
 		final boolean wallCollision;
 
 		LineTarget(int actorId, int expectedCell, int pathIndex, int nextCell,
-				boolean surprised, boolean wallCollision) {
+				boolean wallCollision) {
 			this.actorId = actorId;
 			this.expectedCell = expectedCell;
 			this.pathIndex = pathIndex;
 			this.nextCell = nextCell;
-			this.surprised = surprised;
 			this.wallCollision = wallCollision;
 		}
 	}
@@ -364,13 +402,38 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
 		int result = super.proc(attacker, defender, damage);
-		if (!defender.isAlive() || defender.alignment != Char.Alignment.ENEMY) {
+		if (splashResolving) {
+			return Math.round(result * activeSplashMultiplier);
+		}
+		if (!canStartSplash(abilityDamageActive, splashResolving, attacker instanceof Hero)
+				|| !defender.isAlive() || defender.alignment != Char.Alignment.ENEMY) {
 			return result;
 		}
-		boolean surprised = isSurprisedHit(attacker, defender);
-		applyPassiveEffects(defender, buffedLvl(), surprised,
-				Random.Float(), Random.Float());
-		return result;
+
+		Hero hero = (Hero) attacker;
+		if (hero.isCharmedBy(defender)) return result;
+		ArrayList<Char> splashTargets = collectSplashTargets(hero, defender);
+		float multiplier = splashDamageMultiplier(1 + splashTargets.size());
+		pendingSplash = new SplashAttack(defender.id(), defender.pos, multiplier, splashTargets);
+		return Math.round(result * multiplier);
+	}
+
+	private static final class SplashAttack {
+		final int primaryTargetId;
+		final int centerCell;
+		final float damageMultiplier;
+		final int[] targetIds;
+
+		SplashAttack(int primaryTargetId, int centerCell, float damageMultiplier,
+				ArrayList<Char> targets) {
+			this.primaryTargetId = primaryTargetId;
+			this.centerCell = centerCell;
+			this.damageMultiplier = damageMultiplier;
+			targetIds = new int[targets.size()];
+			for (int i = 0; i < targets.size(); i++) {
+				targetIds[i] = targets.get(i).id();
+			}
+		}
 	}
 
 }

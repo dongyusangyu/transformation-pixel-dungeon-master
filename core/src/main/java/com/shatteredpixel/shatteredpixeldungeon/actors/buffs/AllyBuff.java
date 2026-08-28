@@ -94,7 +94,7 @@ public abstract class AllyBuff extends Buff {
 	}
 
 	public static boolean isConversionRewardEligible(Mob mob) {
-		return !(mob instanceof NoConversionRewards);
+		return !(mob instanceof NoConversionRewards) && !MyriadEcho.isMarked(mob);
 	}
 
 }

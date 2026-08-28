@@ -213,6 +213,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleT
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.RadiantGoldHalberd;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.LakeSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.VenomousSickle;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Bolas;
@@ -545,9 +548,12 @@ public class Generator {
 					DemonTailWhip.class,
 					OracleTerminal.class,
 					VenomousSickle.class,
-					RadiantGoldHalberd.class
+					RadiantGoldHalberd.class,
+					SoulBlade.class,
+					LakeSword.class,
+					MountainGuard.class
 			};
-			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+			WEP_T6.defaultProbs = new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1};
 			WEP_T6.probs = WEP_T6.defaultProbs.clone();
 			
 			//see Generator.randomArmor

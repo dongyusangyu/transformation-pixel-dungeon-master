@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
@@ -59,6 +60,8 @@ public abstract class TowerBoss extends Mob {
         super.die(cause);
         if (!towerDeathNotified && Dungeon.level instanceof TowerBossLevel) {
             towerDeathNotified = true;
+            Badges.validateTowerBossSlain(towerBossId(),
+                    Dungeon.hero == null ? null : Dungeon.hero.heroClass);
             Dungeon.level.drop(guaranteedTowerReward(), pos).sprite.drop(pos);
             ((TowerBossLevel) Dungeon.level).onTowerBossDefeated(this);
         }

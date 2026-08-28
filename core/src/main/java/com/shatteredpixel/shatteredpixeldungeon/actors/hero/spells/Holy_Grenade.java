@@ -21,6 +21,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.BlastParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.HolyBomb;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -87,13 +88,17 @@ public class Holy_Grenade extends TargetedClericSpell {
                 ch.sprite.emitter().start( ShadowParticle.UP, 0.05f, 10 );
                 //bomb deals an additional 50% damage to unholy enemies
                 int damage =20 + 10*Math.min(Dungeon.hero.pointsInTalent(Talent.HOLY_GRENADE),2);
+                damage = Bomb.damageWithBombTalents(hero, damage);
                 ch.damage(damage, new HolyBomb.HolyDamage(), DamageTag.MAGICAL);
+                Bomb.applyShockBomb(hero, ch);
                 if (ch.isAlive()){
                     Buff.affect(ch, GuidingLight.Illuminated.class);
                 }
             }else{
                 int damage =Random.Int(10 + 5*Math.min(Dungeon.hero.pointsInTalent(Talent.HOLY_GRENADE),2),20 + 10*Math.min(Dungeon.hero.pointsInTalent(Talent.HOLY_GRENADE),2));
+                damage = Bomb.damageWithBombTalents(hero, damage);
                 ch.damage(damage, new HolyBomb.HolyDamage(), DamageTag.MAGICAL);
+                Bomb.applyShockBomb(hero, ch);
                 if (ch.isAlive() && hero.subClass.is(HeroSubClass.PRIEST)){
                     Buff.affect(ch, GuidingLight.Illuminated.class);
                 }

@@ -22,6 +22,11 @@ public class MimicCrocodileSprite extends MobSprite {
 		super();
 
 		texture(Assets.Sprites.MIMIC_CROCODILE);
+		updateMimicCrocodileFrames();
+		play(idle);
+	}
+
+	protected void updateMimicCrocodileFrames() {
 		TextureFilm frames = new TextureFilm(texture, 16, 16);
 
 		idle = new Animation(2, true);
@@ -37,8 +42,6 @@ public class MimicCrocodileSprite extends MobSprite {
 
 		die = new Animation(5, false);
 		die.frames(frames, 11, 12);
-
-		play(idle);
 	}
 
 	@Override

@@ -50,6 +50,9 @@ public class SnipersMark extends FlavourBuff implements ActionIndicator.Action {
 	public void set(int object, float bonus){
 		this.object = object;
 		this.percentDmgBonus = bonus;
+		if (target == Dungeon.hero) {
+			ActionIndicator.ensureAction(this);
+		}
 	}
 	
 	@Override

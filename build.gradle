@@ -21,10 +21,10 @@ allprojects {
         appName = '蜕变地牢'
         //appPackageName = 'com.shatteredpixel.shatteredpixeldungeon'
         appPackageName = 'com.Transform.Transformpixeldungeon'
-        appVersionCode = 1004
+        appVersionCode = 1005
         //appVersionName = '2.5.4'
         //appVersionName = 'happy.birthday2.16'
-        appVersionName = '0.3.0alpha3'
+        appVersionName = '0.3.0'
         appJavaCompatibility = JavaVersion.VERSION_1_8
 
         appAndroidCompileSDK = 33 //compile SDK is still 33 atm as we're sticking with AGP 8.0.2

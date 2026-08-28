@@ -39,6 +39,8 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
 
+import java.util.ArrayList;
+
 /**
  * A swift tier-six sword whose successful hits build two single-use benefits.
  * Its duelist ability safely lunges into a three-strike sequence without
@@ -51,7 +53,7 @@ public class PalermoSword extends MeleeWeapon {
 	public static final float DELAY = 0.5f;
 	public static final int RANGE = 1;
 	private static final int HITS_PER_REWARD = 4;
-	private static final int XIEXIANG_STRIKES = 3;
+	private static final int XIEXIANG_STRIKES = 4;
 	private static final int XIEXIANG_CHARGE_COST = 2;
 	private static final int XIEXIANG_EXTRA_TARGET_RANGE = 1;
 	private static final int XIEXIANG_MOVEMENT_RANGE = 1;
@@ -135,12 +137,16 @@ public class PalermoSword extends MeleeWeapon {
 	}
 
 	private void xiexiangStep(final Hero hero, final Char target, final int strikeIndex) {
-		if (!isXiexiangTarget(hero, target)
-				|| !xiexiangCanContinue(hero.isAlive(), hero.paralysed, hero.rooted)) {
+		if (!xiexiangCanContinue(hero.isAlive(), hero.paralysed, hero.rooted)) {
 			finishXiexiang(hero, strikeIndex > 0);
 			return;
 		}
-		final int destination = safeLungeCell(hero, target);
+		final Char strikeTarget = findXiexiangTarget(hero, target);
+		if (strikeTarget == null) {
+			finishXiexiang(hero, strikeIndex > 0);
+			return;
+		}
+		final int destination = safeLungeCell(hero, strikeTarget);
 		if (destination == -1 || !xiexiangMayStrikeAtStep(strikeIndex, destination != hero.pos)) {
 			finishXiexiang(hero, strikeIndex > 0);
 			return;
@@ -149,7 +155,7 @@ public class PalermoSword extends MeleeWeapon {
 		Callback strike = new Callback() {
 			@Override
 			public void call() {
-				strikeXiexiangTarget(hero, target, strikeIndex);
+				strikeXiexiangTarget(hero, strikeTarget, strikeIndex);
 			}
 		};
 		if (destination == hero.pos || hero.sprite == null) {
@@ -165,6 +171,23 @@ public class PalermoSword extends MeleeWeapon {
 				strike.call();
 			}
 		});
+	}
+
+	private Char findXiexiangTarget(Hero hero, Char preferred) {
+		if (isXiexiangTarget(hero, preferred)) return preferred;
+
+		Char replacement = null;
+		int replacementDistance = Integer.MAX_VALUE;
+		for (Char candidate : new ArrayList<>(Actor.chars())) {
+			if (!isXiexiangTarget(hero, candidate)) continue;
+			int distance = Dungeon.level.distance(hero.pos, candidate.pos);
+			if (replacement == null || distance < replacementDistance
+					|| distance == replacementDistance && candidate.id() < replacement.id()) {
+				replacement = candidate;
+				replacementDistance = distance;
+			}
+		}
+		return replacement;
 	}
 
 	private void strikeXiexiangTarget(final Hero hero, final Char target, final int strikeIndex) {

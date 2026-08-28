@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TenguDartTrap;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -204,15 +205,18 @@ public class WandOfBlastWave extends DamageWand {
 		final int finalDist = dist;
 		final boolean finalCollided = collided && collideDmg;
 		final int initialpos = ch.pos;
+		final CharSprite pushingSprite = ch.sprite;
 
 		Pushing pushing = new Pushing(ch, ch.pos, newPos, new Callback() {
 			public void call() {
+				boolean pushSpriteInvalid = pushingSprite == null
+						|| ch.sprite != pushingSprite || pushingSprite.parent == null;
 				boolean resultTargetInvalid = knockbackCallback != null
 						&& (!ch.isAlive() || Actor.findById(ch.id()) != ch);
-				if (resultTargetInvalid || initialpos != ch.pos
+				if (pushSpriteInvalid || resultTargetInvalid || initialpos != ch.pos
 						|| Actor.findChar(newPos) != null) {
 					//something caused movement or added chars before pushing resolved, cancel to be safe.
-					if (ch.sprite != null) ch.sprite.place(ch.pos);
+					if (!pushSpriteInvalid) pushingSprite.place(ch.pos);
 					completeKnockback(callback, knockbackCallback, false, 0);
 					return;
 				}
@@ -234,7 +238,9 @@ public class WandOfBlastWave extends DamageWand {
 					Door.leave(oldPos);
 				}
 				Dungeon.level.occupyCell(ch);
-				ch.sprite.place(ch.pos);
+				if (ch.sprite == pushingSprite && pushingSprite.parent != null) {
+					pushingSprite.place(ch.pos);
+				}
 				if (ch == Dungeon.hero){
 					Dungeon.observe();
 					GameScene.updateFog();

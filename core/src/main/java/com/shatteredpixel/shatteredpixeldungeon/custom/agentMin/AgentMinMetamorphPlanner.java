@@ -249,10 +249,14 @@ public class AgentMinMetamorphPlanner {
 				talents.add(Talent.PHANTOM_STEP);
 				break;
 			case "DM300":
-			case "HUNTRESS":
 				talents.add(Talent.FASTING);
 				talents.add(Talent.THUNDER_STRIKE);
 				talents.add(Talent.DIRECTIONAL_COLLAPSE);
+				break;
+			case "HUNTRESS":
+				talents.add(Talent.HUNTING_TECHNIQUE);
+				talents.add(Talent.NATURAL_CHILD);
+				talents.add(Talent.FALCON_EYE);
 				break;
 			case "DWARFKING":
 				talents.add(Talent.KING_PROTECT);

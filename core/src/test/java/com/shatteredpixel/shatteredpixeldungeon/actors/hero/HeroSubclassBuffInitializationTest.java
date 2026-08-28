@@ -18,6 +18,7 @@ import sun.misc.Unsafe;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 import static org.junit.Assert.assertNotNull;
@@ -59,6 +60,19 @@ public class HeroSubclassBuffInitializationTest {
 		Hero champion = heroWith(HeroSubClass.CHAMPION);
 		champion.ensureSubclassBuffs();
 		assertNotNull(champion.buff(MeleeWeapon.Charger.class));
+	}
+
+	@Test
+	public void martialTrainingRestoresWeaponChargerDuringInitialization() {
+		Hero hero = heroWith(HeroSubClass.NONE);
+		for (int i = 0; i < Talent.MAX_TALENT_TIERS; i++) {
+			hero.talents.add(new LinkedHashMap<>());
+		}
+		hero.talents.get(2).put(Talent.MARTIAL_TRAIN, 1);
+
+		hero.ensureSubclassBuffs();
+
+		assertNotNull(hero.buff(MeleeWeapon.Charger.class));
 	}
 
 	private static Hero heroWith(HeroSubClass subClass) {

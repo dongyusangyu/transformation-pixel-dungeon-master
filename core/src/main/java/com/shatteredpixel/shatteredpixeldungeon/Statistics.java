@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.SparseArray;
 
@@ -42,6 +43,8 @@ public class Statistics {
 	public static int piranhasKilled;
 	public static int hazardAssistedKills;
 	public static int ankhsUsed;
+	public static int towerBossesDefeated;
+	private static SparseArray<Integer> corpsesSlainByLevel = new SparseArray<>();
 	//tracks every item type 'seen' this run (i.e. would be added to catalogs)
 	public static HashSet<Class> itemTypesDiscovered = new HashSet<>();
 
@@ -98,6 +101,8 @@ public class Statistics {
 		piranhasKilled	= 0;
 		hazardAssistedKills = 0;
 		ankhsUsed		= 0;
+		towerBossesDefeated = 0;
+		corpsesSlainByLevel.clear();
 		itemTypesDiscovered.clear();
 
 		progressScore   = 0;
@@ -151,6 +156,9 @@ public class Statistics {
 	private static final String PIRANHAS	= "priranhas";
 	private static final String HAZARD_ASSISTS	= "hazard_assists";
 	private static final String ANKHS		= "ankhsUsed";
+	private static final String TOWER_BOSSES_DEFEATED = "tower_bosses_defeated";
+	private static final String CORPSE_SLAIN_KEYS = "corpse_slain_keys";
+	private static final String CORPSE_SLAIN_VALUES = "corpse_slain_values";
 
 	private static final String PROG_SCORE	    = "prog_score";
 	private static final String ITEM_VAL	    = "item_val";
@@ -202,6 +210,14 @@ public class Statistics {
 		bundle.put( PIRANHAS,	piranhasKilled );
 		bundle.put(HAZARD_ASSISTS, hazardAssistedKills);
 		bundle.put( ANKHS,		ankhsUsed );
+		bundle.put( TOWER_BOSSES_DEFEATED, towerBossesDefeated );
+		int[] corpseKeys = corpsesSlainByLevel.keyArray();
+		int[] corpseValues = new int[corpseKeys.length];
+		for (int i = 0; i < corpseKeys.length; i++) {
+			corpseValues[i] = corpsesSlainByLevel.get(corpseKeys[i]);
+		}
+		bundle.put(CORPSE_SLAIN_KEYS, corpseKeys);
+		bundle.put(CORPSE_SLAIN_VALUES, corpseValues);
 		bundle.put( ITEM_TYPES_DISCOVERED, itemTypesDiscovered.toArray(new Class<?>[0]) );
 
 		bundle.put( PROG_SCORE,  progressScore );
@@ -256,6 +272,16 @@ public class Statistics {
 		piranhasKilled	= bundle.getInt( PIRANHAS );
 		hazardAssistedKills = bundle.getInt( HAZARD_ASSISTS );
 		ankhsUsed		= bundle.getInt( ANKHS );
+		towerBossesDefeated = bundle.contains(TOWER_BOSSES_DEFEATED)
+				? Math.max(0, bundle.getInt(TOWER_BOSSES_DEFEATED)) : 0;
+		corpsesSlainByLevel.clear();
+		if (bundle.contains(CORPSE_SLAIN_KEYS) && bundle.contains(CORPSE_SLAIN_VALUES)) {
+			int[] keys = bundle.getIntArray(CORPSE_SLAIN_KEYS);
+			int[] values = bundle.getIntArray(CORPSE_SLAIN_VALUES);
+			for (int i = 0; i < Math.min(keys.length, values.length); i++) {
+				corpsesSlainByLevel.put(keys[i], values[i]);
+			}
+		}
 
 		if (bundle.contains( ITEM_TYPES_DISCOVERED )) {
 			itemTypesDiscovered = new HashSet<>(Arrays.asList(bundle.getClassArray(ITEM_TYPES_DISCOVERED)));
@@ -359,6 +385,37 @@ public class Statistics {
 			return true;
 		}
 		return false;
+	}
+
+	public static int recordCorpseSlain(int depth, int branch) {
+		int key = Dungeon.generatedLevelKey(depth, branch);
+		Integer previous = corpsesSlainByLevel.get(key);
+		int count = previous == null ? 1 : Math.min(5, previous + 1);
+		corpsesSlainByLevel.put(key, count);
+		return count;
+	}
+
+	public static void recordTowerBossDefeated() {
+		if (towerBossesDefeated < Integer.MAX_VALUE) towerBossesDefeated++;
+	}
+
+	/**
+	 * Supplies a conservative count for saves created before tower boss scores
+	 * were persisted. The current unfinished boss floor is not counted unless
+	 * its encounter state confirms completion.
+	 */
+	public static void reconcileTowerBossCount() {
+		if (!Dungeon.newCycle || deepestTowerFloor <= 0) return;
+		int completed = Math.max(0,
+				(deepestTowerFloor - 1) / TowerBossLevel.FLOORS_PER_BOSS);
+		if (Dungeon.branch == TowerLevel.BRANCH
+				&& Dungeon.depth > 0
+				&& Dungeon.depth % TowerBossLevel.FLOORS_PER_BOSS == 0
+				&& Dungeon.level instanceof TowerBossLevel
+				&& ((TowerBossLevel) Dungeon.level).bossEncounterDefeated()) {
+			completed++;
+		}
+		towerBossesDefeated = Math.max(towerBossesDefeated, completed);
 	}
 
 	public static void recoverTowerDepth(int depth, int branch) {

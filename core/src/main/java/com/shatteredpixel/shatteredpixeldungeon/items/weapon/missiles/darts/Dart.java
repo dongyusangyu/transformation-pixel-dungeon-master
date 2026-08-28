@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightEquipmentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
@@ -166,7 +167,9 @@ public class Dart extends MissileWeapon {
 	}
 
 	public boolean crossbowHasEnchant( Char owner ){
-		return bow != null && bow.enchantment != null && owner.buff(MagicImmune.class) == null;
+		return bow != null && bow.enchantment != null
+				&& owner.buff(MagicImmune.class) == null
+				&& !HungerKnightEquipmentSeal.isActive(owner);
 	}
 	
 	@Override

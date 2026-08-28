@@ -85,8 +85,9 @@ public class AndroidPlatformSupport extends PlatformSupport {
 				String name = entries.nextElement();
 				if (name.startsWith(pkgName)) {
 					try {
-						trie.addPlatformClass(Class.forName(name), pkgName);
-					} catch (Throwable ignored) {
+						trie.addPlatformClass(PackageTrie.loadClassWithoutInitialization(
+								name, AndroidPlatformSupport.class.getClassLoader()), pkgName);
+					} catch (ClassNotFoundException | LinkageError ignored) {
 						// Some generated or platform-specific classes cannot be loaded here.
 					}
 				}

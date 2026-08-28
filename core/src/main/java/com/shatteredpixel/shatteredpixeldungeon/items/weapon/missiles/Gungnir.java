@@ -147,7 +147,8 @@ public class Gungnir extends MissileWeapon {
 	private void recoverToHero() {
 		Hero hero = curUser instanceof Hero ? (Hero) curUser : Dungeon.hero;
 		parent = null;
-		if (hero != null && hero.belongings != null && collect(hero.belongings.backpack)) {
+		if (!spawnedForEffect && hero != null && hero.belongings != null
+				&& collect(hero.belongings.backpack)) {
 			updateQuickslot();
 			return;
 		}

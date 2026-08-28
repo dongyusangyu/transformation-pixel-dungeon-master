@@ -14,6 +14,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.ShopRoom;
 
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class TowerShopRoom extends ShopRoom {
 		ArrayList<Item> items = super.generateItems();
 		items.add(TowerGenerationRules.guaranteedShopItem());
 		items.add(TowerGenerationRules.guaranteedShopMetamorphosis());
+		items.removeIf(item -> item instanceof Dart);
 		return items;
 	}
 }

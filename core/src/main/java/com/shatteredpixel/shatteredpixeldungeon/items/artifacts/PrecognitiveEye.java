@@ -11,17 +11,15 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
-import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -31,17 +29,13 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
-/** A mechanical eye which converts successful dodges into a deliberately limited reserve of foresight. */
+/** A mechanical eye which stores charged, guaranteed dodges and learns from ordinary evasion. */
 public class PrecognitiveEye extends Artifact {
 
 	public static final String AC_ACTIVATE = "ACTIVATE";
-	private static final int MAX_LEVEL = 10;
-	private static final int MOMENTARY_FORESIGHT_BASE_COST = 50;
-	private static final int MOMENTARY_FORESIGHT_COST_PER_LEVEL = 2;
-	private static final int ACTIVE_MOMENTARY_FORESIGHT_USES = 1;
-	private static final int HEAT_LIMIT = 10;
-	private static final int HEAT_DECAY_TURNS = 10;
-	private static final int OVERHEAT_TURNS = 100;
+	private static final int MAX_LEVEL = 5;
+	private static final int MOMENTARY_FORESIGHT_COST = 20;
+	private static final int DODGE_EXPERIENCE = 10;
 
 	{
 		image = EXItemSpriteSheet.PRECOGNITIVE_EYE;
@@ -53,29 +47,24 @@ public class PrecognitiveEye extends Artifact {
 		defaultAction = AC_ACTIVATE;
 	}
 
-	public static int minimumEvasion(int maximum, int level) {
-		return Math.min(maximum, Math.round(5 + maximum * level * 0.03f));
-	}
-
 	public static int expToNextLevel(int level) {
-		return 100 + 50 * level;
+		return 100 + 100 * level;
 	}
 
 	public static int momentaryForesightChargeCost(int level) {
-		int boundedLevel = Math.max(0, Math.min(MAX_LEVEL, level));
-		return MOMENTARY_FORESIGHT_BASE_COST - MOMENTARY_FORESIGHT_COST_PER_LEVEL * boundedLevel;
+		return MOMENTARY_FORESIGHT_COST;
 	}
 
-	public static int activeMomentaryForesightUses() {
-		return ACTIVE_MOMENTARY_FORESIGHT_USES;
+	public static int momentaryForesightCapacity(int level) {
+		return 1 + Math.max(0, Math.min(MAX_LEVEL, level));
 	}
 
 	public static int trinityDodgeUses(int spiritFormPoints) {
 		return 1 + spiritFormPoints;
 	}
 
-	public static float naturalChargePerTurn() {
-		return 0.5f;
+	public static float naturalChargePerTurn(int level) {
+		return 0.5f + 0.1f * Math.max(0, Math.min(MAX_LEVEL, level));
 	}
 
 	public static float artifactRechargePerTurn() {
@@ -95,23 +84,33 @@ public class PrecognitiveEye extends Artifact {
 	public void execute(Hero hero, String action) {
 		super.execute(hero, action);
 		if (AC_ACTIVATE.equals(action)) {
-			if (!isEquipped(hero)) {
-				GLog.i(Messages.get(Artifact.class, "need_to_equip"));
-			} else if (!canActivate(hero)) {
+			if (!canUseActiveAction(hero)) {
+				return;
+			} else if (!storeMomentaryForesight(hero)) {
 				GLog.w(Messages.get(this, "cannot_activate"));
 			} else {
-				charge -= momentaryForesightChargeCost(level());
-				Buff.affect(hero, MomentaryForesight.class).set(activeMomentaryForesightUses(), true);
 				Talent.onArtifactUsed(hero);
-				hero.spendAndNext(Actor.TICK);
-				updateQuickslot();
+				hero.next();
 			}
 		}
 	}
 
 	private boolean canActivate(Hero hero) {
-		return charge >= momentaryForesightChargeCost(level()) && isEquipped(hero) && !cursed
-				&& hero.buff(MagicImmune.class) == null && hero.buff(PrecognitiveOverheat.class) == null;
+		if (charge < momentaryForesightChargeCost(level()) || !isEquipped(hero) || cursed
+				|| hero.buff(MagicImmune.class) != null) {
+			return false;
+		}
+		MomentaryForesight foresight = hero.buff(MomentaryForesight.class);
+		return foresight == null || foresight.uses() < momentaryForesightCapacity(level());
+	}
+
+	boolean storeMomentaryForesight(Hero hero) {
+		if (!canActivate(hero)) return false;
+		charge -= momentaryForesightChargeCost(level());
+		Buff.affect(hero, MomentaryForesight.class)
+				.addDodge(momentaryForesightCapacity(level()));
+		updateQuickslot();
+		return true;
 	}
 
 	@Override
@@ -122,9 +121,16 @@ public class PrecognitiveEye extends Artifact {
 	@Override
 	public void activate(Char ch) {
 		super.activate(ch);
+		PrecognitiveHeat legacyHeat = ch.buff(PrecognitiveHeat.class);
+		if (legacyHeat != null) legacyHeat.detach();
+		PrecognitiveOverheat legacyOverheat = ch.buff(PrecognitiveOverheat.class);
+		if (legacyOverheat != null) legacyOverheat.detach();
+
+		MomentaryForesight moment = ch.buff(MomentaryForesight.class);
 		if (cursed && ch instanceof Hero) {
-			MomentaryForesight moment = ch.buff(MomentaryForesight.class);
 			if (moment != null) moment.detach();
+		} else if (moment != null) {
+			moment.cap(momentaryForesightCapacity(level()));
 		}
 	}
 
@@ -136,7 +142,7 @@ public class PrecognitiveEye extends Artifact {
 
 	private boolean canCharge(Hero target) {
 		return !cursed && target.buff(MagicImmune.class) == null
-				&& target.buff(PrecognitiveOverheat.class) == null && charge < chargeCap;
+				&& charge < chargeCap;
 	}
 
 	private void gainCharge(float amount) {
@@ -161,7 +167,7 @@ public class PrecognitiveEye extends Artifact {
 			if (cursed) {
 				desc += "\n\n" + Messages.get(this, "desc_cursed");
 			} else {
-				desc += "\n\n" + Messages.get(this, "desc_worn");
+				desc += "\n\n" + Messages.get(this, "desc_worn", momentaryForesightCapacity(level()));
 				if (Dungeon.hero.belongings.weapon() instanceof PalermoSword
 						|| Dungeon.hero.belongings.secondWep() instanceof PalermoSword) {
 					desc += "\n\n" + Messages.get(this, "desc_palermo");
@@ -180,37 +186,25 @@ public class PrecognitiveEye extends Artifact {
 		if (!isEnemyAttackOnHero(attacker, defender)) return false;
 		MomentaryForesight moment = defender.buff(MomentaryForesight.class);
 		if (moment == null || !moment.consumeDodge()) return false;
-		onEnemyAttackDodged(attacker, defender, moment.countsAsEyeDodge());
 		return true;
 	}
 
 	public static float rollEvasion(Char attacker, Char defender, float maximum) {
-		PrecognitiveEye eye = equippedEye(attacker, defender);
-		if (eye == null || eye.cursed || defender.buff(PrecognitiveOverheat.class) != null) {
-			return Random.Float(maximum);
-		}
-		return Random.Float(minimumEvasion(Math.round(maximum), eye.level()), maximum);
+		return Random.Float(maximum);
 	}
 
 	public static void onEnemyAttackDodged(Char attacker, Char defender) {
-		onEnemyAttackDodged(attacker, defender, true);
+		PrecognitiveEye eye = equippedEye(attacker, defender);
+		if (eye == null || eye.cursed || defender.buff(MagicImmune.class) != null) return;
+		eye.gainExperience(DODGE_EXPERIENCE);
 	}
 
-	private static void onEnemyAttackDodged(Char attacker, Char defender, boolean tracksEye) {
-		if (!tracksEye) return;
-		PrecognitiveEye eye = equippedEye(attacker, defender);
-		if (eye == null || eye.cursed || defender.buff(PrecognitiveOverheat.class) != null) return;
-
-		PrecognitiveHeat heat = defender.buff(PrecognitiveHeat.class);
-		if (heat == null) heat = Buff.affect(defender, PrecognitiveHeat.class);
-		if (heat.addLayer() >= HEAT_LIMIT) {
-			heat.detach();
-			Buff.prolong(defender, PrecognitiveOverheat.class, OVERHEAT_TURNS);
-			MomentaryForesight moment = defender.buff(MomentaryForesight.class);
-			if (moment != null) moment.detach();
+	@Override
+	public void onHeroGainExp(float levelPercent, Hero hero) {
+		if (levelPercent > 0 && isEquipped(hero) && !cursed
+				&& hero.buff(MagicImmune.class) == null) {
+			gainExperience(Math.round(100 * levelPercent));
 		}
-
-		if (effectiveDepth() >= 2 * eye.level()) eye.gainExperience(10);
 	}
 
 	private void gainExperience(int amount) {
@@ -219,14 +213,10 @@ public class PrecognitiveEye extends Artifact {
 		while (level() < levelCap && exp >= expToNextLevel(level())) {
 			exp -= expToNextLevel(level());
 			upgrade();
-			Catalog.countUse(PrecognitiveEye.class);
+			Catalog.countUses(PrecognitiveEye.class, 2);
 			GLog.p(Messages.get(this, "levelup"));
 		}
 		updateQuickslot();
-	}
-
-	public static int effectiveDepth() {
-		return Dungeon.level instanceof TowerLevel ? 30 : Dungeon.depth;
 	}
 
 	private static boolean isEnemyAttackOnHero(Char attacker, Char defender) {
@@ -240,86 +230,57 @@ public class PrecognitiveEye extends Artifact {
 		return eye != null && eye.isEquipped((Hero) defender) ? eye : null;
 	}
 
-	public static class HeatState {
-		private int layers;
-		private int turnsToDecay;
-
-		public HeatState(int layers, int turnsToDecay) {
-			this.layers = layers;
-			this.turnsToDecay = turnsToDecay;
-		}
-
-		public int addLayer() { return layers = Math.min(HEAT_LIMIT, layers + 1); }
-		public int layers() { return layers; }
-		public int turnsToDecay() { return turnsToDecay; }
-		public boolean tick() {
-			if (--turnsToDecay > 0) return false;
-			layers = Math.max(0, layers - 1);
-			turnsToDecay = HEAT_DECAY_TURNS;
-			return true;
-		}
-	}
-
+	/** Kept so saves containing the removed heat buff can still be loaded safely. */
+	@Deprecated
 	public static class PrecognitiveHeat extends Buff {
-		private static final String LAYERS = "layers";
-		private static final String DECAY = "decay";
-		private final HeatState state = new HeatState(0, HEAT_DECAY_TURNS);
-
-		public int addLayer() { return state.addLayer(); }
-		public int layers() { return state.layers(); }
-		public int turnsToDecay() { return state.turnsToDecay(); }
-
-		@Override public boolean act() {
-			spend(TICK);
-			if (state.tick() && state.layers() == 0) detach();
-			return true;
-		}
-
-		@Override public int icon() { return BuffIndicator.PRECOGNITIVE_EYE; }
-		@Override public String iconTextDisplay() { return Integer.toString(layers()); }
-		@Override public float iconFadePercent() { return turnsToDecay() / (float) HEAT_DECAY_TURNS; }
-		@Override public void tintIcon(com.watabou.noosa.Image icon) {
-			icon.resetColor();
-			if (layers() >= 9) icon.hardlight(0xFF4444);
-			else if (layers() >= 6) icon.hardlight(0xFF9900);
-			else if (layers() >= 4) icon.hardlight(0xFFFF33);
-		}
-		@Override public String desc() { return Messages.get(this, "desc", layers(), turnsToDecay()); }
-		@Override public void storeInBundle(Bundle bundle) { super.storeInBundle(bundle); bundle.put(LAYERS, layers()); bundle.put(DECAY, turnsToDecay()); }
-		@Override public void restoreFromBundle(Bundle bundle) { super.restoreFromBundle(bundle); state.layers = bundle.getInt(LAYERS); state.turnsToDecay = bundle.contains(DECAY) ? bundle.getInt(DECAY) : HEAT_DECAY_TURNS; }
+		@Override public boolean act() { detach(); return true; }
+		@Override public int icon() { return BuffIndicator.NONE; }
 	}
 
-	public static class PrecognitiveOverheat extends FlavourBuff {
-		@Override public int icon() { return BuffIndicator.PRECOGNITIVE_OVERHEAT; }
-		@Override public String desc() { return Messages.get(this, "desc", dispTurns()); }
+	/** Kept so saves containing the removed overheat buff can still be loaded safely. */
+	@Deprecated
+	public static class PrecognitiveOverheat extends Buff {
+		@Override public boolean act() { detach(); return true; }
+		@Override public int icon() { return BuffIndicator.NONE; }
 	}
 
 	public static class MomentaryForesight extends Buff {
 		private static final String USES = "uses";
-		private static final String TRACKS_EYE = "tracks_eye";
 		private int uses;
-		private boolean tracksEye;
 
-		public MomentaryForesight set(int uses, boolean tracksEye) {
+		public MomentaryForesight set(int uses) {
 			this.uses = Math.max(this.uses, uses);
-			this.tracksEye = this.tracksEye || tracksEye;
 			return this;
 		}
-		public MomentaryForesight set(int uses) { return set(uses, true); }
+		public boolean addDodge(int capacity) {
+			int boundedCapacity = Math.max(1, capacity);
+			if (uses >= boundedCapacity) return false;
+			uses++;
+			return true;
+		}
+		public void cap(int capacity) { uses = Math.min(uses, Math.max(1, capacity)); }
 		public int uses() { return uses; }
-		public boolean countsAsEyeDodge() { return tracksEye; }
 		public boolean consumeDodge() { if (uses <= 0) return false; if (--uses == 0) detach(); return true; }
 		@Override public int icon() { return BuffIndicator.MOMENTARY_FORESIGHT; }
 		@Override public String iconTextDisplay() { return Integer.toString(uses); }
 		@Override public String desc() { return Messages.get(this, "desc", uses); }
-		@Override public void storeInBundle(Bundle bundle) { super.storeInBundle(bundle); bundle.put(USES, uses); bundle.put(TRACKS_EYE, tracksEye); }
-		@Override public void restoreFromBundle(Bundle bundle) { super.restoreFromBundle(bundle); uses = bundle.getInt(USES); tracksEye = bundle.getBoolean(TRACKS_EYE); }
+		@Override public void storeInBundle(Bundle bundle) { super.storeInBundle(bundle); bundle.put(USES, uses); }
+		@Override public void restoreFromBundle(Bundle bundle) { super.restoreFromBundle(bundle); uses = bundle.getInt(USES); }
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		if (level() > levelCap) level(levelCap);
+		if (level() >= levelCap) exp = 0;
 	}
 
 	private class EyeRecharge extends ArtifactBuff {
 		@Override public boolean act() {
 			spend(TICK);
-			if (canCharge((Hero) target)) gainCharge(naturalChargePerTurn() * RingOfEnergy.artifactChargeMultiplier(target));
+			if (canCharge((Hero) target) && Regeneration.regenOn()) {
+				gainCharge(naturalChargePerTurn(level()) * RingOfEnergy.artifactChargeMultiplier(target));
+			}
 			return true;
 		}
 	}

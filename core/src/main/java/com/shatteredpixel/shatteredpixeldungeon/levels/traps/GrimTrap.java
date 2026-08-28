@@ -43,6 +43,15 @@ import com.watabou.utils.Callback;
 
 public class GrimTrap extends Trap {
 
+	public static int grimDamage(Char target) {
+		return grimDamage(target.HT, target.HP, target == Dungeon.hero);
+	}
+
+	static int grimDamage(int maxHealth, int currentHealth, boolean capForHero) {
+		int damage = Math.round(maxHealth / 2f + currentHealth / 2f);
+		return capForHero ? (int) Math.min(damage, maxHealth * 0.9f) : damage;
+	}
+
 	{
 		color = GREY;
 		shape = LARGE_DOT;
@@ -95,14 +104,7 @@ public class GrimTrap extends Trap {
 					}
 					final Char finalTarget = target;
 					//instant kill, use a mix of current HP and max HP, just like psi blast (for resistances)
-					int damage = Math.round(finalTarget.HT/2f + finalTarget.HP/2f);
-
-					//can't do more than 90% HT for the hero specifically
-					if (finalTarget == Dungeon.hero){
-						damage = (int)Math.min(damage, finalTarget.HT*0.9f);
-					}
-
-					final int finalDmg = damage;
+					final int finalDmg = grimDamage(finalTarget);
 					if (Dungeon.level.heroFOV[pos] || Dungeon.level.heroFOV[target.pos]) {
 						((MagicMissile)finalTarget.sprite.parent.recycle(MagicMissile.class)).reset(
 								MagicMissile.SHADOW,

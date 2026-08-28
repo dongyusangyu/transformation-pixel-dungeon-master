@@ -49,19 +49,23 @@ public class WndScoreBreakdown extends Window {
 
 		NumberFormat num = NumberFormat.getInstance(Messages.locale());
 		boolean showLimits = !Dungeon.newCycle;
+		String progressDescription = Dungeon.newCycle ? "progress_desc_tower" : "progress_desc";
+		String treasureDescription = Dungeon.newCycle ? "treasure_desc_tower" : "treasure_desc";
+		String exploreDescription = Dungeon.newCycle ? "explore_desc_tower" : "explore_desc";
+		String bossesDescription = Dungeon.newCycle ? "bosses_desc_tower" : "bosses_desc";
 		if (Dungeon.initialVersion > ShatteredPixelDungeon.v1_2_3) {
 			pos = statSlot(this, Messages.get(this, "progress_title"),
 					num.format(Statistics.progressScore), pos, showLimits && Statistics.progressScore >= 50_000);
-			pos = addInfo(this, Messages.get(this, "progress_desc"), pos);
+			pos = addInfo(this, Messages.get(this, progressDescription), pos);
 			pos = statSlot(this, Messages.get(this, "treasure_title"),
 					num.format(Statistics.treasureScore), pos, showLimits && Statistics.treasureScore >= 20_000);
-			pos = addInfo(this, Messages.get(this, "treasure_desc"), pos);
+			pos = addInfo(this, Messages.get(this, treasureDescription), pos);
 			pos = statSlot(this, Messages.get(this, "explore_title"),
 					num.format(Statistics.exploreScore), pos, showLimits && Statistics.exploreScore >= 20_000);
-			pos = addInfo(this, Messages.get(this, "explore_desc"), pos);
+			pos = addInfo(this, Messages.get(this, exploreDescription), pos);
 			pos = statSlot(this, Messages.get(this, "bosses_title"),
 					num.format(Statistics.totalBossScore), pos, showLimits && Statistics.totalBossScore >= 15_000);
-			pos = addInfo(this, Messages.get(this, "bosses_desc"), pos);
+			pos = addInfo(this, Messages.get(this, bossesDescription), pos);
 			pos = statSlot(this, Messages.get(this, "quests_title"),
 					num.format(Statistics.totalQuestScore), pos, showLimits && Statistics.totalQuestScore >= 10_000);
 			pos = addInfo(this, Messages.get(this, "quests_desc"), pos);

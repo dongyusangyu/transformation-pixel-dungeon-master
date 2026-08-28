@@ -237,10 +237,14 @@ public class ScrollOfSublimation extends Item{
                     Collections.addAll(availableTalents, Talent.SHADOW_KILLER, Talent.KILL_SPREE,Talent.SEAOFPEOPLE,Talent.PHANTOM_STEP);
                     break;
                 case "DM300":
-                case "HUNTRESS":
                     tier=2;
                     this.index=2;
                     Collections.addAll(availableTalents, Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE);
+                    break;
+			case "HUNTRESS":
+				tier=2;
+				this.index=2;
+				Collections.addAll(availableTalents, Talent.HUNTING_TECHNIQUE, Talent.NATURAL_CHILD, Talent.FALCON_EYE);
                     break;
                 case "DWARFKING":
                     tier=2;
@@ -367,8 +371,10 @@ public class ScrollOfSublimation extends Item{
                 Collections.addAll(availableTalents, Talent.SHADOW_KILLER, Talent.KILL_SPREE,Talent.SEAOFPEOPLE,Talent.PHANTOM_STEP);
                 break;
             case "DM300":
-            case "HUNTRESS":
                 Collections.addAll(availableTalents, Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE);
+                break;
+			case "HUNTRESS":
+				Collections.addAll(availableTalents, Talent.HUNTING_TECHNIQUE, Talent.NATURAL_CHILD, Talent.FALCON_EYE);
                 break;
             case "DWARFKING":
                 Collections.addAll(availableTalents, Talent.KING_PROTECT, Talent.SUMMON_FOLLOWER,Talent.WOLFISH_GAZE,Talent.ENERGY_CONVERSION);

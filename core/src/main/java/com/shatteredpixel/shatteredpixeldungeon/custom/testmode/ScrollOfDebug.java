@@ -415,7 +415,7 @@ public class ScrollOfDebug extends TestItem {
             if (input.length > 1) {
                 // we only care about the initial argument.
                 Command cmd = Command.get(input[1]);
-                if (cmd != null) output = cmd.fullDocumentation(trie);
+                if (cmd != null) output = cmd.fullDocumentation(getTrie());
                 else all = input[1].equalsIgnoreCase("all");
             }
             if (output == null) {
@@ -425,7 +425,7 @@ public class ScrollOfDebug extends TestItem {
                         // extensive. help is omitted because we are using help.
                         if (cmd != Command.HELP) {
                             builder.append("\n\n")
-                                    .append(cmd.fullDocumentation(trie, false));
+                                    .append(cmd.fullDocumentation(getTrie(), false));
                         }
                     } else {
                         // use documentation. (show syntax in addition to description)
@@ -515,7 +515,7 @@ public class ScrollOfDebug extends TestItem {
             }
 
             Class _cls = storedVariable != null ? storedVariable.getClass()
-                    : trie.findClass(input[1], command.paramClass);
+                    : getTrie().findClass(input[1], command.paramClass);
 
             if(command == Command.INSPECT || command == Command.USE && input.length == 2) {
                 Class cls = _cls;
@@ -1081,10 +1081,10 @@ public class ScrollOfDebug extends TestItem {
 
                 args[i] =
                         type == Hero.class ? curUser :// autofill hero
-                        Class.class.isAssignableFrom(type) ? trie.findClass(input[j++], Object.class) :
+                        Class.class.isAssignableFrom(type) ? getTrie().findClass(input[j++], Object.class) :
                         type == Dungeon.level.getClass() ? Dungeon.level : // level autofill
                         // blindly instantiate, any error indicates invalid method.
-                        Reflection.newInstanceUnhandled(trie.findClass(input[j++], type));
+                        Reflection.newInstanceUnhandled(getTrie().findClass(input[j++], type));
             }
             // todo determine the exact cases where this is reached.
             if (args[i] == null) throw new IllegalArgumentException("No argument for " + type.getName());
@@ -1184,11 +1184,22 @@ public class ScrollOfDebug extends TestItem {
     // reflection logic.
 
     public static ClassLoader loader = ScrollOfDebug.class.getClassLoader();
-    public static PackageTrie trie = null; // loaded when needed.
-    static {
-        try {
-            trie = PackageTrie.getClassesForPackage(ROOT);
-        } catch (ClassNotFoundException e) { Game.reportException(e); }
+    public static volatile PackageTrie trie = null; // loaded when needed.
+
+    private static PackageTrie getTrie() {
+        if (trie == null) {
+            synchronized (ScrollOfDebug.class) {
+                if (trie == null) {
+                    try {
+                        trie = PackageTrie.getClassesForPackage(ROOT);
+                    } catch (ClassNotFoundException e) {
+                        Game.reportException(e);
+                        trie = new PackageTrie(ROOT);
+                    }
+                }
+            }
+        }
+        return trie;
     }
 
     static String listAllClasses(PackageTrie trie, Class<?> parent) {

@@ -34,15 +34,15 @@ public class Barkskin extends Buff {
 		type = buffType.POSITIVE;
 	}
 
-	private int level = 0;
-	private int interval = 1;
+	protected int level = 0;
+	protected int interval = 1;
 	
 	@Override
 	public boolean act() {
 		if (target.isAlive()) {
 
 			spend( interval );
-			if (--level <= 0) {
+			if ((level -= decayAmount()) <= 0) {
 				detach();
 			}
 			
@@ -57,6 +57,10 @@ public class Barkskin extends Buff {
 	
 	public int level() {
 		return level;
+	}
+
+	protected int decayAmount() {
+		return 1;
 	}
 	
 	public void set( int value, int time ) {
@@ -113,21 +117,26 @@ public class Barkskin extends Buff {
 		level = bundle.getInt( LEVEL );
 	}
 
-	//These two methods allow for multiple instances of barkskin to stack in terms of duration
-	// but only the stronger bonus is applied
+	//Regular barkskin sources stack in duration but only the strongest regular bonus applies.
+	//Natural Child is a separate source and is added by currentLevel().
 
 	public static int currentLevel(Char ch ){
-		int level = 0;
+		int regularLevel = 0;
+		int naturalChildLevel = 0;
 		for (Barkskin b : ch.buffs(Barkskin.class)){
-			level = Math.max(level, b.level);
+			if (b instanceof Talent.NaturalChildBarkskin) {
+				naturalChildLevel = Math.max(naturalChildLevel, b.level);
+			} else {
+				regularLevel = Math.max(regularLevel, b.level);
+			}
 		}
-		return level;
+		return regularLevel + naturalChildLevel;
 	}
 
 	//reset if a matching buff exists, otherwise append
 	public static void conditionallyAppend(Char ch, int level, int interval){
 		for (Barkskin b : ch.buffs(Barkskin.class)){
-			if (b.interval == interval){
+			if (b.getClass() == Barkskin.class && b.interval == interval){
 				b.set(level, interval);
 				return;
 			}

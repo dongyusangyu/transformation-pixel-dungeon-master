@@ -116,12 +116,16 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
+import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.ui.OptionSlider;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.NinePatch;
+import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Reflection;
 
@@ -133,6 +137,9 @@ import java.util.Objects;
 
 public class TestPotion extends TestGenerator {
     private static final int TREASURE_CATEGORY = 15;
+    private static final int ITEM_COLUMNS = 7;
+    private static final int ITEM_CELL_SIZE = 16;
+    private static final int ITEM_PANE_HEIGHT = 64;
 
     {
         image = ItemSpriteSheet.POTION_HOLDER;
@@ -373,6 +380,29 @@ public class TestPotion extends TestGenerator {
         }
     }
 
+    static int clampSelection(int selection, int itemCount) {
+        return itemCount <= 0 ? 0 : Math.max(0, Math.min(selection, itemCount - 1));
+    }
+
+    static float itemGridContentHeight(int itemCount) {
+        if (itemCount <= 0) return 0;
+        return ((itemCount + ITEM_COLUMNS - 1) / ITEM_COLUMNS) * ITEM_CELL_SIZE;
+    }
+
+    static int itemGridIndexAt(float x, float y, int itemCount) {
+        if (x < 0 || y < 0 || itemCount <= 0
+                || x >= ITEM_COLUMNS * ITEM_CELL_SIZE) {
+            return -1;
+        }
+        int index = (int) (y / ITEM_CELL_SIZE) * ITEM_COLUMNS
+                + (int) (x / ITEM_CELL_SIZE);
+        return index < itemCount ? index : -1;
+    }
+
+    static float itemPaneHeight() {
+        return ITEM_PANE_HEIGHT;
+    }
+
     @SuppressWarnings("unchecked")
     static void splitMiscCatalogItems(Collection<Class<?>> classes,
                                       List<Class<? extends Item>> miscItems,
@@ -398,20 +428,34 @@ public class TestPotion extends TestGenerator {
         private RenderedTextBlock t_select;
         private CheckBox c_multiply;
         private RedButton b_create;
-        private ArrayList<IconButton> buttonList = new ArrayList<>();
         private ArrayList<IconButton> cateButtonList = new ArrayList<>();
+        private Component itemContent;
+        private ScrollPane itemPane;
+        private final ArrayList<SelectionCell> itemCells = new ArrayList<>();
         private static final int WIDTH = 120;
         private static final int BTN_SIZE = 16;
         private static final int GAP = 2;
         private static final int TITLE_BTM = 8;
         private int CATEGORY_BTM = TITLE_BTM + GAP + BTN_SIZE*2 + GAP;
-        private int ITEM_BTM = CATEGORY_BTM + 3*GAP + BTN_SIZE*2 + GAP;
 
         public SettingsWindow() {
             buildList();
 
             createCategoryImage();
 
+            itemContent = new Component();
+            itemPane = new ScrollPane(itemContent) {
+                @Override
+                public void onClick(float x, float y) {
+                    int index = itemGridIndexAt(x - itemGridLeft(), y, currentItemCount());
+                    if (index >= 0) {
+                        selected = index;
+                        refreshItemSelection();
+                        updateText();
+                    }
+                }
+            };
+            add(itemPane);
             createImage();
 
             t_select = PixelScene.renderTextBlock("", 8);
@@ -452,11 +496,13 @@ public class TestPotion extends TestGenerator {
         }
 
         private void layout() {
-            t_select.setPos(0, ITEM_BTM + GAP);
+            float itemPaneTop = CATEGORY_BTM + GAP*3;
+            t_select.setPos(0, itemPaneTop + ITEM_PANE_HEIGHT + GAP);
             o_quantity.setRect(0, t_select.bottom() + 2 * GAP, WIDTH, 24);
             c_multiply.setRect(0, o_quantity.bottom() + GAP, WIDTH/2f - GAP/2f, 16);
             b_create.setRect(WIDTH/2f + GAP/2f, o_quantity.bottom() + GAP, WIDTH/2f - GAP/2f, 16);
             resize(WIDTH, (int) b_create.bottom());
+            itemPane.setRect(0, itemPaneTop, WIDTH, ITEM_PANE_HEIGHT);
         }
 
         private void createCategoryImage(){
@@ -471,7 +517,7 @@ public class TestPotion extends TestGenerator {
                     protected void onClick() {
                         cateButtonList.get(cateSelected).icon().resetColor();
                         cateSelected = Math.min(j, maxCategory());
-                        if(selected > maxIndex(cateSelected)) selected = maxIndex(cateSelected);
+                        selected = clampSelection(selected, currentItemCount());
                         cateButtonList.get(cateSelected).icon().color(0xFFFF44);
                         updateImage();
                         updateText();
@@ -494,6 +540,7 @@ public class TestPotion extends TestGenerator {
                 cateButtonList.add(btn);
             }
             CATEGORY_BTM = TITLE_BTM + (rowNumber+1) * BTN_SIZE;
+            cateButtonList.get(cateSelected).icon().color(0xFFFF44);
         }
 
         private Image createItemImage(Class<? extends Item> itemClass) {
@@ -502,87 +549,80 @@ public class TestPotion extends TestGenerator {
             return im;
         }
 
+        private int currentItemCount() {
+            return Math.max(0, maxIndex(cateSelected) + 1);
+        }
+
+        private float itemGridLeft() {
+            return (WIDTH - ITEM_COLUMNS * BTN_SIZE) / 2f;
+        }
+
         private void createImage() {
-            float top = CATEGORY_BTM + GAP*3;
-            int number = maxIndex(cateSelected);
-            int rowNumber = 1;
-            for (int i = 0; i <= number; ++i) {
-                final int j = i;
-                IconButton btn = new IconButton() {
-                    @Override
-                    protected void onClick() {
-                        selected = Math.min(j, maxIndex(cateSelected));
-                        updateText();
-                        super.onClick();
-                    }
-                };
+            itemContent.clear();
+            itemCells.clear();
+            int number = currentItemCount();
+            for (int i = 0; i < number; ++i) {
+                Image im;
                 switch (cateSelected){
                     case 0 :{
-                        Image im = new Image(Assets.Sprites.ITEM_ICONS);
+                        im = new Image(Assets.Sprites.ITEM_ICONS);
                         im.frame(ItemSpriteSheet.Icons.film.get(Objects.requireNonNull(Reflection.newInstance(potionList.get(i))).icon));
                         im.scale.set(1.6f);
-                        btn.icon(im);
                     } break;
                     case 1:{
-                        Image im = new Image(Assets.Sprites.ITEM_ICONS);
+                        im = new Image(Assets.Sprites.ITEM_ICONS);
                         im.frame(ItemSpriteSheet.Icons.film.get(Objects.requireNonNull(Reflection.newInstance(exoticPotionList.get(i))).icon));
                         im.scale.set(1.6f);
-                        btn.icon(im);
                     } break;
                     case 2:{
-                        btn.icon(createItemImage(seedList.get(i)));
+                        im = createItemImage(seedList.get(i));
                     } break;
                     case 3:{
-                        btn.icon(createItemImage(dartList.get(i)));
+                        im = createItemImage(dartList.get(i));
                     } break;
                     case 4:{
-                        Image im = new Image(Assets.Sprites.ITEM_ICONS);
+                        im = new Image(Assets.Sprites.ITEM_ICONS);
                         im.frame(ItemSpriteSheet.Icons.film.get(Objects.requireNonNull(Reflection.newInstance(scrollList.get(i))).icon));
                         im.scale.set(1.6f);
-                        btn.icon(im);
                     }break;
                     case 5:{
-                        Image im = new Image(Assets.Sprites.ITEM_ICONS);
+                        im = new Image(Assets.Sprites.ITEM_ICONS);
                         im.frame(ItemSpriteSheet.Icons.film.get(Objects.requireNonNull(Reflection.newInstance(exoticScrollList.get(i))).icon));
                         im.scale.set(1.6f);
-                        btn.icon(im);
                     } break;
                     case 6:{
-                        btn.icon(createItemImage(stoneList.get(i)));
+                        im = createItemImage(stoneList.get(i));
                     } break;
                     case 7:{
-                        btn.icon(createItemImage(bombList.get(i)));
+                        im = createItemImage(bombList.get(i));
                     } break;
                     case 8:{
-                        btn.icon(createItemImage(brewList.get(i)));
+                        im = createItemImage(brewList.get(i));
                     } break;
                     case 9: {
-                        Image im = new ItemSprite(Objects.requireNonNull(
+                        im = new ItemSprite(Objects.requireNonNull(
                                 Reflection.newInstance(spellList.get(i))));
                         im.scale.set(1.0f);
-                        btn.icon(im);
                     } break;
                     case 10: {
-                        btn.icon(createItemImage(foodList.get(i)));
+                        im = createItemImage(foodList.get(i));
                     } break;
                     case 11: default:{
-                        Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(miscList.get(i))));
+                        im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(miscList.get(i))));
                         im.scale.set(1.0f);
-                        btn.icon(im);
                     } break;
                     case 12: {
-                        btn.icon(createItemImage(remainList.get(i)));
+                        im = createItemImage(remainList.get(i));
                     } break;
                     case 13: {
-                        btn.icon(createItemImage(trinketList.get(i)));
+                        im = createItemImage(trinketList.get(i));
                     }break;
                     case 14: {
-                        btn.icon(createItemImage(equipmentList.get(i)));
+                        im = createItemImage(equipmentList.get(i));
                     } break;
                     case TREASURE_CATEGORY: {
-                        Image im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(treasureList.get(i))));
+                        im = new ItemSprite(Objects.requireNonNull(Reflection.newInstance(treasureList.get(i))));
                         im.scale.set(1.0f);
-                        btn.icon(im);
                     } break;
                     /*
                     case 14:{
@@ -610,37 +650,28 @@ public class TestPotion extends TestGenerator {
                     }*/
                 }
 
-                int maxCol = 6;
-                if (cateSelected==8 || cateSelected==11 || cateSelected==13
-                        || cateSelected==TREASURE_CATEGORY){
-                    maxCol = 7;
-                }
-
-
-                int row = i / maxCol;
-                int col = i % maxCol;
-                rowNumber = number / maxCol;
-                int colNumber = rowNumber > row? maxCol:number+1 - rowNumber*maxCol;
-                float left = (WIDTH - BTN_SIZE * colNumber) / 2f;
-
-                btn.setRect(left + col * BTN_SIZE, top + row  * BTN_SIZE, BTN_SIZE, BTN_SIZE);
-
-                add(btn);
-                buttonList.add(btn);
+                SelectionCell cell = new SelectionCell(im);
+                cell.setRect(itemGridLeft() + (i % ITEM_COLUMNS) * BTN_SIZE,
+                        (i / ITEM_COLUMNS) * BTN_SIZE, BTN_SIZE, BTN_SIZE);
+                itemContent.add(cell);
+                itemCells.add(cell);
             }
-            ITEM_BTM = CATEGORY_BTM + 5*GAP + (rowNumber+1) * BTN_SIZE;
+
+            itemContent.setRect(0, 0, WIDTH,
+                    Math.max(BTN_SIZE, itemGridContentHeight(number)));
+            refreshItemSelection();
         }
 
-        private void clearImage() {
-            for (IconButton button : buttonList.toArray(new IconButton[0])) {
-                button.destroy();
+        private void refreshItemSelection() {
+            for (int i = 0; i < itemCells.size(); i++) {
+                itemCells.get(i).selected(i == selected);
             }
-            buttonList.clear();
         }
 
         private void updateImage() {
-            clearImage();
             createImage();
+            itemPane.scrollTo(0, 0);
+            itemPane.update();
         }
 
         private void updateText() {
@@ -651,6 +682,39 @@ public class TestPotion extends TestGenerator {
             }
             t_select.text(Messages.get(TestPotion.class, "select", s));
             layout();
+        }
+
+        @Override
+        public void offset(int xOffset, int yOffset) {
+            super.offset(xOffset, yOffset);
+            itemPane.setPos(itemPane.left(), itemPane.top());
+        }
+
+        private class SelectionCell extends Component {
+            private final NinePatch background;
+            private final Image icon;
+
+            private SelectionCell(Image icon) {
+                this.icon = icon;
+                background = Chrome.get(Chrome.Type.RED_BUTTON);
+                add(background);
+                add(icon);
+            }
+
+            private void selected(boolean selected) {
+                background.resetColor();
+                background.alpha(selected ? 1f : 0.45f);
+            }
+
+            @Override
+            protected void layout() {
+                background.x = x;
+                background.y = y;
+                background.size(width, height);
+                icon.x = x + (width - icon.width()) / 2f;
+                icon.y = y + (height - icon.height()) / 2f;
+                PixelScene.align(icon);
+            }
         }
     }
 }

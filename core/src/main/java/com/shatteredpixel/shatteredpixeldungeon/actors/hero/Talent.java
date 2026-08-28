@@ -68,6 +68,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CounterBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DarkHook;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze;
@@ -562,6 +563,8 @@ public enum Talent {
 	MAL_CURSE(527, 2, 0, TalentType.NEGATIVE),OVERLOAD_CHARGE(528, 2, 2, TalentType.EFFECT),GAS_SPURT(529, 2, 2, TalentType.MAGIC),
 	BOSS_TALENT_SLOT_1(530, 0, 1, TalentType.BOSS), BOSS_TALENT_SLOT_2(530, 0, 1, TalentType.BOSS), BOSS_TALENT_SLOT_3(530, 0, 2, TalentType.BOSS), BOSS_TALENT_SLOT_4(530, 0, 2, TalentType.BOSS), BOSS_TALENT_SLOT_5(530, 0, 3, TalentType.BOSS),
 	ERODING_SOUL(531, 2, 1, TalentType.MAGIC), CREDULOUS(532, 2, 1, TalentType.SPELL), PENETRATING_CAST(533, 2, 2, TalentType.MAGIC), BOUNTIFUL_ENHANCEMENT(534, 3, 3, TalentType.SPELL), ICE_HELL(535, 3, 3, TalentType.MAGIC),
+	//Huntress boss talent
+	HUNTING_TECHNIQUE(602, 2, 2, TalentType.BOSS), NATURAL_CHILD(603, 2, 2, TalentType.BOSS), FALCON_EYE(604, 2, 2, TalentType.BOSS),
 	//Friar T1
 	TRANQUIL_TINCTURE(576, 2, 1, TalentType.RESOURCE), RAVENS_EYE(577, 2, 1, TalentType.ASSIST), CRYSTAL_GUNPOWDER(578, 2, 1, TalentType.ATTACK), BULWARK_GREATSHIELD(579, 2, 1, TalentType.ASSIST),
 	//Friar T2
@@ -1294,6 +1297,31 @@ public enum Talent {
 		public float iconFadePercent() { return GameMath.gate(0, visualcooldown() / (15 - 5*Dungeon.hero.pointsInTalent(REJUVENATING_STEPS)), 1); }
 	};
 	public static class RejuvenatingStepsFurrow extends CounterBuff{{revivePersists = true;}};
+	public static class NaturalChildFurrowCounter extends CounterBuff {
+		{
+			revivePersists = true;
+		}
+
+		public static int maxUses(int talentPoints) {
+			return 100 * Math.min(2, Math.max(0, talentPoints));
+		}
+
+		public boolean canUse(int talentPoints) {
+			return maxUses(talentPoints) > 0 && count() < maxUses(talentPoints);
+		}
+
+		public void consumeUse(int talentPoints) {
+			if (canUse(talentPoints)) {
+				countUp(1);
+			}
+		}
+
+		public void recoverFromExperience(float percent, int talentPoints) {
+			if (percent > 0 && maxUses(talentPoints) > 0) {
+				countDown(percent * maxUses(talentPoints));
+			}
+		}
+	};
 	public static class SeerShotCooldown extends FlavourBuff{
 		public int icon() { return target.buff(RevealedArea.class) != null ? BuffIndicator.NONE : BuffIndicator.TIME; }
 		public void tintIcon(Image icon) { icon.hardlight(0.7f, 0.4f, 0.7f); }
@@ -1537,6 +1565,16 @@ public enum Talent {
 		return type;
 	}
 
+	public static int falconEyePiercingDistance(int points, int adjustedViewDistance, boolean sighted) {
+		if (!sighted || points <= 0 || adjustedViewDistance <= 0) {
+			return 0;
+		}
+		if (points >= 2) {
+			return Math.min(adjustedViewDistance,12);
+		}
+		return Math.min(Math.max(1, Math.round(adjustedViewDistance * 0.75f)),12);
+	}
+
 	public boolean isCommonTalentType() {
 		return type.isCommon();
 	}
@@ -1580,7 +1618,7 @@ public enum Talent {
 			case STRONGEST_SHIELD: case COMBO_PACKAGE: case BREAK_ENEMY_RANKS:
 			case SURPRISE_THROW: case SMOKE_MASK: case RUSH:
 			case SHADOW_KILLER: case KILL_SPREE: case SEAOFPEOPLE: case PHANTOM_STEP:
-			case FASTING: case THUNDER_STRIKE: case DIRECTIONAL_COLLAPSE:
+			case FASTING: case THUNDER_STRIKE: case DIRECTIONAL_COLLAPSE: case HUNTING_TECHNIQUE: case NATURAL_CHILD: case FALCON_EYE:
 			case KING_PROTECT: case SUMMON_FOLLOWER: case WOLFISH_GAZE: case ENERGY_CONVERSION:
 			case YOG_LARVA: case YOG_FIST: case YOG_RAY:
 				return true;
@@ -1698,7 +1736,7 @@ public enum Talent {
 			case SURPRISE_THROW: case SMOKE_MASK: case RUSH:
 			case SHADOW_KILLER: case KILL_SPREE: case SEAOFPEOPLE: case PHANTOM_STEP:
 				return BOSS_TALENT_SLOT_2;
-			case FASTING: case THUNDER_STRIKE: case DIRECTIONAL_COLLAPSE:
+			case FASTING: case THUNDER_STRIKE: case DIRECTIONAL_COLLAPSE: case HUNTING_TECHNIQUE: case NATURAL_CHILD: case FALCON_EYE:
 				return BOSS_TALENT_SLOT_3;
 			case KING_PROTECT: case SUMMON_FOLLOWER: case WOLFISH_GAZE: case ENERGY_CONVERSION:
 				return BOSS_TALENT_SLOT_4;
@@ -1969,6 +2007,22 @@ public enum Talent {
 			Buff.affect(hero, SmokeMask.class);
 			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
 			BuffIndicator.refreshHero();
+		}
+		if (talent == NATURAL_CHILD && hero.buff(NaturalChildCooldown.class) == null
+				&& hero.pointsInTalent(NATURAL_CHILD) > 0) {
+			Buff.affect(hero, NaturalChildAction.class);
+			ActionIndicator.setAction(hero.buff(NaturalChildAction.class));
+			BuffIndicator.refreshHero();
+		}
+		if (!hero.hasTalent(NATURAL_CHILD)) {
+			NaturalChildAction action = hero.buff(NaturalChildAction.class);
+			if (action != null) action.detach();
+			NaturalChildBarkskin barkskin = hero.buff(NaturalChildBarkskin.class);
+			if (barkskin != null) barkskin.detach();
+			NaturalChildCooldown cooldown = hero.buff(NaturalChildCooldown.class);
+			if (cooldown != null) cooldown.detach();
+			NaturalChildFurrowCounter counter = hero.buff(NaturalChildFurrowCounter.class);
+			if (counter != null) counter.detach();
 		}
 		if (!hero.hasTalent(SMOKE_MASK) && hero.buff(SmokeMask.class) != null) {
 			hero.buff(SmokeMask.class).detach();
@@ -2994,6 +3048,28 @@ public enum Talent {
 			return create(weapon, delivery, inheritedMeleeDamage, inheritedMeleeSpecial);
 		}
 
+		/**
+		 * Builds the context for a direct hero attack and rolls Hunting Technique
+		 * once, so its damage and special channels always share the same result.
+		 */
+		public static AttackProcContext forHeroAttack(Hero hero, DamageTag... damageTags) {
+			AttackProcContext context = forAttack(hero, false, false, damageTags);
+			int points = hero == null ? 0 : hero.pointsInTalent(HUNTING_TECHNIQUE);
+			if (points > 0 && context.isActualPhysicalRangedWeaponAttack()) {
+				return applyHuntingTechnique(context, points, Random.Int(3));
+			}
+			return context;
+		}
+
+		static AttackProcContext applyHuntingTechnique(AttackProcContext context,
+				int talentPoints, int roll) {
+			if (context == null || talentPoints <= 0 || roll < 0 || roll >= 3
+					|| !context.isActualPhysicalRangedWeaponAttack()) {
+				return context;
+			}
+			return create(context.weapon, context.delivery, true, talentPoints >= 2);
+		}
+
 		public boolean allows(AttackProcChannel channel) {
 			return isActualMeleeAttack() || inherits(channel);
 		}
@@ -3007,6 +3083,10 @@ public enum Talent {
 		public boolean isActualMeleeAttack() {
 			return delivery == DamageTag.Delivery.MELEE
 					&& (weapon instanceof MeleeWeapon || weapon == null);
+		}
+
+		public boolean isActualPhysicalRangedWeaponAttack() {
+			return delivery == DamageTag.Delivery.RANGED && weapon instanceof MissileWeapon;
 		}
 
 		public boolean isActualMeleeWeapon() {
@@ -3120,9 +3200,6 @@ public enum Talent {
 		}
 		if(enemy.buff(Decoy.ShadowMark.class)!=null && hero.hasTalent(Talent.ALLHUNTING)){
 			dmg*=1+0.15f*hero.pointsInTalent(Talent.ALLHUNTING);
-		}
-		if(hero.hasTalent(QIANFA_THROWING) && hero.pointsInTalent(QIANFA_THROWING)>Random.Int(10) && context.weapon() instanceof MissileWeapon){
-			dmg *=3;
 		}
 		if(hero.subClass.is(HeroSubClass.AT400) && enemy.buff(InstructionTool.InstructionMark.class)!=null){
 			dmg *=1.3f;
@@ -3257,7 +3334,7 @@ public enum Talent {
 	public static int onAttackProc(Hero hero, Char attacker, Char enemy, int dmg,
 			DamageTag... damageTags) {
 		AttackProcContext context = attacker == hero
-				? AttackProcContext.forAttack(hero, false, false, damageTags)
+				? AttackProcContext.forHeroAttack(hero, damageTags)
 				: AttackProcContext.forAttack(hero, false, false);
 		return onAttackProc(hero, attacker, enemy, dmg, context, damageTags);
 	}
@@ -4560,6 +4637,154 @@ public enum Talent {
 			object = bundle.getInt(OBJECT);
 		}
 	};
+
+	public static class NaturalChildBarkskin extends Barkskin {
+		{
+			type = buffType.POSITIVE;
+		}
+
+		@Override
+		protected int decayAmount() {
+			return 1;
+		}
+
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.25f, 1.0f, 0.25f);
+		}
+
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, (20 - level()) / 20f);
+		}
+	}
+
+	public static class NaturalChildCooldown extends FlavourBuff {
+		@Override
+		public int icon() {
+			return BuffIndicator.TIME;
+		}
+
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.25f, 1.0f, 0.25f);
+		}
+
+		@Override
+		public float iconFadePercent() {
+			return Math.max(0, visualcooldown() / 25f);
+		}
+
+		@Override
+		public void detach() {
+			if (target == Dungeon.hero && Dungeon.hero.hasTalent(NATURAL_CHILD)) {
+				ActionIndicator.setAction(Dungeon.hero.buff(NaturalChildAction.class));
+				BuffIndicator.refreshHero();
+			}
+			super.detach();
+		}
+	}
+
+	public static class NaturalChildAction extends Buff implements ActionIndicator.Action {
+		{
+			actPriority = BUFF_PRIO - 1;
+			revivePersists = true;
+		}
+
+		@Override
+		public void detach() {
+			super.detach();
+			ActionIndicator.clearAction(this);
+		}
+
+		@Override
+		public int icon() {
+			return BuffIndicator.BARKSKIN;
+		}
+
+		@Override
+		public void tintIcon(Image icon) {
+			icon.hardlight(0.25f, 1.0f, 0.25f);
+		}
+
+		@Override
+		public boolean act() {
+			if (target == Dungeon.hero && Dungeon.hero.hasTalent(NATURAL_CHILD)
+					&& target.buff(NaturalChildCooldown.class) == null) {
+				ActionIndicator.setAction(this);
+			} else {
+				ActionIndicator.clearAction(this);
+			}
+			spend(TICK);
+			return true;
+		}
+
+		@Override
+		public String actionName() {
+			return Messages.get(this, "action_name");
+		}
+
+		@Override
+		public int indicatorColor() {
+			return 0x36B83F;
+		}
+
+		@Override
+		public int actionIcon() {
+			return HeroIcon.WARDEN;
+		}
+
+		@Override
+		public void doAction() {
+			if (!usable()) return;
+
+			Hero hero = Dungeon.hero;
+			int points = hero.pointsInTalent(NATURAL_CHILD);
+			int barkskin = points >= 2 ? 20 : 15;
+			NaturalChildFurrowCounter counter = Buff.affect(hero, NaturalChildFurrowCounter.class);
+			boolean canGrowHighGrass = Regeneration.regenOn() && counter.canUse(points);
+			NaturalChildBarkskin armor = Buff.affect(hero, NaturalChildBarkskin.class);
+			armor.set(barkskin, 1);
+
+			if (Dungeon.level != null) {
+				for (int offset : PathFinder.NEIGHBOURS9) {
+					int cell = hero.pos + offset;
+					if (!Dungeon.level.insideMap(cell)) continue;
+
+					Char ch = Actor.findChar(cell);
+					if (points >= 2 && ch != null && ch.alignment == Char.Alignment.ENEMY) {
+						Buff.affect(ch, Roots.class, 2f);
+					}
+
+					int terrain = Dungeon.level.map[cell];
+					boolean canGrow = terrain == Terrain.EMPTY || terrain == Terrain.EMBERS
+							|| terrain == Terrain.EMPTY_DECO || terrain == Terrain.GRASS
+							|| terrain == Terrain.FURROWED_GRASS;
+					if (canGrow && Dungeon.level.plants.get(cell) == null
+							&& terrain != Terrain.HIGH_GRASS) {
+						Level.set(cell, canGrowHighGrass ? Terrain.HIGH_GRASS : Terrain.FURROWED_GRASS);
+						GameScene.updateMap(cell);
+						if (canGrowHighGrass) {
+							CellEmitter.get(cell).burst(LeafParticle.LEVEL_SPECIFIC, 4);
+						}
+					}
+				}
+				Dungeon.observe();
+			}
+			counter.consumeUse(points);
+
+			Buff.affect(hero, NaturalChildCooldown.class, 25f);
+			ActionIndicator.clearAction(this);
+			BuffIndicator.refreshHero();
+		}
+
+		@Override
+		public boolean usable() {
+			return target == Dungeon.hero && Dungeon.hero != null
+					&& Dungeon.hero.hasTalent(NATURAL_CHILD)
+					&& Dungeon.hero.buff(NaturalChildCooldown.class) == null;
+		}
+	}
 	public static class SmokeMask extends Buff implements ActionIndicator1.Action {
 		{
 			//always acts after other buffs, so invisibility effects can process first

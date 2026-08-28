@@ -393,10 +393,19 @@ public class ShopRoom extends SpecialRoom {
 
 		//generate a hashmap of all valid bags.
 		HashMap<Bag, Integer> bags = new HashMap<>();
-		if (!Dungeon.LimitedDrops.VELVET_POUCH.dropped()) bags.put(new VelvetPouch(), 1);
-		if (!Dungeon.LimitedDrops.SCROLL_HOLDER.dropped()) bags.put(new ScrollHolder(), 0);
-		if (!Dungeon.LimitedDrops.POTION_BANDOLIER.dropped()) bags.put(new PotionBandolier(), 0);
-		if (!Dungeon.LimitedDrops.MAGICAL_HOLSTER.dropped()) bags.put(new MagicalHolster(), 0);
+		Bag backpack = pack == null ? null : pack.backpack;
+		if (shouldOfferBag(backpack, VelvetPouch.class, Dungeon.LimitedDrops.VELVET_POUCH)) {
+			bags.put(new VelvetPouch(), 1);
+		}
+		if (shouldOfferBag(backpack, ScrollHolder.class, Dungeon.LimitedDrops.SCROLL_HOLDER)) {
+			bags.put(new ScrollHolder(), 0);
+		}
+		if (shouldOfferBag(backpack, PotionBandolier.class, Dungeon.LimitedDrops.POTION_BANDOLIER)) {
+			bags.put(new PotionBandolier(), 0);
+		}
+		if (shouldOfferBag(backpack, MagicalHolster.class, Dungeon.LimitedDrops.MAGICAL_HOLSTER)) {
+			bags.put(new MagicalHolster(), 0);
+		}
 
 		if (bags.isEmpty()) return null;
 
@@ -431,6 +440,17 @@ public class ShopRoom extends SpecialRoom {
 
 		return bestBag;
 
+	}
+
+	protected static boolean shouldOfferBag(Bag backpack, Class<? extends Bag> bagClass,
+			Dungeon.LimitedDrops limitedDrop) {
+		if (limitedDrop.dropped()) return false;
+		if (backpack != null) {
+			for (Item item : backpack) {
+				if (bagClass.isInstance(item)) return false;
+			}
+		}
+		return true;
 	}
 
 }

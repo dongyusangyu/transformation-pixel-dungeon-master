@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerMobRules;
 
 public class TestArenaLevel extends Level {
 
@@ -62,7 +63,7 @@ public class TestArenaLevel extends Level {
 
 	@Override
 	public Mob createMob() {
-		return null;
+		return TowerMobRules.createNaturalSpawn();
 	}
 
 	@Override

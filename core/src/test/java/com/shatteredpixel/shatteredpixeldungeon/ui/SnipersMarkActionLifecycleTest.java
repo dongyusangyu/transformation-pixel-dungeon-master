@@ -55,6 +55,20 @@ public class SnipersMarkActionLifecycleTest {
 		assertNull(ActionIndicator.action);
 	}
 
+	@Test
+	public void refreshedSnipersMarkRestoresMissingFollowupAction() throws Exception {
+		Hero hero = emptyHero();
+		Dungeon.hero = hero;
+
+		SnipersMark mark = new SnipersMark();
+		assertTrue(mark.attachTo(hero));
+		ActionIndicator.action = null;
+
+		mark.set(123, 0.25f);
+
+		assertSame(mark, ActionIndicator.action);
+	}
+
 	private static Hero emptyHero() throws Exception {
 		Hero hero = (Hero) unsafe().allocateInstance(Hero.class);
 		Belongings belongings = (Belongings) unsafe().allocateInstance(Belongings.class);

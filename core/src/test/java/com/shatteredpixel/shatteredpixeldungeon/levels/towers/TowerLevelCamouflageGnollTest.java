@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrism
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DeathButterfly;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
@@ -29,7 +30,7 @@ public class TowerLevelCamouflageGnollTest {
 	@Test
 	public void allTowerMonstersOwnEqualInteriorBuckets() {
 		TowerMobRules.Selection[] selections = TowerMobRules.Selection.values();
-		assertEquals(13, selections.length);
+		assertEquals(15, selections.length);
 		for (int i = 0; i < selections.length; i++) {
 			assertSame(selections[i], TowerMobRules.select((i + 0.25f) / selections.length));
 			assertSame(selections[i], TowerMobRules.select((i + 0.75f) / selections.length));
@@ -55,7 +56,8 @@ public class TowerLevelCamouflageGnollTest {
 				new SoulCollector(),
 				new HeavyCrabification(),
 				new MarshSlime(),
-				new RuneSpinner())) {
+				new RuneSpinner(),
+				new DeathButterfly())) {
 			mob.state = mob.SLEEPING;
 			TowerMobRules.prepareNaturalSpawn(mob);
 			assertSame(mob.WANDERING, mob.state);

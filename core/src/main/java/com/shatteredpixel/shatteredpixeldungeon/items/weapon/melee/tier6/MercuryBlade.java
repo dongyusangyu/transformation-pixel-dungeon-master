@@ -221,7 +221,7 @@ public class MercuryBlade extends MeleeWeapon {
 		return Integer.toString((int) SOLIDIFICATION_DURATION);
 	}
 
-	public class MercuryProjectile extends MissileWeapon {
+	public class MercuryProjectile extends MissileWeapon implements MissileWeapon.QianfaRepeatProjectile {
 
 		{
 			image = MercuryBlade.this.image;
@@ -293,6 +293,11 @@ public class MercuryBlade extends MeleeWeapon {
 		@Override
 		public int STRReq(int lvl) {
 			return MercuryBlade.this.STRReq();
+		}
+
+		@Override
+		protected MissileWeapon createPhantomProjectile() {
+			return markAsPhantom(MercuryBlade.this.new MercuryProjectile());
 		}
 
 		@Override

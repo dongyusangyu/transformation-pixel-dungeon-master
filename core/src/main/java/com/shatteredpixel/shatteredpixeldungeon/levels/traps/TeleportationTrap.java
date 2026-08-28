@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -50,7 +51,10 @@ public class TeleportationTrap extends Trap {
 			int p = pos + i;
 			Char ch = Actor.findChar(pos + i);
 			if (ch != null){
-				if (ScrollOfTeleportation.teleportChar(ch)) {
+				boolean teleported = ch instanceof Ghost
+						? ((Ghost) ch).teleportWithinQuestArea()
+						: ScrollOfTeleportation.teleportChar(ch);
+				if (teleported) {
 					if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING) {
 						((Mob) ch).state = ((Mob) ch).WANDERING;
 						Buff.prolong(ch, Trap.HazardAssistTracker.class, HazardAssistTracker.DURATION);

@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.keys;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 public class CrystalKey extends Key {
@@ -30,7 +31,7 @@ public class CrystalKey extends Key {
 	}
 	
 	public CrystalKey() {
-		this( 0 );
+		this( Dungeon.depth );
 	}
 	
 	public CrystalKey( int depth ) {

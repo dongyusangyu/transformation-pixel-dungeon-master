@@ -682,7 +682,7 @@ public class WndRanking extends WndTabbed {
 			scoreInfo.setPos(WIDTH - scoreInfo.width(), 10);
 			add(scoreInfo);
 
-			if (!fromHeroHall && RankingRestart.isEligible(record)
+			if (RankingRestart.canBegin(record)
 					&& GamesInProgress.firstEmpty() != -1) {
 				RedButton restart = new RedButton(Messages.get(this, "restart")) {
 					@Override

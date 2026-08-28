@@ -32,6 +32,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FightStance;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightEquipmentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
@@ -582,6 +583,13 @@ public class Armor extends EquipableItem {
 
 		return level;
 	}
+
+	@Override
+	public void resetUpgradeStateForNewCycle() {
+		curseInfusionBonus = false;
+		super.resetUpgradeStateForNewCycle();
+	}
+
 	@Override
 	public int buffedLvl() {
 		int level = 0;
@@ -641,7 +649,8 @@ public class Armor extends EquipableItem {
 	
 	public int proc( Char attacker, Char defender, int damage ) {
 
-		if (defender.buff(MagicImmune.class) == null) {
+		if (defender.buff(MagicImmune.class) == null
+				&& !HungerKnightEquipmentSeal.isActive(defender)) {
 			Glyph trinityGlyph = null;
 			//only when it's the hero or a char that uses the hero's armor
 			if (Dungeon.hero.buff(BodyForm.BodyFormBuff.class) != null
@@ -934,7 +943,8 @@ public class Armor extends EquipableItem {
 	}
 
 	public boolean hasGlyph(Class<?extends Glyph> type, Char owner) {
-		if (owner.buff(MagicImmune.class) != null) {
+		if (owner.buff(MagicImmune.class) != null
+				|| HungerKnightEquipmentSeal.isActive(owner)) {
 			return false;
 		} else if (glyph != null
 				&& !glyph.curse()

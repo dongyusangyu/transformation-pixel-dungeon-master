@@ -13,6 +13,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
@@ -271,6 +272,10 @@ public class ChainMace extends MeleeWeapon {
 		return hero ? heroDamageForImpact(impactDamage) : Math.max(0, impactDamage);
 	}
 
+	static boolean qualifiesForBowlingBadge(int enemyTargets) {
+		return enemyTargets >= 6;
+	}
+
 	private void dealThrowImpact(Hero hero, BallFollower ball, int cell) {
 		int impactDamage = rollThrowDamage();
 		WandOfBlastWave.BlastWave.blast(cell);
@@ -278,12 +283,17 @@ public class ChainMace extends MeleeWeapon {
 		Sample.INSTANCE.play(Assets.Sounds.ROCKS);
 		playHitFeedback();
 
+		int enemyTargets = 0;
 		for (Char ch : new ArrayList<>(Actor.chars())) {
 			if (ch == ball || !ch.isAlive()) continue;
 			if (Dungeon.level.distance(ch.pos, cell) <= 1) {
+				if (ch.alignment == Char.Alignment.ENEMY) enemyTargets++;
 				int dealt = impactDamageFor(ch == hero, impactDamage);
 				if (dealt > 0) ch.damage(dealt, ball);
 			}
+		}
+		if (qualifiesForBowlingBadge(enemyTargets)) {
+			Badges.validateChainMaceSixTargets();
 		}
 	}
 

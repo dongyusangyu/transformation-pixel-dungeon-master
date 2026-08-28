@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -59,7 +60,9 @@ public class GatewayTrap extends Trap {
 			for (int i : PathFinder.NEIGHBOURS9){
 				Char ch = Actor.findChar(pos + i);
 				if (ch != null){
-					if (ScrollOfTeleportation.teleportChar(ch)) {
+					if (ch instanceof Ghost) {
+						((Ghost) ch).teleportWithinQuestArea();
+					} else if (ScrollOfTeleportation.teleportChar(ch)) {
 						if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING) {
 							((Mob) ch).state = ((Mob) ch).WANDERING;
 							Buff.prolong(ch, Trap.HazardAssistTracker.class, HazardAssistTracker.DURATION);
@@ -110,24 +113,28 @@ public class GatewayTrap extends Trap {
 
 				Char ch = Actor.findChar(pos + i);
 				if (ch != null && !Char.hasProp(ch, Char.Property.IMMOVABLE)){
-					int newPos = -1;
-					if (Char.hasProp(ch, Char.Property.LARGE)){
-						if (!largeCharPositions.isEmpty()){
-							newPos = largeCharPositions.get(0);
-						}
+					if (ch instanceof Ghost) {
+						((Ghost) ch).teleportWithinQuestArea();
 					} else {
-						if (!telePositions.isEmpty()) {
-							newPos = telePositions.get(0);
+						int newPos = -1;
+						if (Char.hasProp(ch, Char.Property.LARGE)){
+							if (!largeCharPositions.isEmpty()){
+								newPos = largeCharPositions.get(0);
+							}
+						} else {
+							if (!telePositions.isEmpty()) {
+								newPos = telePositions.get(0);
+							}
 						}
-					}
 
-					if (newPos != -1){
-						telePositions.remove((Integer)newPos);
-						largeCharPositions.remove((Integer)newPos);
+						if (newPos != -1){
+							telePositions.remove((Integer)newPos);
+							largeCharPositions.remove((Integer)newPos);
 
-						if (ScrollOfTeleportation.teleportToLocation(ch, newPos)){
-							if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING) {
-								((Mob) ch).state = ((Mob) ch).WANDERING;
+							if (ScrollOfTeleportation.teleportToLocation(ch, newPos)){
+								if (ch instanceof Mob && ((Mob) ch).state == ((Mob) ch).HUNTING) {
+									((Mob) ch).state = ((Mob) ch).WANDERING;
+								}
 							}
 						}
 					}

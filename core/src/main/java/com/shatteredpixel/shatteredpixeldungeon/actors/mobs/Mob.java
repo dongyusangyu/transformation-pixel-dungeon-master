@@ -58,6 +58,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invulnerability;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MonkEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MyriadEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Roots;
@@ -132,6 +133,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.BArray;
+import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
@@ -1268,6 +1270,7 @@ public abstract class Mob extends Char {
 	}
 
 	public void rollToDropLoot(){
+		if (MyriadEcho.isMarked(this)) return;
 		int mlvl=maxLvl;
 		if(hero!=null && hero.hasTalent(Talent.FAST_BREAK)){
 			mlvl+=hero.pointsInTalent(Talent.FAST_BREAK)+1;
@@ -1282,9 +1285,10 @@ public abstract class Mob extends Char {
 				Dungeon.level.drop(loot, pos).sprite.drop();
 
 			}else if (Random.Float() < lootChance() ) {
-				Item loot = createLoot();
-				if (loot != null) {
-					Dungeon.level.drop(loot, pos).sprite.drop();
+				for (Item loot : createLootDrops()) {
+					if (loot != null) {
+						Dungeon.level.drop(loot, pos).sprite.drop();
+					}
 				}
 			}
 		}
@@ -1379,6 +1383,15 @@ public abstract class Mob extends Char {
 
 		 */
 		return item;
+	}
+
+	protected ArrayList<Item> createLootDrops() {
+		ArrayList<Item> drops = new ArrayList<>(1);
+		Item item = createLoot();
+		if (item != null) {
+			drops.add(item);
+		}
+		return drops;
 	}
 
 	//how many mobs this one should count as when determining spawning totals
@@ -1800,6 +1813,19 @@ public abstract class Mob extends Char {
 
 
 	private static ArrayList<Mob> heldAllies = new ArrayList<>();
+	private static final String HELD_ALLIES = "held_allies";
+
+	public static void storeHeldAllies(Bundle bundle) {
+		bundle.put(HELD_ALLIES, heldAllies);
+	}
+
+	public static void restoreHeldAllies(Bundle bundle) {
+		heldAllies.clear();
+		if (!bundle.contains(HELD_ALLIES)) return;
+		for (Bundlable stored : bundle.getCollection(HELD_ALLIES)) {
+			if (stored instanceof Mob) heldAllies.add((Mob) stored);
+		}
+	}
 
 	public static void holdAllies( Level level ){
 		holdAllies(level, Dungeon.hero.pos);

@@ -122,8 +122,7 @@ public class DungeonWallsTilemap extends DungeonTilemap {
 	}
 
 	static boolean grassOverhangAllowed(int currentTile, int lowerTile) {
-		return currentTile != Terrain.WATER
-				&& (lowerTile == Terrain.HIGH_GRASS || lowerTile == Terrain.FURROWED_GRASS);
+		return lowerTile == Terrain.HIGH_GRASS || lowerTile == Terrain.FURROWED_GRASS;
 	}
 
 	@Override

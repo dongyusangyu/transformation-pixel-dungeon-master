@@ -9,7 +9,11 @@ import com.watabou.utils.FileUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.regex.Matcher;
@@ -22,14 +26,16 @@ import java.util.regex.Pattern;
  * - badges.dat       全局成就数据
  * - rankings.dat     排行榜数据
  * - journal.dat      图鉴、日志、天赋统计等全局数据
- * - save-001.json    存档槽1
+ * - save-001.json    存档槽1的全局状态与分片清单
+ * - save-001-levels  存档槽1的楼层分片
+ * - save-001-events  存档槽1的跨层事件分片
  * - save-002.json    存档槽2
  * - ...
- * - save-042.json    存档槽42（最多42个）
+ * - save-012.json    存档槽12（最多12个）
  *
  * 每个存档文件包含：
  * - 游戏主数据（玩家、深度、金币等）
- * - 所有地图数据（合并存储）
+ * - 地图和跨层事件分片的版本清单
  * - 元数据（用于快速显示）
  *
  * 使用示例：
@@ -53,8 +59,16 @@ public class SaveManager {
     public static final int MAX_SLOTS = 12;
     private static final String SAVE_FILE_PATTERN = "save-%03d.json";
 	private static final String CHECKPOINT_FILE_PATTERN = "save-%03d.checkpoint";
+	private static final String LEVEL_DIR_PATTERN = "save-%03d-levels";
+	private static final String EVENT_DIR_PATTERN = "save-%03d-events";
 
     private static final String LEVELS_KEY = "levels";
+	static final String PENDING_LEVEL_EVENTS_KEY = "pending_level_events";
+	private static final String LEVEL_MANIFEST_KEY = "level_manifest";
+	private static final String EVENT_MANIFEST_KEY = "event_manifest";
+	private static final String SPLIT_SAVE_FORMAT_KEY = "split_save_format";
+	private static final int SPLIT_SAVE_FORMAT = 1;
+	private static final int LEVEL_CACHE_LIMIT = 11;
     private static final String BADGES_KEY = "badges";
     private static final String RANKINGS_KEY = "rankings";
     private static final String JOURNAL_KEY = "journal";
@@ -63,8 +77,16 @@ public class SaveManager {
     private static final String CLOUD_DEVICE_ID_KEY = "cloud_device_id";
     private static final String CLOUD_PLAYER_UUID_KEY = "cloud_player_uuid";
     private static final Pattern LEGACY_LEVEL_FILE = Pattern.compile("depth(\\d+)(?:-branch(\\d+))?\\.dat");
+	private static final Pattern LEVEL_KEY_PATTERN = Pattern.compile("depth_(-?\\d+)_(-?\\d+)");
 
 	private static final ConcurrentHashMap<Integer, SaveInfo> saveInfoCache = new ConcurrentHashMap<>();
+	private static final LinkedHashMap<String, Bundle> levelCache =
+			new LinkedHashMap<String, Bundle>(LEVEL_CACHE_LIMIT, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(Map.Entry<String, Bundle> eldest) {
+					return size() > LEVEL_CACHE_LIMIT;
+				}
+			};
 	private static final AtomicLongArray checkpointEpochs = new AtomicLongArray(MAX_SLOTS + 1);
 	private static final CheckpointSaveQueue<CheckpointWrite> checkpointSaves =
 			new CheckpointSaveQueue<>("SHPD Checkpoint Writer", SaveManager::writeQueuedCheckpoint);
@@ -135,7 +157,7 @@ public class SaveManager {
     /**
      * 保存游戏数据
      *
-     * @param slot 存档槽（1-42）
+     * @param slot 存档槽（1-12）
      * @param bundle 游戏数据Bundle
      * @throws IOException 保存失败
      */
@@ -146,20 +168,53 @@ public class SaveManager {
         String filename = String.format(SAVE_FILE_PATTERN, slot);
 
         try {
-            mergeExistingLevels(slot, bundle);
+			Bundle committed = loadCommittedGameOrNull(slot);
+			Bundle previousBackup = loadBundleOrNull(filename + ".bak");
+			long revision = nextSaveRevision(slot);
+			Bundle levelManifest = copyManifest(committed, LEVEL_MANIFEST_KEY);
+			Bundle eventManifest = copyManifest(committed, EVENT_MANIFEST_KEY);
+			Set<String> changedLevels = new HashSet<>();
+			Set<String> changedEvents = new HashSet<>();
 
-            // 添加元数据
-            bundle.put("slot", slot);
+			// A pre-split save keeps every historical level in the main bundle. Extract
+			// those levels before applying the current snapshot so migration is lossless.
+			if (committed != null && committed.contains(LEVELS_KEY)) {
+				writeLevels(slot, committed.getBundle(LEVELS_KEY), levelManifest,
+						revision, changedLevels);
+			}
+			if (bundle.contains(LEVELS_KEY)) {
+				writeLevels(slot, bundle.getBundle(LEVELS_KEY), levelManifest,
+						revision, changedLevels);
+				bundle.remove(LEVELS_KEY);
+			}
+
+			// Pending cross-level effects are an authoritative set when present. Each
+			// destination is persisted independently, while the manifest is committed
+			// together with the global game state below.
+			if (bundle.contains(PENDING_LEVEL_EVENTS_KEY)) {
+				changedEvents.addAll(eventManifest.getKeys());
+				eventManifest = new Bundle();
+				writeEvents(slot, bundle.getBundle(PENDING_LEVEL_EVENTS_KEY), eventManifest,
+						revision, changedEvents);
+				bundle.remove(PENDING_LEVEL_EVENTS_KEY);
+			}
+
+			bundle.put(LEVEL_MANIFEST_KEY, levelManifest);
+			bundle.put(EVENT_MANIFEST_KEY, eventManifest);
+			bundle.put(SPLIT_SAVE_FORMAT_KEY, SPLIT_SAVE_FORMAT);
+
+			// Add metadata only after every referenced shard has been written and
+			// validated. Replacing this file is the transaction commit point.
             bundle.put("slot", slot);
 			bundle.put("lastPlayed", System.currentTimeMillis());
-			bundle.put(SAVE_REVISION_KEY, nextSaveRevision(slot));
+			bundle.put(SAVE_REVISION_KEY, revision);
             if (!bundle.contains("version")) {
                 bundle.put("version", Game.versionCode);
             }
 
-            // 写入文件
             FileUtils.bundleToFile(filename, bundle);
 			deleteCheckpointFiles(slot);
+			cleanupSupersededShards(slot, previousBackup, changedLevels, changedEvents);
 
             // 更新缓存
             SaveInfo info = new SaveInfo(slot);
@@ -232,17 +287,191 @@ public class SaveManager {
         gameBundle.put(LEVELS_KEY, levels);
     }
 
-    private static void mergeExistingLevels(int slot, Bundle gameBundle) {
-        if (!saveExists(slot)) {
-            return;
-        }
+	private static Bundle loadCommittedGameOrNull(int slot) {
+		String filename = String.format(SAVE_FILE_PATTERN, slot);
+		return loadBundleOrNull(filename);
+	}
 
-        Bundle existing = loadGameOrNull(slot);
-        if (existing == null || !existing.contains(LEVELS_KEY)) {
-            return;
-        }
+	private static Bundle loadBundleOrNull(String filename) {
+		if (!FileUtils.fileExists(filename)) return null;
+		try {
+			return FileUtils.bundleFromFile(filename);
+		} catch (IOException e) {
+			return null;
+		}
+	}
 
-		mergeLevels(existing, gameBundle);
+	private static Bundle copyManifest(Bundle source, String key) {
+		Bundle result = new Bundle();
+		if (source == null || !source.contains(key)) return result;
+		Bundle manifest = source.getBundle(key);
+		if (manifest == null || manifest.isNull()) return result;
+		for (String entry : manifest.getKeys()) {
+			result.put(entry, manifest.getLong(entry));
+		}
+		return result;
+	}
+
+	private static void writeLevels(int slot, Bundle levels, Bundle manifest,
+			long revision, Set<String> changed) throws IOException {
+		if (levels == null || levels.isNull()) return;
+		for (String key : levels.getKeys()) {
+			Bundle level = levels.getBundle(key);
+			if (level == null || level.isNull()) continue;
+			FileUtils.bundleToFile(levelFile(slot, key, revision), level);
+			manifest.put(key, revision);
+			changed.add(key);
+			removeCachedLevel(slot, key);
+		}
+	}
+
+	private static void writeEvents(int slot, Bundle events, Bundle manifest,
+			long revision, Set<String> changed) throws IOException {
+		if (events == null || events.isNull()) return;
+		for (String key : events.getKeys()) {
+			Bundle event = events.getBundle(key);
+			if (event == null || event.isNull()) continue;
+			FileUtils.bundleToFile(eventFile(slot, key, revision), event);
+			manifest.put(key, revision);
+			changed.add(key);
+		}
+	}
+
+	private static String levelDirectory(int slot) {
+		return String.format(LEVEL_DIR_PATTERN, slot);
+	}
+
+	private static String eventDirectory(int slot) {
+		return String.format(EVENT_DIR_PATTERN, slot);
+	}
+
+	private static String levelFile(int slot, String key, long revision) {
+		return levelDirectory(slot) + "/" + key + "-r" + revision + ".dat";
+	}
+
+	private static String eventFile(int slot, String key, long revision) {
+		return eventDirectory(slot) + "/event_" + key + "-r" + revision + ".dat";
+	}
+
+	private static String cacheKey(int slot, String key, long revision) {
+		return slot + ":" + key + ":" + revision;
+	}
+
+	private static void removeCachedLevel(int slot, String key) {
+		String prefix = slot + ":" + key + ":";
+		ArrayList<String> stale = new ArrayList<>();
+		for (String cacheKey : levelCache.keySet()) {
+			if (cacheKey.startsWith(prefix)) stale.add(cacheKey);
+		}
+		for (String cacheKey : stale) levelCache.remove(cacheKey);
+	}
+
+	private static void removeCachedSlot(int slot) {
+		String prefix = slot + ":";
+		ArrayList<String> stale = new ArrayList<>();
+		for (String cacheKey : levelCache.keySet()) {
+			if (cacheKey.startsWith(prefix)) stale.add(cacheKey);
+		}
+		for (String cacheKey : stale) levelCache.remove(cacheKey);
+	}
+
+	private static Bundle loadCompleteGame(int slot) throws IOException {
+		Bundle game = loadGame(slot);
+		Bundle completeLevels = new Bundle();
+		Bundle manifest = game.getBundle(LEVEL_MANIFEST_KEY);
+		if (manifest != null && !manifest.isNull()) {
+			for (String key : manifest.getKeys()) {
+				completeLevels.put(key, FileUtils.bundleFromFile(
+						levelFile(slot, key, manifest.getLong(key))));
+			}
+		}
+		if (game.contains(LEVELS_KEY)) {
+			Bundle embedded = game.getBundle(LEVELS_KEY);
+			if (embedded != null && !embedded.isNull()) {
+				for (String key : embedded.getKeys()) {
+					completeLevels.put(key, embedded.getBundle(key));
+				}
+			}
+		}
+		game.put(LEVELS_KEY, completeLevels);
+		game.remove(LEVEL_MANIFEST_KEY);
+		game.remove(EVENT_MANIFEST_KEY);
+		game.remove(SPLIT_SAVE_FORMAT_KEY);
+		return game;
+	}
+
+	private static void inheritManifest(Bundle source, Bundle destination, String key) {
+		if (source != null && source.contains(key) && !destination.contains(key)) {
+			destination.put(key, copyManifest(source, key));
+		}
+	}
+
+	private static void hydratePendingEvents(int slot, Bundle game) throws IOException {
+		if (game.contains(PENDING_LEVEL_EVENTS_KEY)) return;
+		Bundle manifest = game.getBundle(EVENT_MANIFEST_KEY);
+		if (manifest == null || manifest.isNull() || manifest.getKeys().isEmpty()) return;
+
+		Bundle events = new Bundle();
+		for (String key : manifest.getKeys()) {
+			long revision = manifest.getLong(key);
+			events.put(key, FileUtils.bundleFromFile(eventFile(slot, key, revision)));
+		}
+		game.put(PENDING_LEVEL_EVENTS_KEY, events);
+	}
+
+	private static void trimLevelCache(int slot, int depth, int branch) {
+		ArrayList<String> stale = new ArrayList<>();
+		String slotPrefix = slot + ":depth_";
+		for (String cacheKey : levelCache.keySet()) {
+			if (!cacheKey.startsWith(slotPrefix)) continue;
+			int revisionSeparator = cacheKey.lastIndexOf(':');
+			String key = cacheKey.substring((slot + ":").length(), revisionSeparator);
+			Matcher matcher = LEVEL_KEY_PATTERN.matcher(key);
+			if (matcher.matches()) {
+				int cachedDepth = Integer.parseInt(matcher.group(1));
+				int cachedBranch = Integer.parseInt(matcher.group(2));
+				if (cachedBranch == branch && Math.abs((long) cachedDepth - depth) > 5L) {
+					stale.add(cacheKey);
+				}
+			}
+		}
+		for (String cacheKey : stale) levelCache.remove(cacheKey);
+	}
+
+	private static void cleanupSupersededShards(int slot, Bundle previousBackup,
+			Set<String> changedLevels, Set<String> changedEvents) {
+		if (previousBackup == null) return;
+		Bundle current = loadCommittedGameOrNull(slot);
+		Bundle backup = loadBundleOrNull(String.format(SAVE_FILE_PATTERN, slot) + ".bak");
+		for (String key : changedLevels) {
+			Long obsolete = manifestRevision(previousBackup, LEVEL_MANIFEST_KEY, key);
+			if (obsolete != null
+					&& !manifestReferences(current, backup, LEVEL_MANIFEST_KEY, key, obsolete)) {
+				FileUtils.deleteBundleFile(levelFile(slot, key, obsolete));
+			}
+		}
+		for (String key : changedEvents) {
+			Long obsolete = manifestRevision(previousBackup, EVENT_MANIFEST_KEY, key);
+			if (obsolete != null
+					&& !manifestReferences(current, backup, EVENT_MANIFEST_KEY, key, obsolete)) {
+				FileUtils.deleteBundleFile(eventFile(slot, key, obsolete));
+			}
+		}
+	}
+
+	private static boolean manifestReferences(Bundle current, Bundle backup,
+			String manifestKey, String key, long revision) {
+		Long currentRevision = manifestRevision(current, manifestKey, key);
+		Long backupRevision = manifestRevision(backup, manifestKey, key);
+		return (currentRevision != null && currentRevision == revision)
+				|| (backupRevision != null && backupRevision == revision);
+	}
+
+	private static Long manifestRevision(Bundle game, String manifestKey, String key) {
+		if (game == null || !game.contains(manifestKey)) return null;
+		Bundle manifest = game.getBundle(manifestKey);
+		if (manifest == null || manifest.isNull() || !manifest.contains(key)) return null;
+		return manifest.getLong(key);
 	}
 
 	private static void mergeLevels(Bundle existing, Bundle gameBundle) {
@@ -280,7 +509,7 @@ public class SaveManager {
     /**
      * 加载游戏数据
      *
-     * @param slot 存档槽（1-42）
+     * @param slot 存档槽（1-12）
      * @return 游戏数据Bundle
      * @throws IOException 加载失败
      */
@@ -289,11 +518,12 @@ public class SaveManager {
 
         String filename = String.format(SAVE_FILE_PATTERN, slot);
 
-        try {
+		try {
 			Bundle bundle = null;
+			Bundle committed = null;
 			IOException primaryFailure = null;
 			try {
-				bundle = FileUtils.bundleFromFile(filename);
+				bundle = committed = FileUtils.bundleFromFile(filename);
 			} catch (IOException e) {
 				primaryFailure = e;
 			}
@@ -308,6 +538,8 @@ public class SaveManager {
 							&& checkpoint.getLong("lastPlayed") > bundle.getLong("lastPlayed"));
 					if (bundle == null || checkpointNewer) {
 						if (bundle != null) mergeLevels(bundle, checkpoint);
+						inheritManifest(committed, checkpoint, LEVEL_MANIFEST_KEY);
+						inheritManifest(committed, checkpoint, EVENT_MANIFEST_KEY);
 						bundle = checkpoint;
 					} else {
 						deleteCheckpointFiles(slot);
@@ -324,6 +556,7 @@ public class SaveManager {
 			if (bundle == null) {
 				throw primaryFailure != null ? primaryFailure : new IOException("No save data for slot " + slot);
 			}
+			hydratePendingEvents(slot, bundle);
 
             // 更新缓存
             SaveInfo info = new SaveInfo(slot);
@@ -340,27 +573,38 @@ public class SaveManager {
     /**
      * 加载地图数据
      */
-    public static Bundle loadLevel(int slot, int depth, int branch) throws IOException {
+    public static synchronized Bundle loadLevel(int slot, int depth, int branch) throws IOException {
         validateSlot(slot);
 
         Bundle game = loadGame(slot);
-        Bundle levels = game.getBundle(LEVELS_KEY);
-        if (levels == null || levels.isNull()) {
-            throw new IOException("No level data stored");
-        }
+		String key = levelKey(depth, branch);
+		if (game.contains(LEVELS_KEY)) {
+			Bundle levels = game.getBundle(LEVELS_KEY);
+			if (levels != null && !levels.isNull()) {
+				Bundle embedded = levels.getBundle(key);
+				if (embedded != null && !embedded.isNull()) return embedded;
+			}
+		}
 
-        Bundle level = levels.getBundle(levelKey(depth, branch));
-        if (level == null || level.isNull()) {
-            throw new IOException("Level data missing for depth " + depth + ", branch " + branch);
-        }
+		Bundle manifest = game.getBundle(LEVEL_MANIFEST_KEY);
+		if (manifest == null || manifest.isNull() || !manifest.contains(key)) {
+			throw new IOException("Level data missing for depth " + depth + ", branch " + branch);
+		}
+		long revision = manifest.getLong(key);
+		String cacheKey = cacheKey(slot, key, revision);
+		Bundle cached = levelCache.get(cacheKey);
+		if (cached != null) return cached;
 
-        return level;
+		Bundle level = FileUtils.bundleFromFile(levelFile(slot, key, revision));
+		trimLevelCache(slot, depth, branch);
+		levelCache.put(cacheKey, level);
+		return level;
     }
 
     /**
      * 删除游戏存档
      *
-     * @param slot 存档槽（1-42）
+     * @param slot 存档槽（1-12）
      * @return 是否成功删除
      */
     public static synchronized boolean deleteGame(int slot) {
@@ -372,6 +616,9 @@ public class SaveManager {
 		boolean success = saveExists(slot);
 		deleteFileAndArtifacts(filename);
 		deleteCheckpointFiles(slot);
+		FileUtils.deleteDir(levelDirectory(slot));
+		FileUtils.deleteDir(eventDirectory(slot));
+		removeCachedSlot(slot);
 
         if (success) {
             saveInfoCache.remove(slot);
@@ -412,7 +659,7 @@ public class SaveManager {
     /**
      * 检查存档是否存在
      *
-     * @param slot 存档槽（1-42）
+     * @param slot 存档槽（1-12）
      * @return 是否存在
      */
     public static boolean saveExists(int slot) {
@@ -434,7 +681,7 @@ public class SaveManager {
         validateSlot(toSlot);
 
         try {
-            Bundle data = loadGame(fromSlot);
+			Bundle data = loadCompleteGame(fromSlot);
             saveGame(toSlot, data);
             return true;
         } catch (IOException e) {
@@ -738,7 +985,7 @@ public class SaveManager {
      */
     public static boolean exportToClipboard(int slot) {
         try {
-            Bundle bundle = loadGame(slot);
+			Bundle bundle = loadCompleteGame(slot);
             String json = bundle.toString();
 
             Gdx.app.getClipboard().setContents(json);
@@ -748,6 +995,16 @@ public class SaveManager {
             return false;
         }
     }
+
+	/**
+	 * Writes a self-contained save for platform sharing. Runtime saves keep
+	 * levels and cross-level events sharded, while this explicit export path
+	 * intentionally pays the cost of assembling them into one portable file.
+	 */
+	public static synchronized void writePortableSave(int slot, String filename) throws IOException {
+		validateSlot(slot);
+		FileUtils.bundleToFile(filename, loadCompleteGame(slot));
+	}
 
     /**
      * 从剪贴板导入存档
@@ -805,9 +1062,14 @@ public class SaveManager {
     /**
      * 清除缓存
      */
-    public static void clearCache() {
+    public static synchronized void clearCache() {
         saveInfoCache.clear();
+		levelCache.clear();
     }
+
+	static synchronized int levelCacheSizeForTesting() {
+		return levelCache.size();
+	}
 
     /**
      * 获取所有存档文件的总大小
@@ -824,10 +1086,24 @@ public class SaveManager {
         for (int slot = 1; slot <= MAX_SLOTS; slot++) {
             String filename = String.format(SAVE_FILE_PATTERN, slot);
             total += FileUtils.fileLength(filename);
+			total += FileUtils.fileLength(filename + ".bak");
+			String checkpoint = String.format(CHECKPOINT_FILE_PATTERN, slot);
+			total += FileUtils.fileLength(checkpoint);
+			total += FileUtils.fileLength(checkpoint + ".bak");
+			total += directorySize(levelDirectory(slot));
+			total += directorySize(eventDirectory(slot));
         }
 
         return total;
     }
+
+	private static long directorySize(String directory) {
+		long total = 0L;
+		for (String file : FileUtils.filesInDir(directory)) {
+			total += FileUtils.fileLength(directory + "/" + file);
+		}
+		return total;
+	}
 
     /**
      * 打印存档信息（调试用）

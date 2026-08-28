@@ -407,6 +407,10 @@ public abstract class Level implements Bundlable {
 	public void playLevelMusic(){
 		//do nothing by default
 	}
+
+	public void updateLevelMusic(float elapsed){
+		//do nothing by default
+	}
 	
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
@@ -899,6 +903,10 @@ public abstract class Level implements Bundlable {
 	 * after its map is rebuilt for an unblessed ankh resurrection.
 	 */
 	public void onSealedResurrectionReset() {
+	}
+
+	/** Cleans encounter-owned state on the old level before the hero is revived. */
+	public void onBeforeSealedResurrectionReset() {
 	}
 
 	/**
@@ -1456,6 +1464,7 @@ public abstract class Level implements Bundlable {
 
 		boolean sighted = c.buff( Blindness.class ) == null && c.buff( Shadows.class ) == null
 						&& c.isAlive();
+		int currentViewDistance = 1;
 		if (sighted) {
 			boolean[] blocking = null;
 
@@ -1513,7 +1522,8 @@ public abstract class Level implements Bundlable {
 				}
 			}
 
-			ShadowCaster.castShadow( cx, cy, width(), fieldOfView, blocking, Math.round(viewDist) );
+			currentViewDistance = ShadowCaster.limitDistance(Math.round(viewDist));
+			ShadowCaster.castShadow( cx, cy, width(), fieldOfView, blocking, currentViewDistance );
 		} else {
 			BArray.setFalse(fieldOfView);
 		}
@@ -1527,7 +1537,12 @@ public abstract class Level implements Bundlable {
 			if (c.buff(MagicalSight.class) != null){
 				sense = Math.max( MagicalSight.DISTANCE, sense );
 			}
+			if (c instanceof Hero) {
+				sense = Math.max(sense, Talent.falconEyePiercingDistance(
+						((Hero) c).pointsInTalent(Talent.FALCON_EYE), currentViewDistance, sighted));
+			}
 		}
+		sense = ShadowCaster.limitDistance(sense);
 
 		//uses rounding
 		if (!sighted || sense > 1) {

@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
+import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -61,14 +62,14 @@ public class TestArtifact extends TestGenerator {
     }
 
     private void modifyArtifact(Artifact a){
-        int max = Math.min(level, maxLevel(selected));
+        int max = Math.min(level, a.levelCap());
         for(int i=0;i<max; ++i){
             a.upgrade();
         }
         a.cursed = cursed;
     }
     private void createArtifact(){
-        Artifact a = Reflection.newInstance(idToArtifact(selected));
+        Artifact a = Reflection.newInstance(selectedArtifactType());
         if(a != null){
             modifyArtifact(a);
             if(Challenges.isItemBlocked(a)) return;
@@ -95,43 +96,64 @@ public class TestArtifact extends TestGenerator {
         level = bundle.getInt("level");
     }
 
-    private Class<? extends Artifact> idToArtifact(int sel){
-        switch(sel){
-            case 0: return AlchemistsToolkit.class;
-            case 1: return CapeOfThorns.class;
-            case 2: return ChaliceOfBlood.class;
-            case 3: return CloakOfShadows.class;
-            case 4: return DriedRose.class;
-            case 5: return EtherealChains.class;
-            case 6: return HornOfPlenty.class;
-            case 7: return LloydsBeacon.class;
-            case 8: return MasterThievesArmband.class;
-            case 9: return SandalsOfNature.class;
-            case 10: return TalismanOfForesight.class;
-            case 11: return TimekeepersHourglass.class;
-            case 12: default: return UnstableSpellbook.class;
-            case 13: return Shuriken_Box.class;
-            case 14: return HolyTome.class;
-            case 15: return InstructionTool.class;
-            case 16: return SkeletonKey.class;
-			case 17: return PrecognitiveEye.class;
-        }
+    private static final Class<?>[] LEGACY_ARTIFACT_ORDER = new Class[]{
+            AlchemistsToolkit.class,
+            CapeOfThorns.class,
+            ChaliceOfBlood.class,
+            CloakOfShadows.class,
+            DriedRose.class,
+            EtherealChains.class,
+            HornOfPlenty.class,
+            LloydsBeacon.class,
+            MasterThievesArmband.class,
+            SandalsOfNature.class,
+            TalismanOfForesight.class,
+            TimekeepersHourglass.class,
+            UnstableSpellbook.class,
+            Shuriken_Box.class,
+            HolyTome.class,
+            InstructionTool.class,
+            SkeletonKey.class,
+            PrecognitiveEye.class
+    };
+
+    private static final ArrayList<Class<? extends Artifact>> artifactList = new ArrayList<>();
+
+    static int artifactLevelCap(Class<? extends Artifact> type) {
+        Artifact artifact = Reflection.newInstance(type);
+        return artifact == null ? 0 : artifact.levelCap();
     }
 
-    private int maxLevel(int id){
-        switch (id){
-            case 0: case 1: case 2: case 3: case 4: case 6: case 8: case 10: case 12: default: return 10;
-            case 5: case 11: return 5;
-            case 7: case 9: return 3;
-        }
+    static int clampLevel(Class<? extends Artifact> type, int requestedLevel) {
+        return Math.max(0, Math.min(requestedLevel, artifactLevelCap(type)));
     }
 
-    private static ArrayList<Class<? extends Artifact>> artifactList = new ArrayList<Class<? extends Artifact>>();
+    static ArrayList<Class<? extends Artifact>> registeredArtifactTypes() {
+        ArrayList<Class<? extends Artifact>> types = new ArrayList<>();
+        for (Class<?> type : Generator.Category.ARTIFACT.classes) {
+            if (Artifact.class.isAssignableFrom(type)) {
+                types.add(type.asSubclass(Artifact.class));
+            }
+        }
+        return types;
+    }
+
     private void buildArtifactArray(){
         if(!artifactList.isEmpty()) return;
-		for(int i=0;i<18;++i){
-            artifactList.add(idToArtifact(i));
+
+        ArrayList<Class<? extends Artifact>> registered = registeredArtifactTypes();
+        for (Class<?> type : LEGACY_ARTIFACT_ORDER) {
+            if (registered.remove(type)) {
+                artifactList.add(type.asSubclass(Artifact.class));
+            }
         }
+        artifactList.addAll(registered);
+    }
+
+    private Class<? extends Artifact> selectedArtifactType() {
+        buildArtifactArray();
+        selected = Math.max(0, Math.min(selected, artifactList.size() - 1));
+        return artifactList.get(selected);
     }
 
 
@@ -153,14 +175,7 @@ public class TestArtifact extends TestGenerator {
             t_selected.text();
             add((t_selected));
 
-            o_level = new OptionSlider(Messages.get(this, "level"), "0", "10", 0, 10) {
-                @Override
-                protected void onChange() {
-                    level = getSelectedValue();
-                }
-            };
-            o_level.setSelectedValue(level);
-            add(o_level);
+            createLevelSlider();
 
             c_curse = new CheckBox(Messages.get(this, "curse")) {
                 @Override
@@ -202,6 +217,7 @@ public class TestArtifact extends TestGenerator {
                     @Override
                     protected void onClick() {
                         selected = j;
+                        rebuildLevelSlider();
                         updateText();
                         super.onClick();
                     }
@@ -228,8 +244,29 @@ public class TestArtifact extends TestGenerator {
         }
 
         private void updateText(){
-            t_selected.text(Messages.get(TestArtifact.class, "selected", Messages.get(idToArtifact(selected), "name")));
+            t_selected.text(Messages.get(TestArtifact.class, "selected", Messages.get(selectedArtifactType(), "name")));
             layout();
+        }
+
+        private void createLevelSlider() {
+            Class<? extends Artifact> type = selectedArtifactType();
+            int max = artifactLevelCap(type);
+            level = clampLevel(type, level);
+            o_level = new OptionSlider(Messages.get(this, "level"), "0", Integer.toString(max), 0, max) {
+                @Override
+                protected void onChange() {
+                    level = getSelectedValue();
+                }
+            };
+            o_level.setSelectedValue(level);
+            add(o_level);
+        }
+
+        private void rebuildLevelSlider() {
+            if (o_level != null) {
+                o_level.killAndErase();
+            }
+            createLevelSlider();
         }
     }
 }

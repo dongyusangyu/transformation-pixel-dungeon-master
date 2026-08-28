@@ -47,15 +47,21 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClothArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CapeOfThorns;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.EtherealChains;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.PrecognitiveEye;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SandalsOfNature;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.UnstableSpellbook;
@@ -385,34 +391,34 @@ public class Trinity extends ArmorAbility {
 			ArrayList<Class<?>> discoveredClasses = new ArrayList<>();
 			if (spell == BodyForm.INSTANCE) {
 				for (Class<?> cls : Catalog.ENCHANTMENTS.items()) {
-					if (Statistics.itemTypesDiscovered.contains(cls)) {
+					if (Statistics.itemTypesDiscovered.contains(cls) && supportsEffect(cls)) {
 						discoveredClasses.add(cls);
 					}
 				}
 				for (Class<?> cls : Catalog.GLYPHS.items()) {
-					if (Statistics.itemTypesDiscovered.contains(cls)) {
+					if (Statistics.itemTypesDiscovered.contains(cls) && supportsEffect(cls)) {
 						discoveredClasses.add(cls);
 					}
 				}
 			} else if (spell == MindForm.INSTANCE){
 				for (Class<?> cls : Catalog.WANDS.items()) {
-					if (Statistics.itemTypesDiscovered.contains(cls)) {
+					if (Statistics.itemTypesDiscovered.contains(cls) && supportsEffect(cls)) {
 						discoveredClasses.add(cls);
 					}
 				}
 				for (Class<?> cls : Catalog.THROWN_WEAPONS.items()) {
-					if (Statistics.itemTypesDiscovered.contains(cls)) {
+					if (Statistics.itemTypesDiscovered.contains(cls) && supportsEffect(cls)) {
 						discoveredClasses.add(cls);
 					}
 				}
 				for (Class<?> cls : Catalog.TIPPED_DARTS.items()) {
-					if (Statistics.itemTypesDiscovered.contains(cls)) {
+					if (Statistics.itemTypesDiscovered.contains(cls) && supportsEffect(cls)) {
 						discoveredClasses.add(cls);
 					}
 				}
 			} else if (spell == SpiritForm.INSTANCE){
 				for (Class<?> cls : Catalog.RINGS.items()) {
-					if (Statistics.itemTypesDiscovered.contains(cls)) {
+					if (Statistics.itemTypesDiscovered.contains(cls) && supportsEffect(cls)) {
 						discoveredClasses.add(cls);
 					}
 				}
@@ -576,71 +582,119 @@ public class Trinity extends ArmorAbility {
 
 	}
 
-	public static String trinityItemUseText(Class<?> cls ){
-		float chargeUse = trinityChargeUsePerEffect(cls);
-		if (Weapon.Enchantment.class.isAssignableFrom(cls) || Armor.Glyph.class.isAssignableFrom(cls)) {
-			for (Class ench : Weapon.Enchantment.rare) {
-				if (ench.equals(cls)) {
-					return Messages.get(Trinity.class, "rare_ench_glyph_use", BodyForm.duration(), Messages.decimalFormat("#.##", chargeUse));
-				}
-			}
-			for (Class glyph : Armor.Glyph.rare){
-				if (glyph.equals(cls)){
-					return Messages.get(Trinity.class, "rare_ench_glyph_use", BodyForm.duration(), Messages.decimalFormat("#.##", chargeUse));
-				}
-			}
-			return Messages.get(Trinity.class, "ench_glyph_use", BodyForm.duration(), Messages.decimalFormat("#.##", chargeUse));
-		}
-		if (MissileWeapon.class.isAssignableFrom(cls)){
-			return Messages.get(Trinity.class, "thrown_use", MindForm.itemLevel(), Messages.decimalFormat("#.##", chargeUse));
-		}
-		if (Wand.class.isAssignableFrom(cls)){
-			if (cls.equals(WandOfFireblast.class) || cls.equals(WandOfRegrowth.class)){
-				return Messages.get(Trinity.class, "wand_multi_use", MindForm.itemLevel(), Messages.decimalFormat("#.##", chargeUse));
-			}
-			return Messages.get(Trinity.class, "wand_use", MindForm.itemLevel(), Messages.decimalFormat("#.##", chargeUse));
-		}
-		if (Ring.class.isAssignableFrom(cls)){
-			return Messages.get(Trinity.class, "ring_use", SpiritForm.ringLevel(), Messages.decimalFormat("#.##", chargeUse));
-		}
-		if (Artifact.class.isAssignableFrom(cls)){
-			return Messages.get(Trinity.class, cls.getSimpleName() + "_use", SpiritForm.artifactLevel(), Messages.decimalFormat("#.##", chargeUse));
-		}
-		return "error!";
+	private enum EffectText {
+		BODY, RARE_BODY, WAND, WAND_MULTI, THROWN, RING, ARTIFACT, PRECOGNITIVE_EYE
+	}
 
+	private static final class TrinityEffectSpec {
+		private final EffectText text;
+		private final float chargeMultiplier;
+		private final boolean needsTarget;
+
+		private TrinityEffectSpec(EffectText text, float chargeMultiplier, boolean needsTarget) {
+			this.text = text;
+			this.chargeMultiplier = chargeMultiplier;
+			this.needsTarget = needsTarget;
+		}
+	}
+
+	private static TrinityEffectSpec effectSpec(Class<?> cls) {
+		if (cls == null) return null;
+		if (Weapon.Enchantment.class.isAssignableFrom(cls)) {
+			for (Class<?> rare : Weapon.Enchantment.rare) {
+				if (rare.equals(cls)) return new TrinityEffectSpec(EffectText.RARE_BODY, 2f, false);
+			}
+			return new TrinityEffectSpec(EffectText.BODY, 1f, false);
+		}
+		if (Armor.Glyph.class.isAssignableFrom(cls)) {
+			for (Class<?> rare : Armor.Glyph.rare) {
+				if (rare.equals(cls)) return new TrinityEffectSpec(EffectText.RARE_BODY, 2f, false);
+			}
+			return new TrinityEffectSpec(EffectText.BODY, 1f, false);
+		}
+		if (MissileWeapon.class.isAssignableFrom(cls)) {
+			return new TrinityEffectSpec(EffectText.THROWN, 1f, true);
+		}
+		if (Wand.class.isAssignableFrom(cls)) {
+			boolean multi = cls.equals(WandOfFireblast.class) || cls.equals(WandOfRegrowth.class);
+			return new TrinityEffectSpec(multi ? EffectText.WAND_MULTI : EffectText.WAND,
+					multi ? 2f : 1f, true);
+		}
+		if (Ring.class.isAssignableFrom(cls)) {
+			return new TrinityEffectSpec(EffectText.RING, 1f, false);
+		}
+		if (Artifact.class.isAssignableFrom(cls) && isSupportedArtifact(cls)) {
+			if (cls.equals(DriedRose.class) || cls.equals(UnstableSpellbook.class)
+					|| cls.equals(SkeletonKey.class) || cls.equals(PrecognitiveEye.class)
+					|| cls.equals(LloydsBeacon.class)) {
+				return new TrinityEffectSpec(cls.equals(PrecognitiveEye.class)
+						? EffectText.PRECOGNITIVE_EYE : EffectText.ARTIFACT, 2f,
+						cls.equals(SkeletonKey.class) || cls.equals(LloydsBeacon.class));
+			}
+			if (cls.equals(EtherealChains.class) || cls.equals(TalismanOfForesight.class)
+					|| cls.equals(TimekeepersHourglass.class)) {
+				return new TrinityEffectSpec(EffectText.ARTIFACT, 1.4f,
+						!cls.equals(TimekeepersHourglass.class));
+			}
+			return new TrinityEffectSpec(EffectText.ARTIFACT, 1f,
+					cls.equals(MasterThievesArmband.class) || cls.equals(SandalsOfNature.class)
+							|| cls.equals(TalismanOfForesight.class) || cls.equals(Shuriken_Box.class));
+		}
+		return null;
+	}
+
+	private static boolean isSupportedArtifact(Class<?> cls) {
+		return cls.equals(AlchemistsToolkit.class) || cls.equals(ChaliceOfBlood.class)
+				|| cls.equals(CloakOfShadows.class) || cls.equals(DriedRose.class)
+				|| cls.equals(EtherealChains.class) || cls.equals(HornOfPlenty.class)
+				|| cls.equals(MasterThievesArmband.class) || cls.equals(SandalsOfNature.class)
+				|| cls.equals(SkeletonKey.class) || cls.equals(TalismanOfForesight.class)
+				|| cls.equals(TimekeepersHourglass.class) || cls.equals(UnstableSpellbook.class)
+				|| cls.equals(Shuriken_Box.class) || cls.equals(InstructionTool.class)
+				|| cls.equals(CapeOfThorns.class) || cls.equals(LloydsBeacon.class)
+				|| cls.equals(PrecognitiveEye.class);
+	}
+
+	public static boolean supportsEffect(Class<?> cls) {
+		return effectSpec(cls) != null && !cls.equals(HolyTome.class);
+	}
+
+	public static String trinityItemUseText(Class<?> cls ){
+		TrinityEffectSpec spec = effectSpec(cls);
+		if (spec == null) return Messages.get(Trinity.class, "unsupported_use");
+		String charge = Messages.decimalFormat("#.##", trinityChargeUsePerEffect(cls));
+		switch (spec.text) {
+			case BODY:
+				return Messages.get(Trinity.class, "ench_glyph_use", BodyForm.duration(), charge);
+			case RARE_BODY:
+				return Messages.get(Trinity.class, "rare_ench_glyph_use", BodyForm.duration(), charge);
+			case WAND:
+				return Messages.get(Trinity.class, "wand_use", MindForm.itemLevel(), charge);
+			case WAND_MULTI:
+				return Messages.get(Trinity.class, "wand_multi_use", MindForm.itemLevel(), charge);
+			case THROWN:
+				return Messages.get(Trinity.class, "thrown_use", MindForm.itemLevel(), charge);
+			case RING:
+				return Messages.get(Trinity.class, "ring_use", SpiritForm.ringLevel(), charge);
+			case PRECOGNITIVE_EYE:
+				return Messages.get(Trinity.class, "precognitiveeye_use",
+						PrecognitiveEye.trinityDodgeUses(hero.pointsInTalent(Talent.SPIRIT_FORM)), charge);
+			case ARTIFACT:
+			default:
+				return Messages.get(Trinity.class, cls.getSimpleName() + "_use",
+						SpiritForm.artifactLevel(), charge);
+		}
 	}
 
 	public static float trinityChargeUsePerEffect(Class<?> cls){
 		float chargeUse = hero.armorAbility.chargeUse(hero);
-		if (Weapon.Enchantment.class.isAssignableFrom(cls) || Armor.Glyph.class.isAssignableFrom(cls)) {
-			for (Class ench : Weapon.Enchantment.rare) {
-				if (ench.equals(cls)) {
-					return 2*chargeUse; //50 charge
-				}
-			}
-			for (Class glyph : Armor.Glyph.rare){
-				if (glyph.equals(cls)){
-					return 2*chargeUse; //50 charge
-				}
-			}
-		}
-		if (cls.equals(WandOfFireblast.class) || cls.equals(WandOfRegrowth.class)){
-			return 2*chargeUse;
-		}
-		if (Artifact.class.isAssignableFrom(cls)){
-			if (cls.equals(DriedRose.class) || cls.equals(UnstableSpellbook.class) || cls.equals(SkeletonKey.class)
-					|| cls.equals(PrecognitiveEye.class)){
-				return 2*chargeUse; //50 charge
-			}
-			if (cls.equals(LloydsBeacon.class)){
-				return 2*chargeUse; //50 charge
-			}
-			if (cls.equals(EtherealChains.class) || cls.equals(TalismanOfForesight.class) || cls.equals(TimekeepersHourglass.class)){
-				return 1.4f*chargeUse; //35 charge
-			}
-		}
-		//all other effects are standard charge use, 25 at base
-		return chargeUse;
+		TrinityEffectSpec spec = effectSpec(cls);
+		return spec == null ? chargeUse : spec.chargeMultiplier * chargeUse;
+	}
+
+	public static boolean activeArtifactNeedsTarget(Class<?> artifactClass) {
+		TrinityEffectSpec spec = effectSpec(artifactClass);
+		return spec != null && spec.needsTarget;
 	}
 
 	static boolean duplicatesBodyFormEffect(Weapon weapon, Armor armor,

@@ -6,9 +6,13 @@ import static org.junit.Assert.assertTrue;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
+
+import java.lang.reflect.Field;
 
 public class MarshSlimeTest {
 
@@ -27,6 +31,34 @@ public class MarshSlimeTest {
 		for (int i = 0; i < 500; i++) {
 			int damage = slime.damageRoll();
 			assertTrue(damage >= 15 && damage <= 25);
+		}
+	}
+
+	@Test
+	public void dropsGooBlobAtOneQuarterWithoutDecay() {
+		MarshSlime slime = new MarshSlime();
+
+		assertEquals(1f / 4f, baseLootChance(slime), 0.000001f);
+		assertEquals(GooBlob.class, lootDefinition(slime));
+	}
+
+	private static float baseLootChance(MarshSlime slime) {
+		try {
+			Field lootChance = Mob.class.getDeclaredField("lootChance");
+			lootChance.setAccessible(true);
+			return lootChance.getFloat(slime);
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError("Unable to inspect base loot chance", e);
+		}
+	}
+
+	private static Object lootDefinition(MarshSlime slime) {
+		try {
+			Field loot = Mob.class.getDeclaredField("loot");
+			loot.setAccessible(true);
+			return loot.get(slime);
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError("Unable to inspect loot definition", e);
 		}
 	}
 

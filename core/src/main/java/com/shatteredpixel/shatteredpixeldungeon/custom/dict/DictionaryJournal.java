@@ -54,6 +54,7 @@ public enum DictionaryJournal {
         ARTIFACTS.d.put("artifact_sandal",          ItemSpriteSheet.ARTIFACT_SANDALS);
         ARTIFACTS.d.put("artifact_key",             ItemSpriteSheet.ARTIFACT_KEY);
         ARTIFACTS.d.put("artifact_talisman",        ItemSpriteSheet.ARTIFACT_TALISMAN);
+        ARTIFACTS.d.put("artifact_eye",              EXItemSpriteSheet.PRECOGNITIVE_EYE);
         ARTIFACTS.d.put("artifact_armband",         ItemSpriteSheet.ARTIFACT_ARMBAND);
         ARTIFACTS.d.put("artifact_hourglass",       ItemSpriteSheet.ARTIFACT_HOURGLASS);
         ARTIFACTS.d.put("artifact_book",            ItemSpriteSheet.ARTIFACT_SPELLBOOK);
@@ -246,9 +247,14 @@ public enum DictionaryJournal {
         MOBS.d.put("tower_marsh_slime",                DictSpriteSheet.TOWER_MARSH_SLIME);
         MOBS.d.put("tower_rune_spinner",               DictSpriteSheet.TOWER_RUNE_SPINNER);
         MOBS.d.put("tower_chain_shadow_thief",         DictSpriteSheet.TOWER_CHAIN_SHADOW_THIEF);
+        MOBS.d.put("tower_death_butterfly",            DictSpriteSheet.TOWER_DEATH_BUTTERFLY);
+        MOBS.d.put("tower_dark_mechanical_fist",       DictSpriteSheet.TOWER_DARK_MECHANICAL_FIST);
+        MOBS.d.put("tower_myriad_black_shadow",        DictSpriteSheet.TOWER_MYRIAD_BLACK_SHADOW);
+        MOBS.d.put("tower_tapir_crocodile",            DictSpriteSheet.TOWER_TAPIR_CROCODILE);
         MOBS.d.put("tower_pestilence_knight",          DictSpriteSheet.TOWER_PESTILENCE_KNIGHT);
         MOBS.d.put("tower_death_knight",               DictSpriteSheet.TOWER_DEATH_KNIGHT);
         MOBS.d.put("tower_gentleman_elf",              DictSpriteSheet.TOWER_GENTLEMAN_ELF);
+        MOBS.d.put("tower_hunger_knight",              DictSpriteSheet.TOWER_HUNGER_KNIGHT);
 
 
         //ring
@@ -333,6 +339,9 @@ public enum DictionaryJournal {
         WEAPONS.d.put("melee_mercuryblade",        EXItemSpriteSheet.MERCURY_BLADE);
         WEAPONS.d.put("melee_auxiliarycore",       EXItemSpriteSheet.AUXILIARY_CORE);
         WEAPONS.d.put("melee_radiantgoldhalberd",  EXItemSpriteSheet.RADIANT_GOLD_HALBERD);
+        WEAPONS.d.put("melee_soulblade",            EXItemSpriteSheet.SOUL_BLADE);
+        WEAPONS.d.put("melee_lakesword",             EXItemSpriteSheet.LAKE_SWORD_SHEATHED);
+        WEAPONS.d.put("melee_mountainguard",         EXItemSpriteSheet.MOUNTAIN_GUARD);
         //duelist ability
         WEAPONS.d.put("duelist_ability",    ItemSpriteSheet.WEAPON_HOLDER);
         //ench & curse

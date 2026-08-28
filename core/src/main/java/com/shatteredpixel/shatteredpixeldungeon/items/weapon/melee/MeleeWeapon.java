@@ -541,8 +541,8 @@ public class MeleeWeapon extends Weapon {
 	public static boolean canUseWeaponAbility(Hero hero) {
 		return hero != null
 				&& (hero.heroClass == HeroClass.DUELIST
-				|| hero.subClass.is(HeroSubClass.CHAMPION)
-				|| hero.buff(MartialMastery.class) != null
+				|| (hero.subClass != null && hero.subClass.is(HeroSubClass.CHAMPION))
+				|| hero.hasMartialMastery()
 				|| hero.hasTalent(Talent.MARTIAL_TRAIN));
 	}
 
@@ -684,10 +684,13 @@ public class MeleeWeapon extends Weapon {
 		}
 
 		public int chargeCap(){
-			int training = hero.pointsInTalent(Talent.MARTIAL_TRAIN);
-			if (hasBaseMastery(hero)) {
-				return combinedCap(hero.lvl, training, hero.subClass.is(HeroSubClass.CHAMPION),
-						hero.pointsInTalent(Talent.WEAPON_ABILITY_MASTER));
+			Hero owner = target instanceof Hero ? (Hero) target : hero;
+			if (owner == null) return 0;
+			int training = owner.pointsInTalent(Talent.MARTIAL_TRAIN);
+			boolean champion = owner.subClass != null && owner.subClass.is(HeroSubClass.CHAMPION);
+			if (hasBaseMastery(owner)) {
+				return combinedCap(owner.lvl, training, champion,
+						owner.pointsInTalent(Talent.WEAPON_ABILITY_MASTER));
 			}
 			return trainingOnlyCap(training);
 
@@ -695,8 +698,8 @@ public class MeleeWeapon extends Weapon {
 
 		private static boolean hasBaseMastery(Hero hero) {
 			return hero.heroClass == HeroClass.DUELIST
-					|| hero.subClass.is(HeroSubClass.CHAMPION)
-					|| hero.buff(MartialMastery.class) != null;
+					|| (hero.subClass != null && hero.subClass.is(HeroSubClass.CHAMPION))
+					|| hero.hasMartialMastery();
 		}
 
 		public static int masteryBaseCap(int heroLevel) {

@@ -75,12 +75,27 @@ public class Overburden extends Buff {
 	public static float attenuateEquipmentSpeed(Char owner, float multiplier) {
 		if (multiplier <= 1f
 				|| !(owner instanceof Hero)
-				|| owner.buff(Overburden.class) == null) {
+				|| !hasExactBaseOverburden(owner)) {
 			return multiplier;
 		}
 		return attenuatePositiveMultiplier(
 				multiplier,
 				retentionForSlots(countSlots((Hero) owner)));
+	}
+
+	/** Haste-ring path accepts both the extraction debuff and owner-scoped subclasses. */
+	public static float attenuateHasteRing(Char owner, float multiplier) {
+		if (multiplier <= 1f || !(owner instanceof Hero)
+				|| owner.buffs(Overburden.class).isEmpty()) return multiplier;
+		return attenuatePositiveMultiplier(multiplier,
+				retentionForSlots(countSlots((Hero) owner)));
+	}
+
+	private static boolean hasExactBaseOverburden(Char owner) {
+		for (Overburden buff : owner.buffs(Overburden.class)) {
+			if (buff.getClass() == Overburden.class) return true;
+		}
+		return false;
 	}
 
 	@Override

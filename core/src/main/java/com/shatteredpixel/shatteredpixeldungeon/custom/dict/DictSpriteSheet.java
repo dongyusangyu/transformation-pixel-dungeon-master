@@ -248,12 +248,22 @@ public class DictSpriteSheet {
                 return new Image(Assets.Sprites.RUNE_SPINNER, 0, 0, 16, 16);
             case TOWER_CHAIN_SHADOW_THIEF:
                 return new Image(Assets.Sprites.CHAIN_SHADOW_THIEF, 0, 0, 12, 13);
+            case TOWER_DEATH_BUTTERFLY:
+                return new Image(Assets.Sprites.DEATH_BUTTERFLY, 0, 0, 16, 16);
+            case TOWER_DARK_MECHANICAL_FIST:
+                return new Image(Assets.Sprites.DARK_MECHANICAL_FIST, 0, 0, 24, 17);
+            case TOWER_MYRIAD_BLACK_SHADOW:
+                return new Image(Assets.Sprites.MYRIAD_BLACK_SHADOW_OVERLAY, 0, 0, 16, 16);
+            case TOWER_TAPIR_CROCODILE:
+                return new Image(Assets.Sprites.TAPIR_CROCODILE, 0, 0, 16, 16);
             case TOWER_PESTILENCE_KNIGHT:
                 return new Image(Assets.Sprites.PESTILENCE_KNIGHT, 0, 0, 32, 32);
             case TOWER_DEATH_KNIGHT:
                 return new Image(Assets.Sprites.DEATH_KNIGHT, 0, 0, 32, 32);
             case TOWER_GENTLEMAN_ELF:
                 return new Image(Assets.Sprites.GENTLEMAN_ELF, 0, 0, 32, 32);
+            case TOWER_HUNGER_KNIGHT:
+                return new Image(Assets.Sprites.HUNGER_KNIGHT, 0, 0, 32, 32);
 
             case HERO:
                 return new Image(Assets.Sprites.ROGUE, 0, 15, 12, 15);
@@ -397,6 +407,11 @@ public class DictSpriteSheet {
     public static final int TOWER_PESTILENCE_KNIGHT         = 916 + 10000;
     public static final int TOWER_DEATH_KNIGHT              = 917 + 10000;
     public static final int TOWER_GENTLEMAN_ELF             = 919 + 10000;
+    public static final int TOWER_DEATH_BUTTERFLY           = 920 + 10000;
+    public static final int TOWER_DARK_MECHANICAL_FIST      = 921 + 10000;
+    public static final int TOWER_MYRIAD_BLACK_SHADOW       = 922 + 10000;
+    public static final int TOWER_TAPIR_CROCODILE           = 923 + 10000;
+    public static final int TOWER_HUNGER_KNIGHT             = 924 + 10000;
 
     public static final int SAD_GHOST       = 800 + 10000;
     public static final int WAND_MAKER      = 801 + 10000;

@@ -71,14 +71,14 @@ public class ImpShopRoom extends ShopRoom {
 		}
 	}
 
-	static void appendHikingBackpackIfNeeded(ArrayList<Item> stock, Belongings belongings) {
+	public static void appendHikingBackpackIfNeeded(ArrayList<Item> stock, Belongings belongings) {
 		if (shouldOfferHikingBackpack(belongings)) {
 			stock.add(new HikingBackpack());
 			Dungeon.LimitedDrops.HIKING_BACKPACK.drop();
 		}
 	}
 
-	static boolean shouldOfferHikingBackpack(Belongings belongings) {
+	public static boolean shouldOfferHikingBackpack(Belongings belongings) {
 		return !Dungeon.LimitedDrops.HIKING_BACKPACK.dropped()
 				&& (belongings == null || belongings.getItem(HikingBackpack.class) == null);
 	}

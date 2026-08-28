@@ -39,7 +39,7 @@ public class SkeletonKey extends Key {
 	}
 	
 	public SkeletonKey() {
-		this( 0 );
+		this( Dungeon.depth );
 	}
 	
 	public SkeletonKey( int depth ) {

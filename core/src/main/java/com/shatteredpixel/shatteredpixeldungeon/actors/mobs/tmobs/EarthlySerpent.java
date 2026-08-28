@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MyriadEcho;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
@@ -145,6 +146,7 @@ public class EarthlySerpent extends Mob {
 	}
 
 	protected void recordMeleeDamage(int damage) {
+		if (MyriadEcho.isMarked(this)) return;
 		if (damage <= 0 || meleeDamageDealt >= MAX_GROWTH_DAMAGE) {
 			return;
 		}

@@ -39,7 +39,7 @@ public class WornKey extends Key {
 	}
 	
 	public WornKey() {
-		this( 0 );
+		this( Dungeon.depth );
 	}
 	
 	public WornKey( int depth ) {

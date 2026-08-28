@@ -32,8 +32,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.GentlemanElfSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
-import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
@@ -81,7 +79,6 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private boolean pendingAdvancesRhythm = true;
 	private int activeIllusions;
 	private transient GentlemanElfArena arena;
-	private transient boolean introWindowOpen;
 	private transient boolean restoreGrace;
 
 	public GentlemanElf() {
@@ -122,26 +119,21 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		return Math.min(healed, Math.max(0, HP - before));
 	}
 
-	@Override public void notice() {
-		super.notice();
-		if (introResolved || introWindowOpen || Dungeon.hero == null) return;
-		introWindowOpen = true;
-		Game.runOnRenderThread(new Callback() {
-			@Override public void call() {
-				GameScene.show(new WndOptions(sprite(), Messages.get(GentlemanElf.this, "intro_title"),
-						Messages.get(GentlemanElf.this, "intro_text"),
-						Messages.get(GentlemanElf.this, "drink"), Messages.get(GentlemanElf.this, "refuse")) {
-					@Override protected void onSelect(int index) {
-						introWindowOpen = false;
-						boolean drink = index == 0;
-						resolveIntro(drink);
-						if (drink) GLog.i(Messages.get(GentlemanElf.this, "drink_reply"));
-						else yell(Messages.get(GentlemanElf.this, "refuse_reply"));
-					}
-					@Override public void onBackPressed() { }
-				});
-			}
-		});
+	/**
+	 * Starts the encounter with a valid last-known target before the first AI tick.
+	 * The target position is important when the boss starts outside its view range.
+	 */
+	public void beginEncounter(Char initialTarget) {
+		initializeEncounterTarget(initialTarget);
+		notice();
+	}
+
+	private void initializeEncounterTarget(Char initialTarget) {
+		if (initialTarget != null && initialTarget.isAlive()) {
+			enemy = initialTarget;
+			target = initialTarget.pos;
+			state = HUNTING;
+		}
 	}
 
 	@Override protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
@@ -157,13 +149,17 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	}
 
 	@Override public boolean isInvulnerable(Class effect) {
-		return (phase == Phase.TOAST_GAME && phaseLocks >= 1)
+		return !introResolved
+				|| (phase == Phase.TOAST_GAME && phaseLocks >= 1)
 				|| (phase == Phase.CUP_CONTEST && phaseLocks >= 2)
 				|| super.isInvulnerable(effect);
 	}
 
 	@Override protected boolean act() {
-		if (!introResolved) { spend(TICK); return true; }
+		if (!introResolved) {
+			spend(TICK);
+			return true;
+		}
 		refreshPerception();
 		ElfWineCup cup = phase == Phase.CUP_CONTEST ? activeCup() : null;
 		if (cup != null) lockCupObjective(cup);
@@ -450,7 +446,11 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 			pushAway(target, pos, 2);
 		}
 		destroyFlammableObstaclesBetween(jumpOrigin, pendingTargetCell);
-		moveBossTo(hit ? pendingLandingCell : geometricJumpLanding(pos, pendingTargetCell, 4), true);
+		int landing = hit ? pendingLandingCell : geometricJumpLanding(pos, pendingTargetCell, 4);
+		if (!isLegalLanding(landing)) {
+			landing = furthestLegalOnAxis(pos, landing >= 0 ? landing : pendingTargetCell, Integer.MAX_VALUE);
+		}
+		moveBossTo(landing, true);
 	}
 	private void destroyFlammableObstaclesBetween(int from, int to) {
 		if (Dungeon.level == null) return;
@@ -587,8 +587,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		for (int cell : GentlemanElfTelegraph.line(currentGrid(), from, toward)) {
 			if (cell == from) continue;
 			if (steps++ >= maxSteps) break;
-			Char occupant = Actor.findChar(cell);
-			if (occupant != null && occupant != this) break;
+			if (!isLegalLanding(cell)) break;
 			last = cell;
 		}
 		return last;
@@ -609,8 +608,13 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	}
 	private boolean isLegalLanding(int cell) {
 		return Dungeon.level != null && cell >= 0 && cell < Dungeon.level.length()
+				&& isInsideActiveBossArena(cell)
 				&& Dungeon.level.passable[cell] && !Dungeon.level.solid[cell]
 				&& (Actor.findChar(cell) == null || Actor.findChar(cell) == this);
+	}
+	private boolean isInsideActiveBossArena(int cell) {
+		return !(Dungeon.level instanceof TowerBossLevel)
+				|| ((TowerBossLevel) Dungeon.level).isBossArenaCell(cell);
 	}
 	private int cupDashLanding(ElfWineCup cup) {
 		if (cup == null || Dungeon.level == null || !cupDashEligible(Dungeon.level.distance(pos, cup.pos))) return -1;
@@ -637,6 +641,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	}
 	private void moveBossTo(int cell, boolean jump) {
 		if (Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length() || cell == pos) return;
+		if (!isLegalLanding(cell)) return;
 		Char occupant = Actor.findChar(cell);
 		if (occupant != null && occupant != this) return;
 		int oldPos = pos;
@@ -740,6 +745,9 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	public GentlemanElfArena arena() { return arena; }
 	public void arenaForTest(GentlemanElfArena value) { arena = value; }
 	public boolean introResolved() { return introResolved; }
+	boolean introNeedsPresentationForTest() { return !introResolved; }
+	void initializeEncounterTargetForTest(Char target) { initializeEncounterTarget(target); }
+	int targetForTest() { return target; }
 	boolean restoreGraceForTest() { return restoreGrace; }
 	public void setCupDevourCooldownForTest(int value) { cupDevourCooldown = Math.max(0, Math.min(10, value)); }
 	public void armCupDevourForTest() { cupDevourCooldown = 0; }

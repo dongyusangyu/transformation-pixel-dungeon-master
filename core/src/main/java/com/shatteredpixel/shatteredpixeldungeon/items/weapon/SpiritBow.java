@@ -316,7 +316,7 @@ public class SpiritBow extends Weapon {
 		return new SpiritArrow();
 	}
 	
-	public class SpiritArrow extends MissileWeapon {
+	public class SpiritArrow extends MissileWeapon implements MissileWeapon.QianfaRepeatProjectile {
 		
 		{
 			image = ItemSpriteSheet.SPIRIT_ARROW;
@@ -333,6 +333,11 @@ public class SpiritBow extends Weapon {
 
 		public boolean isIdentified() {
 			return true;
+		}
+
+		@Override
+		protected MissileWeapon createPhantomProjectile() {
+			return markAsPhantom(SpiritBow.this.knockArrow());
 		}
 		@Override
 		public int min(int lvl) {
@@ -412,8 +417,10 @@ public class SpiritBow extends Weapon {
 			} else {
 				if (!curUser.shoot( enemy, this )) {
 					Splash.at(cell, 0xCC99FFFF, 1);
+				} else {
+					onSuccessfulThrow(enemy);
 				}
-				if (sniperSpecial && SpiritBow.this.augment != Augment.SPEED) sniperSpecial = false;
+				if (!phantomProjectile && sniperSpecial && SpiritBow.this.augment != Augment.SPEED) sniperSpecial = false;
 			}
 		}
 

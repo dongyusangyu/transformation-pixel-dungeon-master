@@ -52,6 +52,11 @@ public class Artifact extends KindofMisc {
 	//levelCap is the artifact's maximum level
 	protected int levelCap = 0;
 
+	/** Returns the internal maximum level used by this artifact. */
+	public final int levelCap() {
+		return levelCap;
+	}
+
 	//the current artifact charge
 	protected int charge = 0;
 
@@ -63,6 +68,27 @@ public class Artifact extends KindofMisc {
 
 	//used by some artifacts to keep track of duration of effects or cooldowns to use.
 	protected int cooldown = 0;
+
+	/**
+	 * Validates an active artifact action before it can consume time, charge, or
+	 * open a targeting window. Equipment is checked first so an unidentified
+	 * unequipped artifact never reveals its curse state.
+	 */
+	protected boolean canUseActiveAction(Hero hero) {
+		if (!isEquipped(hero)) {
+			GLog.i(Messages.get(Artifact.class, "need_to_equip"));
+			return false;
+		}
+		if (hero.buff(MagicImmune.class) != null) {
+			GLog.w(Messages.get(Artifact.class, "no_magic"));
+			return false;
+		}
+		if (cursed) {
+			GLog.w(Messages.get(this, "cursed"));
+			return false;
+		}
+		return true;
+	}
 
 	@Override
 	public boolean doEquip( final Hero hero ) {

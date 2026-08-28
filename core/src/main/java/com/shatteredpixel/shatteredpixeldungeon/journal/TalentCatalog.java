@@ -228,7 +228,7 @@ public enum  TalentCatalog {
         T3.addCommonTierEntities(2);
         BOSS.addEntities(Talent.AQUATIC_RECOVER,Talent.PUMP_ATTACK,Talent.OOZE_ATTACK, Talent.STRONGEST_SHIELD,Talent.COMBO_PACKAGE,Talent.BREAK_ENEMY_RANKS,
                 Talent.SURPRISE_THROW, Talent.SMOKE_MASK,Talent.RUSH,Talent.SHADOW_KILLER,Talent.KILL_SPREE,Talent.SEAOFPEOPLE,Talent.PHANTOM_STEP,
-                Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE,
+				Talent.FASTING,Talent.THUNDER_STRIKE,Talent.DIRECTIONAL_COLLAPSE,Talent.HUNTING_TECHNIQUE,Talent.NATURAL_CHILD,Talent.FALCON_EYE,
                 Talent.KING_PROTECT,Talent.SUMMON_FOLLOWER,Talent.WOLFISH_GAZE,Talent.ENERGY_CONVERSION,
                 Talent.YOG_LARVA,Talent.YOG_FIST,Talent.YOG_RAY);
         NEGATIVE.addNegative();

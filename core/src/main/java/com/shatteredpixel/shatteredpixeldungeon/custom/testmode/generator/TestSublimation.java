@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.DM300Sprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.GooSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.HuntressBossSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.KingSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.RogueBossSprite;
@@ -40,7 +41,8 @@ public class TestSublimation extends TestGenerator {
 
     private static final BossOption[] SECOND_ROW = new BossOption[]{
             new BossOption("WARRIOR", "WARRIOR"),
-            new BossOption("ROGUE", "ROGUE")
+            new BossOption("ROGUE", "ROGUE"),
+            new BossOption("HUNTRESS", "HUNTRESS")
     };
 
     @Override
@@ -164,6 +166,8 @@ public class TestSublimation extends TestGenerator {
                     return spriteImage(new WarriorBossSprite());
                 case "ROGUE":
                     return spriteImage(new RogueBossSprite());
+                case "HUNTRESS":
+                    return spriteImage(new HuntressBossSprite());
                 case "GOO": default:
                     return spriteImage(new GooSprite());
             }
@@ -183,6 +187,8 @@ public class TestSublimation extends TestGenerator {
                     return "WARRIOR";
                 case "ROGUE":
                     return "ROGUE";
+                case "HUNTRESS":
+                    return "HUNTRESS";
                 case "GOO": default:
                     return "Goo";
             }
