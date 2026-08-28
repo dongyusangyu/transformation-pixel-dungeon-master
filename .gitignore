@@ -41,6 +41,13 @@ capture/
 docs/superpowers/
 tools/*_test.init.gradle
 
+# Local design, tooling, and browser artifacts
+docs/
+pixel-art/
+tools/
+.idea/
+.playwright-cli/
+
 # Python bytecode caches
 __pycache__/
 *.py[cod]
