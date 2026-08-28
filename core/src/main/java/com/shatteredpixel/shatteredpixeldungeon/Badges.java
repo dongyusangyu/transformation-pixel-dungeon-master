@@ -42,6 +42,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -117,8 +120,10 @@ public class Badges {
 		RESEARCHER_1                ( copper+28, BadgeType.JOURNAL ),
 		GAMES_PLAYED_1              ( copper+29, BadgeType.GLOBAL ),
 		HIGH_SCORE_1                ( copper+30 ),
-
-
+		DEATH_FROM_ALIENATED_PRISMATIC_GUARD ( copper+31 ),
+		CHAIN_MACE_SIX_TARGETS      ( copper+32 ),
+		ENTER_TOWER                 ( copper+33 ),
+		CORPSES_SLAIN_ONE_FLOOR     ( copper+34 ),
 
 		//silver
 		NO_MONSTERS_SLAIN           ( silver ),
@@ -162,7 +167,15 @@ public class Badges {
 		RESEARCHER_2                ( silver+23, BadgeType.JOURNAL ),
 		GAMES_PLAYED_2              ( silver+24, BadgeType.GLOBAL ),
 		HIGH_SCORE_2                ( silver+25 ),
-
+		DEATH_KNIGHT_BLESSED_ANKH   ( silver+26 ),
+		TOWER_FLOOR_100             ( silver+27 ),
+		HUNGER_KNIGHT_WARRIOR       ( silver+28 ),
+		PESTILENCE_KNIGHT_SLAIN     ( silver+29 ),
+		PESTILENCE_KNIGHT_CLERIC    ( silver+30 ),
+		GENTLEMAN_ELF_SLAIN         ( silver+31 ),
+		GENTLEMAN_ELF_FREEMAN       ( silver+32 ),
+		DEATH_KNIGHT_SLAIN          ( silver+33 ),
+		HUNGER_KNIGHT_SLAIN         ( silver+34 ),
 
 		//gold
 		PIRANHAS                    ( gold ),
@@ -317,6 +330,84 @@ public class Badges {
 	public static void reset() {
 		local.clear();
 		loadGlobal();
+	}
+
+	static List<Badge> towerProgressBadges(int depth, int branch) {
+		if (branch != TowerLevel.BRANCH || depth < 1) {
+			return Collections.emptyList();
+		}
+		ArrayList<Badge> badges = new ArrayList<>();
+		badges.add(Badge.ENTER_TOWER);
+		if (depth >= 100) badges.add(Badge.TOWER_FLOOR_100);
+		return badges;
+	}
+
+	public static void validateTowerProgress(int depth, int branch) {
+		if (branch != TowerLevel.BRANCH) return;
+		Statistics.observeDepth(depth, branch);
+		for (Badge badge : towerProgressBadges(depth, branch)) {
+			award(badge);
+		}
+	}
+
+	static List<Badge> towerBossBadges(String bossId, HeroClass heroClass) {
+		ArrayList<Badge> badges = new ArrayList<>(2);
+		if (TowerBossGenerator.HUNGER_KNIGHT_ID.equals(bossId)) {
+			badges.add(Badge.HUNGER_KNIGHT_SLAIN);
+			if (heroClass == HeroClass.WARRIOR) badges.add(Badge.HUNGER_KNIGHT_WARRIOR);
+		} else if (TowerBossGenerator.PESTILENCE_KNIGHT_ID.equals(bossId)) {
+			badges.add(Badge.PESTILENCE_KNIGHT_SLAIN);
+			if (heroClass == HeroClass.CLERIC) badges.add(Badge.PESTILENCE_KNIGHT_CLERIC);
+		} else if (TowerBossGenerator.GENTLEMAN_ELF_ID.equals(bossId)) {
+			badges.add(Badge.GENTLEMAN_ELF_SLAIN);
+			if (heroClass == HeroClass.FREEMAN) badges.add(Badge.GENTLEMAN_ELF_FREEMAN);
+		} else if (TowerBossGenerator.DEATH_KNIGHT_ID.equals(bossId)) {
+			badges.add(Badge.DEATH_KNIGHT_SLAIN);
+		}
+		return badges;
+	}
+
+	public static void validateTowerBossSlain(String bossId, HeroClass heroClass) {
+		for (Badge badge : towerBossBadges(bossId, heroClass)) {
+			award(badge);
+		}
+	}
+
+	public static void validateDeathKnightBlessedAnkh() {
+		if (Dungeon.level instanceof TowerBossLevel
+				&& ((TowerBossLevel) Dungeon.level).isActiveTowerBoss(
+						TowerBossGenerator.DEATH_KNIGHT_ID)) {
+			award(Badge.DEATH_KNIGHT_BLESSED_ANKH);
+		}
+	}
+
+	public static void validateCorpseSlain() {
+		if (Statistics.recordCorpseSlain(Dungeon.depth, Dungeon.branch) >= 5) {
+			award(Badge.CORPSES_SLAIN_ONE_FLOOR);
+		}
+	}
+
+	public static void validateChainMaceSixTargets() {
+		award(Badge.CHAIN_MACE_SIX_TARGETS);
+	}
+
+	public static void validateDeathFromAlienatedPrismaticGuard() {
+		award(Badge.DEATH_FROM_ALIENATED_PRISMATIC_GUARD);
+	}
+
+	static boolean shouldDisplayAward(boolean newlyAddedToRun, boolean globallyUnlocked) {
+		return newlyAddedToRun || !globallyUnlocked;
+	}
+
+	private static void award(Badge badge) {
+		if (badge == null) return;
+
+		loadGlobal();
+		// Retry notification if a scene transition recorded the local badge first.
+		boolean newlyAddedToRun = local.add(badge);
+		if (shouldDisplayAward(newlyAddedToRun, isUnlocked(badge))) {
+			displayBadge(badge);
+		}
 	}
 	
 	public static final String BADGES_FILE	= "badges.dat";

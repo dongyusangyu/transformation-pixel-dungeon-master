@@ -56,6 +56,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMet
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.CrackedSpyglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MimicTooth;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.LakeSword;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.builders.Builder;
@@ -553,6 +554,10 @@ public abstract class RegularLevel extends Level {
 			}
 		Random.popGenerator();
 
+		Random.pushGenerator( Random.Long() );
+			createLakeSwordScabbard();
+		Random.popGenerator();
+
 		//cached rations try to drop in a special room on floors 2/4/7, to a max of 2/3
 		//we incremented dropped by 2 for compatibility with pre-v2.4 saves (when the talent dropped 4/6 items)
 		Random.pushGenerator( Random.Long() );
@@ -729,6 +734,32 @@ public abstract class RegularLevel extends Level {
 
 	protected boolean driedRosePetalGenerationAllowed(DriedRose rose) {
 		return rose.droppedPetals < 11;
+	}
+
+	protected boolean lakeSwordScabbardGenerationEnabled() {
+		return Dungeon.branch == 0;
+	}
+
+	protected void createLakeSwordScabbard() {
+		if (!lakeSwordScabbardGenerationEnabled() || Dungeon.hero == null
+				|| !LakeSword.hasUnsheathedSword(Dungeon.hero)) return;
+		int cell = lakeSwordScabbardDropCell();
+		if (cell < 0) return;
+		drop(new LakeSword.Scabbard(), cell).type = Heap.Type.HEAP;
+		if (map[cell] == Terrain.HIGH_GRASS || map[cell] == Terrain.FURROWED_GRASS) {
+			map[cell] = Terrain.GRASS;
+			losBlocking[cell] = false;
+		}
+	}
+
+	protected int lakeSwordScabbardDropCell() {
+		int cell = randomDropCell();
+		if (cell != -1) return cell;
+		for (int i = 0; i < length(); i++) {
+			if (passable[i] && !solid[i] && i != entrance() && i != exit()
+					&& heaps.get(i) == null && findMob(i) == null) return i;
+		}
+		return entrance();
 	}
 
 	private static HashMap<Document, Dungeon.LimitedDrops> limitedDocs = new HashMap<>();

@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
@@ -10,29 +11,67 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfIllusion;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Random;
 import org.junit.Test;
 import java.util.*;
 import static org.junit.Assert.*;
 
 public class GentlemanElfArenaTest {
-	@Test public void clockChargesAtTwentyWithoutResolvingByItself() {
-		GentlemanElf boss = new GentlemanElf();
-		RecordingHost host = new RecordingHost(boss);
-		GentlemanElfArena arena = new GentlemanElfArena(host);
-		for (int i=0;i<19;i++) arena.actForTest();
-		assertEquals(0, host.warningCalls); assertEquals(19, arena.banquetTurns());
-		arena.actForTest();
-		assertEquals(0, host.resolveCalls); assertTrue(arena.banquetReady());
-		arena.actForTest();
-		assertEquals(0, host.resolveCalls); assertEquals(20, arena.banquetTurns());
-		arena.banquetResolved();
-		assertFalse(arena.banquetReady()); assertEquals(0, arena.banquetTurns());
+	@Test public void banquetCooldownVariesBetweenFiveAndTwentyTurns() {
+		Random.pushGenerator(0xBADC0FFEL);
+		try {
+			Set<Integer> observedCooldowns = new HashSet<>();
+			GentlemanElf boss = new GentlemanElf();
+			RecordingHost host = new RecordingHost(boss);
+			GentlemanElfArena arena = new GentlemanElfArena(host);
+			for (int cycle = 0; cycle < 32; cycle++) {
+				int elapsed = 0;
+				while (!arena.banquetReady() && elapsed <= 20) {
+					arena.actForTest();
+					elapsed++;
+				}
+				assertTrue(elapsed >= 5);
+				assertTrue(elapsed <= 20);
+				observedCooldowns.add(elapsed);
+				arena.banquetResolved();
+				assertFalse(arena.banquetReady());
+				assertEquals(0, arena.banquetTurns());
+			}
+			assertTrue(observedCooldowns.size() > 1);
+		} finally {
+			Random.popGenerator();
+		}
+	}
+
+	@Test public void bundlePreservesTheRolledBanquetCooldown() {
+		Random.pushGenerator(0x51A7EL);
+		try {
+			GentlemanElf boss = new GentlemanElf();
+			RecordingHost host = new RecordingHost(boss);
+			GentlemanElfArena arena = new GentlemanElfArena(host);
+
+			Bundle bundle = new Bundle();
+			arena.storeInBundle(bundle);
+			assertTrue(bundle.contains("gentleman_banquet_cooldown"));
+			int rolledCooldown = bundle.getInt("gentleman_banquet_cooldown");
+			assertTrue(rolledCooldown >= 5 && rolledCooldown <= 20);
+			GentlemanElfArena restored = new GentlemanElfArena();
+			restored.restoreFromBundle(bundle);
+			restored.bind(host);
+
+			for (int i = 0; i < rolledCooldown - 1; i++) restored.actForTest();
+			assertFalse(restored.banquetReady());
+			restored.actForTest();
+			assertTrue(restored.banquetReady());
+		} finally {
+			Random.popGenerator();
+		}
 	}
     @Test public void clockStopsForDeadBossAndBundlePreservesProgress() {
         GentlemanElf boss = new GentlemanElf(); RecordingHost host=new RecordingHost(boss);
-        GentlemanElfArena arena=new GentlemanElfArena(host); for(int i=0;i<7;i++) arena.actForTest();
+        GentlemanElfArena arena=new GentlemanElfArena(host); for(int i=0;i<3;i++) arena.actForTest();
         Bundle b=new Bundle(); arena.storeInBundle(b); GentlemanElfArena restored=new GentlemanElfArena(); restored.restoreFromBundle(b);
-        assertEquals(7,restored.banquetTurns()); boss.HP=0; assertTrue(arena.actForTest()); assertFalse(arena.active());
+        assertEquals(3,restored.banquetTurns()); boss.HP=0; assertTrue(arena.actForTest()); assertFalse(arena.active());
     }
     @Test public void derivedEntitiesDoNotReceiveBanquetTargets() {
         GentlemanElf boss=new GentlemanElf(); RecordingHost host=new RecordingHost(boss);
@@ -43,8 +82,9 @@ public class GentlemanElfArenaTest {
     @Test public void banquetDoesNotTargetOtherCharactersInTheBossFaction() {
         GentlemanElf boss = new GentlemanElf();
         RecordingHost host = new RecordingHost(boss);
-        GentlemanElf sameFaction = new GentlemanElf();
-        DeathKnight ally = new DeathKnight();
+        RecordingDamageTarget sameFaction = new RecordingDamageTarget();
+        sameFaction.alignment = boss.alignment;
+        RecordingDamageTarget ally = new RecordingDamageTarget();
         ally.alignment = Char.Alignment.ALLY;
         host.characters.add(sameFaction);
         host.characters.add(ally);
@@ -54,6 +94,20 @@ public class GentlemanElfArenaTest {
         assertEquals(1, host.lastTargets.size());
         assertSame(ally, host.lastTargets.get(0));
     }
+	@Test public void banquetDealsFiveMagicalDamage() {
+		GentlemanElf boss = new GentlemanElf();
+		RecordingHost host = new RecordingHost(boss);
+		RecordingDamageTarget target = new RecordingDamageTarget();
+		target.alignment = Char.Alignment.ALLY;
+		host.characters.add(target);
+		GentlemanElfArena arena = new GentlemanElfArena(host);
+		while (!arena.banquetReady()) arena.actForTest();
+
+		arena.resolveBanquetNow();
+
+		assertEquals(5, target.damageTaken);
+		assertTrue(target.wasMagical);
+	}
     @Test public void cupDestructionArmsTheBossDevourImmediately() {
         GentlemanElf boss = new GentlemanElf();
         boss.setPhaseForTest(GentlemanElf.Phase.CUP_CONTEST, 1);
@@ -199,6 +253,19 @@ public class GentlemanElfArenaTest {
 	private static class RecordingSprite extends CharSprite {
 		boolean deathStarted;
 		@Override public void die() { deathStarted = true; }
+	}
+	private static class RecordingDamageTarget extends Char {
+		int damageTaken;
+		boolean wasMagical;
+		RecordingDamageTarget() { HT = HP = 100; }
+		@Override public void damage(int damage, Object source, DamageTag... tags) {
+			damageTaken += damage;
+			wasMagical = Arrays.asList(tags).contains(DamageTag.MAGICAL);
+		}
+		@Override public int attackSkill(Char target) { return 0; }
+		@Override public int defenseSkill(Char enemy) { return 0; }
+		@Override public int drRoll() { return 0; }
+		@Override public float resist(Class effect) { return 1f; }
 	}
     private static class RecordingHost implements GentlemanElfArena.Host {
 		final GentlemanElf boss; final List<Char> characters=new ArrayList<>(); final Map<Integer, Actor> entities=new HashMap<>(); int warningCalls,resolveCalls,respawnCalls,cupRewardCalls,illusionSpawnCalls; boolean respawnSucceeds=true; List<Char> lastTargets=new ArrayList<>();

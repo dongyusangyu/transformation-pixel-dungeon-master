@@ -252,6 +252,7 @@ public class LiquidMetal extends Item {
 		@Override
 		public boolean testIngredients(ArrayList<Item> ingredients) {
 			return ingredients.size() == 1
+					&& !Recipe.isEquippedWeapon(ingredients.get(0))
 					&& ingredients.get(0) instanceof MissileWeapon
 					&& ingredients.get(0).cursedKnown
 					&& !ingredients.get(0).cursed;

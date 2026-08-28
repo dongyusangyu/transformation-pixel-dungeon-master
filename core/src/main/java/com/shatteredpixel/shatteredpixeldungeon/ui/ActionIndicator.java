@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SnipersMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HolyTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -161,8 +162,10 @@ public class ActionIndicator extends Tag {
 	@Override
 	protected void onClick() {
 		super.onClick();
-		if (action != null && canShowAction(action) && hero != null && hero.ready) {
-			action.doAction();
+		if (action != null && canShowAction(action)) {
+			if (hero != null && hero.ready) {
+				action.doAction();
+			}
 		} else if (action != null) {
 			clearAction(action);
 		}
@@ -205,6 +208,22 @@ public class ActionIndicator extends Tag {
 		return true;
 	}
 
+	/**
+	 * Restores an action after its owner refreshed state without replacing a
+	 * different action that is already selected.
+	 */
+	public static boolean ensureAction(Action action){
+		if (!canShowAction(action)) return false;
+		synchronized (ActionIndicator.class) {
+			if (ActionIndicator.action == null || !canShowAction(ActionIndicator.action)) {
+				ActionIndicator.action = action;
+				refresh();
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static boolean canShowAction(Action action) {
 		if (action == null || !action.usable()) return false;
 		if (action instanceof Buff) {
@@ -244,7 +263,8 @@ public class ActionIndicator extends Tag {
 			FightStance.class,
 			Reason.class,
 			InstructionTool.toolRecharge.class,
-			ExtractionRaidRun.RaidSession.class
+			ExtractionRaidRun.RaidSession.class,
+			Talent.NaturalChildAction.class
 
 	};
 

@@ -56,7 +56,7 @@ public class PestilenceKnightTest {
         assertEquals(30, boss.maxLvl);
         assertEquals(1, PestilenceKnight.KNOCKBACK_DISTANCE);
         assertTrue(boss.properties().contains(Char.Property.BOSS));
-        assertTrue(boss.properties().contains(Char.Property.IMMOVABLE));
+        assertFalse(boss.properties().contains(Char.Property.IMMOVABLE));
         assertTrue(boss.properties().contains(Char.Property.UNSLEEP));
     }
 

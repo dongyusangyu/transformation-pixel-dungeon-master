@@ -187,6 +187,8 @@ public class Assets {
 		public static final String DEATH_KNIGHT_BOSS    = "music/death_knight_boss.ogg";
 		public static final String TOWER                = "music/tower.ogg";
 		public static final String TOWER_2              = "music/tower2.ogg";
+		public static final String TOWER_3              = "music/tower3.ogg";
+		public static final String TOWER_BUSY           = "music/tower_busy.ogg";
 		public static final String BACKS1_1    = "music/combat_area.ogg";
 		public static final String BACKS1_2    = "music/chuboss.ogg";
 		public static final String BACKS2    = "music/Oh-Boss.ogg";
@@ -384,6 +386,7 @@ public class Assets {
 		public static final String WARLOCK  = "sprites/warlock.png";
 		public static final String ROAST_LAMB_WARLOCK = "sprites/roast_lamb_warlock.png";
 		public static final String MECHANICAL_FIST     = "sprites/mechanical_fist.png";
+		public static final String DARK_MECHANICAL_FIST = "sprites/dark_mechanical_fist.png";
 		public static final String GOLEM    = "sprites/golem.png";
 		public static final String STATUE   = "sprites/statue.png";
 		public static final String SUCCUBUS = "sprites/succubus.png";
@@ -408,10 +411,13 @@ public class Assets {
 		public static final String SLIME    = "sprites/slime.png";
 		public static final String SNAKE    = "sprites/snake.png";
 		public static final String MIMIC_CROCODILE = "sprites/mimic_crocodile.png";
+		public static final String TAPIR_CROCODILE = "sprites/tapir_crocodile.png";
 		public static final String HEAVY_CRABIFICATION = "sprites/heavy_crabification.png";
 		public static final String MARSH_SLIME = "sprites/marsh_slime.png";
 		public static final String RUNE_SPINNER = "sprites/rune_spinner.png";
 		public static final String CHAIN_SHADOW_THIEF = "sprites/chain_shadow_thief.png";
+		public static final String DEATH_BUTTERFLY = "sprites/death_butterfly.png";
+		public static final String MYRIAD_BLACK_SHADOW_OVERLAY = "sprites/myriad_black_shadow_overlay.png";
 		public static final String EARTHLY_SERPENT = "sprites/earthly_serpent.png";
 		public static final String OBSCURA = "sprites/obscura.png";
 		public static final String WILD_DREAD = "sprites/wild_dread.png";
@@ -420,6 +426,7 @@ public class Assets {
 		public static final String PESTILENCE_KNIGHT = "sprites/pestilence_knight.png";
 		public static final String DEATH_KNIGHT = "sprites/death_knight.png";
 		public static final String GENTLEMAN_ELF = "sprites/gentleman_elf.png";
+		public static final String HUNGER_KNIGHT = "sprites/hunger_knight.png";
 		public static final String ELF_WINE_CUP = "sprites/elf_wine_cup.png";
 		public static final String GHOUL    = "sprites/ghoul.png";
 		public static final String RIPPER   = "sprites/ripper.png";

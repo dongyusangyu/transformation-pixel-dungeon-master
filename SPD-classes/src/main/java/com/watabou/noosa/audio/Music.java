@@ -41,9 +41,12 @@ public enum Music {
 	
 	private boolean enabled = true;
 	private float volume = 1f;
+	private float trackGain = 1f;
 
 	private float fadeTime = -1f;
 	private float fadeTotal = -1f;
+	private float fadeInTime = -1f;
+	private float fadeInTotal = -1f;
 	private Callback onFadeOut = null;
 
 	String[] trackList;
@@ -52,6 +55,17 @@ public enum Music {
 	boolean shuffle = false;
 	
 	public synchronized void play( String assetName, boolean looping ) {
+		playInternal(assetName, looping, 1f);
+	}
+
+	/** Plays one track with a per-track gain without overwriting the user volume. */
+	public synchronized void play(String assetName, boolean looping, float gain) {
+		playInternal(assetName, looping, gain);
+	}
+
+	private void playInternal(String assetName, boolean looping, float gain) {
+		trackGain = Math.max(0f, gain);
+		fadeInTime = fadeInTotal = -1f;
 
 		//iOS cannot play ogg, so we use an mp3 alternative instead
 		if (assetName != null && DeviceCompat.isiOS()){
@@ -78,7 +92,29 @@ public enum Music {
 		play(assetName, null);
 	}
 
+	/** Performs a safe fade-out before switching to a track with its own gain. */
+	public synchronized void transitionTo(final String assetName, final boolean looping,
+			final float gain, float fadeOutDuration, float fadeInDuration) {
+		if (fadeOutDuration <= 0f || player == null) {
+			play(assetName, looping, gain);
+			return;
+		}
+		final float safeFadeIn = Math.max(0f, fadeInDuration);
+		fadeOut(fadeOutDuration, new Callback() {
+			@Override
+			public void call() {
+				play(assetName, looping, gain);
+				if (safeFadeIn > 0f) {
+					fadeInTime = 0f;
+					fadeInTotal = safeFadeIn;
+					if (player != null) player.setVolume(volumeWithFade());
+				}
+			}
+		});
+	}
+
 	public synchronized void playTracks( String[] tracks, float[] chances, boolean shuffle){
+		trackGain = 1f;
 
 		if (tracks == null || tracks.length == 0 || tracks.length != chances.length){
 			stop();
@@ -139,6 +175,7 @@ public enum Music {
 	}
 
 	public synchronized void fadeOut(float duration, Callback onComplete){
+		fadeInTime = fadeInTotal = -1f;
 		if (fadeTotal == -1f) {
 			fadeTotal = duration;
 			fadeTime = 0f;
@@ -150,6 +187,11 @@ public enum Music {
 	}
 
 	public synchronized void update(){
+		if (fadeInTotal > 0f && !paused) {
+			fadeInTime += Game.elapsed;
+			if (fadeInTime >= fadeInTotal) fadeInTime = fadeInTotal = -1f;
+			if (player != null) player.setVolume(volumeWithFade());
+		}
 		if (fadeTotal > 0f && !paused){
 			fadeTime += Game.elapsed;
 
@@ -269,11 +311,24 @@ public enum Music {
 	}
 
 	private synchronized float volumeWithFade(){
+		float envelope = fadeInTotal > 0f
+				? fadeInMultiplier(fadeInTime, fadeInTotal) : 1f;
 		if (fadeTotal > 0f){
-			return Math.max(0, volume * ((fadeTotal - fadeTime) / fadeTotal));
+			envelope *= fadeOutMultiplier(fadeTime, fadeTotal);
+			return Math.max(0, volume * trackGain * envelope);
 		} else {
-			return volume;
+			return volume * trackGain * envelope;
 		}
+	}
+
+	static float fadeInMultiplier(float elapsed, float duration) {
+		if (duration <= 0f) return 1f;
+		return Math.max(0f, Math.min(1f, elapsed / duration));
+	}
+
+	static float fadeOutMultiplier(float elapsed, float duration) {
+		if (duration <= 0f) return 0f;
+		return 1f - Math.max(0f, Math.min(1f, elapsed / duration));
 	}
 	
 	public synchronized boolean isPlaying() {
@@ -289,7 +344,7 @@ public enum Music {
 			if (trackList != null){
 				playTracks(trackList, trackChances, shuffle);
 			} else if (lastPlayed != null) {
-				play(lastPlayed, looping);
+				play(lastPlayed, looping, trackGain);
 			}
 		}
 	}

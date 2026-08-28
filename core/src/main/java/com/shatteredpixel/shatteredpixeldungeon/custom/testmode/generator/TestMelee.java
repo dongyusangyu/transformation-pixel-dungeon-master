@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.generator;
 
+import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
@@ -37,13 +38,15 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
-import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.OptionSlider;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.NinePatch;
+import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Reflection;
 
@@ -118,76 +121,95 @@ public class TestMelee extends TestGenerator {
         cursed = bundle.getBoolean("is_cursed");
         levelToGen = bundle.getInt("level_to_gen");
         enchant_rarity = bundle.getInt("enchant_rarity");
-        enchant_id = bundle.getInt("enchant_id");
+        enchant_id = clampSelection(bundle.getInt("enchant_id"),
+                enchantmentList(enchant_rarity).length);
         weapon_id = bundle.getInt("weapon_id");
     }
 
     private Class<? extends Weapon.Enchantment> generateEnchant(int category, int id) {
-        if (category == 1) switch (id) {
-            case 0:
-                return Blazing.class;
+        Class<? extends Weapon.Enchantment>[] enchantments = enchantmentList(category);
+        return id >= 0 && id < enchantments.length ? enchantments[id] : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    static Class<? extends Weapon.Enchantment>[] enchantmentList(int category) {
+        switch (category) {
             case 1:
-                return Shocking.class;
+                return new Class[]{Blazing.class, Shocking.class, Chilling.class, Kinetic.class};
             case 2:
-                return Chilling.class;
+                return new Class[]{Blocking.class, Blooming.class, Projecting.class, Elastic.class,
+                        Lucky.class, Unstable.class, CorrosionEnchanted.class};
             case 3:
-                return Kinetic.class;
-            default:
-                return null;
-        }
-        else if (category == 2) switch (id) {
-            case 0:
-                return Blocking.class;
-            case 1:
-                return Blooming.class;
-            case 2:
-                return Projecting.class;
-            case 3:
-                return Elastic.class;
+                return new Class[]{Corrupting.class, Grim.class, Vampiric.class, Sweeping.class};
             case 4:
-                return Lucky.class;
-            case 5:
-                return Unstable.class;
-            case 6:
-                return CorrosionEnchanted.class;
+                return new Class[]{Annoying.class, Displacing.class, Explosive.class, Dazzling.class,
+                        Friendly.class, Polarized.class, Sacrificial.class, Wayward.class, Heavy.class};
             default:
-                return null;
+                return new Class[]{null};
         }
-        else if (category == 3) switch (id) {
-            case 0:
-                return Corrupting.class;
-            case 1:
-                return Grim.class;
-            case 2:
-                return Vampiric.class;
-            case 3:
-                return Sweeping.class;
-            default:
-                return null;
+    }
+
+    static int clampSelection(int selection, int itemCount) {
+        return itemCount <= 0 ? 0 : Math.max(0, Math.min(selection, itemCount - 1));
+    }
+
+    static float gridContentHeight(int itemCount, int columns, float rowHeight) {
+        if (itemCount <= 0 || columns <= 0 || rowHeight <= 0) return 0;
+        return ((itemCount + columns - 1) / columns) * rowHeight;
+    }
+
+    static int gridIndexAt(float x, float y, int itemCount, int columns,
+                           float cellWidth, float cellHeight) {
+        if (x < 0 || y < 0 || itemCount <= 0 || columns <= 0
+                || cellWidth <= 0 || cellHeight <= 0 || x >= columns * cellWidth) {
+            return -1;
         }
-        else if (category == 4) switch (id) {
-            case 0:
-                return Annoying.class;
-            case 1:
-                return Displacing.class;
-            case 2:
-                return Explosive.class;
-            case 3:
-                return Dazzling.class;
-            case 4:
-                return Friendly.class;
-            case 5:
-                return Polarized.class;
-            case 6:
-                return Sacrificial.class;
-            case 7:
-                return Wayward.class;
-            case 8:
-                return Heavy.class;
-            default:
-                return null;
+        int index = (int) (y / cellHeight) * columns + (int) (x / cellWidth);
+        return index < itemCount ? index : -1;
+    }
+
+    private static final int SETTINGS_GAP = 2;
+    private static final int SETTINGS_SLIDER_HEIGHT = 24;
+    private static final int SETTINGS_WEAPON_PANE_HEIGHT = 32;
+    private static final int SETTINGS_ENCHANT_PANE_HEIGHT = 48;
+    private static final int SETTINGS_ACTIONS_HEIGHT = 16;
+
+    static SelectionLayout selectionLayout(float selectedWeaponHeight, float enchantInfoHeight) {
+        float weaponPaneTop = SETTINGS_GAP + SETTINGS_SLIDER_HEIGHT + SETTINGS_GAP;
+        float selectedWeaponTop = weaponPaneTop + SETTINGS_WEAPON_PANE_HEIGHT + SETTINGS_GAP;
+        float levelTop = selectedWeaponTop + selectedWeaponHeight + SETTINGS_GAP;
+        float enchantRarityTop = levelTop + SETTINGS_SLIDER_HEIGHT + SETTINGS_GAP;
+        float enchantPaneTop = enchantRarityTop + SETTINGS_SLIDER_HEIGHT + SETTINGS_GAP;
+        float enchantInfoTop = enchantPaneTop + SETTINGS_ENCHANT_PANE_HEIGHT + SETTINGS_GAP;
+        float actionsTop = enchantInfoTop + enchantInfoHeight + SETTINGS_GAP;
+        int windowHeight = (int) Math.ceil(actionsTop + SETTINGS_ACTIONS_HEIGHT + SETTINGS_GAP);
+
+        return new SelectionLayout(weaponPaneTop, selectedWeaponTop, levelTop,
+                enchantRarityTop, enchantPaneTop, enchantInfoTop, actionsTop, windowHeight);
+    }
+
+    static final class SelectionLayout {
+        final float weaponPaneTop;
+        final float selectedWeaponTop;
+        final float levelTop;
+        final float enchantRarityTop;
+        final float enchantPaneTop;
+        final float enchantInfoTop;
+        final float actionsTop;
+        final int windowHeight;
+
+        private SelectionLayout(float weaponPaneTop, float selectedWeaponTop, float levelTop,
+                                float enchantRarityTop, float enchantPaneTop,
+                                float enchantInfoTop, float actionsTop, int windowHeight) {
+            this.weaponPaneTop = weaponPaneTop;
+            this.selectedWeaponTop = selectedWeaponTop;
+            this.levelTop = levelTop;
+            this.enchantRarityTop = enchantRarityTop;
+            this.enchantPaneTop = enchantPaneTop;
+            this.enchantInfoTop = enchantInfoTop;
+            this.actionsTop = actionsTop;
+            this.windowHeight = windowHeight;
         }
-        return null;
     }
 
     private static Class<? extends Weapon>[] weaponList(int t) {
@@ -206,53 +228,73 @@ public class TestMelee extends TestGenerator {
         return Messages.get(ench, "name", wepName);
     }
 
-    private int maxSlots(int t){
-        return weaponList(t).length;
-    }
-
     private class SettingsWindow extends Window {
         private static final int WIDTH = 120;
         private static final int BTN_SIZE = 16;
-        private static final int GAP = 2;
+        private static final int GAP = SETTINGS_GAP;
+        private static final int WEAPON_COLUMNS = 7;
+        private static final int WEAPON_PANE_HEIGHT = SETTINGS_WEAPON_PANE_HEIGHT;
+        private static final int ENCHANT_COLUMNS = 2;
+        private static final int ENCHANT_CELL_WIDTH = WIDTH / ENCHANT_COLUMNS;
+        private static final int ENCHANT_CELL_HEIGHT = 16;
+        private static final int ENCHANT_PANE_HEIGHT = SETTINGS_ENCHANT_PANE_HEIGHT;
+
         private OptionSlider o_tier;
         private OptionSlider o_level;
         private OptionSlider o_enchant_rarity;
-        private OptionSlider o_enchant_id;
         private CheckBox c_curse;
         private RenderedTextBlock t_selectedWeapon;
         private RenderedTextBlock t_infoEnchant;
         private Class<? extends Weapon>[] all;
-        private ArrayList<IconButton> iconButtons = new ArrayList<IconButton>();
+        private Class<? extends Weapon.Enchantment>[] enchantments;
+        private Component weaponContent;
+        private Component enchantContent;
+        private ScrollPane weaponPane;
+        private ScrollPane enchantPane;
+        private final ArrayList<SelectionCell> weaponCells = new ArrayList<>();
+        private final ArrayList<SelectionCell> enchantCells = new ArrayList<>();
         private RedButton b_create;
 
         private void createWeaponArray() {
             all = weaponList(tier);
-            weapon_id = Math.min(weapon_id, all.length - 1);
+            weapon_id = clampSelection(weapon_id, all.length);
         }
 
         public SettingsWindow() {
             super();
             createWeaponArray();
+
             o_tier = new OptionSlider(Messages.get(this, "tier"), "1",
                     String.valueOf(Generator.wepTiers.length), 1, Generator.wepTiers.length) {
                 @Override
                 protected void onChange() {
                     tier = getSelectedValue();
-                    for(IconButton ib : iconButtons.toArray(new IconButton[0])){
-                        ib.destroy();
-                    }
                     createWeaponArray();
-                    createWeaponImage(all);
+                    rebuildWeaponCells(true);
+                    updateSelectedWeaponText();
                 }
             };
             o_tier.setSelectedValue(tier);
             add(o_tier);
-            o_tier.setRect(0, GAP, WIDTH, 24);
-            //this is executed in layout because the pos of buttom is affected by the whole window.
-            createWeaponImage(all);
+
+            weaponContent = new Component();
+            weaponPane = new ScrollPane(weaponContent) {
+                @Override
+                public void onClick(float x, float y) {
+                    int index = gridIndexAt(x - weaponGridLeft(), y, all.length,
+                            WEAPON_COLUMNS, BTN_SIZE, BTN_SIZE);
+                    if (index >= 0) {
+                        weapon_id = index;
+                        refreshWeaponSelection();
+                        updateSelectedWeaponText();
+                    }
+                }
+            };
+            add(weaponPane);
+            rebuildWeaponCells(false);
 
             t_selectedWeapon = PixelScene.renderTextBlock("", 6);
-            t_selectedWeapon.text(Messages.get(this, "selected", Messages.get(all[Math.min(weapon_id, all.length-1)], "name")));
+            t_selectedWeapon.text(selectedWeaponText());
             t_selectedWeapon.maxWidth(WIDTH);
             add(t_selectedWeapon);
 
@@ -265,29 +307,38 @@ public class TestMelee extends TestGenerator {
             o_level.setSelectedValue(levelToGen);
             add(o_level);
 
-            t_infoEnchant = PixelScene.renderTextBlock("", 6);
-            t_infoEnchant.text(enchantDesc());
-            add(t_infoEnchant);
-
             o_enchant_rarity = new OptionSlider(Messages.get(this, "enchant_rarity"), "0", "4", 0, 4) {
                 @Override
                 protected void onChange() {
                     enchant_rarity = getSelectedValue();
+                    enchant_id = clampSelection(enchant_id, enchantmentList(enchant_rarity).length);
+                    rebuildEnchantCells(true);
                     updateEnchantText();
                 }
             };
             o_enchant_rarity.setSelectedValue(enchant_rarity);
             add(o_enchant_rarity);
 
-            o_enchant_id = new OptionSlider(Messages.get(this, "enchant_id"), "0", "8", 0, 8) {
+            enchantContent = new Component();
+            enchantPane = new ScrollPane(enchantContent) {
                 @Override
-                protected void onChange() {
-                    enchant_id = getSelectedValue();
-                    updateEnchantText();
+                public void onClick(float x, float y) {
+                    int index = gridIndexAt(x, y, enchantments.length, ENCHANT_COLUMNS,
+                            ENCHANT_CELL_WIDTH, ENCHANT_CELL_HEIGHT);
+                    if (index >= 0) {
+                        enchant_id = index;
+                        refreshEnchantSelection();
+                        updateEnchantText();
+                    }
                 }
             };
-            o_enchant_id.setSelectedValue(enchant_id);
-            add(o_enchant_id);
+            add(enchantPane);
+            rebuildEnchantCells(false);
+
+            t_infoEnchant = PixelScene.renderTextBlock("", 6);
+            t_infoEnchant.text(enchantDesc());
+            t_infoEnchant.maxWidth(WIDTH);
+            add(t_infoEnchant);
 
             c_curse = new CheckBox(Messages.get(this, "curse")) {
                 @Override
@@ -308,49 +359,93 @@ public class TestMelee extends TestGenerator {
             add(b_create);
 
             layout();
+            weaponPane.scrollTo(0, 0);
+            enchantPane.scrollTo(0, 0);
+            weaponPane.update();
+            enchantPane.update();
         }
 
-        private void createWeaponImage(Class<? extends Weapon>[] all) {
-            float left;
-            float top = o_tier.bottom() + GAP;
-            int placed = 0;
-            int length = all.length;
-            left = (WIDTH - BTN_SIZE * 7) / 2f;
-            for (int i = 0; i < length; ++i) {
-                final int j = i;
-                IconButton btn = new IconButton() {
-                    @Override
-                    protected void onClick() {
-                        weapon_id = Math.min(maxSlots(tier)-1, j);
-                        updateSelectedWeaponText();
-                        super.onClick();
-                    }
-                };
-                Image im = new ItemSprite(Reflection.newInstance(all[i]));
-                im.scale.set(1f);
-                btn.icon(im);
-                btn.setRect(left + Math.floorMod(placed,7) * BTN_SIZE, top+(int)(placed/7)*BTN_SIZE, BTN_SIZE, BTN_SIZE);
-                add(btn);
-                placed++;
-                iconButtons.add(btn);
+        private float weaponGridLeft() {
+            return (WIDTH - WEAPON_COLUMNS * BTN_SIZE) / 2f;
+        }
+
+        private void rebuildWeaponCells(boolean resetScroll) {
+            weaponContent.clear();
+            weaponCells.clear();
+            float left = weaponGridLeft();
+            for (int i = 0; i < all.length; i++) {
+                Image image = new ItemSprite(Reflection.newInstance(all[i]));
+                image.scale.set(1f);
+                SelectionCell cell = new SelectionCell(image, null);
+                cell.setRect(left + (i % WEAPON_COLUMNS) * BTN_SIZE,
+                        (i / WEAPON_COLUMNS) * BTN_SIZE, BTN_SIZE, BTN_SIZE);
+                weaponContent.add(cell);
+                weaponCells.add(cell);
+            }
+            weaponContent.setRect(0, 0, WIDTH,
+                    Math.max(BTN_SIZE, gridContentHeight(all.length, WEAPON_COLUMNS, BTN_SIZE)));
+            refreshWeaponSelection();
+            if (resetScroll) weaponPane.scrollTo(0, 0);
+        }
+
+        private void rebuildEnchantCells(boolean resetScroll) {
+            enchantments = enchantmentList(enchant_rarity);
+            enchant_id = clampSelection(enchant_id, enchantments.length);
+            enchantContent.clear();
+            enchantCells.clear();
+            for (int i = 0; i < enchantments.length; i++) {
+                Class<? extends Weapon.Enchantment> enchantment = enchantments[i];
+                String name = enchantment == null
+                        ? Messages.get(TestMelee.class, "null_enchant")
+                        : currentEnchName(enchantment);
+                SelectionCell cell = new SelectionCell(null, name);
+                cell.setRect((i % ENCHANT_COLUMNS) * ENCHANT_CELL_WIDTH,
+                        (i / ENCHANT_COLUMNS) * ENCHANT_CELL_HEIGHT,
+                        ENCHANT_CELL_WIDTH, ENCHANT_CELL_HEIGHT);
+                enchantContent.add(cell);
+                enchantCells.add(cell);
+            }
+            enchantContent.setRect(0, 0, WIDTH, Math.max(ENCHANT_CELL_HEIGHT,
+                    gridContentHeight(enchantments.length, ENCHANT_COLUMNS, ENCHANT_CELL_HEIGHT)));
+            refreshEnchantSelection();
+            if (resetScroll) enchantPane.scrollTo(0, 0);
+        }
+
+        private void refreshWeaponSelection() {
+            for (int i = 0; i < weaponCells.size(); i++) {
+                weaponCells.get(i).selected(i == weapon_id);
+            }
+        }
+
+        private void refreshEnchantSelection() {
+            for (int i = 0; i < enchantCells.size(); i++) {
+                enchantCells.get(i).selected(i == enchant_id);
             }
         }
 
         private void layout() {
+            SelectionLayout positions = selectionLayout(t_selectedWeapon.height(), t_infoEnchant.height());
+
             o_tier.setRect(0, GAP, WIDTH, 24);
-            //createWeaponImage(all);
-            t_selectedWeapon.setPos(0, GAP * 2 + o_tier.bottom() + BTN_SIZE*2);
-            o_level.setRect(0, t_selectedWeapon.bottom() + GAP, WIDTH, 24);
-            t_infoEnchant.setPos(0, GAP + o_level.bottom());
-            o_enchant_rarity.setRect(0, GAP + t_infoEnchant.bottom(), WIDTH, 24);
-            o_enchant_id.setRect(0, GAP + o_enchant_rarity.bottom(), WIDTH, 24);
-            c_curse.setRect(0, GAP + o_enchant_id.bottom(), WIDTH/2f - GAP/2f, 16);
+            t_selectedWeapon.setPos(0, positions.selectedWeaponTop);
+            o_level.setRect(0, positions.levelTop, WIDTH, 24);
+            o_enchant_rarity.setRect(0, positions.enchantRarityTop, WIDTH, 24);
+            t_infoEnchant.setPos(0, positions.enchantInfoTop);
+            c_curse.setRect(0, positions.actionsTop, WIDTH/2f - GAP/2f, 16);
             b_create.setRect(WIDTH/2f+GAP/2f, c_curse.top(), WIDTH/2f - GAP/2f, 16);
-            resize(WIDTH, (int) (c_curse.bottom() + GAP));
+
+            // ScrollPane cameras must be laid out after resize centers the window camera.
+            resize(WIDTH, positions.windowHeight);
+            weaponPane.setRect(0, positions.weaponPaneTop, WIDTH, WEAPON_PANE_HEIGHT);
+            enchantPane.setRect(0, positions.enchantPaneTop, WIDTH, ENCHANT_PANE_HEIGHT);
+        }
+
+        private String selectedWeaponText() {
+            return Messages.get(this, "selected", Messages.get(all[weapon_id], "name"));
         }
 
         private void updateSelectedWeaponText() {
-            t_selectedWeapon.text(Messages.get(this, "selected", Messages.get(all[Math.min(weapon_id, all.length-1)], "name")));
+            t_selectedWeapon.text(selectedWeaponText());
             layout();
         }
 
@@ -366,6 +461,58 @@ public class TestMelee extends TestGenerator {
             Class<? extends Weapon.Enchantment> ench = generateEnchant(enchant_rarity, enchant_id);
             desc += Messages.get(TestMelee.class, key, (ench == null ? Messages.get(TestMelee.class, "null_enchant") : currentEnchName(ench)));
             return desc;
+        }
+
+        @Override
+        public void offset(int xOffset, int yOffset) {
+            super.offset(xOffset, yOffset);
+            weaponPane.setPos(weaponPane.left(), weaponPane.top());
+            enchantPane.setPos(enchantPane.left(), enchantPane.top());
+        }
+
+        private class SelectionCell extends Component {
+            private final NinePatch background;
+            private final Image icon;
+            private final RenderedTextBlock label;
+
+            private SelectionCell(Image icon, String text) {
+                this.icon = icon;
+                this.label = text == null ? null : PixelScene.renderTextBlock(text, 6);
+                background = Chrome.get(Chrome.Type.RED_BUTTON);
+                add(background);
+                if (icon != null) add(icon);
+                if (label != null) add(label);
+            }
+
+            private void selected(boolean selected) {
+                background.resetColor();
+                background.alpha(selected ? 1f : 0.45f);
+                if (label != null) {
+                    if (selected) {
+                        label.hardlight(Window.TITLE_COLOR);
+                    } else {
+                        label.resetColor();
+                    }
+                }
+            }
+
+            @Override
+            protected void layout() {
+                background.x = x;
+                background.y = y;
+                background.size(width, height);
+                if (icon != null) {
+                    icon.x = x + (width - icon.width()) / 2f;
+                    icon.y = y + (height - icon.height()) / 2f;
+                    PixelScene.align(icon);
+                }
+                if (label != null) {
+                    label.maxWidth((int) width - 4);
+                    label.setPos(x + (width - label.width()) / 2f,
+                            y + (height - label.height()) / 2f);
+                    PixelScene.align(label);
+                }
+            }
         }
     }
 }

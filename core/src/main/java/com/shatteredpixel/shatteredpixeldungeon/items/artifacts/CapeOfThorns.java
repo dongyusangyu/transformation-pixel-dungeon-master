@@ -72,10 +72,10 @@ public class CapeOfThorns extends Artifact {
 	@Override
 	public ArrayList<String> actions( Hero hero ) {
 		ArrayList<String> actions = super.actions( hero );
-		if (cursed) {
+		if (cursed || hero.buff(MagicImmune.class) != null) {
 			return actions;
 		}
-		if (isEquipped( hero ) && !cursed && charge >= chargeCap) {
+		if (isEquipped( hero ) && charge >= chargeCap) {
 			actions.add( AC_RELEASE );
 		}
 		return actions;
@@ -84,11 +84,7 @@ public class CapeOfThorns extends Artifact {
 	@Override
 	public void execute( Hero hero, String action ) {
 		if (AC_RELEASE.equals( action )) {
-			if (cursed) {
-				GLog.i( Messages.get(this, "cursed") );
-				return;
-			} else if (!isEquipped( hero )) {
-				GLog.i( Messages.get(Artifact.class, "need_to_equip") );
+			if (!canUseActiveAction(hero)) {
 				return;
 			}
 			if (!canApplyThorns(hero.buff(ThornsEffect.class) != null)) {

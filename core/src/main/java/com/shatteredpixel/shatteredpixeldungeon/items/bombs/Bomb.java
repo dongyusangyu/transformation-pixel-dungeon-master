@@ -107,6 +107,41 @@ public class Bomb extends Item {
 		return 1;
 	}
 
+	/**
+	 * Returns whether the bomb participates in the bomb-related talent rules.
+	 * Regrowth Bomb is intentionally excluded because it does not deal damage.
+	 */
+	public static boolean supportsBombTalents(Bomb bomb) {
+		return !(bomb instanceof RegrowthBomb);
+	}
+
+	/** Applies Bomb Maniac's damage multiplier to a bomb or bomb-like effect. */
+	public static int damageWithBombTalents(Hero hero, int damage) {
+		if (hero != null && hero.hasTalent(Talent.BOMB_MANIAC)) {
+			damage *= 1 + hero.pointsInTalent(Talent.BOMB_MANIAC) * 0.25f;
+		}
+		return damage;
+	}
+
+	/** Applies Bomb Maniac's damage multiplier when the source is a Bomb. */
+	public static int damageWithBombTalents(Bomb bomb, Hero hero, int damage) {
+		return supportsBombTalents(bomb) ? damageWithBombTalents(hero, damage) : damage;
+	}
+
+	/** Applies Shock Bomb once to a non-hero target. */
+	public static void applyShockBomb(Hero hero, Char target) {
+		if (hero != null && target != hero && hero.hasTalent(Talent.SHOCK_BOMB)) {
+			Buff.affect(target, Paralysis.class, hero.pointsInTalent(Talent.SHOCK_BOMB));
+		}
+	}
+
+	/** Applies Shock Bomb when the source is a Bomb. */
+	public static void applyShockBomb(Bomb bomb, Hero hero, Char target) {
+		if (supportsBombTalents(bomb)) {
+			applyShockBomb(hero, target);
+		}
+	}
+
 	@Override
 	public ArrayList<String> actions(Hero hero) {
 		ArrayList<String> actions = super.actions( hero );
@@ -204,18 +239,14 @@ public class Bomb extends Item {
 				}
 
 				int dmg = Random.NormalIntRange(4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth());
-				if(hero != null && hero.hasTalent(Talent.BOMB_MANIAC)){
-					dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25;
-				}
+				dmg = damageWithBombTalents(this, hero, dmg);
 				dmg -= ch.drRoll();
 
 
 				if (dmg > 0) {
 					ch.damage(dmg, this, DamageTag.PHYSICAL);
 				}
-				if(hero != null && hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
-					Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
-				}
+				applyShockBomb(this, hero, ch);
 
 				
 				if (hero != null && ch == hero && !ch.isAlive()) {

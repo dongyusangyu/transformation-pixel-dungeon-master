@@ -107,12 +107,14 @@ public class EXItemSpriteSheetTest {
 				EXItemSpriteSheet.DEMON_TAIL_WHIP,
 				EXItemSpriteSheet.VENOMOUS_SICKLE,
 				EXItemSpriteSheet.RADIANT_GOLD_HALBERD,
+				EXItemSpriteSheet.SOUL_BLADE,
+				EXItemSpriteSheet.MOUNTAIN_GUARD,
 				EXItemSpriteSheet.SEAL
 		};
 		int[] expectedIndices = {
 				0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 				10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-				32, 48, 145, 146, 147, 150, 151, 152, 153, 154, 155, 156, ItemSpriteSheet.SEAL
+				32, 48, 145, 146, 147, 150, 151, 152, 153, 154, 155, 156, 157, 160, ItemSpriteSheet.SEAL
 		};
 		int[][] expectedSizes = {
 				{14, 14}, {12, 14}, {15, 16}, {15, 16}, {14, 16},
@@ -120,7 +122,7 @@ public class EXItemSpriteSheetTest {
 				{13, 16}, {15, 16}, {11, 16}, {16, 16}, {11, 16},
 				{11, 16}, {15, 14}, {16, 16}, {11, 16}, {11, 16},
 				{15, 14}, {10, 15}, {15, 16}, {15, 16}, {16, 16},
-				{15, 16}, {14, 15}, {16, 16}, {16, 16}, {14, 14}, {16, 16}, {16, 16}
+				{15, 16}, {14, 15}, {16, 16}, {16, 16}, {14, 14}, {16, 16}, {16, 16}, {16, 16}, {16, 16}
 		};
 
 		assertEquals(expectedIndices.length, frames.length);
@@ -238,6 +240,11 @@ public class EXItemSpriteSheetTest {
 		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
 		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
 		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
+		assertEquals(157, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.SOUL_BLADE));
+		assertEquals(208, EXItemSpriteSheet.frameX(EXItemSpriteSheet.SOUL_BLADE));
+		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.SOUL_BLADE));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.SOUL_BLADE));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.SOUL_BLADE));
 	}
 
 	@Test
@@ -255,7 +262,8 @@ public class EXItemSpriteSheetTest {
 		assertCrispSprite(sheet, 154, 0, 0, 13, 13, 8);
 		assertCrispSprite(sheet, 155, 0, 1, 14, 15, 10);
 		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
-		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 157, 0, 0, 15, 15, 6);
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
 	}
 
 	@Test
@@ -279,7 +287,8 @@ public class EXItemSpriteSheetTest {
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		assertCrispSprite(sheet, 155, 0, 1, 14, 15, 10);
 		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
-		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 157, 0, 0, 15, 15, 6);
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
 	}
 
 	@Test
@@ -289,7 +298,8 @@ public class EXItemSpriteSheetTest {
 		assertEquals(144, EXItemSpriteSheet.frameY(EXItemSpriteSheet.RADIANT_GOLD_HALBERD));
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
-		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 157, 0, 0, 15, 15, 6);
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
 	}
 
 	@Test
@@ -306,7 +316,7 @@ public class EXItemSpriteSheetTest {
 				EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.GUNGNIR));
 
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
-		for (int index = 160; index < 208; index++) assertTransparentCell(sheet, index);
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
 		assertPixelArtCell(sheet, 208, 0, 0, 15, 15, 8);
 		assertEquals(209,
 				EXItemSpriteSheet.frameFor(EXItemSpriteSheet.PORTABLE_BLACK_HOLE));
@@ -379,12 +389,69 @@ public class EXItemSpriteSheetTest {
 	}
 
 	@Test
-	public void twoHandedGreatswordAndRadiantGoldHalberdUseCrispTierSixCells()
+	public void tierSixWeaponCellsUseCrispPixels()
 			throws IOException {
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		assertCrispSprite(sheet, 148, 0, 1, 14, 15, 8);
 		assertCrispSprite(sheet, 156, 0, 0, 15, 15, 10);
-		for (int index = 157; index < 160; index++) assertTransparentCell(sheet, index);
+		assertCrispSprite(sheet, 157, 0, 0, 15, 15, 6);
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
+	}
+
+	@Test
+	public void lakeSwordCellsPreserveSourceGeometryAndAlpha() throws Exception {
+		assertEquals(158, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.LAKE_SWORD));
+		assertEquals(159, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.LAKE_SWORD_SHEATHED));
+		assertEquals(288, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.LAKE_SWORD_SCABBARD));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.LAKE_SWORD));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.LAKE_SWORD_SHEATHED));
+		assertEquals(14, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.LAKE_SWORD_SCABBARD));
+		assertEquals(14, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.LAKE_SWORD_SCABBARD));
+
+		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
+		assertCellDigest(sheet, 158, "7470907c7dd0280afc4d65a60ddac72ebffd522f1a5572f820f4a55c0674a571");
+		assertCellDigest(sheet, 159, "bfc1fafb1730ce971887857d53eda47f9c2b637712900d527110afa7e3e4c96a");
+		assertCellDigest(sheet, 288, "c1b29389a6a62414adfb4253b31286b55b178f8225e8d4b34359715577da2398");
+		assertEquals(74, alphaCount(sheet, 158, 102));
+		assertEquals(51, alphaCount(sheet, 159, 102));
+		assertEquals(31, alphaCount(sheet, 288, 102));
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
+	}
+
+	@Test
+	public void mountainGuardUsesFirstCellOfTierSixMeleeExpansionArea()
+			throws IOException {
+		assertEquals(160, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.MOUNTAIN_GUARD));
+		assertEquals(0, EXItemSpriteSheet.frameX(EXItemSpriteSheet.MOUNTAIN_GUARD));
+		assertEquals(160, EXItemSpriteSheet.frameY(EXItemSpriteSheet.MOUNTAIN_GUARD));
+		assertEquals(16, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.MOUNTAIN_GUARD));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.MOUNTAIN_GUARD));
+
+		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
+		assertPixelArtCell(sheet, 160, 0, 0, 15, 15, 6);
+		String[] expected = {
+				".....OOOOOO.....", "...OOOMMMMOOO...", "..OOMMMMMMMMOO..",
+				".OOMMLLSSLLMMOO.", ".OMMLLSSSSLLMMO.", "OMMMLLMMMMLLMMMO",
+				"OMMMMMMCCMMMMMMO", "OMMMMCCCCCCMMMMO", "OMMCCMMCCMMCCMMO",
+				".OMCMMMMMMMMCMO.", ".OMMCMDDDDMCMMO.", "..OMMCDDDDCMMO..",
+				"..OOMMCCCCMMOO..", "...OOMMMMMMOO...", "....OOMMMMOO....",
+				"......OOOO......"
+		};
+		int[] palette = {0x00000000, 0xFF2B2731, 0xFF3B444B, 0xFF5B6970,
+				0xFF849497, 0xFFDAE8E5, 0xFF59D3DC};
+		char[] symbols = {'.', 'O', 'D', 'M', 'L', 'S', 'C'};
+		for (int y = 0; y < 16; y++) {
+			StringBuilder actual = new StringBuilder();
+			for (int x = 0; x < 16; x++) {
+				int argb = sheet.getRGB(x, 160 + y);
+				int found = -1;
+				for (int i = 0; i < palette.length; i++) if (palette[i] == argb) found = i;
+				assertTrue("unknown mountain guard color at " + x + "," + y, found >= 0);
+				actual.append(symbols[found]);
+			}
+			assertEquals("mountain guard row " + y, expected[y], actual.toString());
+		}
+		for (int index = 161; index < 208; index++) assertTransparentCell(sheet, index);
 	}
 
 	private static void assertTransparentCell(BufferedImage sheet, int index) {
@@ -396,6 +463,37 @@ public class EXItemSpriteSheetTest {
 						0, sheet.getRGB(cellX + x, cellY + y) >>> 24);
 			}
 		}
+	}
+
+	private static void assertCellDigest(BufferedImage sheet, int index, String expected)
+			throws Exception {
+		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		int cellX = index % 16 * 16;
+		int cellY = index / 16 * 16;
+		for (int y = 0; y < 16; y++) {
+			for (int x = 0; x < 16; x++) {
+				int argb = sheet.getRGB(cellX + x, cellY + y);
+				digest.update((byte) ((argb >>> 16) & 0xFF));
+				digest.update((byte) ((argb >>> 8) & 0xFF));
+				digest.update((byte) (argb & 0xFF));
+				digest.update((byte) ((argb >>> 24) & 0xFF));
+			}
+		}
+		StringBuilder actual = new StringBuilder();
+		for (byte value : digest.digest()) actual.append(String.format("%02x", value));
+		assertEquals(expected, actual.toString());
+	}
+
+	private static int alphaCount(BufferedImage sheet, int index, int expectedAlpha) {
+		int count = 0;
+		int cellX = index % 16 * 16;
+		int cellY = index / 16 * 16;
+		for (int y = 0; y < 16; y++) {
+			for (int x = 0; x < 16; x++) {
+				if (((sheet.getRGB(cellX + x, cellY + y) >>> 24) & 0xFF) == expectedAlpha) count++;
+			}
+		}
+		return count;
 	}
 
 	private static void assertPixelArtCell(BufferedImage sheet, int index,

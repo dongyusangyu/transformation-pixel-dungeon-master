@@ -33,6 +33,7 @@ import com.watabou.utils.GameMath;
 public class Healing extends Buff {
 
 	private int healingLeft;
+	private int latestHealingSource;
 	
 	private float percentHealPerTick;
 	private int flatHealPerTick;
@@ -82,6 +83,7 @@ public class Healing extends Buff {
 
 	public void setHeal(int amount, float percentPerTick, int flatPerTick){
 		//multiple sources of healing do not overlap, but do combine the best of their properties
+		latestHealingSource = amount;
 		healingLeft = Math.max(healingLeft, amount);
 		percentHealPerTick = Math.max(percentHealPerTick, percentPerTick);
 		flatHealPerTick = Math.max(flatHealPerTick, flatPerTick);
@@ -90,7 +92,8 @@ public class Healing extends Buff {
 	public void applyVialEffect(){
 		healingLimited = VialOfBlood.delayBurstHealing();
 		if (healingLimited){
-			healingLeft = Math.round(healingLeft*VialOfBlood.totalHealMultiplier());
+			int boostedSource = Math.round(latestHealingSource * VialOfBlood.totalHealMultiplier());
+			healingLeft = Math.max(healingLeft, boostedSource);
 		}
 	}
 	

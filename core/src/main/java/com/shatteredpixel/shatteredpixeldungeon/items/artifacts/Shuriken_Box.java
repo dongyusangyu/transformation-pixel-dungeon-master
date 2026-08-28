@@ -185,12 +185,17 @@ public class Shuriken_Box extends Artifact {
         return new SmallShuriken();
     }
 
-    public class SmallShuriken extends Shuriken {
+    public class SmallShuriken extends Shuriken implements MissileWeapon.QianfaRepeatProjectile {
 
         {
             image = ItemSpriteSheet.SMALLSKURIKEN;
             setID = 0;
             tier = 1;
+        }
+
+        @Override
+        protected MissileWeapon createPhantomProjectile() {
+            return markAsPhantom(Shuriken_Box.this.knockArrow());
         }
 
         public boolean isIdentified() {
@@ -218,6 +223,7 @@ public class Shuriken_Box extends Artifact {
         }
 
         private boolean illuminatedTarget;
+		private boolean artifactUseReported;
 
         @Override
         public int proc(Char attacker, Char defender, int damage) {
@@ -227,7 +233,10 @@ public class Shuriken_Box extends Artifact {
                 Buff.affect(defender, Paralysis.class,2);
                 Buff.affect(defender, Talent.SuckerPunchTracker.class);
             }
-            Talent.onArtifactUsed(curUser);
+			if (!phantomProjectile && !artifactUseReported) {
+				Talent.onArtifactUsed(curUser);
+				artifactUseReported = true;
+			}
             if (illuminatedTarget
                     && curUser == Dungeon.hero
                     && Dungeon.hero.subClass.is(HeroSubClass.PRIEST)
@@ -250,7 +259,7 @@ public class Shuriken_Box extends Artifact {
                 parent = null;
                 triggerSeerShot(cell);
                 Splash.at( cell, 0xA9A6ABFF, 1 );
-                if(hero.buff(Ninja_Energy.Throw_Skill.class)!=null && Dungeon.level.water[hero.pos]){
+				if(!phantomProjectile && hero.buff(Ninja_Energy.Throw_Skill.class)!=null && Dungeon.level.water[hero.pos]){
                     if(hero.buff(Ninja_Energy.Gas_Storage.class)!=null){
                         Ninja_Energy.Gas_Storage gas_storage=hero.buff(Ninja_Energy.Gas_Storage.class);
                         for(Blob blob:gas_storage.blobs.values()){
@@ -264,9 +273,11 @@ public class Shuriken_Box extends Artifact {
                 }
             } else {
                 illuminatedTarget = enemy.buff(GuidingLight.Illuminated.class) != null;
-                if (!curUser.shoot( enemy, this )) {
-                    Splash.at(cell, 0xA9A6ABFF, 1);
-                }
+				if (!curUser.shoot( enemy, this )) {
+					Splash.at(cell, 0xA9A6ABFF, 1);
+				} else {
+					onSuccessfulThrow(enemy);
+				}
             }
         }
 

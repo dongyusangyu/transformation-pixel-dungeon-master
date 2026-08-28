@@ -23,7 +23,7 @@ public class PalermoSwordTest {
 		assertEquals(6, PalermoSword.minForLevel(0));
 		assertEquals(18, PalermoSword.maxForLevel(0));
 		assertEquals(8, PalermoSword.minForLevel(1));
-		assertEquals(21, PalermoSword.maxForLevel(1));
+		assertEquals(22, PalermoSword.maxForLevel(1));
 		assertEquals(20, PalermoSword.strengthRequirementForLevel(0));
 		assertEquals(1.2f, PalermoSword.ACCURACY, 0f);
 		assertEquals(0.5f, PalermoSword.DELAY, 0f);
@@ -79,7 +79,7 @@ public class PalermoSwordTest {
 		assertFalse(PalermoSword.xiexiangTargetAllowed(false, 1, 4));
 		assertFalse(PalermoSword.xiexiangTargetAllowed(true, 6, 4));
 
-		assertEquals(3, PalermoSword.maxXiexiangStrikes());
+		assertEquals(4, PalermoSword.maxXiexiangStrikes());
 		assertEquals(2, PalermoSword.xiexiangChargeCost());
 		assertEquals(4, PalermoSword.xiexiangDamageBoost(0));
 		assertEquals(7, PalermoSword.xiexiangDamageBoost(3));
@@ -139,5 +139,21 @@ public class PalermoSwordTest {
 				"WandOfBlastWave.throwCharImmediately(target, trajectory, 1, true, false, this, callback);"));
 		assertFalse(source.contains(
 				"WandOfBlastWave.throwChar(target, trajectory, 1, true, false, this, callback);"));
+	}
+
+	@Test
+	public void xiexiangCanReplaceTheInitialTargetAfterTheFirstStrike() throws Exception {
+		String source = new String(Files.readAllBytes(sourcePath()), StandardCharsets.UTF_8);
+
+		assertTrue(source.contains("findXiexiangTarget(hero, target)"));
+		assertTrue(source.contains("strikeIndex + 1 < maxXiexiangStrikes()"));
+	}
+
+	private static Path sourcePath() {
+		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
+		Path coreDirectory = workingDirectory.resolve("core");
+		if (!Files.isDirectory(coreDirectory)) coreDirectory = workingDirectory;
+		return coreDirectory.resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/PalermoSword.java");
 	}
 }

@@ -1,11 +1,14 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.AlienatedPrismaticGuardSprite;
@@ -16,7 +19,7 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 
 /** A hostile prismatic guard which continuously mirrors the hero's combat equipment. */
-public class AlienatedPrismaticGuard extends HeroReplicaMob {
+public class AlienatedPrismaticGuard extends HeroReplicaMob implements Hero.Doom {
 
 	private static final int SPLIT_INTERVAL = 5;
 
@@ -51,6 +54,13 @@ public class AlienatedPrismaticGuard extends HeroReplicaMob {
 	@Override
 	protected HeroEquipmentReplica.Scope replicaScope() {
 		return HeroEquipmentReplica.Scope.GUARD;
+	}
+
+	@Override
+	public void onDeath() {
+		if (getClass() == AlienatedPrismaticGuard.class) {
+			Badges.validateDeathFromAlienatedPrismaticGuard();
+		}
 	}
 
 	@Override
@@ -107,11 +117,14 @@ public class AlienatedPrismaticGuard extends HeroReplicaMob {
 			return false;
 		}
 
-		TwistedMirror mirror = createTwistedMirror();
-		mirror.pos = cell;
-		mirror.alignment = alignment;
-		mirror.state = mirror.HUNTING;
-		boolean added = addTwistedMirrorToLevel(mirror, cell);
+		Mob offspring = createSplitOffspring();
+		if (offspring == null) {
+			return false;
+		}
+		offspring.pos = cell;
+		offspring.alignment = alignment;
+		offspring.state = offspring.HUNTING;
+		boolean added = addSplitOffspringToLevel(offspring, cell);
 		if (added && sprite instanceof AlienatedPrismaticGuardSprite) {
 			((AlienatedPrismaticGuardSprite) sprite).splitEffect(cell);
 		}
@@ -139,6 +152,24 @@ public class AlienatedPrismaticGuard extends HeroReplicaMob {
 
 	protected TwistedMirror createTwistedMirror() {
 		return new TwistedMirror();
+	}
+
+	/** Factory hook for rare guard variants with a different split offspring. */
+	protected Mob createSplitOffspring() {
+		return createTwistedMirror();
+	}
+
+	/** Generic level insertion hook; the legacy mirror hook remains source-compatible. */
+	protected boolean addSplitOffspringToLevel(Mob offspring, int cell) {
+		if (offspring instanceof TwistedMirror) {
+			return addTwistedMirrorToLevel((TwistedMirror) offspring, cell);
+		}
+		if (Dungeon.level == null || offspring.pos != cell) {
+			return false;
+		}
+		GameScene.add(offspring);
+		Dungeon.level.occupyCell(offspring);
+		return true;
 	}
 
 	protected boolean addTwistedMirrorToLevel(TwistedMirror mirror, int cell) {

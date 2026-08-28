@@ -54,7 +54,7 @@ public class OverburdenTest {
 		String flow = readCoreSource("items/armor/glyphs/Flow.java");
 		String charSource = readCoreSource("actors/Char.java");
 
-		assertTrue(ring.contains("Overburden.attenuateEquipmentSpeed(target, multiplier)"));
+		assertTrue(ring.contains("Overburden.attenuateHasteRing(target, multiplier)"));
 		assertTrue(swiftness.contains("Overburden.attenuateEquipmentSpeed(owner, multiplier)"));
 		assertTrue(flow.contains("Overburden.attenuateEquipmentSpeed(owner, multiplier)"));
 		assertTrue(charSource.contains("if ( buff( Adrenaline.class ) != null) speed *= 2f;"));

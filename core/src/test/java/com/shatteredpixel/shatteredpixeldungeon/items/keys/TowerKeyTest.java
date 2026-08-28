@@ -9,6 +9,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -33,18 +38,60 @@ public class TowerKeyTest {
 	}
 
 	@Test
-	public void pickupRebindsVirtualGenerationDepthToTheCurrentTowerFloor() {
+	public void pickupKeepsTheGenerationDepthWhenKeyFallsToAnotherTowerFloor() {
 		Dungeon.branch = TowerLevel.BRANCH;
 		Dungeon.depth = 18;
 		TestIronKey key = new TestIronKey(Dungeon.depth);
 
 		Dungeon.depth = 3;
-		key.bindToCurrentLocation();
 		Notes.add(key);
 
-		assertEquals(3, key.depth);
+		assertEquals(18, key.depth);
 		assertEquals(TowerLevel.BRANCH, key.branch);
-		assertEquals(1, Notes.keyCount(new TestIronKey(3)));
+		assertEquals(1, Notes.keyCount(new TestIronKey(18)));
+		assertEquals(0, Notes.keyCount(new TestIronKey(3)));
+	}
+
+	@Test
+	public void pickupDoesNotRebindKeyToTheDestinationFloor() throws Exception {
+		String source = readKeySource();
+		int pickupStart = source.indexOf("public boolean doPickUp(Hero hero, int pos)");
+		int bundleFields = source.indexOf("private static final String DEPTH", pickupStart);
+
+		assertTrue(pickupStart >= 0);
+		assertTrue(bundleFields > pickupStart);
+		assertFalse(source.substring(pickupStart, bundleFields).contains("bindToCurrentLocation();"));
+	}
+
+	@Test
+	public void noArgKeyConstructorsUseTheCurrentLocation() throws Exception {
+		Dungeon.depth = 4;
+		Dungeon.branch = TowerLevel.BRANCH;
+		CurrentLocationKey key = new CurrentLocationKey();
+		assertEquals(4, key.depth);
+		assertEquals(TowerLevel.BRANCH, key.branch);
+
+		assertTrue(readSource("IronKey.java").contains("this( Dungeon.depth );"));
+		assertTrue(readSource("GoldenKey.java").contains("this( Dungeon.depth );"));
+		assertTrue(readSource("CrystalKey.java").contains("this( Dungeon.depth );"));
+		assertTrue(readSource("WornKey.java").contains("this( Dungeon.depth );"));
+		assertTrue(readSource("SkeletonKey.java").contains("this( Dungeon.depth );"));
+	}
+
+	private static String readSource(String fileName) throws Exception {
+		Path root = Paths.get(System.getProperty("user.dir"));
+		if (!root.endsWith("core")) root = root.resolve("core");
+		return new String(Files.readAllBytes(root.resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/keys/" + fileName)),
+				StandardCharsets.UTF_8);
+	}
+
+	private static String readKeySource() throws Exception {
+		Path root = Paths.get(System.getProperty("user.dir"));
+		if (root.endsWith("core")) {
+			return new String(Files.readAllBytes(root.resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/keys/Key.java")), StandardCharsets.UTF_8);
+		}
+		return new String(Files.readAllBytes(root.resolve("core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/keys/Key.java")), StandardCharsets.UTF_8);
 	}
 
 	@Test
@@ -114,6 +161,9 @@ public class TowerKeyTest {
 		public TestIronKey(int depth) {
 			this.depth = depth;
 		}
+	}
+
+	public static class CurrentLocationKey extends Key {
 	}
 
 	public static class TestGoldenKey extends Key {

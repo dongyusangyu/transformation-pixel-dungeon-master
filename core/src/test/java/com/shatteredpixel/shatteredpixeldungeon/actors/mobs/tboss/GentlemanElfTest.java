@@ -57,6 +57,12 @@ public class GentlemanElfTest {
         assertFalse(GentlemanElf.cupDashEligibleForTest(9));
         assertEquals(3, GentlemanElf.cupDashLandingDistanceForTest());
     }
+    @Test public void devourLandingCannotLeaveTheTowerBossArena() throws Exception {
+        String source = source("actors/mobs/tboss/GentlemanElf.java");
+        assertTrue(source.contains("isBossArenaCell(cell)"));
+        assertTrue(source.contains("if (!isLegalLanding(cell)) break;"));
+        assertTrue(source.contains("if (!isLegalLanding(cell)) return;"));
+    }
     @Test public void phaseTwoWithoutCupUsesDevourBeforeNormalActions() {
         GentlemanElf boss = new GentlemanElf();
         boss.setPhaseForTest(GentlemanElf.Phase.CUP_CONTEST, 1);
@@ -217,6 +223,37 @@ public class GentlemanElfTest {
         GentlemanElf restored = new GentlemanElf(); restored.restoreFromBundle(bundle);
         assertTrue(restored.introResolved());
     }
+    @Test public void encounterInitializationKeepsLastKnownTargetOutsideViewRange() {
+        GentlemanElf boss = new GentlemanElf();
+        DeathKnight target = new DeathKnight();
+        target.pos = 42;
+
+        boss.initializeEncounterTargetForTest(target);
+
+        assertSame(target, boss.enemyForTest());
+        assertEquals(42, boss.targetForTest());
+        assertSame(boss.HUNTING, boss.state);
+    }
+    @Test public void unresolvedIntroCanBePresentedAgainAfterRestore() {
+        GentlemanElf boss = new GentlemanElf();
+        Bundle bundle = new Bundle();
+        boss.storeInBundle(bundle);
+
+        GentlemanElf restored = new GentlemanElf();
+        restored.restoreFromBundle(bundle);
+
+        assertFalse(restored.introResolved());
+        assertTrue(restored.introNeedsPresentationForTest());
+        restored.resolveIntro(false);
+        assertFalse(restored.introNeedsPresentationForTest());
+    }
+	@Test public void unresolvedLegacyIntroCannotBeDamagedBeforeChoice() {
+		GentlemanElf boss = new GentlemanElf();
+
+		assertTrue(boss.isInvulnerable(Object.class));
+		boss.resolveIntro(false);
+		assertFalse(boss.isInvulnerable(Object.class));
+	}
     @Test public void cupRewardsMatchKillerAndRespectBossPhaseCap() {
         GentlemanElf boss = new GentlemanElf();
         DeathKnight other = new DeathKnight();
@@ -264,5 +301,11 @@ public class GentlemanElfTest {
         public void resolveBanquet(Iterable<Char> targets) { }
         public boolean respawnCup() { return false; }
         public Actor actorById(int id) { return entities.get(id); }
+    }
+    private static String source(String relative) throws Exception {
+        java.nio.file.Path working = Paths.get(System.getProperty("user.dir"));
+        java.nio.file.Path core = Files.isDirectory(working.resolve("core")) ? working.resolve("core") : working;
+        return Files.readString(core.resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon").resolve(relative),
+                StandardCharsets.UTF_8);
     }
 }

@@ -370,6 +370,15 @@ public class MagesStaff extends MeleeWeapon {
 	}
 
 	@Override
+	public void resetUpgradeStateForNewCycle() {
+		super.resetUpgradeStateForNewCycle();
+		if (wand != null) {
+			wand.resetUpgradeStateForNewCycle();
+			updateWand(false);
+		}
+	}
+
+	@Override
 	public String status() {
 		if (wand == null) return super.status();
 		else return wand.status();

@@ -1,5 +1,10 @@
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
@@ -7,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
@@ -16,6 +22,10 @@ import org.junit.Test;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+
+import sun.misc.Unsafe;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -114,6 +124,35 @@ public class WeaponRecipeTest {
 		assertEquals(0, trident.quantity());
 		assertEquals(0, potion.quantity());
 		assertEquals(2, scroll.quantity());
+	}
+
+	@Test
+	public void weaponRecipeInvalidatesConsumedMissileSet() throws ReflectiveOperationException {
+		Hero previousHero = Dungeon.hero;
+		try {
+			Hero hero = headlessHero();
+			Dungeon.hero = hero;
+			MissileWeapon.UpgradedSetTracker tracker =
+					Buff.affect(hero, MissileWeapon.UpgradedSetTracker.class);
+
+			InputMissile consumed = (InputMissile) identified(new InputMissile().quantity(3));
+			consumed.setID = 61L;
+			InputMissile staleGroundMember = (InputMissile) identified(new InputMissile().quantity(2));
+			staleGroundMember.setID = consumed.setID;
+			Recipe.WeaponRecipe recipe = new Recipe.WeaponRecipe(
+					new Class[]{InputMissile.class, TestIngredient.class, TestIngredientC.class},
+					new int[]{3, 1, 2}, 5, OutputWeapon.class, 0);
+
+			Item output = recipe.brew(ingredients(
+					consumed, new TestIngredient().identify(false),
+					identified(new TestIngredientC().quantity(2))));
+
+			assertTrue(output instanceof OutputWeapon);
+			assertFalse(tracker.synchronizeMember(staleGroundMember));
+			assertEquals(0, tracker.availableUpgradeScrollUses(staleGroundMember));
+		} finally {
+			Dungeon.hero = previousHero;
+		}
 	}
 
 	@Test
@@ -224,6 +263,37 @@ public class WeaponRecipeTest {
 		return new ArrayList<>(Arrays.asList(items));
 	}
 
+	private static Hero headlessHero() throws ReflectiveOperationException {
+		Hero hero = allocateWithoutConstructor(Hero.class);
+		Field buffs = Char.class.getDeclaredField("buffs");
+		buffs.setAccessible(true);
+		buffs.set(hero, new LinkedHashSet<>());
+		Field immunities = Char.class.getDeclaredField("immunities");
+		immunities.setAccessible(true);
+		immunities.set(hero, new HashSet<>());
+		Field properties = Char.class.getDeclaredField("properties");
+		properties.setAccessible(true);
+		properties.set(hero, new HashSet<>());
+		Belongings belongings = allocateWithoutConstructor(Belongings.class);
+		Belongings.Backpack backpack = allocateWithoutConstructor(Belongings.Backpack.class);
+		backpack.items = new ArrayList<>();
+		backpack.owner = hero;
+		belongings.backpack = backpack;
+		Field owner = Belongings.class.getDeclaredField("owner");
+		owner.setAccessible(true);
+		owner.set(belongings, hero);
+		hero.belongings = belongings;
+		return hero;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T allocateWithoutConstructor(Class<T> type)
+			throws ReflectiveOperationException {
+		Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+		unsafeField.setAccessible(true);
+		return (T) ((Unsafe) unsafeField.get(null)).allocateInstance(type);
+	}
+
 	public static class InputWeaponA extends MeleeWeapon {
 		{
 			tier = 1;
@@ -239,6 +309,23 @@ public class WeaponRecipeTest {
 	public static class InputWeaponC extends MeleeWeapon {
 		{
 			tier = 3;
+		}
+	}
+
+	public static class InputMissile extends MissileWeapon {
+		{
+			tier = 1;
+			baseUses = 5;
+		}
+
+		@Override
+		public int min(int lvl) {
+			return 1;
+		}
+
+		@Override
+		public int max(int lvl) {
+			return 1;
 		}
 	}
 

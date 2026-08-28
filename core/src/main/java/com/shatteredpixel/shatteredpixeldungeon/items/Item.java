@@ -513,6 +513,11 @@ public class Item implements Bundlable {
 
 		updateQuickslot();
 	}
+
+	public void resetUpgradeStateForNewCycle() {
+		level(0);
+		upgradeScrollUses = 0;
+	}
 	
 	public Item upgrade() {
 		

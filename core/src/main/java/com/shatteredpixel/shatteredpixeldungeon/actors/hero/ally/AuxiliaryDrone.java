@@ -517,16 +517,13 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
                     if(!ch.isAlive() && ((ch instanceof  Hero) || (ch instanceof InstructionTool.Drone))){
                         continue;
                     }
-                    int dmg = Random.NormalIntRange(4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth())*3/2;                    if(hero.hasTalent(Talent.BOMB_MANIAC)){
-                        dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25f;
-                    }
+                    int dmg = Random.NormalIntRange(4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth())*3/2;
+                    dmg = Bomb.damageWithBombTalents(hero, dmg);
                     dmg -= ch.drRoll();
                     if (dmg > 0 && !((ch instanceof  Hero) || (ch instanceof InstructionTool.Drone))) {
                         ch.damage(dmg, this, DamageTag.PHYSICAL);
                     }
-                    if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero){
-                        Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
-                    }
+                    Bomb.applyShockBomb(hero, ch);
 
                 }
 

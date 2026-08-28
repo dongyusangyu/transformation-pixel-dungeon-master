@@ -148,6 +148,14 @@ public class TowerBossLevelTest {
 	}
 
 	@Test
+	public void gentlemanElfSpawnDoesNotUseHighGrass() {
+		assertFalse(TowerBossLayout.isGentlemanElfSpawnTerrainAllowed(Terrain.HIGH_GRASS));
+		assertFalse(TowerBossLayout.isGentlemanElfSpawnTerrainAllowed(Terrain.FURROWED_GRASS));
+		assertTrue(TowerBossLayout.isGentlemanElfSpawnTerrainAllowed(Terrain.EMPTY));
+		assertTrue(TowerBossLayout.isGentlemanElfSpawnTerrainAllowed(Terrain.WATER));
+	}
+
+	@Test
 	public void fixedRoutesAndGatesAreProtectedFromCoverDestruction() {
 		assertTrue(TowerBossLayout.isProtectedCell(TowerBossLayout.ENTRANCE));
 		assertTrue(TowerBossLayout.isProtectedCell(TowerBossLayout.EXIT));
@@ -267,6 +275,12 @@ public class TowerBossLevelTest {
 	}
 
 	@Test
+	public void towerBossLevelOverridesTheSealedResurrectionCleanupHook() throws Exception {
+		Method method = TowerBossLevel.class.getMethod("onBeforeSealedResurrectionReset");
+		assertEquals(TowerBossLevel.class, method.getDeclaringClass());
+	}
+
+	@Test
 	public void selectedBossIdSurvivesBundleRoundTrip() {
 		TowerBossEncounter encounter = new TowerBossEncounter();
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
@@ -320,6 +334,7 @@ public class TowerBossLevelTest {
 
 	@Test
 	public void genericBossDeathCleanupAndUnsealAreIdempotent() {
+		com.shatteredpixel.shatteredpixeldungeon.Statistics.reset();
 		TowerBossEncounter encounter = new TowerBossEncounter();
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
 		RecordingHost host = new RecordingHost(encounter.selectedBossId());
@@ -329,6 +344,8 @@ public class TowerBossLevelTest {
 		encounter.onBossDefeated(boss, host);
 
 		assertTrue(encounter.bossEncounterDefeated());
+		assertEquals(1,
+				com.shatteredpixel.shatteredpixeldungeon.Statistics.towerBossesDefeated);
 		assertEquals(1, host.unsealCalls);
 		assertEquals(1, host.cleanupCalls);
 	}

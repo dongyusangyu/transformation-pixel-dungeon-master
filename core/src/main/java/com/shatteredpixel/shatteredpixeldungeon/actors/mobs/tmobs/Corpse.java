@@ -13,6 +13,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -21,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.CorpseSprite;
 import com.watabou.utils.Random;
 
 public class Corpse extends Mob {
+	private boolean deathRecorded;
 
 	private enum HealingDamage {
 		INSTANCE
@@ -68,6 +70,15 @@ public class Corpse extends Mob {
 					DamageTag.UNAVOIDABLE, DamageTag.NO_ARMOR);
 		}
 		return 0;
+	}
+
+	@Override
+	public void die(Object cause) {
+		super.die(cause);
+		if (!deathRecorded && !isAlive()) {
+			deathRecorded = true;
+			Badges.validateCorpseSlain();
+		}
 	}
 
 }

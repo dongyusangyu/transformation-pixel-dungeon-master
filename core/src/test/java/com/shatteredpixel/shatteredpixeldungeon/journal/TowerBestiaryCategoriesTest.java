@@ -5,6 +5,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnol
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DeathButterfly;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DarkMechanicalFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MyriadBlackShadow;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TapirCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
@@ -20,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.WildDread;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.HungerKnight;
 
 import org.junit.Test;
 
@@ -63,7 +68,11 @@ public class TowerBestiaryCategoriesTest {
 				HeavyCrabification.class,
 				MarshSlime.class,
 				RuneSpinner.class,
-				ChainShadowThief.class
+				ChainShadowThief.class,
+				DeathButterfly.class,
+				DarkMechanicalFist.class,
+				MyriadBlackShadow.class,
+				TapirCrocodile.class
 		), new ArrayList<>(Bestiary.TOWER_MOBS.entities()));
 		assertTrue(!Bestiary.REGIONAL.entities().contains(CamouflageGnoll.class));
 		assertTrue(!Bestiary.REGIONAL.entities().contains(CorrosiveSwarm.class));
@@ -78,7 +87,7 @@ public class TowerBestiaryCategoriesTest {
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(TwistedMirror.class));
 		assertTrue(!Bestiary.TOWER_MOBS.entities().contains(PowerfulWraith.class));
 		assertEquals(Arrays.asList(PestilenceKnight.class, DeathKnight.class,
-				GentlemanElf.class),
+				GentlemanElf.class, HungerKnight.class),
 				new ArrayList<>(Bestiary.TOWER_BOSSES.entities()));
 	}
 
@@ -97,10 +106,36 @@ public class TowerBestiaryCategoriesTest {
 		assertEquals(30, new MarshSlime().maxLvl);
 		assertEquals(30, new RuneSpinner().maxLvl);
 		assertEquals(30, new ChainShadowThief().maxLvl);
+		assertEquals(30, new DeathButterfly().maxLvl);
+		assertEquals(30, new DarkMechanicalFist().maxLvl);
+		assertEquals(30, new MyriadBlackShadow().maxLvl);
+		assertEquals(30, new TapirCrocodile().maxLvl);
 		assertEquals(13, new AlienatedPrismaticGuard().EXP);
 		assertEquals(30, new WildDread().maxLvl);
 		assertEquals(30, new PowerfulWraith().maxLvl);
 		assertEquals(0, new PowerfulWraith().EXP);
+	}
+
+	@Test
+	public void deathButterflyAndCurseMessagesExistInDefaultAndChinese() throws IOException {
+		Properties defaults = loadActorMessages("actors.properties");
+		Properties chinese = loadActorMessages("actors_zh.properties");
+		Properties details = loadCustomMessages("custom.properties");
+		Properties detailsZh = loadCustomMessages("custom_zh.properties");
+		String mob = "actors.mobs.tmobs.deathbutterfly.";
+		String curse = "actors.buffs.deathcurse.";
+
+		assertEquals("death butterfly", defaults.getProperty(mob + "name"));
+		assertTrue(defaults.getProperty(mob + "desc", "").contains("death curse"));
+		assertTrue(!defaults.getProperty(curse + "name", "").isEmpty());
+		assertTrue(defaults.getProperty(curse + "desc", "").contains("%s"));
+		assertTrue(details.getProperty("custom.dict.dict.tower_death_butterfly_d", "")
+				.contains("10 turns"));
+		assertEquals("死蝶灵", chinese.getProperty(mob + "name"));
+		assertTrue(chinese.getProperty(mob + "desc", "").contains("死之诅咒"));
+		assertEquals("死之诅咒", chinese.getProperty(curse + "name"));
+		assertTrue(detailsZh.getProperty("custom.dict.dict.tower_death_butterfly_d", "")
+				.contains("10回合"));
 	}
 
 	@Test
@@ -214,6 +249,35 @@ public class TowerBestiaryCategoriesTest {
 				chinese.getProperty("actors.mobs.tmobs.wilddread.name"));
 		assertTrue(detailsZh.getProperty("custom.dict.dict.tower_wild_dread_d", "")
 				.contains("复活"));
+	}
+
+	@Test
+	public void darkMechanicalFistMessagesExistInDefaultAndChinese() throws IOException {
+		Properties defaults = loadActorMessages("actors.properties");
+		Properties chinese = loadActorMessages("actors_zh.properties");
+		Properties details = loadCustomMessages("custom.properties");
+		Properties detailsZh = loadCustomMessages("custom_zh.properties");
+		String prefix = "actors.mobs.tmobs.darkmechanicalfist.";
+
+		assertEquals("dark mechanical fist", defaults.getProperty(prefix + "name"));
+		assertTrue(defaults.getProperty(prefix + "desc", "").contains("magical beam"));
+		assertTrue(details.getProperty("custom.dict.dict.tower_dark_mechanical_fist_d", "")
+				.contains("without consuming its action"));
+		assertEquals("黑暗机械拳头", chinese.getProperty(prefix + "name"));
+		assertTrue(chinese.getProperty(prefix + "desc", "").contains("不消耗行动"));
+		assertTrue(detailsZh.getProperty("custom.dict.dict.tower_dark_mechanical_fist_d", "")
+				.contains("一半"));
+	}
+
+	@Test
+	public void myriadBlackShadowMessagesExistInDefaultAndChinese() throws IOException {
+		Properties defaults = loadActorMessages("actors.properties");
+		Properties chinese = loadActorMessages("actors_zh.properties");
+		String prefix = "actors.mobs.tmobs.myriadblackshadow.";
+		assertEquals("myriad black shadow", defaults.getProperty(prefix + "name"));
+		assertTrue(defaults.getProperty(prefix + "desc", "").contains("chimera"));
+		assertEquals("万相黑影", chinese.getProperty(prefix + "name"));
+		assertTrue(chinese.getProperty(prefix + "desc", "").contains("嵌合体"));
 	}
 
 	@Test

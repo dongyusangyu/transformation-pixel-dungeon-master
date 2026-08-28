@@ -122,8 +122,6 @@ public class InterlevelScene extends PixelScene {
 	
 	@Override
 	public void create() {
-		super.create();
-		
 		String loadingAsset;
 		int loadingDepth;
 		fadeTime = NORM_FADE;
@@ -176,6 +174,8 @@ public class InterlevelScene extends PixelScene {
 			TextureCache.clear();
 			lastRegion = region;
 		}
+
+		super.create();
 
 		int loadingCenter = 400;
 
@@ -816,6 +816,7 @@ public class InterlevelScene extends PixelScene {
 		if (shouldResetSealedBossOnUnblessedAnkh(Dungeon.level)) {
 			ArrayList<Item> preservedItems = Dungeon.level.getItemsToPreserveFromSealedResurrect();
 
+			Dungeon.level.onBeforeSealedResurrectionReset();
 			Dungeon.hero.resurrect();
 			level = Dungeon.newLevel();
 			level.onSealedResurrectionReset();

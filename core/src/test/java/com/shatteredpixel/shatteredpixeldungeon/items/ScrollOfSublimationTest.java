@@ -8,6 +8,8 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ScrollOfSublimationTest {
 
@@ -24,12 +26,13 @@ public class ScrollOfSublimationTest {
 		assertArrayEquals(
 				new int[]{2, 2},
 				ScrollOfSublimation.tierAndIndex("HUNTRESS"));
+		assertEquals(3, ScrollOfSublimation.sublimationTalentPool("DM300").size());
 		assertEquals(
-				ScrollOfSublimation.sublimationTalentPool("DM300"),
+				Arrays.asList(Talent.HUNTING_TECHNIQUE, Talent.NATURAL_CHILD, Talent.FALCON_EYE),
 				ScrollOfSublimation.sublimationTalentPool("HUNTRESS"));
-		assertEquals(
-				Arrays.asList(Talent.FASTING, Talent.THUNDER_STRIKE, Talent.DIRECTIONAL_COLLAPSE),
-				ScrollOfSublimation.sublimationTalentPool("HUNTRESS"));
+		assertFalse(ScrollOfSublimation.sublimationTalentPool("HUNTRESS").contains(Talent.FASTING));
+		assertFalse(ScrollOfSublimation.sublimationTalentPool("HUNTRESS").contains(Talent.THUNDER_STRIKE));
+		assertFalse(ScrollOfSublimation.sublimationTalentPool("HUNTRESS").contains(Talent.DIRECTIONAL_COLLAPSE));
 	}
 
 	@Test
@@ -37,5 +40,26 @@ public class ScrollOfSublimationTest {
 		assertEquals(
 				Talent.bossTalentSlot("DM300"),
 				Talent.bossTalentSlot("HUNTRESS"));
+	}
+
+	@Test
+	public void huntingTechniqueIsASecondTierHuntressBossTalent() {
+		assertTrue(Talent.isBossTalent(Talent.HUNTING_TECHNIQUE));
+		assertEquals(2, Talent.HUNTING_TECHNIQUE.tier());
+		assertEquals(Talent.bossTalentSlot("HUNTRESS"), Talent.bossTalentSlot(Talent.HUNTING_TECHNIQUE));
+	}
+
+	@Test
+	public void naturalChildIsASecondTierHuntressBossTalent() {
+		assertTrue(Talent.isBossTalent(Talent.NATURAL_CHILD));
+		assertEquals(2, Talent.NATURAL_CHILD.tier());
+		assertEquals(Talent.bossTalentSlot("HUNTRESS"), Talent.bossTalentSlot(Talent.NATURAL_CHILD));
+	}
+
+	@Test
+	public void falconEyeIsASecondTierHuntressBossTalent() {
+		assertTrue(Talent.isBossTalent(Talent.FALCON_EYE));
+		assertEquals(2, Talent.FALCON_EYE.tier());
+		assertEquals(Talent.bossTalentSlot("HUNTRESS"), Talent.bossTalentSlot(Talent.FALCON_EYE));
 	}
 }

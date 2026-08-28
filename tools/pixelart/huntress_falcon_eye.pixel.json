@@ -1,0 +1,39 @@
+{
+  "name": "huntress_falcon_eye",
+  "source": "D:/桌面/天赋.png#cell(0,16,16,16)",
+  "width": 16,
+  "height": 16,
+  "palette": {
+    ".": "transparent",
+    "g": "#005826",
+    "o": "#593220",
+    "w": "#F3F0D5",
+    "s": "#A8B9A0",
+    "h": "#FFD86A",
+    "i": "#D88B18",
+    "p": "#2B1708",
+    "k": "#000000",
+    "b": "#CCB572",
+    "d": "#634B1C",
+    "m": "#998856",
+    "c": "#6DFAF8"
+  },
+  "pixels": [
+    ".gggggggggggggg.",
+    "gggggggggggggggg",
+    "ggggggoooogggggg",
+    "ggggoooooooogggg",
+    "gggooowwwwoooggg",
+    "ggooswwwwwwsoogg",
+    "gooswwhpphwwsoog",
+    "ooswwwppppwwwsoo",
+    "ooswwwppppwkkkoo",
+    "gooswwippikbbbkg",
+    "ggooswwwwkdmkckg",
+    "gggooowwkbmkckgg",
+    "ggggooookbkckggg",
+    "ggggggookbckgggg",
+    "gggggggggkkggggg",
+    ".gggggggggggggg."
+  ]
+}

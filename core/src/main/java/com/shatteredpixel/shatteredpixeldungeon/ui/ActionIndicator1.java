@@ -142,9 +142,10 @@ public class ActionIndicator1 extends Tag {
     @Override
     protected void onClick() {
         super.onClick();
-        if (action != null && canShowAction(action)
-                && Dungeon.hero != null && Dungeon.hero.ready) {
-            action.doAction();
+        if (action != null && canShowAction(action)) {
+            if (Dungeon.hero != null && Dungeon.hero.ready) {
+                action.doAction();
+            }
         } else if (action != null) {
             clearAction(action);
         }

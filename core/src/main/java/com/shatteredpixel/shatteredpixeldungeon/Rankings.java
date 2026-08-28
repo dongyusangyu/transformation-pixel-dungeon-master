@@ -58,8 +58,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,6 +76,7 @@ public enum Rankings {
 	
 	public ArrayList<Record> records;
 	private ArrayList<Record> heroHallRecords = new ArrayList<>();
+	private final LinkedHashSet<String> restartSourceGameIDs = new LinkedHashSet<>();
 	public int lastRecord;
 	public int totalNumber;
 	public int wonNumber;
@@ -204,7 +207,41 @@ public enum Rankings {
 	//assumes a ranking is loaded, or game is ending
 	public double calculateScore(){
 
-		if (Dungeon.initialVersion > ShatteredPixelDungeon.v1_2_3){
+		if (Dungeon.newCycle) {
+			Statistics.reconcileTowerBossCount();
+			int towerDepth = progressDepth(true,
+					Statistics.deepestFloor, Statistics.deepestTowerFloor);
+			Statistics.progressScore = towerProgressScore(towerDepth);
+
+			if (Statistics.heldItemValue == 0) {
+				for (Item i : hero.belongings) {
+					Statistics.heldItemValue += i.value();
+				}
+			}
+			Statistics.treasureScore = towerTreasureScore(
+					(double) Statistics.goldCollected + Statistics.heldItemValue);
+
+			Statistics.exploreScore = 0;
+			double scorePerFloor = (double) Statistics.floorsExplored.size * 50d;
+			for (float percentExplored : Statistics.floorsExplored.valueList()){
+				Statistics.exploreScore += Math.round(percentExplored * scorePerFloor);
+			}
+
+			Statistics.totalBossScore = towerBossScore(Statistics.towerBossesDefeated);
+			for (double score : Statistics.bossScores){
+				if (score > 0) Statistics.totalBossScore += score;
+			}
+
+			Statistics.totalQuestScore = 0;
+			for (double score : Statistics.questScores){
+				if (score > 0) Statistics.totalQuestScore += score;
+			}
+
+			Statistics.winMultiplier = 1f;
+			if (Statistics.gameWon)         Statistics.winMultiplier += 1f;
+			if (Statistics.ascended)        Statistics.winMultiplier += 0.5f;
+
+		} else if (Dungeon.initialVersion > ShatteredPixelDungeon.v1_2_3){
 			int progressDepth = progressDepth(Dungeon.newCycle,
 					Statistics.deepestFloor, Statistics.deepestTowerFloor);
 			Statistics.progressScore = (double) hero.lvl * progressDepth * 65d;
@@ -302,6 +339,43 @@ public enum Rankings {
 		return Math.max(0, newCycle ? deepestTowerFloor : deepestFloor);
 	}
 
+	private static final double TOWER_FLOOR_SCORE_LIMIT = 20_000d;
+	private static final int TOWER_FLOOR_SCORE_LIMIT_DEPTH = 25;
+	private static final double TOWER_FLOOR_SCORE_PER_DEPTH =
+			TOWER_FLOOR_SCORE_LIMIT / TOWER_FLOOR_SCORE_LIMIT_DEPTH;
+	private static final double TOWER_SQUARE_SCORE_COEFFICIENT = 1d;
+	private static final double TOWER_TREASURE_THRESHOLD = 20_000d;
+	private static final double TOWER_TREASURE_LOG_SCALE = 10_000d;
+	private static final double TOWER_BOSS_SCORE = 10_000d;
+
+	static double towerProgressScore(int depth) {
+		if (depth <= 0) return 0d;
+		double d = depth;
+		if (depth <= TOWER_FLOOR_SCORE_LIMIT_DEPTH) {
+			return Math.min(TOWER_FLOOR_SCORE_LIMIT,
+					d * TOWER_FLOOR_SCORE_PER_DEPTH);
+		}
+		// Preserve the T25 boundary while retaining unit-coefficient D^2 growth.
+		double score = TOWER_FLOOR_SCORE_LIMIT
+				+ TOWER_SQUARE_SCORE_COEFFICIENT * d * d
+				- TOWER_SQUARE_SCORE_COEFFICIENT
+				* TOWER_FLOOR_SCORE_LIMIT_DEPTH * TOWER_FLOOR_SCORE_LIMIT_DEPTH;
+		return Double.isFinite(score) ? score : Double.MAX_VALUE;
+	}
+
+	static double towerTreasureScore(double rawWealth) {
+		if (Double.isNaN(rawWealth) || rawWealth <= 0d) return 0d;
+		if (!Double.isFinite(rawWealth)) return Double.MAX_VALUE;
+		if (rawWealth <= TOWER_TREASURE_THRESHOLD) return rawWealth;
+		double excess = rawWealth - TOWER_TREASURE_THRESHOLD;
+		return TOWER_TREASURE_THRESHOLD + TOWER_TREASURE_LOG_SCALE
+				* Math.log1p(excess / TOWER_TREASURE_LOG_SCALE);
+	}
+
+	static double towerBossScore(int defeatedBosses) {
+		return defeatedBosses <= 0 ? 0d : defeatedBosses * TOWER_BOSS_SCORE;
+	}
+
 	static double applyScoreLimit(double score, double limit, boolean unlimited) {
 		return unlimited ? score : Math.min(score, limit);
 	}
@@ -344,8 +418,9 @@ public enum Rankings {
 
 		//remove all buffs (ones tied to equipment will be re-applied)
 		for(Buff b : Dungeon.hero.buffs()){
-			//except Duelist's melee weapon charge buff
-			if (!(b instanceof MeleeWeapon.Charger)) {
+			// Keep permanent weapon-ability state while the ranking hero is serialized.
+			if (!(b instanceof MeleeWeapon.Charger)
+					&& !(b instanceof MeleeWeapon.MartialMastery)) {
 				Dungeon.hero.remove(b);
 			}
 		}
@@ -450,6 +525,7 @@ public enum Rankings {
 	private static final String NEW_CYCLE_TOTAL = "new_cycle_total";
 	private static final String NEW_CYCLE_WON   = "new_cycle_won";
 	static final String HERO_HALL_RECORDS = "hero_hall_records";
+	static final String RESTART_SOURCE_GAME_IDS = "restart_source_game_ids";
 
 	public static final String LATEST_DAILY	        = "latest_daily";
 	public static final String DAILY_HISTORY_DATES  = "daily_history_dates";
@@ -460,6 +536,7 @@ public enum Rankings {
 	}
 
 	public boolean saveWithResult() {
+		syncRestartedFlags();
 		Bundle bundle = new Bundle();
 		bundle.put( RECORDS, records );
 		bundle.put( LATEST, lastRecord );
@@ -468,6 +545,8 @@ public enum Rankings {
 		bundle.put( NEW_CYCLE_TOTAL, newCycleTotalNumber );
 		bundle.put( NEW_CYCLE_WON, newCycleWonNumber );
 		bundle.put( HERO_HALL_RECORDS, heroHallRecords );
+		bundle.put( RESTART_SOURCE_GAME_IDS,
+				restartSourceGameIDs.toArray(new String[0]) );
 
 		bundle.put(LATEST_DAILY, latestDaily);
 
@@ -500,6 +579,7 @@ public enum Rankings {
 		
 		records = new ArrayList<>();
 		heroHallRecords = new ArrayList<>();
+		restartSourceGameIDs.clear();
 		
 		try {
 			Bundle bundle = FileUtils.bundleFromFile( RANKINGS_FILE );
@@ -513,11 +593,12 @@ public enum Rankings {
 				}
 				Collections.sort(heroHallRecords, scoreComparator);
 			}
+			boolean needsSave = restoreRestartReservations(bundle);
 			lastRecord = bundle.getInt( LATEST );
 			ArrayList<Record> originalOrder = new ArrayList<>(records);
 			int originalLastRecord = lastRecord;
 			normalizeRecords();
-			boolean needsSave = originalLastRecord != lastRecord
+			needsSave |= originalLastRecord != lastRecord
 					|| !originalOrder.equals(records);
 			
 			totalNumber = bundle.getInt( TOTAL );
@@ -718,7 +799,7 @@ public enum Rankings {
 			if (bundle.contains(DATA))  gameData = bundle.getBundle(DATA);
 			if (bundle.contains(ID))   gameID = bundle.getString(ID);
 			
-			if (gameID == null) gameID = UUID.randomUUID().toString();
+			if (gameID == null || gameID.isEmpty()) gameID = UUID.randomUUID().toString();
 
 		}
 		
@@ -781,6 +862,147 @@ public enum Rankings {
 	public ArrayList<Record> heroHallRecords() {
 		load();
 		return new ArrayList<>(heroHallRecords);
+	}
+
+	Record resolveRestartSource(Record selected) {
+		if (selected == null || selected.gameID == null) {
+			return selected;
+		}
+		for (Record record : records) {
+			if (selected.gameID.equals(record.gameID)) {
+				return record;
+			}
+		}
+		for (Record record : heroHallRecords) {
+			if (selected.gameID.equals(record.gameID)) {
+				return record;
+			}
+		}
+		return selected;
+	}
+
+	boolean isRestartReserved(String gameID) {
+		if (gameID == null || gameID.isEmpty()) {
+			return false;
+		}
+		load();
+		return restartSourceGameIDs.contains(gameID);
+	}
+
+	void setRestartReserved(String gameID, boolean restarted) {
+		if (gameID == null || gameID.isEmpty()) {
+			return;
+		}
+		if (restarted) {
+			restartSourceGameIDs.add(gameID);
+		} else {
+			restartSourceGameIDs.remove(gameID);
+		}
+		syncRestartedFlags();
+	}
+
+	void setRestarted(Record source, boolean restarted) {
+		if (source != null) {
+			setRestartReserved(source.gameID, restarted);
+		}
+		setRestarted(records, heroHallRecords, source, restarted);
+	}
+
+	static void setRestarted(List<Record> records, List<Record> heroHallRecords,
+			Record source, boolean restarted) {
+		if (source == null) {
+			return;
+		}
+		source.restarted = restarted;
+		if (source.gameID == null) {
+			return;
+		}
+		if (records != null) {
+			for (Record record : records) {
+				if (source.gameID.equals(record.gameID)) {
+					record.restarted = restarted;
+				}
+			}
+		}
+		if (heroHallRecords != null) {
+			for (Record record : heroHallRecords) {
+				if (source.gameID.equals(record.gameID)) {
+					record.restarted = restarted;
+				}
+			}
+		}
+	}
+
+	private boolean restoreRestartReservations(Bundle bundle) {
+		LinkedHashSet<String> persisted = storedRestartReservationsFromBundle(bundle);
+		LinkedHashSet<String> restored = restartReservationsFromBundle(bundle);
+		boolean needsSave = !bundle.contains(RESTART_SOURCE_GAME_IDS)
+				|| !persisted.equals(restored);
+		restartSourceGameIDs.addAll(restored);
+		for (String sourceGameID : GamesInProgress.activeNewCycleSourceGameIDs()) {
+			if (restartSourceGameIDs.add(sourceGameID)) {
+				needsSave = true;
+			}
+		}
+		syncRestartedFlags();
+		return needsSave || restored.size() != restartSourceGameIDs.size();
+	}
+
+	private void syncRestartedFlags() {
+		syncRestartedFlags(records, restartSourceGameIDs);
+		syncRestartedFlags(heroHallRecords, restartSourceGameIDs);
+	}
+
+	private static void syncRestartedFlags(List<Record> records, Set<String> reservations) {
+		if (records == null) {
+			return;
+		}
+		for (Record record : records) {
+			record.restarted = record.gameID != null && reservations.contains(record.gameID);
+		}
+	}
+
+	static LinkedHashSet<String> restartReservationsFromBundle(Bundle bundle) {
+		LinkedHashSet<String> result = storedRestartReservationsFromBundle(bundle);
+		if (bundle == null) {
+			return result;
+		}
+		collectLegacyRestartReservations(bundle, RECORDS, result);
+		collectLegacyRestartReservations(bundle, HERO_HALL_RECORDS, result);
+		return result;
+	}
+
+	private static LinkedHashSet<String> storedRestartReservationsFromBundle(Bundle bundle) {
+		LinkedHashSet<String> result = new LinkedHashSet<>();
+		if (bundle == null) {
+			return result;
+		}
+		if (bundle.contains(RESTART_SOURCE_GAME_IDS)) {
+			String[] stored = bundle.getStringArray(RESTART_SOURCE_GAME_IDS);
+			if (stored != null) {
+				for (String gameID : stored) {
+					if (gameID != null && !gameID.isEmpty()) {
+						result.add(gameID);
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private static void collectLegacyRestartReservations(
+			Bundle bundle, String key, Set<String> result) {
+		if (!bundle.contains(key)) {
+			return;
+		}
+		for (Bundlable bundled : bundle.getCollection(key)) {
+			if (bundled instanceof Record) {
+				Record record = (Record) bundled;
+				if (record.restarted && record.gameID != null && !record.gameID.isEmpty()) {
+					result.add(record.gameID);
+				}
+			}
+		}
 	}
 
 	public boolean isInHeroHall(Record record) {
@@ -870,6 +1092,12 @@ public enum Rankings {
 					HERO_HALL_RECORDS,
 					localRankings.getCollection(HERO_HALL_RECORDS));
 		}
+		if (cloudRankings != null) {
+			LinkedHashSet<String> reservations = restartReservationsFromBundle(cloudRankings);
+			reservations.addAll(restartReservationsFromBundle(localRankings));
+			cloudRankings.put(RESTART_SOURCE_GAME_IDS,
+					reservations.toArray(new String[0]));
+		}
 	}
 
 	public int totalNumber(boolean newCycle) {
@@ -911,7 +1139,7 @@ public enum Rankings {
 			Record secondWorst = null;
 			for (int i = records.size() - 1; i >= 0; i--) {
 				Record record = records.get(i);
-				if (record.newCycle != newCycle || record.restarted) {
+				if (record.newCycle != newCycle) {
 					continue;
 				}
 				if (worst == null) {

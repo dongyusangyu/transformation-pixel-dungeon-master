@@ -19,6 +19,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.watabou.utils.Bundle;
@@ -46,12 +51,14 @@ public class RankingRestartTest {
 
 	@After
 	public void resetDungeonState() {
+		RankingRestart.complete();
 		Dungeon.depth = 0;
 		Dungeon.challenges = 0;
 		Dungeon.newCycle = false;
 		Dungeon.newCycleSourceGameID = null;
 		Dungeon.quickslot.reset();
 		Dungeon.hero = null;
+		Dungeon.LimitedDrops.reset();
 		Ghost.Quest.reset();
 		Generator.fullReset();
 	}
@@ -67,6 +74,25 @@ public class RankingRestartTest {
 
 		assertEquals(1, Dungeon.hero.belongings.backpack.items.size());
 		assertTrue(Dungeon.hero.belongings.backpack.items.contains(inherited));
+	}
+
+	@Test
+	public void newCycleRestoresLimitedDropFlagsForInheritedBags() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		hero.belongings.backpack.items.add(emptyBag(VelvetPouch.class));
+		hero.belongings.backpack.items.add(emptyBag(ScrollHolder.class));
+		hero.belongings.backpack.items.add(emptyBag(PotionBandolier.class));
+		hero.belongings.backpack.items.add(emptyBag(MagicalHolster.class));
+		hero.belongings.backpack.items.add(emptyBag(HikingBackpack.class));
+		Dungeon.LimitedDrops.reset();
+
+		RankingRestart.restoreOwnedBagLimitedDrops(hero);
+
+		assertTrue(Dungeon.LimitedDrops.VELVET_POUCH.dropped());
+		assertTrue(Dungeon.LimitedDrops.SCROLL_HOLDER.dropped());
+		assertTrue(Dungeon.LimitedDrops.POTION_BANDOLIER.dropped());
+		assertTrue(Dungeon.LimitedDrops.MAGICAL_HOLSTER.dropped());
+		assertTrue(Dungeon.LimitedDrops.HIKING_BACKPACK.dropped());
 	}
 
 	@Test
@@ -233,6 +259,60 @@ public class RankingRestartTest {
 	}
 
 	@Test
+	public void heroHallCopyCannotBypassReservedNormalRanking() {
+		ArrayList<Rankings.Record> previousRecords = Rankings.INSTANCE.records;
+		try {
+			Rankings.Record normal = eligibleRecord();
+			normal.gameID = "shared-ranking";
+			normal.restarted = true;
+			Rankings.Record hallCopy = eligibleRecord();
+			hallCopy.gameID = normal.gameID;
+			Rankings.INSTANCE.records = new ArrayList<>();
+			Rankings.INSTANCE.records.add(normal);
+
+			assertFalse(RankingRestart.begin(hallCopy));
+		} finally {
+			RankingRestart.complete();
+			Rankings.INSTANCE.records = previousRecords;
+		}
+	}
+
+	@Test
+	public void heroHallCopyUsesMatchingNormalRankingAsRestartSource() throws Exception {
+		ArrayList<Rankings.Record> previousRecords = Rankings.INSTANCE.records;
+		try {
+			Rankings.Record normal = eligibleRecord();
+			normal.gameID = "shared-ranking";
+			Rankings.Record hallCopy = eligibleRecord();
+			hallCopy.gameID = normal.gameID;
+			Rankings.INSTANCE.records = new ArrayList<>();
+			Rankings.INSTANCE.records.add(normal);
+
+			assertTrue(RankingRestart.begin(hallCopy));
+			assertSame(normal, pendingRestartRecord());
+		} finally {
+			RankingRestart.complete();
+			Rankings.INSTANCE.records = previousRecords;
+		}
+	}
+
+	@Test
+	public void heroHallOnlyRankingRemainsAValidRestartSource() throws Exception {
+		ArrayList<Rankings.Record> previousRecords = Rankings.INSTANCE.records;
+		try {
+			Rankings.Record hallOnly = eligibleRecord();
+			hallOnly.gameID = "hall-only-ranking";
+			Rankings.INSTANCE.records = new ArrayList<>();
+
+			assertTrue(RankingRestart.begin(hallOnly));
+			assertSame(hallOnly, pendingRestartRecord());
+		} finally {
+			RankingRestart.complete();
+			Rankings.INSTANCE.records = previousRecords;
+		}
+	}
+
+	@Test
 	public void clearingNewCycleSaveUnlocksOnlyItsSourceRanking() {
 		Rankings.Record source = eligibleRecord();
 		source.gameID = "source-ranking";
@@ -292,7 +372,7 @@ public class RankingRestartTest {
 	}
 
 	@Test
-	public void rankingTrimKeepsRecordsReservedByNewCycleSaves() {
+	public void rankingTrimMayRemoveRecordsReservedByNewCycleSaves() {
 		ArrayList<Rankings.Record> records = new ArrayList<>();
 		Rankings.Record reserved = eligibleRecord();
 		reserved.gameID = "reserved";
@@ -309,7 +389,7 @@ public class RankingRestartTest {
 		Rankings.normalizeRecords(records, records.get(records.size() - 1));
 
 		assertEquals(Rankings.TABLE_SIZE, records.size());
-		assertTrue(records.contains(reserved));
+		assertFalse(records.contains(reserved));
 	}
 
 	@Test
@@ -658,6 +738,24 @@ public class RankingRestartTest {
 		assertFalse(restored.talents.get(0).containsKey(Talent.EMPOWERING_MEAL));
 	}
 
+	@Test
+	public void briefcaseWeaponMasterySurvivesRankingBuffCleanup() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		hero.heroClass = HeroClass.FREEMAN;
+		hero.subClass = HeroSubClass.NONE;
+		Dungeon.hero = hero;
+
+		hero.grantMartialMastery();
+		for (com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff buff
+				: new ArrayList<>(hero.buffs())) {
+			if (!(buff instanceof MeleeWeapon.Charger)) {
+				buff.detach();
+			}
+		}
+
+		assertTrue(MeleeWeapon.canUseWeaponAbility(hero));
+	}
+
 	private static Hero headlessHero() throws Exception {
 		return headlessHero(Hero.class);
 	}
@@ -671,6 +769,15 @@ public class RankingRestartTest {
 		Field buffs = Char.class.getDeclaredField("buffs");
 		buffs.setAccessible(true);
 		buffs.set(hero, new LinkedHashSet<>());
+		Field resistances = Char.class.getDeclaredField("resistances");
+		resistances.setAccessible(true);
+		resistances.set(hero, new java.util.HashSet<>());
+		Field immunities = Char.class.getDeclaredField("immunities");
+		immunities.setAccessible(true);
+		immunities.set(hero, new java.util.HashSet<>());
+		Field properties = Char.class.getDeclaredField("properties");
+		properties.setAccessible(true);
+		properties.set(hero, new java.util.HashSet<>());
 		return hero;
 	}
 
@@ -697,6 +804,12 @@ public class RankingRestartTest {
 		Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
 		unsafeField.setAccessible(true);
 		return (Unsafe) unsafeField.get(null);
+	}
+
+	private static <T extends Bag> T emptyBag(Class<T> type) throws Exception {
+		T bag = (T) unsafe().allocateInstance(type);
+		bag.items = new ArrayList<>();
+		return bag;
 	}
 
 	private static Waterskin waterskin(int volume) throws Exception {
@@ -747,6 +860,12 @@ public class RankingRestartTest {
 			boostedHPDuringUpdate = boostHP;
 			HT = 65;
 		}
+	}
+
+	private Rankings.Record pendingRestartRecord() throws Exception {
+		Field field = RankingRestart.class.getDeclaredField("pendingRecord");
+		field.setAccessible(true);
+		return (Rankings.Record) field.get(null);
 	}
 
 	private Rankings.Record eligibleRecord() {

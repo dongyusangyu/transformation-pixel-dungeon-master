@@ -2,19 +2,14 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ninja;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 
-import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
-
-import static jdk.javadoc.internal.doclets.toolkit.util.DocPath.parent;
-
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
@@ -27,27 +22,22 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.BlastParticle;
-import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SmokeParticle;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
-import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ClassArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
-import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Noisemaker;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
-import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
-import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.GreatShoperSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.HeroIcon;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+
+import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.BArray;
 import com.watabou.utils.Bundle;
@@ -74,22 +64,25 @@ public class SpiderJar extends ArmorAbility {
         Ballistica route = new Ballistica(hero.pos, target, Ballistica.STOP_TARGET | Ballistica.STOP_SOLID);
         int cell = route.collisionPos;
         Spider b = new Spider();
+        final boolean[] resolved = {false};
+        hero.busy();
         ((MissileSprite) hero.sprite.parent.recycle(MissileSprite.class)).
                 reset(hero.sprite,
-                        target,
+                        cell,
                         b,
                         new Callback() {
                             @Override
                             public void call() {
+                                if (resolved[0]) return;
+                                resolved[0] = true;
                                 b.onThrow(cell);
+                                armor.charge -= chargeUse(hero);
+                                Talent.onArmorAbility(hero, chargeUse(hero));
+                                armor.updateQuickslot();
+                                Invisibility.dispel();
+                                hero.spendAndNext(Actor.TICK);
                             }
                         });
-        armor.charge -= chargeUse(hero);
-        Talent.onArmorAbility(hero, chargeUse(hero));
-        hero.spendAndNext(Actor.TICK);
-        armor.updateQuickslot();
-        Invisibility.dispel();
-
     }
 
     @Override
@@ -119,25 +112,39 @@ public class SpiderJar extends ArmorAbility {
         }
         @Override
         public void onThrow( int cell ) {
+            if (!isValidCell(cell)) {
+                return;
+            }
             if (!Dungeon.level.pit[ cell ] && lightingFuse) {
-                fuse = createFuse().ignite(this);
-                Actor.add(fuse);
-                Dungeon.level.drop(this, cell);
+                armAt(cell);
             }else{
                 super.onThrow( cell );
             }
 
         }
+        public void armAt(int cell) {
+            if (!isValidCell(cell)) return;
+            if (fuse != null && Actor.all().contains(fuse)) return;
+            fuse = createFuse().ignite(this, cell);
+            Actor.add(fuse);
+            Dungeon.level.drop(this, cell);
+        }
         @Override
         protected int explosionRange(){
-            if(hero.hasTalent(Talent.POWER_GUNPOWDER)){
+            Hero hero = Dungeon.hero;
+            if(hero != null && hero.hasTalent(Talent.POWER_GUNPOWDER)){
                 return 1+(int)(hero.pointsInTalent(Talent.POWER_GUNPOWDER)/2);
             }else{
                 return 1;
             }
         }
         public void explode(int cell){
-            if(Actor.all().contains(this.fuse)){
+            if (!isValidCell(cell)) {
+                fuse = null;
+                return;
+            }
+            Hero hero = Dungeon.hero;
+            if(this.fuse != null && Actor.all().contains(this.fuse)){
                 Actor.remove(this.fuse);
             }
 
@@ -150,7 +157,7 @@ public class SpiderJar extends ArmorAbility {
 
                 ArrayList<Char> affected = new ArrayList<>();
 
-                if (Dungeon.level.heroFOV[cell]) {
+                if (isVisibleCell(cell)) {
                     CellEmitter.center(cell).burst(BlastParticle.FACTORY, 30);
                 }
 
@@ -169,7 +176,7 @@ public class SpiderJar extends ArmorAbility {
                     }
                 }
                 for (int i : affectedCells){
-                    if (Dungeon.level.heroFOV[i]) {
+                    if (isVisibleCell(i)) {
                         CellEmitter.get(i).burst(SmokeParticle.FACTORY, 4);
                     }
 
@@ -193,14 +200,12 @@ public class SpiderJar extends ArmorAbility {
                     }
                     int m=20;
                     int M=40;
-                    if(hero.hasTalent(Talent.POWER_GUNPOWDER)){
+                    if(hero != null && hero.hasTalent(Talent.POWER_GUNPOWDER)){
                         m+=(int)((1+hero.pointsInTalent(Talent.POWER_GUNPOWDER))/2)*5;
                         M+=(int)((1+hero.pointsInTalent(Talent.POWER_GUNPOWDER))/2)*15;
                     }
                     int dmg = Random.NormalIntRange(m, M);
-                    if(hero.hasTalent(Talent.BOMB_MANIAC)){
-                        dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25;
-                    }
+                    dmg = Bomb.damageWithBombTalents(hero, dmg);
                     if(ch instanceof Hero){
                         dmg*=1.5f;
                     }
@@ -209,7 +214,7 @@ public class SpiderJar extends ArmorAbility {
                     if (dmg > 0) {
                         ch.damage(dmg, this, DamageTag.PHYSICAL);
                     }
-                    if(hero.hasTalent(Talent.TEA_STAINS) && ch.isAlive()){
+                    if(hero != null && hero.hasTalent(Talent.TEA_STAINS) && ch.isAlive()){
                         int r=Math.min(hero.pointsInTalent(Talent.TEA_STAINS),2);
                         int t=5;
                         if(hero.pointsInTalent(Talent.TEA_STAINS)>3){
@@ -224,9 +229,7 @@ public class SpiderJar extends ArmorAbility {
                             Buff.affect(ch, Paralysis.class,5);
                         }
                     }
-                    if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero && ch.isAlive()){
-                        Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
-                    }
+                    if (ch.isAlive()) Bomb.applyShockBomb(hero, ch);
 
                     if (ch == hero && !ch.isAlive()) {
                         GLog.n(Messages.get(this, "ondeath"));
@@ -235,6 +238,7 @@ public class SpiderJar extends ArmorAbility {
                 }
                 for (int p = 0; p < PathFinder.NEIGHBOURS9.length; p++) {
                     int i = cell + PathFinder.NEIGHBOURS9[p];
+                    if (i < 0 || i >= Dungeon.level.map.length) continue;
                     if ((Dungeon.level.map[i] == Terrain.REGION_DECO
                             || Dungeon.level.map[i] == Terrain.REGION_DECO_ALT)
                             && !(Dungeon.level instanceof SewerLevel)){
@@ -248,7 +252,7 @@ public class SpiderJar extends ArmorAbility {
                 if (terrainAffected) {
                     Dungeon.observe();
                 }
-                if(hero.hasTalent(Talent.FIREWORK)){
+                if(hero != null && hero.hasTalent(Talent.FIREWORK)){
                     SmallSpider b = new SmallSpider();
                     b.onThrow(cell);
                 }
@@ -267,11 +271,11 @@ public class SpiderJar extends ArmorAbility {
 
         @Override
         public void onThrow( int cell ) {
+            if (!isValidCell(cell)) {
+                return;
+            }
             if (!Dungeon.level.pit[ cell ] && lightingFuse) {
-
-                fuse = createFuse().ignite(this);
-                Actor.add(fuse);
-                Dungeon.level.drop(this, cell);
+                armAt(cell);
             }else{
                 super.onThrow( cell );
             }
@@ -283,6 +287,11 @@ public class SpiderJar extends ArmorAbility {
             return 1;
         }
         public void explode(int cell){
+            if (!isValidCell(cell)) {
+                fuse = null;
+                return;
+            }
+            Hero hero = Dungeon.hero;
             if(Actor.all().contains(this.fuse)){
                 Actor.remove(this.fuse);
             }
@@ -292,7 +301,7 @@ public class SpiderJar extends ArmorAbility {
             if (explodesDestructively()) {
                 ArrayList<Char> affected = new ArrayList<>();
 
-                if (Dungeon.level.heroFOV[cell]) {
+                if (isVisibleCell(cell)) {
                     CellEmitter.center(cell).burst(BlastParticle.FACTORY, 30);
                 }
 
@@ -303,7 +312,7 @@ public class SpiderJar extends ArmorAbility {
                 PathFinder.buildDistanceMap( cell, explodable, explosionRange() );
                 for (int i = 0; i < PathFinder.distance.length; i++) {
                     if (PathFinder.distance[i] != Integer.MAX_VALUE) {
-                        if (Dungeon.level.heroFOV[i]) {
+                        if (isVisibleCell(i)) {
                             CellEmitter.get(i).burst(SmokeParticle.FACTORY, 4);
                         }
                         if (Dungeon.level.flamable[i]) {
@@ -329,7 +338,7 @@ public class SpiderJar extends ArmorAbility {
                     }
                     int m=0;
                     int M=0;
-                    if(hero.hasTalent(Talent.FIREWORK)){
+                    if(hero != null && hero.hasTalent(Talent.FIREWORK)){
                         if(hero.pointsInTalent(Talent.FIREWORK)>1){
                             M=10;
                         }
@@ -337,9 +346,7 @@ public class SpiderJar extends ArmorAbility {
                         M+=(int)((hero.pointsInTalent(Talent.FIREWORK))/2)*10;
                     }
                     int dmg = Random.NormalIntRange(m, M);
-                    if(hero.hasTalent(Talent.BOMB_MANIAC)){
-                        dmg*=1+hero.pointsInTalent(Talent.BOMB_MANIAC)*0.25;
-                    }
+                    dmg = Bomb.damageWithBombTalents(hero, dmg);
                     if(ch instanceof Hero){
                         dmg*=1.5f;
                     }
@@ -348,9 +355,7 @@ public class SpiderJar extends ArmorAbility {
                     if (dmg > 0) {
                         ch.damage(dmg, this, DamageTag.PHYSICAL);
                     }
-                    if(hero.hasTalent(Talent.SHOCK_BOMB) && ch!=hero && ch.isAlive()){
-                        Buff.affect(ch, Paralysis.class,hero.pointsInTalent(Talent.SHOCK_BOMB));
-                    }
+                    if (ch.isAlive()) Bomb.applyShockBomb(hero, ch);
 
                     if (ch == hero && !ch.isAlive()) {
                         GLog.n(Messages.get(SpiderJar.Spider.class, "ondeath"));
@@ -359,6 +364,7 @@ public class SpiderJar extends ArmorAbility {
                 }
                 for (int p = 0; p < PathFinder.NEIGHBOURS9.length; p++) {
                     int i = cell + PathFinder.NEIGHBOURS9[p];
+                    if (i < 0 || i >= Dungeon.level.map.length) continue;
                     if ((Dungeon.level.map[i] == Terrain.REGION_DECO
                             || Dungeon.level.map[i] == Terrain.REGION_DECO_ALT)
                             && !(Dungeon.level instanceof SewerLevel)){
@@ -379,29 +385,50 @@ public class SpiderJar extends ArmorAbility {
     }
 
 
-    public static class SpiderFuse extends Noisemaker.NoisemakerFuse {
+    private static boolean isValidCell(int cell) {
+        return Dungeon.level != null && cell >= 0 && cell < Dungeon.level.map.length;
+    }
+
+    private static boolean isVisibleCell(int cell) {
+        return isValidCell(cell)
+                && ShatteredPixelDungeon.scene() instanceof GameScene
+                && Dungeon.level.heroFOV[cell];
+    }
+
+    public static class SpiderFuse extends Bomb.Fuse {
         public int l=0;
-        public Bomb.Fuse ignite(Bomb bomb){
-            this.bomb = bomb;
+        private int cell = -1;
+        private static final String CELL = "cell";
+
+        @Override
+        public SpiderFuse ignite(Bomb bomb){
+            super.ignite(bomb);
+            return this;
+        }
+
+        public SpiderFuse ignite(Bomb bomb, int cell){
+            super.ignite(bomb);
+            this.cell = cell;
             return this;
         }
 
         @Override
         protected boolean act() {
-            if (bomb.fuse != this){
-                Actor.remove( this );
+            if (bomb == null || bomb.fuse != this){
+                snuff();
                 return true;
             }
 
-            for (Heap heap : Dungeon.level.heaps.valueList()) {
-                if (heap.items.contains(bomb)) {
-                    //active noisemakers cannot be snuffed out, blow it up!
-                    int maxl=3;
-                    if(this.bomb instanceof SmallSpider){
-                        maxl = 10;
-                        if(hero.pointsInTalent(Talent.FIREWORK)>2){
-                            maxl=15;
-                        }
+            Heap heap = findHeap();
+            if (heap != null) {
+                int maxl=3;
+                Hero hero = Dungeon.hero;
+                if(this.bomb instanceof SmallSpider){
+                    maxl = 10;
+                    if(hero != null && hero.pointsInTalent(Talent.FIREWORK)>2){
+                        maxl=15;
+                    }
+                    if (heap.sprite != null && heap.sprite.parent != null) {
                         switch (Random.Int(5)){
                             default:
                                 break; //do nothing
@@ -418,42 +445,63 @@ public class SpiderJar extends ArmorAbility {
                                 new Flare(6, 32).color(0xFFAA00, true).show(heap.sprite,3);
                                 break;
                         }
-                        if(Math.floorMod(l,3)==1) {
-                            CellEmitter.center(heap.pos).start(Speck.factory(Speck.SCREAM), 0.3f, 3);
+                    }
+                    if(Math.floorMod(l,3)==1 && isVisibleCell(heap.pos)) {
+                        CellEmitter.center(heap.pos).start(Speck.factory(Speck.SCREAM), 0.3f, 3);
+                    }
+
+                }
+                if(Math.floorMod(l,2)==1) {
+                    for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
+                        if (mob.state != mob.SLEEPING) {
+                            mob.beckon(heap.pos);
                         }
-
                     }
-                    if(Math.floorMod(l,2)==1) {
-                        for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
-                            if (mob.state != mob.SLEEPING) {
-                                mob.beckon(heap.pos);
-                            }
-                        }
-
-
-                    }
-                    if(!(this.bomb instanceof SmallSpider)){
-                        new Flare(6, 32).color(0xFFB7C5, true).show(heap.sprite,3);
-                    }
-                    l+=1;
-                    if (l >= maxl){
-                        trigger(heap);
-                    }
-                    spend(TICK);
+                }
+                if(!(this.bomb instanceof SmallSpider)
+                        && heap.sprite != null && heap.sprite.parent != null){
+                    new Flare(6, 32).color(0xFFB7C5, true).show(heap.sprite,3);
+                }
+                l+=1;
+                if (l >= maxl){
+                    trigger(heap);
                     return true;
                 }
+                spend(TICK);
+                return true;
             }
             bomb.fuse = null;
-            Actor.remove( this );
+            snuff();
             return true;
+        }
+
+        private Heap findHeap() {
+            if (Dungeon.level == null) return null;
+            if (isValidCell(cell)) {
+                Heap heap = Dungeon.level.heaps.get(cell);
+                if (heap != null && heap.items.contains(bomb)) return heap;
+            }
+            for (Heap heap : Dungeon.level.heaps.valueList()) {
+                if (heap.items.contains(bomb)) {
+                    cell = heap.pos;
+                    return heap;
+                }
+            }
+            return null;
         }
 
         @Override
         //first trigger sets the alarm mechanism, second explodes
         protected void trigger(Heap heap) {
+            if (bomb == null) {
+                snuff();
+                return;
+            }
+            int explosionCell = heap.pos;
             heap.remove(bomb);
-            bomb.explode(heap.pos);
-            Actor.remove(this);
+            bomb.fuse = null;
+            snuff();
+            bomb.explode(explosionCell);
         }
 
         private static final String L = "l";
@@ -462,12 +510,14 @@ public class SpiderJar extends ArmorAbility {
         public void storeInBundle(Bundle bundle) {
             super.storeInBundle(bundle);
             bundle.put(L, l);
+            bundle.put(CELL, cell);
         }
 
         @Override
         public void restoreFromBundle(Bundle bundle) {
             super.restoreFromBundle(bundle);
             l = bundle.getInt(L);
+            if (bundle.contains(CELL)) cell = bundle.getInt(CELL);
         }
         @Override
         public boolean freeze(){

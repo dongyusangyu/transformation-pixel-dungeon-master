@@ -30,7 +30,9 @@ import com.watabou.utils.Callback;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Lightning extends Group {
@@ -39,7 +41,7 @@ public class Lightning extends Group {
 	
 	private float life;
 
-	private List<Arc> arcs;
+	private final List<Arc> arcs;
 	
 	private Callback callback;
 
@@ -63,7 +65,10 @@ public class Lightning extends Group {
 		
 		super();
 
-		this.arcs = arcs;
+		// The caller may reuse and mutate its work list while this animation is
+		// still being updated on the render thread. Keep an immutable snapshot so
+		// each animation owns the arcs it renders.
+		this.arcs = Collections.unmodifiableList(new ArrayList<>(arcs));
 		for (Arc arc : this.arcs)
 			add(arc);
 

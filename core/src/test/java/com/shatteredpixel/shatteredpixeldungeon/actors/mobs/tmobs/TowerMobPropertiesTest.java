@@ -20,6 +20,7 @@ public class TowerMobPropertiesTest {
 	@Test
 	public void constructsUseMechanicalAndProjectionProperties() {
 		assertProperties("MechanicalFist", "INORGANIC", "LARGE");
+		assertProperties("DarkMechanicalFist", "DEMONIC");
 		assertProperties("AlienatedPrismaticGuard", "INORGANIC");
 		assertProperties("TwistedMirror", "INORGANIC");
 	}
@@ -38,6 +39,7 @@ public class TowerMobPropertiesTest {
 		assertProperties("Corpse", "UNDEAD");
 		assertProperties("RoastLambWarlock", "UNDEAD", "FIERY");
 		assertProperties("SoulCollector", "UNDEAD");
+		assertProperties("DeathButterfly", "UNDEAD");
 		assertProperties("Obscura", "DEMONIC");
 		assertProperties("WildDread", "DEMONIC", "INORGANIC");
 		assertProperties("PowerfulWraith");

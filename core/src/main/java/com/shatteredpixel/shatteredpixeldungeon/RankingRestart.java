@@ -25,6 +25,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
@@ -68,15 +73,22 @@ public final class RankingRestart {
 		int challenges = record.gameData.contains(Rankings.CHALLENGES)
 				? record.gameData.getInt(Rankings.CHALLENGES)
 				: 0;
-		return (challenges & Challenges.RED_ENVELOPE) == 0;
+		return (challenges & Challenges.RED_ENVELOPE) == 0
+				&& !Rankings.INSTANCE.isRestartReserved(record.gameID);
 	}
 
 	public static boolean begin(Rankings.Record record) {
-		if (!isEligible(record) || pendingRecord != null) {
+		Rankings.Record source = Rankings.INSTANCE.resolveRestartSource(record);
+		if (!isEligible(source) || pendingRecord != null) {
 			return false;
 		}
-		pendingRecord = record;
+		pendingRecord = source;
 		return true;
+	}
+
+	public static boolean canBegin(Rankings.Record record) {
+		return pendingRecord == null
+				&& isEligible(Rankings.INSTANCE.resolveRestartSource(record));
 	}
 
 	public static boolean hasPendingRestart() {
@@ -88,9 +100,9 @@ public final class RankingRestart {
 			throw new IllegalStateException("Invalid ranking restart record");
 		}
 
-		pendingRecord.restarted = true;
+		Rankings.INSTANCE.setRestartReserved(pendingRecord.gameID, true);
 		if (!Rankings.INSTANCE.saveWithResult()) {
-			pendingRecord.restarted = false;
+			Rankings.INSTANCE.setRestartReserved(pendingRecord.gameID, false);
 			throw new IllegalStateException("Unable to reserve ranking restart");
 		}
 		pendingRecordMarked = true;
@@ -109,6 +121,7 @@ public final class RankingRestart {
 		Dungeon.customSeedText = "";
 		Dungeon.seed = nextNewCycleSeed();
 		Dungeon.reinit(false);
+		restoreOwnedBagLimitedDrops(Dungeon.hero);
 		Ghost.Quest.complete();
 		identifyAnonymousItemTypes();
 		Dungeon.hero.belongings.identify();
@@ -148,6 +161,25 @@ public final class RankingRestart {
 	static void refreshHealthForNewCycle(Hero hero) {
 		hero.updateHT(false);
 		hero.HP = hero.HT;
+	}
+
+	static void restoreOwnedBagLimitedDrops(Hero hero) {
+		if (hero == null || hero.belongings == null || hero.belongings.backpack == null) {
+			return;
+		}
+		for (Item item : hero.belongings.backpack) {
+			if (item instanceof VelvetPouch) {
+				Dungeon.LimitedDrops.VELVET_POUCH.drop();
+			} else if (item instanceof ScrollHolder) {
+				Dungeon.LimitedDrops.SCROLL_HOLDER.drop();
+			} else if (item instanceof PotionBandolier) {
+				Dungeon.LimitedDrops.POTION_BANDOLIER.drop();
+			} else if (item instanceof MagicalHolster) {
+				Dungeon.LimitedDrops.MAGICAL_HOLSTER.drop();
+			} else if (item instanceof HikingBackpack) {
+				Dungeon.LimitedDrops.HIKING_BACKPACK.drop();
+			}
+		}
 	}
 
 	static Preparation prepareHero(Hero hero) {
@@ -400,8 +432,7 @@ public final class RankingRestart {
 				&& !(item instanceof Artifact)
 				&& (item instanceof EquipableItem || item instanceof Wand)
 				&& item.isUpgradable()) {
-			item.level(0);
-			item.upgradeScrollUses = 0;
+			item.resetUpgradeStateForNewCycle();
 		}
 	}
 
@@ -512,14 +543,22 @@ public final class RankingRestart {
 			return;
 		}
 		Rankings.INSTANCE.load();
-		Rankings.Record released = findRestartRecord(
-				Rankings.INSTANCE.records, info.newCycleSourceGameID, info);
-		if (released == null) {
-			return;
+		String sourceGameID = info.newCycleSourceGameID;
+		if (sourceGameID == null || sourceGameID.isEmpty()) {
+			Rankings.Record released = findRestartRecord(
+					Rankings.INSTANCE.records, null, info);
+			if (released == null) {
+				released = findRestartRecord(
+						Rankings.INSTANCE.heroHallRecords(), null, info);
+			}
+			if (released == null) {
+				return;
+			}
+			sourceGameID = released.gameID;
 		}
-		released.restarted = false;
+		Rankings.INSTANCE.setRestartReserved(sourceGameID, false);
 		if (!Rankings.INSTANCE.saveWithResult()) {
-			released.restarted = true;
+			Rankings.INSTANCE.setRestartReserved(sourceGameID, true);
 		}
 	}
 
@@ -588,9 +627,9 @@ public final class RankingRestart {
 
 	public static void cancel() {
 		if (pendingRecord != null && pendingRecordMarked) {
-			pendingRecord.restarted = false;
+			Rankings.INSTANCE.setRestartReserved(pendingRecord.gameID, false);
 			if (!Rankings.INSTANCE.saveWithResult()) {
-				pendingRecord.restarted = true;
+				Rankings.INSTANCE.setRestartReserved(pendingRecord.gameID, true);
 			}
 		}
 		pendingRecord = null;

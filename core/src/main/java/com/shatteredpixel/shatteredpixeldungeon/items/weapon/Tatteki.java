@@ -329,7 +329,7 @@ public class Tatteki extends Weapon {
         return new Tamaru();
     }
 
-    public class Tamaru extends MissileWeapon {
+    public class Tamaru extends MissileWeapon implements MissileWeapon.QianfaRepeatProjectile {
 
         {
             image = ItemSpriteSheet.TAMARU;
@@ -343,9 +343,15 @@ public class Tatteki extends Weapon {
         }
 
         @Override
+        protected MissileWeapon createPhantomProjectile() {
+            return markAsPhantom(Tatteki.this.knockTamaru());
+        }
+
+        @Override
         public int defaultQuantity() {
             return 1;
         }
+
         @Override
         public int min(int lvl) {
             int dmg = lvl*2;
@@ -435,12 +441,14 @@ public class Tatteki extends Weapon {
 
         @Override
         protected void onThrow( int cell ) {
-            for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
-                if (mob.alignment == Char.Alignment.ENEMY && Dungeon.level.heroFOV[mob.pos]) {
-                    Buff.affect( mob, Terror.class, 3 ).object = curUser.id();
-                }
-            }
-            if(Tatteki.this.bomb!=null){
+			if (!phantomProjectile) {
+				for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
+					if (mob.alignment == Char.Alignment.ENEMY && Dungeon.level.heroFOV[mob.pos]) {
+						Buff.affect( mob, Terror.class, 3 ).object = curUser.id();
+					}
+				}
+			}
+			if(!phantomProjectile && Tatteki.this.bomb!=null){
                 Tatteki.this.bombnumber--;
                 Bomb b = Reflection.newInstance(Tatteki.this.bomb.getClass());
                 b.explode(cell);
@@ -455,9 +463,11 @@ public class Tatteki extends Weapon {
                 triggerSeerShot(cell);
                 Splash.at( cell, 0x88FFFFFF, 1 );
             } else {
-                if (!curUser.shoot( enemy, this )) {
-                    Splash.at(cell, 0x88FFFFFF, 1);
-                }
+				if (!curUser.shoot( enemy, this )) {
+					Splash.at(cell, 0x88FFFFFF, 1);
+				} else {
+					onSuccessfulThrow(enemy);
+				}
             }
         }
         @Override

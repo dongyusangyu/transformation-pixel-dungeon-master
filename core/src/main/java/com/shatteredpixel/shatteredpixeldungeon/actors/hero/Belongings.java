@@ -43,6 +43,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurs
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.LakeSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -208,6 +210,8 @@ public class Belongings implements Iterable<Item> {
 
 	public void onSecondaryWeaponChanged() {
 		if (backpack != null) backpack.rebalanceFallbackStorage();
+		LakeSword.MagicTracker.sync(owner);
+		MountainGuard.syncEnergyTracker(owner);
 	}
 
 	public KindOfWeapon weapon = null;

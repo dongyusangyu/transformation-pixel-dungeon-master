@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.custom.testmode.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
@@ -11,6 +12,8 @@ import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class TestArenaLevelTest {
@@ -47,6 +50,16 @@ public class TestArenaLevelTest {
 			Dungeon.depth = oldDepth;
 			Dungeon.branch = oldBranch;
 		}
+	}
+
+	@Test
+	public void suppliesTowerMobsForTriggeredEffects() throws Exception {
+		Level level = (Level) Class.forName(LEVEL_CLASS).getDeclaredConstructor().newInstance();
+
+		Mob generated = level.createMob();
+
+		assertNotNull(generated);
+		assertSame(generated.WANDERING, generated.state);
 	}
 
 	@Test

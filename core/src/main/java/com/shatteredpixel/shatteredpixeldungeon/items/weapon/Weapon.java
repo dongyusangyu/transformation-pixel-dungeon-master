@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Berserk;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightEquipmentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RuneMark;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
@@ -171,7 +172,8 @@ abstract public class Weapon extends KindOfWeapon {
 
 		boolean becameAlly = false;
 		boolean wasAlly = defender.alignment == Char.Alignment.ALLY;
-		if (attacker.buff(MagicImmune.class) == null) {
+		if (attacker.buff(MagicImmune.class) == null
+				&& !HungerKnightEquipmentSeal.isActive(attacker)) {
 			Enchantment trinityEnchant = null;
 
             //only when it's the hero or a char that uses the hero's weapon
@@ -526,6 +528,12 @@ abstract public class Weapon extends KindOfWeapon {
 		return level;
 	}
 
+	@Override
+	public void resetUpgradeStateForNewCycle() {
+		curseInfusionBonus = false;
+		super.resetUpgradeStateForNewCycle();
+	}
+
     public int truelevel() {
         int level = super.level();
 
@@ -655,7 +663,8 @@ abstract public class Weapon extends KindOfWeapon {
 	public boolean hasEnchant(Class<?extends Enchantment> type, Char owner) {
 		if(owner == null ){
 			return false;
-		} else if (  owner.buff(MagicImmune.class) != null) {
+		} else if (owner.buff(MagicImmune.class) != null
+				|| HungerKnightEquipmentSeal.isActive(owner)) {
 			return false;
 		} else if (enchantment != null
 				&& !enchantment.curse()

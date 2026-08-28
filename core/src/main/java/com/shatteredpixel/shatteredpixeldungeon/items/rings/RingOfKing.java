@@ -246,6 +246,11 @@ public class RingOfKing extends Ring{
         if (curseInfusionBonus) level += 1 + level/6;
         return level;
     }
+    @Override
+    public void resetUpgradeStateForNewCycle() {
+        curseInfusionBonus = false;
+        super.resetUpgradeStateForNewCycle();
+    }
     public int truelevel() {
         int level = Dungeon.hero == null ? 0 : Dungeon.hero.lvl*2/5+(buffedLvl()-level())*2;
         if (curseInfusionBonus) level += 1 + level/6;

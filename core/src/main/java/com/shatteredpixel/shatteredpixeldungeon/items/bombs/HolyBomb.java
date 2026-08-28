@@ -76,6 +76,7 @@ public class HolyBomb extends Bomb {
 				
 				//bomb deals an additional 50% damage to unholy enemies
 				int damage = Math.round(Random.NormalIntRange( Dungeon.scalingDepth()+4, 12 + 3*Dungeon.scalingDepth() ) * 0.5f);
+				damage = damageWithBombTalents(this, Dungeon.hero, damage);
 				ch.damage(damage, new HolyDamage(), DamageTag.MAGICAL);
 			}
 		}

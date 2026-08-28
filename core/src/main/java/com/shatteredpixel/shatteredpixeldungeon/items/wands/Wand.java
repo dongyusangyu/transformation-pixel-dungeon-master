@@ -579,6 +579,13 @@ public abstract class Wand extends Item {
 		level += resinBonus;
 		return level;
 	}
+
+	@Override
+	public void resetUpgradeStateForNewCycle() {
+		curseInfusionBonus = false;
+		resinBonus = 0;
+		super.resetUpgradeStateForNewCycle();
+	}
 	
 	@Override
 	public Item upgrade() {

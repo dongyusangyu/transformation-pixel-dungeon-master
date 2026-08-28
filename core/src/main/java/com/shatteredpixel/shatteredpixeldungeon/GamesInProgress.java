@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class GamesInProgress {
 	
@@ -153,6 +155,7 @@ public class GamesInProgress {
 		info.lastPlayed = Dungeon.lastPlayed;
 
 		info.depth = Dungeon.depth;
+		info.branch = Dungeon.branch;
 		info.challenges = Dungeon.challenges;
 
 		info.seed = Dungeon.seed;
@@ -200,6 +203,18 @@ public class GamesInProgress {
 			}
 		}
 		return false;
+	}
+
+	static Set<String> activeNewCycleSourceGameIDs() {
+		LinkedHashSet<String> sourceGameIDs = new LinkedHashSet<>();
+		for (int slot = 1; slot <= MAX_SLOTS; slot++) {
+			Info info = check(slot);
+			if (info != null && info.newCycle && info.newCycleSourceGameID != null
+					&& !info.newCycleSourceGameID.isEmpty()) {
+				sourceGameIDs.add(info.newCycleSourceGameID);
+			}
+		}
+		return sourceGameIDs;
 	}
 
 	/**

@@ -29,6 +29,7 @@ import static com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth.
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -43,9 +44,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.LeatherArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.MailArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.PlateArmor;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.ScaleArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ParchmentScrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -59,7 +62,10 @@ import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
+import com.watabou.utils.Point;
 import com.watabou.utils.Random;
+
+import java.util.ArrayList;
 
 public class Ghost extends NPC {
 
@@ -135,6 +141,39 @@ public class Ghost extends NPC {
 	public boolean reset() {
 		return true;
 	}
+
+	/**
+	 * Teleports the ghost within the exit room instead of using a global destination.
+	 * The ghost's LARGE property is a room-containment rule, not a reason to strand it.
+	 */
+	public boolean teleportWithinQuestArea() {
+		if (!(Dungeon.level instanceof RegularLevel)) {
+			return false;
+		}
+
+		RegularLevel level = (RegularLevel) Dungeon.level;
+		Room homeRoom = level.room(Dungeon.level.exit());
+		if (homeRoom == null) {
+			return false;
+		}
+
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (Point point : homeRoom.charPlaceablePoints(level)) {
+			int cell = level.pointToCell(point);
+			Char occupant = Actor.findChar(cell);
+			if (cell != Dungeon.level.exit()
+					&& Dungeon.level.passable[cell]
+					&& !Dungeon.level.solid[cell]
+					&& Dungeon.level.openSpace[cell]
+					&& Dungeon.level.heaps.get(cell) == null
+					&& (occupant == null || occupant == this)) {
+				candidates.add(cell);
+			}
+		}
+
+		return !candidates.isEmpty()
+				&& ScrollOfTeleportation.teleportToLocation(this, Random.element(candidates));
+	}
 	
 	@Override
 	public boolean interact(Char c) {
@@ -201,7 +240,7 @@ public class Ghost extends NPC {
 					txt_quest = Messages.get(this, "crab_1", Messages.titleCase(Dungeon.hero.name())); break;
 			}
 
-			questBoss.pos = Dungeon.level.randomRespawnCell( this );
+			questBoss.pos = Dungeon.level.randomRespawnCell( questBoss );
 
 			if (questBoss.pos != -1) {
 				GameScene.add(questBoss);

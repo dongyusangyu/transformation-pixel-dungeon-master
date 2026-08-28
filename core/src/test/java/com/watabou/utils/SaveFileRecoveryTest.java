@@ -163,6 +163,188 @@ public class SaveFileRecoveryTest {
 	}
 
 	@Test
+	public void committedSaveStoresLevelsOutsideMainFile() throws IOException {
+		Bundle game = bundleWithValue(1);
+		SaveManager.putLevel(game, 100, 3, bundleWithValue(1000));
+
+		SaveManager.saveGame(1, game);
+
+		Bundle main = FileUtils.bundleFromFile("save-001.json");
+		assertFalse(main.contains("levels"));
+		assertTrue(FileUtils.dirExists("save-001-levels"));
+		assertEquals(1000, SaveManager.loadLevel(1, 100, 3).getInt("value"));
+	}
+
+	@Test
+	public void committedSaveStoresPendingLevelEventsOutsideMainFile() throws IOException {
+		Bundle payload = new Bundle();
+		payload.put("value", 22);
+		Bundle events = new Bundle();
+		events.put("-2147483626", payload);
+		Bundle game = bundleWithValue(1);
+		game.put("pending_level_events", events);
+
+		SaveManager.saveGame(1, game);
+
+		Bundle main = FileUtils.bundleFromFile("save-001.json");
+		assertFalse(main.contains("pending_level_events"));
+		assertTrue(FileUtils.dirExists("save-001-events"));
+		assertEquals(22, SaveManager.loadGame(1)
+				.getBundle("pending_level_events")
+				.getBundle("-2147483626")
+				.getInt("value"));
+	}
+
+	@Test
+	public void firstSplitSaveMigratesHistoricalEmbeddedLevels() throws IOException {
+		Bundle legacy = bundleWithValue(1);
+		SaveManager.putLevel(legacy, 22, 3, bundleWithValue(220));
+		FileUtils.bundleToFile("save-001.json", legacy);
+
+		SaveManager.saveGame(1, bundleWithValue(2));
+
+		assertFalse(FileUtils.bundleFromFile("save-001.json").contains("levels"));
+		assertEquals(220, SaveManager.loadLevel(1, 22, 3).getInt("value"));
+	}
+
+	@Test
+	public void savingOneMoreTowerFloorDoesNotRewriteHistoricalFloorShards() throws IOException {
+		Bundle initial = bundleWithValue(1);
+		for (int depth = 1; depth <= 120; depth++) {
+			SaveManager.putLevel(initial, depth, 3, bundleWithValue(depth));
+		}
+		SaveManager.saveGame(1, initial);
+		assertEquals(120, shardCount("save-001-levels"));
+
+		Bundle next = bundleWithValue(2);
+		SaveManager.putLevel(next, 121, 3, bundleWithValue(121));
+		SaveManager.saveGame(1, next);
+
+		assertEquals(121, shardCount("save-001-levels"));
+		assertEquals(1, SaveManager.loadLevel(1, 1, 3).getInt("value"));
+		assertEquals(121, SaveManager.loadLevel(1, 121, 3).getInt("value"));
+	}
+
+	@Test
+	public void consumedPendingEventIsNotHydratedAgain() throws IOException {
+		Bundle payload = bundleWithValue(22);
+		Bundle events = new Bundle();
+		events.put("-2147483626", payload);
+		Bundle game = bundleWithValue(1);
+		game.put("pending_level_events", events);
+		SaveManager.saveGame(1, game);
+
+		Bundle consumed = bundleWithValue(2);
+		consumed.put("pending_level_events", new Bundle());
+		SaveManager.saveGame(1, consumed);
+
+		Bundle loaded = SaveManager.loadGame(1);
+		assertFalse(loaded.contains("pending_level_events"));
+	}
+
+	@Test
+	public void copyAndDeleteIncludeSplitSaveShards() throws IOException {
+		Bundle payload = bundleWithValue(22);
+		Bundle events = new Bundle();
+		events.put("-2147483626", payload);
+		Bundle source = bundleWithValue(1);
+		SaveManager.putLevel(source, 22, 3, bundleWithValue(220));
+		source.put("pending_level_events", events);
+		SaveManager.saveGame(1, source);
+
+		assertTrue(SaveManager.copySave(1, 2));
+		assertEquals(220, SaveManager.loadLevel(2, 22, 3).getInt("value"));
+		assertEquals(22, SaveManager.loadGame(2).getBundle("pending_level_events")
+				.getBundle("-2147483626").getInt("value"));
+		assertTrue(SaveManager.deleteGame(2));
+		assertFalse(FileUtils.dirExists("save-002-levels"));
+		assertFalse(FileUtils.dirExists("save-002-events"));
+	}
+
+	@Test
+	public void portableExportContainsLevelsAndPendingEvents() throws IOException {
+		Bundle events = new Bundle();
+		events.put("-2147483626", bundleWithValue(22));
+		Bundle source = bundleWithValue(1);
+		SaveManager.putLevel(source, 22, 3, bundleWithValue(220));
+		source.put("pending_level_events", events);
+		SaveManager.saveGame(1, source);
+
+		SaveManager.writePortableSave(1, "portable-save.json");
+
+		Bundle exported = FileUtils.bundleFromFile("portable-save.json");
+		assertEquals(220, exported.getBundle("levels")
+				.getBundle("depth_22_3").getInt("value"));
+		assertEquals(22, exported.getBundle("pending_level_events")
+				.getBundle("-2147483626").getInt("value"));
+		assertFalse(exported.contains("level_manifest"));
+	}
+
+	@Test
+	public void totalSaveSizeIncludesSplitShards() throws IOException {
+		Bundle source = bundleWithValue(1);
+		SaveManager.putLevel(source, 100, 3, bundleWithValue(100));
+		SaveManager.saveGame(1, source);
+
+		assertTrue(SaveManager.getTotalSize() > FileUtils.fileLength("save-001.json"));
+	}
+
+	@Test
+	public void uncommittedLevelShardIsIgnored() throws IOException {
+		Bundle committed = bundleWithValue(1);
+		SaveManager.putLevel(committed, 1, 0, bundleWithValue(10));
+		SaveManager.saveGame(1, committed);
+		FileUtils.bundleToFile("save-001-levels/depth_1_0-r999.dat", bundleWithValue(999));
+
+		assertEquals(10, SaveManager.loadLevel(1, 1, 0).getInt("value"));
+	}
+
+	@Test
+	public void corruptMainManifestFallsBackToBackupShardGeneration() throws IOException {
+		Bundle first = bundleWithValue(1);
+		SaveManager.putLevel(first, 1, 0, bundleWithValue(10));
+		SaveManager.saveGame(1, first);
+
+		Bundle second = bundleWithValue(2);
+		SaveManager.putLevel(second, 1, 0, bundleWithValue(20));
+		SaveManager.saveGame(1, second);
+		java.nio.file.Files.write(tempDir.resolve("save-001.json"),
+				"not a bundle".getBytes(StandardCharsets.UTF_8));
+		SaveManager.clearCache();
+
+		assertEquals(1, SaveManager.loadGame(1).getInt("value"));
+		assertEquals(10, SaveManager.loadLevel(1, 1, 0).getInt("value"));
+	}
+
+	@Test
+	public void splitShardCleanupRetainsOnlyCurrentAndBackupGenerations() throws IOException {
+		for (int value = 1; value <= 3; value++) {
+			Bundle game = bundleWithValue(value);
+			SaveManager.putLevel(game, 1, 0, bundleWithValue(value * 10));
+			SaveManager.saveGame(1, game);
+		}
+
+		assertEquals(2, shardCount("save-001-levels"));
+		assertEquals(30, SaveManager.loadLevel(1, 1, 0).getInt("value"));
+	}
+
+	@Test
+	public void levelBundleCacheNeverExceedsElevenEntries() throws IOException {
+		Bundle game = bundleWithValue(1);
+		for (int depth = 1; depth <= 20; depth++) {
+			SaveManager.putLevel(game, depth, 3, bundleWithValue(depth));
+		}
+		SaveManager.saveGame(1, game);
+
+		for (int depth = 1; depth <= 20; depth++) {
+			SaveManager.loadLevel(1, depth, 3);
+		}
+
+		assertTrue(levelCacheSize() <= 11);
+		assertEquals(1, SaveManager.loadLevel(1, 1, 3).getInt("value"));
+	}
+
+	@Test
 	public void checkpointCanRecoverWhenPrimaryAndBackupAreMissing() throws IOException {
 		SaveManager.saveGame(1, bundleWithValue(1));
 		SaveManager.saveCheckpoint(1, bundleWithValue(2));
@@ -300,6 +482,24 @@ public class SaveFileRecoveryTest {
 		Bundle bundle = new Bundle();
 		bundle.put("value", value);
 		return bundle;
+	}
+
+	private int shardCount(String directory) {
+		int count = 0;
+		for (String file : FileUtils.filesInDir(directory)) {
+			if (file.endsWith(".dat")) count++;
+		}
+		return count;
+	}
+
+	private int levelCacheSize() {
+		try {
+			Method method = SaveManager.class.getDeclaredMethod("levelCacheSizeForTesting");
+			method.setAccessible(true);
+			return (Integer) method.invoke(null);
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
 	}
 
 	private static class FailingOutputStream extends OutputStream {

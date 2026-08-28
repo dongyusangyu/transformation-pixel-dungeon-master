@@ -7,7 +7,6 @@ import static com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfWealth.
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
@@ -19,7 +18,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMet
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -108,8 +106,7 @@ public class SpecialPackage extends Item {
                     }else if(index == 3){
                         item=new SpiritBow();
                     }else if(index == 4){
-                        Buff.affect(hero, MeleeWeapon.MartialMastery.class);
-                        MeleeWeapon.syncCharger(hero);
+                        hero.grantMartialMastery();
                         curUser = hero;
                         curItem.detach(curUser.belongings.backpack);
                         Catalog.countUse(curItem.getClass());

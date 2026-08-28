@@ -49,13 +49,8 @@ public abstract class Key extends Item {
 	private boolean legacyLocation;
 
 	protected Key() {
-		branch = Dungeon.branch;
-	}
-
-	public void bindToCurrentLocation() {
 		depth = Dungeon.depth;
 		branch = Dungeon.branch;
-		legacyLocation = false;
 	}
 
 	public boolean migrateLegacyLocation(int currentDepth, int currentBranch) {
@@ -83,7 +78,6 @@ public abstract class Key extends Item {
 
 	@Override
 	public boolean doPickUp(Hero hero, int pos) {
-		bindToCurrentLocation();
 		Catalog.setSeen(getClass());
 		Statistics.itemTypesDiscovered.add(getClass());
 		GameScene.pickUpJournal(this, pos);

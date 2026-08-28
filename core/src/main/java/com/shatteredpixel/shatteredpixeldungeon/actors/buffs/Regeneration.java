@@ -33,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ChaoticCenser;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.LakeSword;
 import com.watabou.utils.Bundle;
 
 public class Regeneration extends Buff {
@@ -96,6 +97,7 @@ public class Regeneration extends Buff {
 				if(Dungeon.hero.subClass.is(HeroSubClass.WATERSLIME)){
 					delay/=Math.max(target.HT* 0.01 * (1+Dungeon.hero.pointsInTalent(Talent.WATER_REGENERATION)/6f),1);
 				}
+				delay = adjustedDelayForLakeSword((Hero) target, delay);
 				partialRegen += 1f / delay;
 
 				if (partialRegen >= 1) {
@@ -146,6 +148,7 @@ public class Regeneration extends Buff {
 				if(Dungeon.hero.subClass.is(HeroSubClass.WATERSLIME)){
 					delay/=Math.max(target.HT* 0.01 * (1+Dungeon.hero.pointsInTalent(Talent.WATER_REGENERATION)/6f),1);
 				}
+				delay = adjustedDelayForLakeSword((Hero) target, delay);
 				partialRegen += 1f / delay;
 
 				if (partialRegen >= 1) {
@@ -174,6 +177,10 @@ public class Regeneration extends Buff {
 	
 	public int regencap(){
 		return target.HT;
+	}
+
+	static float adjustedDelayForLakeSword(Hero hero, float finalDelay) {
+		return finalDelay * LakeSword.naturalRegenDelayFactor(hero);
 	}
 
 	public static boolean regenOn(){

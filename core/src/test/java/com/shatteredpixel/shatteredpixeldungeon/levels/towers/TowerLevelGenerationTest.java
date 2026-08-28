@@ -85,7 +85,7 @@ public class TowerLevelGenerationTest {
 	}
 
 	@Test
-	public void specialRoomKeysAreReboundToTheActualTowerFloor() {
+	public void specialRoomKeysAreAssignedTheActualTowerFloorBeforeSpawning() {
 		TestKey key = new TestKey();
 		key.depth = 21;
 

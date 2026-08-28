@@ -62,28 +62,30 @@ public class BlobsEmitter extends TestItem {
 //            new Speck().image(Speck.HEALING)
 //    ));
 
-    private static ArrayList<Image> blobImages = new ArrayList<>();
-    static {
-        blobImages.add(new Speck().image(Speck.BUBBLE));
-        blobImages.add(new Speck().image(Speck.BLIZZARD));
-        blobImages.add(new Speck().image(Speck.CONFUSION));
-        blobImages.add(new Speck().image(Speck.CORROSION));
-        blobImages.add(new SparkParticle());
-        blobImages.add(new FlameParticle());
-        blobImages.add(new ShaftParticle());
-        blobImages.add(new SnowParticle());
-        blobImages.add(new GooSprite.GooParticle());
-        blobImages.add(new Speck().image(Speck.INFERNO));
-        blobImages.add(new Speck().image(Speck.PARALYSIS));
-        blobImages.add(new LeafParticle());
-        blobImages.add(new SacrificialParticle());
-        blobImages.add(new Speck().image(Speck.SMOKE));
-        blobImages.add(new Speck().image(Speck.STENCH));
-        blobImages.add(new Speck().image(Speck.STORM));
-        blobImages.add(new Speck().image(Speck.TOXIC));
-        blobImages.add(new Speck().image(Speck.QUESTION));
-        blobImages.add(new Speck().image(Speck.HEALING));
-        blobImages.add(new WebParticle());
+    private static Image blobImage(int blobIndex) {
+        switch (blobIndex) {
+            case 0: return new Speck().image(Speck.BUBBLE);
+            case 1: return new Speck().image(Speck.BLIZZARD);
+            case 2: return new Speck().image(Speck.CONFUSION);
+            case 3: return new Speck().image(Speck.CORROSION);
+            case 4: return new SparkParticle();
+            case 5: return new FlameParticle();
+            case 6: return new ShaftParticle();
+            case 7: return new SnowParticle();
+            case 8: return new GooSprite.GooParticle();
+            case 9: return new Speck().image(Speck.INFERNO);
+            case 10: return new Speck().image(Speck.PARALYSIS);
+            case 11: return new LeafParticle();
+            case 12: return new SacrificialParticle();
+            case 13: return new Speck().image(Speck.SMOKE);
+            case 14: return new Speck().image(Speck.STENCH);
+            case 15: return new Speck().image(Speck.STORM);
+            case 16: return new Speck().image(Speck.TOXIC);
+            case 17: return new Speck().image(Speck.QUESTION);
+            case 18: return new Speck().image(Speck.HEALING);
+            case 19: return new WebParticle();
+            default: return new Speck().image(Speck.BUBBLE);
+        }
     }
 
     private static int index = 0;
@@ -157,14 +159,7 @@ public class BlobsEmitter extends TestItem {
 
             public BlobButton(int blobIndex) {
                 this.blobIndex = blobIndex;
-//            icon(blobImages.get(blobIndex));
-                Image image1 = new Image();
-                if (blobImages.size() > blobIndex) {
-                    image1.copy(blobImages.get(blobIndex));
-                } else {
-                    image1.copy(blobImages.get(0));
-                }
-                icon(image1);
+                icon(blobImage(blobIndex));
             }
 
             @Override

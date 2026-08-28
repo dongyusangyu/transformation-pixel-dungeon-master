@@ -7,19 +7,16 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class AgentMinDatasetRecorder {
 
-	private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS");
 	private static final String ENABLED_PROPERTY = "agentmin.record.enabled";
 	private static final String ENABLED_ENV = "AGENTMIN_RECORD_ENABLED";
 	private static final String DIR_PROPERTY = "agentmin.record.dir";
@@ -238,15 +235,15 @@ public class AgentMinDatasetRecorder {
 		if (writer != null) {
 			return;
 		}
-		Path dir = Paths.get(recordDirectory());
-		Files.createDirectories(dir);
-		runId = "agentmin_demo_" + LocalDateTime.now().format(FILE_TIME);
-		Path file = dir.resolve(runId + ".jsonl");
-		writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8,
-				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-		Path progressFile = dir.resolve(runId + "_progress.log");
-		progressWriter = Files.newBufferedWriter(progressFile, StandardCharsets.UTF_8,
-				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+		File dir = new File(recordDirectory());
+		if (!dir.isDirectory() && !dir.mkdirs() && !dir.isDirectory()) {
+			throw new IOException("Unable to create dataset directory: " + dir);
+		}
+		runId = "agentmin_demo_" + formatFileTimestamp();
+		File file = new File(dir, runId + ".jsonl");
+		writer = newUtf8Writer(file);
+		File progressFile = new File(dir, runId + "_progress.log");
+		progressWriter = newUtf8Writer(progressFile);
 		sampleCount = 0;
 		if (!shutdownHookInstalled) {
 			Runtime.getRuntime().addShutdownHook(new Thread(AgentMinDatasetRecorder::close, "AgentMinDatasetRecorderShutdown"));
@@ -254,6 +251,14 @@ public class AgentMinDatasetRecorder {
 		}
 		AgentMinRuntimeLog.log("dataset recorder writing to " + file);
 		AgentMinRuntimeLog.log("dataset recorder progress log: " + progressFile);
+	}
+
+	static String formatFileTimestamp() {
+		return new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.ROOT).format(new Date());
+	}
+
+	private static BufferedWriter newUtf8Writer(File file) throws IOException {
+		return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file, false), "UTF-8"));
 	}
 
 	private static void reportRewardProgressIfNeeded(AgentMinAction action, long recordedTurns, AgentMinEncodedState encoded) throws IOException {

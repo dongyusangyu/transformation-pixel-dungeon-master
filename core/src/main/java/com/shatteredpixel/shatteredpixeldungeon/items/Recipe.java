@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.food.MeatPie;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.StewedMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfMindVision;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.AquaBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.BlizzardBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.CausticBrew;
@@ -46,8 +47,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfIc
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfToxicEssence;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfShielding;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMysticalEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
@@ -65,6 +68,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Glaive;
@@ -73,7 +77,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RunicBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.GreatGreatGreatsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.AuxiliaryCore;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.RadiantGoldHalberd;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
@@ -118,6 +124,7 @@ public abstract class Recipe {
 		
 		@Override
 		public boolean testIngredients(ArrayList<Item> ingredients) {
+			if (containsEquippedWeapon(ingredients)) return false;
 			
 			int[] needed = inQuantity.clone();
 			
@@ -240,6 +247,7 @@ public abstract class Recipe {
 		@Override
 		public boolean testIngredients(ArrayList<Item> ingredients) {
 			if (ingredients == null || ingredients.isEmpty()) return false;
+			if (containsEquippedWeapon(ingredients)) return false;
 
 			int[] needed = inQuantity.clone();
 			for (Item ingredient : ingredients) {
@@ -282,6 +290,12 @@ public abstract class Recipe {
 				for (int i = 0; i < inputs.length; i++) {
 					if (ingredient.getClass() == inputs[i] && needed[i] > 0) {
 						int used = Math.min(needed[i], ingredient.quantity());
+						if (used > 0 && ingredient instanceof MissileWeapon) {
+							//The consumed set is replaced by the crafted weapon. Invalidate
+							//all detached members so they cannot be reused for extraction.
+							MissileWeapon.UpgradedSetTracker.invalidateSet(
+									hero, (MissileWeapon) ingredient);
+						}
 						ingredient.quantity(ingredient.quantity() - used);
 						needed[i] -= used;
 						break;
@@ -402,6 +416,18 @@ public abstract class Recipe {
                     5,
                     RadiantGoldHalberd.class,
                     0),
+			new WeaponRecipe(
+					new Class[]{Greatsword.class, PotionOfMindVision.class, PotionOfShielding.class},
+					new int[]{1, 3, 3},
+					5,
+					SoulBlade.class,
+					0),
+			new WeaponRecipe(
+					new Class[]{ScrollOfMysticalEnergy.class, ArcaneResin.class, MetamorphosisPrism.class},
+					new int[]{1, 8, 1},
+					5,
+					AuxiliaryCore.class,
+					0),
 	};
 
 	public static ArrayList<WeaponRecipe> weaponRecipes() {
@@ -518,6 +544,8 @@ public abstract class Recipe {
 	}
 	
 	public static boolean usableInRecipe(Item item){
+		if (isEquippedWeapon(item)) return false;
+
 		if (item instanceof MeleeWeapon && usableInWeaponRecipe(item)) {
 			Weapon weapon = (Weapon) item;
 			return item.isIdentified() && !item.cursed && !weapon.hasCurseEnchant();
@@ -532,6 +560,23 @@ public abstract class Recipe {
 			//other items can be unidentified, but not cursed
 			return !item.cursed;
 		}
+	}
+
+	/**
+	 * Equipped weapons remain in the hero's equipment slots and cannot be
+	 * consumed as alchemy ingredients. This is shared by the UI filter and
+	 * recipe validation so stale selectors cannot bypass the restriction.
+	 */
+	public static boolean isEquippedWeapon(Item item) {
+		return item instanceof Weapon && item.isEquipped(hero);
+	}
+
+	private static boolean containsEquippedWeapon(ArrayList<Item> ingredients) {
+		if (ingredients == null) return false;
+		for (Item ingredient : ingredients) {
+			if (isEquippedWeapon(ingredient)) return true;
+		}
+		return false;
 	}
 
 	private static boolean usableInWeaponRecipe(Item item) {

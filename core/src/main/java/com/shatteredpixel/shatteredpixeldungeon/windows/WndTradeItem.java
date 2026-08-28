@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.EquipableItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
@@ -148,6 +149,7 @@ public class WndTradeItem extends WndInfoItem {
 		float pos = height;
 
 		final int price = heap.salePrice();
+		final boolean duplicateBag = ownsSameBag(heroBackpack(), item);
 
 		RedButton btnBuy = new RedButton( Messages.get(this, "buy", price) ) {
 			@Override
@@ -158,13 +160,13 @@ public class WndTradeItem extends WndInfoItem {
 		};
 		btnBuy.setRect( 0, pos + GAP, width, BTN_HEIGHT );
 		btnBuy.icon(new ItemSprite(ItemSpriteSheet.GOLD));
-		btnBuy.enable( price <= Dungeon.gold );
+		btnBuy.enable( price <= Dungeon.gold && !duplicateBag );
 		add( btnBuy );
 
 		pos = btnBuy.bottom();
 
 		final MasterThievesArmband.Thievery thievery = Dungeon.hero.buff(MasterThievesArmband.Thievery.class);
-		if (thievery != null && !thievery.isCursed() && thievery.chargesToUse(item) > 0) {
+		if (!duplicateBag && thievery != null && !thievery.isCursed() && thievery.chargesToUse(item) > 0) {
 			final float chance = thievery.stealChance(item);
 			final int chargesToUse = thievery.chargesToUse(item);
 			RedButton btnSteal = new RedButton(Messages.get(this, "steal", Math.min(100, (int) (chance * 100)), chargesToUse), 6) {
@@ -299,6 +301,8 @@ public class WndTradeItem extends WndInfoItem {
 	}
 	
 	private void buy( Heap heap ) {
+		if (ownsSameBag(heroBackpack(), heap.peek())) return;
+
 		int price = heap.salePrice();
 		Item item = heap.pickUp();
 		if (item == null) return;
@@ -327,5 +331,18 @@ public class WndTradeItem extends WndInfoItem {
 		if (!item.doPickUp( hero )) {
 			Dungeon.level.drop( item, heap.pos ).sprite.drop();
 		}
+	}
+
+	private static Bag heroBackpack() {
+		return Dungeon.hero == null || Dungeon.hero.belongings == null
+				? null : Dungeon.hero.belongings.backpack;
+	}
+
+	static boolean ownsSameBag(Bag backpack, Item candidate) {
+		if (backpack == null || !(candidate instanceof Bag)) return false;
+		for (Item owned : backpack) {
+			if (owned != null && owned.getClass() == candidate.getClass()) return true;
+		}
+		return false;
 	}
 }

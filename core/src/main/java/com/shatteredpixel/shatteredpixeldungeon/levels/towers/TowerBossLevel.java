@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnig
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.ElfWineCup;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfIllusion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.HungerKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
@@ -35,7 +36,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportat
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.GentlemanElfSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Bundle;
@@ -48,11 +51,14 @@ public class TowerBossLevel extends TowerLevel {
 
 	public static final int FLOORS_PER_BOSS = 5;
 	private static final String PESTILENCE_ARENA = "pestilence_arena";
+	private static final String GENTLEMAN_PRELUDE = "gentleman_elf_prelude";
 	private final TowerBossEncounter encounter = new TowerBossEncounter();
 	private PestilenceArenaController pestilenceArena;
 	private transient boolean purifierClearingMiasma;
 	private transient int reservedBossSpawnCell = -1;
 	private GentlemanElfArena gentlemanElfArena;
+	private GentlemanElfPrelude gentlemanElfPrelude;
+	private transient boolean gentlemanIntroWindowOpen;
 
 	@Override
 	public String tilesTex() {
@@ -75,6 +81,11 @@ public class TowerBossLevel extends TowerLevel {
 		} else {
 			super.playLevelMusic();
 		}
+	}
+
+	@Override
+	public void updateLevelMusic(float elapsed) {
+		if (!locked) super.updateLevelMusic(elapsed);
 	}
 
 	@Override
@@ -134,6 +145,18 @@ public class TowerBossLevel extends TowerLevel {
 	@Override
 	public boolean shouldResetForSafeArrival() {
 		return TowerBossLayout.shouldResetForSafeArrival(locked, bossEncounterDefeated());
+	}
+
+	@Override
+	public void onBeforeSealedResurrectionReset() {
+		gentlemanIntroWindowOpen = false;
+		if (gentlemanElfPrelude != null) gentlemanElfPrelude.reset();
+		for (Mob mob : new ArrayList<>(mobs)) {
+			if (mob instanceof TowerBoss) {
+				((TowerBoss) mob).cleanupArena(this);
+			}
+		}
+		HungerKnight.cleanupOrphanedEffects(Dungeon.hero);
 	}
 
 	private int randomSafeZoneCell(Char ch) {
@@ -199,7 +222,8 @@ public class TowerBossLevel extends TowerLevel {
 		boolean hero = ch == Dungeon.hero;
 		boolean encounterBegun = encounter.bossEncounterStarted()
 				|| encounter.bossEncounterDefeated()
-				|| pestilenceArena != null && pestilenceArena.preludeStarted();
+				|| pestilenceArena != null && pestilenceArena.preludeStarted()
+				|| gentlemanElfPrelude != null && gentlemanElfPrelude.started();
 		if (TowerBossLayout.shouldBeginPrelude(encounterBegun, hero, ch.pos)) {
 			beginEncounterPrelude();
 		}
@@ -211,6 +235,10 @@ public class TowerBossLevel extends TowerLevel {
 
 	private void beginEncounterPrelude() {
 		encounter.ensureSelected(Dungeon.seed, Dungeon.depth, Dungeon.branch);
+		if (TowerBossGenerator.GENTLEMAN_ELF_ID.equals(encounter.selectedBossId())) {
+			beginGentlemanElfPrelude();
+			return;
+		}
 		if (!TowerBossGenerator.PESTILENCE_KNIGHT_ID.equals(encounter.selectedBossId())) {
 			startEncounter();
 			return;
@@ -224,6 +252,82 @@ public class TowerBossLevel extends TowerLevel {
 		}
 		seal();
 		Statistics.qualifiedForBossChallengeBadge = true;
+	}
+
+	private void beginGentlemanElfPrelude() {
+		if (gentlemanElfPrelude == null) gentlemanElfPrelude = new GentlemanElfPrelude();
+		if (!gentlemanElfPrelude.started()) {
+			reservedBossSpawnCell = selectBossSpawnCell();
+			gentlemanElfPrelude.begin(reservedBossSpawnCell);
+			seal();
+			Statistics.qualifiedForBossChallengeBadge = true;
+		}
+		continueGentlemanElfPrelude();
+	}
+
+	private void continueGentlemanElfPrelude() {
+		if (gentlemanElfPrelude == null) return;
+		GentlemanElfPrelude.Action action = gentlemanElfPrelude.nextAction(
+				encounter.bossEncounterStarted());
+		if (action == GentlemanElfPrelude.Action.SHOW_WINDOW) {
+			requestGentlemanIntroWindow();
+		} else if (action == GentlemanElfPrelude.Action.START_ENCOUNTER) {
+			reservedBossSpawnCell = gentlemanElfPrelude.spawnCell();
+			startEncounter();
+		}
+	}
+
+	private void requestGentlemanIntroWindow() {
+		if (gentlemanIntroWindowOpen || gentlemanElfPrelude == null
+				|| gentlemanElfPrelude.nextAction(encounter.bossEncounterStarted())
+				!= GentlemanElfPrelude.Action.SHOW_WINDOW) {
+			return;
+		}
+		gentlemanIntroWindowOpen = true;
+		Game.runOnRenderThread(new Callback() {
+			@Override
+			public void call() {
+				if (Dungeon.level != TowerBossLevel.this || gentlemanElfPrelude == null
+						|| gentlemanElfPrelude.nextAction(encounter.bossEncounterStarted())
+						!= GentlemanElfPrelude.Action.SHOW_WINDOW) {
+					gentlemanIntroWindowOpen = false;
+					return;
+				}
+				GameScene.show(new WndOptions(new GentlemanElfSprite(),
+						Messages.get(GentlemanElf.class, "intro_title"),
+						Messages.get(GentlemanElf.class, "intro_text"),
+						Messages.get(GentlemanElf.class, "drink"),
+						Messages.get(GentlemanElf.class, "refuse")) {
+					@Override
+					protected void onSelect(int index) {
+						gentlemanIntroWindowOpen = false;
+						resolveGentlemanIntro(index == 0);
+					}
+
+					@Override
+					public void onBackPressed() {
+					}
+				});
+			}
+		});
+	}
+
+	private void resolveGentlemanIntro(boolean drink) {
+		if (gentlemanElfPrelude == null || !gentlemanElfPrelude.resolve(drink)) return;
+		GentlemanElf restoredBoss = findGentlemanElf();
+		if (restoredBoss != null) {
+			restoredBoss.resolveIntro(drink);
+			restoredBoss.yell(Messages.get(restoredBoss, drink ? "drink_reply" : "refuse_reply"));
+			return;
+		}
+		continueGentlemanElfPrelude();
+	}
+
+	private GentlemanElf findGentlemanElf() {
+		for (Mob mob : mobs) {
+			if (mob instanceof GentlemanElf && mob.isAlive()) return (GentlemanElf) mob;
+		}
+		return null;
 	}
 
 	private void handlePurifierEntry(Hero hero) {
@@ -269,6 +373,11 @@ public class TowerBossLevel extends TowerLevel {
 	}
 
 	protected void launchBoss(TowerBoss boss) {
+		if (boss instanceof GentlemanElf && gentlemanElfPrelude != null
+				&& gentlemanElfPrelude.resolved()) {
+			GentlemanElf gentleman = (GentlemanElf) boss;
+			gentleman.resolveIntro(gentlemanElfPrelude.drink());
+		}
 		boss.aggro(Dungeon.hero);
 		GameScene.add(boss, 1f);
 		// Bind only after GameScene has inserted the boss into Dungeon.level.mobs.
@@ -276,7 +385,12 @@ public class TowerBossLevel extends TowerLevel {
 		BossHealthBar.assignBoss(boss);
 		if (boss instanceof GentlemanElf && gentlemanElfArena != null) {
 			Actor.add(gentlemanElfArena);
-			((GentlemanElf) boss).notice();
+			GentlemanElf gentleman = (GentlemanElf) boss;
+			gentleman.beginEncounter(Dungeon.hero);
+			if (gentlemanElfPrelude != null) {
+				gentleman.yell(Messages.get(gentleman,
+						gentlemanElfPrelude.drink() ? "drink_reply" : "refuse_reply"));
+			}
 		}
 	}
 
@@ -303,16 +417,6 @@ public class TowerBossLevel extends TowerLevel {
 							boss.sprite.parent.addToBack(new TargetedCell(cell, 0x7560C9));
 						}
 					}
-				}
-			}
-			@Override public void resolveBanquet(Iterable<Char> targets) {
-				for (Char target : targets) {
-					target.damage(10, gentlemanElfArena,
-							com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag.MAGICAL);
-					com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff.affect(target,
-							com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo.class, 3f);
-					com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff.affect(target,
-							com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness.class, 3f);
 				}
 			}
 			@Override public boolean respawnCup() {
@@ -407,13 +511,25 @@ public class TowerBossLevel extends TowerLevel {
 				&& pestilenceArena.bossCell() >= 0) {
 			return pestilenceArena.bossCell();
 		}
+		boolean gentlemanElf = TowerBossGenerator.GENTLEMAN_ELF_ID.equals(encounter.selectedBossId());
 		for (int attempts = 0; attempts < 200; attempts++) {
 			int cell = TowerBossLayout.cell(Random.Int(6, 23), Random.Int(7, 16));
-			if (passable[cell] && Actor.findChar(cell) == null) {
+			if (passable[cell] && Actor.findChar(cell) == null
+					&& (!gentlemanElf || isGentlemanElfSpawnCell(cell))) {
 				return cell;
 			}
 		}
+		if (gentlemanElf) {
+			for (int cell = 0; cell < length(); cell++) {
+				if (isGentlemanElfSpawnCell(cell) && Actor.findChar(cell) == null) return cell;
+			}
+		}
 		return TowerBossLayout.cell(14, 10);
+	}
+
+	private boolean isGentlemanElfSpawnCell(int cell) {
+		return cell >= 0 && cell < length() && passable[cell]
+				&& TowerBossLayout.isGentlemanElfSpawnTerrainAllowed(map[cell]);
 	}
 
 	public void onTowerBossDefeated(TowerBoss boss) {
@@ -431,6 +547,13 @@ public class TowerBossLevel extends TowerLevel {
 
 	@Override
 	public void onHeroTurnStarted(Hero hero) {
+		if (hero != null && encounter.bossEncounterDefeated()
+				&& TowerBossGenerator.HUNGER_KNIGHT_ID.equals(encounter.selectedBossId())) {
+			HungerKnight.cleanupOrphanedEffects(hero);
+		}
+		if (gentlemanElfPrelude != null && !encounter.bossEncounterDefeated()) {
+			continueGentlemanElfPrelude();
+		}
 		if (pestilenceArena != null && !encounter.bossEncounterDefeated()) {
 			pestilenceArena.onHeroTurnStarted(hero);
 		}
@@ -462,6 +585,20 @@ public class TowerBossLevel extends TowerLevel {
 		return encounter.bossEncounterDefeated();
 	}
 
+	public boolean isActiveTowerBoss(String bossId) {
+		if (!encounter.bossEncounterStarted() || encounter.bossEncounterDefeated()
+				|| !bossId.equals(encounter.selectedBossId())) {
+			return false;
+		}
+		for (Mob mob : mobs) {
+			if (mob instanceof TowerBoss && mob.isAlive()
+					&& bossId.equals(((TowerBoss) mob).towerBossId())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private TowerBossEncounter.Host encounterHost() {
 		return new TowerBossEncounter.Host() {
 			@Override
@@ -471,7 +608,12 @@ public class TowerBossLevel extends TowerLevel {
 
 			@Override
 			public int selectBossSpawnCell() {
-				reservedBossSpawnCell = TowerBossLevel.this.selectBossSpawnCell();
+				if (gentlemanElfPrelude == null || !gentlemanElfPrelude.started()
+						|| gentlemanElfPrelude.spawnCell() < 0) {
+					reservedBossSpawnCell = TowerBossLevel.this.selectBossSpawnCell();
+				} else {
+					reservedBossSpawnCell = gentlemanElfPrelude.spawnCell();
+				}
 				return reservedBossSpawnCell;
 			}
 
@@ -579,12 +721,16 @@ public class TowerBossLevel extends TowerLevel {
 		super.storeInBundle(bundle);
 		encounter.storeInBundle(bundle);
 		if (pestilenceArena != null) bundle.put(PESTILENCE_ARENA, pestilenceArena);
+		if (gentlemanElfPrelude != null) bundle.put(GENTLEMAN_PRELUDE, gentlemanElfPrelude);
 		if (gentlemanElfArena != null) bundle.put("gentleman_elf_arena", gentlemanElfArena);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
+		gentlemanIntroWindowOpen = false;
+		gentlemanElfPrelude = bundle.contains(GENTLEMAN_PRELUDE)
+				? (GentlemanElfPrelude) bundle.get(GENTLEMAN_PRELUDE) : null;
 		pestilenceArena = bundle.contains(PESTILENCE_ARENA)
 				? (PestilenceArenaController) bundle.get(PESTILENCE_ARENA) : null;
 		if (pestilenceArena != null) pestilenceArena.syncPurifierVisual(this);
@@ -615,6 +761,20 @@ public class TowerBossLevel extends TowerLevel {
 		boolean exitUnlocked = map[TowerBossLayout.EXIT_GATE] == Terrain.UNLOCKED_EXIT;
 		encounter.restoreFromBundle(bundle, Dungeon.seed, Dungeon.depth, Dungeon.branch,
 				locked, hasRestoredTowerBoss(), exitUnlocked);
+		GentlemanElf restoredGentleman = findGentlemanElf();
+		if (TowerBossGenerator.GENTLEMAN_ELF_ID.equals(encounter.selectedBossId())) {
+			if (gentlemanElfPrelude == null && restoredGentleman != null
+					&& !restoredGentleman.introResolved()) {
+				// Migrate saves created while the old Boss-owned dialog was pending.
+				gentlemanElfPrelude = new GentlemanElfPrelude();
+				gentlemanElfPrelude.begin(restoredGentleman.pos);
+			}
+			if (gentlemanElfPrelude != null) reservedBossSpawnCell = gentlemanElfPrelude.spawnCell();
+		}
+		if (TowerBossGenerator.HUNGER_KNIGHT_ID.equals(encounter.selectedBossId())
+				&& encounter.bossEncounterStarted() && !hasRestoredTowerBoss()) {
+			HungerKnight.cleanupOrphanedEffects(Dungeon.hero);
+		}
 	}
 
 	private boolean hasRestoredTowerBoss() {

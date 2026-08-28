@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBlade;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
@@ -36,6 +37,8 @@ import com.watabou.utils.Point;
 import com.watabou.utils.Random;
 
 public class SacrificeRoom extends SpecialRoom {
+
+	private static final float SOUL_BLADE_CHANCE = 0.10f;
 
 	@Override
 	public int minWidth() { return 7; }
@@ -82,6 +85,15 @@ public class SacrificeRoom extends SpecialRoom {
 	}
 
 	public static Item prize( Level level ) {
+		return prize(level, Random.Float());
+	}
+
+	// The roll is passed separately so reward selection can be regression-tested
+	// without changing the saved-floor behavior.
+	static Item prize(Level level, float soulBladeRoll) {
+		if (soulBladeRoll < SOUL_BLADE_CHANCE) {
+			return soulBladePrize();
+		}
 
 		//1 floor set higher than normal
 		Weapon prize = Generator.randomWeapon( (Dungeon.depth / 5) + 1);
@@ -103,6 +115,17 @@ public class SacrificeRoom extends SpecialRoom {
 		}
 		prize.cursed = prize.cursedKnown = true;
 
+		return prize;
+	}
+
+	private static SoulBlade soulBladePrize() {
+		SoulBlade prize = new SoulBlade();
+		prize.level(0);
+		prize.enchant(null);
+		prize.cursed = false;
+		prize.cursedKnown = false;
+		prize.levelKnown = false;
+		prize.upgradeScrollUses = 0;
 		return prize;
 	}
 

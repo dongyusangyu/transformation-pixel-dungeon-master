@@ -143,6 +143,10 @@ public class MimicCrocodile extends Mob {
 		ambushAttack = false;
 	}
 
+	protected boolean isAmbushAttackPending() {
+		return ambushAttack;
+	}
+
 	protected boolean isPlayerTarget(Char target) {
 		return target == Dungeon.hero;
 	}

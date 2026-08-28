@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSir
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.CursedWand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -203,8 +204,14 @@ public class MindForm extends ClericSpell {
 						}
 					});
 				}
-			} else if (thrown() != null){
+			} else {
 				MissileWeapon thrown = thrown();
+				if (thrown == null) {
+					return;
+				}
+				if (!canUseThrownEffect(thrown)) {
+					return;
+				}
 				thrown.cast(hero, target);
 				((ClassArmor) hero.belongings.armor()).charge -= Trinity.trinityChargeUsePerEffect(thrown.getClass());
 				if(hero.pointsInTalent(Talent.SUMMON_FOLLOWER)>=1){
@@ -244,6 +251,14 @@ public class MindForm extends ClericSpell {
 					}
 				}
 			}
+		}
+
+		private static boolean canUseThrownEffect(MissileWeapon thrown) {
+			if (thrown instanceof Gungnir && !Gungnir.canThrowWithCurrentHP(hero.HP)) {
+				GLog.w(Messages.get(thrown, "not_enough_health"));
+				return false;
+			}
+			return true;
 		}
 
 		@Override

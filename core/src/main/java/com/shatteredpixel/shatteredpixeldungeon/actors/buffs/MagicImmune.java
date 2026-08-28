@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightMagicLease;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -38,6 +39,34 @@ public class MagicImmune extends FlavourBuff {
 	
 	{
 		immunities.addAll(AntiMagic.RESISTS);
+	}
+
+	@Override
+	protected void spend(float time) {
+		float before = cooldown();
+		super.spend(time);
+		reportExternalDuration(before);
+	}
+
+	@Override
+	protected void postpone(float time) {
+		float before = cooldown();
+		super.postpone(time);
+		reportExternalDuration(before);
+	}
+
+	/** Sets a minimum already-adjusted duration without applying source modifiers again. */
+	public void postponeUnadjusted(float duration) {
+		super.postpone(duration);
+	}
+
+	private void reportExternalDuration(float before) {
+		if (target instanceof Hero) {
+			float added = Math.max(0f, cooldown() - before);
+			if (added > 0f) {
+				HungerKnightMagicLease.recordExternalDuration((Hero) target, added, cooldown());
+			}
+		}
 	}
 
 	@Override

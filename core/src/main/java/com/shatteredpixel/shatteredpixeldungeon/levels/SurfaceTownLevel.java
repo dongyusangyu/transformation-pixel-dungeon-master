@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.TestStatue;
@@ -53,6 +54,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.ImpShopRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -682,6 +684,8 @@ public class SurfaceTownLevel extends Level {
 
 	static ArrayList<Item> generateSurfaceShopItems() {
 		ArrayList<Item> items = new ArrayList<>();
+		appendHikingBackpackIfNeeded(items,
+				Dungeon.hero == null ? null : Dungeon.hero.belongings);
 
 		MeleeWeapon weapon = Generator.randomWeapon(4);
 		weapon.enchant(null);
@@ -741,6 +745,16 @@ public class SurfaceTownLevel extends Level {
 
 		Random.shuffle(items);
 		return items;
+	}
+
+	static void appendHikingBackpackIfNeeded(ArrayList<Item> stock, Belongings belongings) {
+		if (shouldOfferHikingBackpack(belongings)) {
+			ImpShopRoom.appendHikingBackpackIfNeeded(stock, belongings);
+		}
+	}
+
+	static boolean shouldOfferHikingBackpack(Belongings belongings) {
+		return ImpShopRoom.shouldOfferHikingBackpack(belongings);
 	}
 
 	@Override

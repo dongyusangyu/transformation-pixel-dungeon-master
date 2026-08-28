@@ -4,6 +4,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DeathButterfly;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DarkMechanicalFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MyriadBlackShadow;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TapirCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
@@ -56,6 +60,10 @@ public class TowerMobPlacerTest {
 		assertTrue(placerMobs.contains(HeavyCrabification.class));
 		assertTrue(placerMobs.contains(RuneSpinner.class));
 		assertTrue(placerMobs.contains(ChainShadowThief.class));
+		assertTrue(placerMobs.contains(DeathButterfly.class));
+		assertTrue(placerMobs.contains(DarkMechanicalFist.class));
+		assertTrue(placerMobs.contains(MyriadBlackShadow.class));
+		assertTrue(placerMobs.contains(TapirCrocodile.class));
 		assertTrue(!placerMobs.contains(TwistedMirror.class));
 		assertTrue(!placerMobs.contains(PowerfulWraith.class));
 	}
@@ -97,15 +105,38 @@ public class TowerMobPlacerTest {
 		TowerMobPlacer.applyInitialState(chainShadowThief);
 		assertTrue(chainShadowThief.state == chainShadowThief.SLEEPING);
 
+		Mob deathButterfly = new DeathButterfly();
+		deathButterfly.state = deathButterfly.WANDERING;
+		TowerMobPlacer.applyInitialState(deathButterfly);
+		assertTrue(deathButterfly.state == deathButterfly.SLEEPING);
+
+		Mob darkMechanicalFist = new DarkMechanicalFist();
+		darkMechanicalFist.state = darkMechanicalFist.WANDERING;
+		TowerMobPlacer.applyInitialState(darkMechanicalFist);
+		assertTrue(darkMechanicalFist.state == darkMechanicalFist.SLEEPING);
+
+		Mob myriad = new MyriadBlackShadow();
+		myriad.state = myriad.WANDERING;
+		TowerMobPlacer.applyInitialState(myriad);
+		assertTrue(myriad.state == myriad.SLEEPING);
+
 		Mob crocodile = new MimicCrocodile();
 		crocodile.state = crocodile.SLEEPING;
 		TowerMobPlacer.applyInitialState(crocodile);
 		assertTrue(crocodile.state == crocodile.WANDERING);
+
+		Mob tapir = new TapirCrocodile();
+		tapir.state = tapir.SLEEPING;
+		TowerMobPlacer.applyInitialState(tapir);
+		assertTrue(tapir.state == tapir.WANDERING);
 	}
 
 	@Test
 	public void pageOutsideTowerMobCatalogIsEmpty() {
 		assertTrue(TowerMobPlacer.mobsOnPage(-1).isEmpty());
-		assertTrue(TowerMobPlacer.mobsOnPage(1).isEmpty());
+		assertEquals(java.util.Arrays.asList(DarkMechanicalFist.class, MyriadBlackShadow.class,
+				TapirCrocodile.class),
+				TowerMobPlacer.mobsOnPage(1));
+		assertTrue(TowerMobPlacer.mobsOnPage(2).isEmpty());
 	}
 }

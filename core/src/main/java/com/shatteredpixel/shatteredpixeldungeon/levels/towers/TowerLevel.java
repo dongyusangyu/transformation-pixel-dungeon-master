@@ -23,22 +23,10 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.AlienatedPrismaticGuard;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnoll;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MarshSlime;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MechanicalFist;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MimicCrocodile;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Obscura;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RoastLambWarlock;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.RuneSpinner;
-import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
@@ -73,15 +61,22 @@ import java.util.ArrayList;
 
 public class TowerLevel extends RegularLevel {
 
+	@Override
+	protected boolean lakeSwordScabbardGenerationEnabled() {
+		return true;
+	}
+
 	private static final int FIRST_CONTENT_DEPTH = 16;
 	private static final int LAST_CONTENT_DEPTH = 25;
 	// Stored as a positive branch depth; UI presents these floors as T1, T2, and so on.
 	public static final int BRANCH = 3;
 	private int generationTowerFloor = -1;
 
-	public static final String[] TOWER_TRACK_LIST =
-			new String[]{Assets.Music.TOWER, Assets.Music.TOWER_2};
-	public static final float[] TOWER_TRACK_CHANCES = new float[]{1f, 1f};
+	private TowerMusicPolicy.State musicState;
+	private TowerMusicPolicy.State pendingMusicState;
+	private float musicCheckElapsed;
+	private float pendingMusicElapsed;
+	private float musicStateElapsed;
 
 	{
 		color1 = 0x7B2D26;
@@ -90,7 +85,82 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	public void playLevelMusic() {
-		Music.INSTANCE.playTracks(TOWER_TRACK_LIST, TOWER_TRACK_CHANCES, false);
+		musicState = currentMusicState(null);
+		pendingMusicState = null;
+		musicCheckElapsed = 0f;
+		pendingMusicElapsed = 0f;
+		musicStateElapsed = 0f;
+		Music.INSTANCE.play(musicState.track, true, musicState.gain);
+	}
+
+	@Override
+	public void updateLevelMusic(float elapsed) {
+		if (Dungeon.hero == null || !Dungeon.hero.isAlive()) return;
+		if (musicState == null) {
+			playLevelMusic();
+			return;
+		}
+
+		musicStateElapsed += elapsed;
+		musicCheckElapsed += elapsed;
+		if (Actor.processing() || musicCheckElapsed < TowerMusicPolicy.CHECK_INTERVAL) return;
+
+		float evaluationElapsed = musicCheckElapsed;
+		musicCheckElapsed = 0f;
+		TowerMusicPolicy.State desired = currentMusicState(musicState);
+		if (desired == musicState) {
+			pendingMusicState = null;
+			pendingMusicElapsed = 0f;
+			return;
+		}
+
+		if (desired != pendingMusicState) {
+			pendingMusicState = desired;
+			pendingMusicElapsed = 0f;
+		} else {
+			pendingMusicElapsed += evaluationElapsed;
+		}
+
+		boolean lowHealthCritical = desired == TowerMusicPolicy.State.CRITICAL
+				&& (long) Dungeon.hero.HP * 3 <= Dungeon.hero.HT;
+		float delay = TowerMusicPolicy.transitionDelay(
+				musicState, desired, lowHealthCritical);
+		boolean escalating = desired.ordinal() > musicState.ordinal();
+		if (pendingMusicElapsed < delay
+				|| (!escalating && musicStateElapsed < TowerMusicPolicy.MINIMUM_HOLD)) {
+			return;
+		}
+
+		musicState = desired;
+		pendingMusicState = null;
+		pendingMusicElapsed = 0f;
+		musicStateElapsed = 0f;
+		Music.INSTANCE.transitionTo(musicState.track, true, musicState.gain,
+				TowerMusicPolicy.fadeOutDuration(musicState),
+				TowerMusicPolicy.fadeInDuration(musicState));
+	}
+
+	private TowerMusicPolicy.State currentMusicState(TowerMusicPolicy.State current) {
+		Hero hero = Dungeon.hero;
+		if (hero == null) return TowerMusicPolicy.State.CALM;
+		return TowerMusicPolicy.stateWithHysteresis(
+				current, hero.HP, hero.HT, visibleHostileCount());
+	}
+
+	private int visibleHostileCount() {
+		if (heroFOV == null) return 0;
+		int visible = 0;
+		for (Mob mob : mobs.toArray(new Mob[0])) {
+			if (mob.alignment == Char.Alignment.ENEMY
+					&& mob.isAlive()
+					&& mob.invisible <= 0
+					&& mob.pos >= 0
+					&& mob.pos < heroFOV.length
+					&& heroFOV[mob.pos]) {
+				visible++;
+			}
+		}
+		return visible;
 	}
 
 	@Override
@@ -236,54 +306,7 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	public Mob createMob() {
-		Mob mob;
-		switch (TowerMobRules.select(Random.Float())) {
-			case CAMOUFLAGE_GNOLL:
-				mob = new CamouflageGnoll();
-				break;
-			case CORROSIVE_SWARM:
-				mob = new CorrosiveSwarm();
-				break;
-			case CORPSE:
-				mob = new Corpse();
-				break;
-			case EARTHLY_SERPENT:
-				mob = new EarthlySerpent();
-				break;
-			case ROAST_LAMB_WARLOCK:
-				mob = new RoastLambWarlock();
-				break;
-			case MECHANICAL_FIST:
-				mob = new MechanicalFist();
-				break;
-			case MIMIC_CROCODILE:
-				mob = new MimicCrocodile();
-				break;
-			case OBSCURA:
-				mob = new Obscura();
-				break;
-			case ALIENATED_PRISMATIC_GUARD:
-				mob = new AlienatedPrismaticGuard();
-				break;
-			case SOUL_COLLECTOR:
-				mob = new SoulCollector();
-				break;
-			case HEAVY_CRABIFICATION:
-				mob = new HeavyCrabification();
-				break;
-			case MARSH_SLIME:
-				mob = new MarshSlime();
-				break;
-			case RUNE_SPINNER:
-				mob = new RuneSpinner();
-				break;
-			case CHAIN_SHADOW_THIEF:
-				mob = new ChainShadowThief();
-				break;
-			default:
-				throw new IllegalStateException("Unknown tower mob selection");
-		}
-		return TowerMobRules.prepareNaturalSpawn(mob);
+		return TowerMobRules.createNaturalSpawn();
 	}
 
 	@Override

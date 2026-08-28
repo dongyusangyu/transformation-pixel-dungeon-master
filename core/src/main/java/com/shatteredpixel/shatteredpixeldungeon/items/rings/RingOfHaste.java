@@ -60,7 +60,7 @@ public class RingOfHaste extends Ring {
 	
 	public static float speedMultiplier( Char target ){
 		float multiplier = (float)Math.pow(1.175, getBuffedBonus(target, Haste.class));
-		return Overburden.attenuateEquipmentSpeed(target, multiplier);
+		return Overburden.attenuateHasteRing(target, multiplier);
 	}
 	
 	public class Haste extends RingBuff {

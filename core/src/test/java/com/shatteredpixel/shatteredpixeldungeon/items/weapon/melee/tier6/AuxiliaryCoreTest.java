@@ -2,6 +2,10 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMysticalEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -15,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.lang.reflect.Field;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -79,6 +84,37 @@ public class AuxiliaryCoreTest {
 				.contains(AuxiliaryCore.class));
 		assertEquals(Generator.Category.WEP_T6.classes.length,
 				Generator.Category.WEP_T6.defaultProbs.length);
+	}
+
+	@Test
+	public void recipeUsesMysticalEnergyResinAndMetamorphosisPrism() throws Exception {
+		Recipe.WeaponRecipe found = null;
+		Field recipesField = Recipe.class.getDeclaredField("weaponRecipes");
+		recipesField.setAccessible(true);
+		Recipe.WeaponRecipe[] recipes = (Recipe.WeaponRecipe[]) recipesField.get(null);
+		Field outputField = Recipe.WeaponRecipe.class.getDeclaredField("output");
+		Field inputsField = Recipe.WeaponRecipe.class.getDeclaredField("inputs");
+		Field quantitiesField = Recipe.WeaponRecipe.class.getDeclaredField("inQuantity");
+		Field costField = Recipe.WeaponRecipe.class.getDeclaredField("cost");
+		Field baseLevelField = Recipe.WeaponRecipe.class.getDeclaredField("baseLevel");
+		outputField.setAccessible(true);
+		inputsField.setAccessible(true);
+		quantitiesField.setAccessible(true);
+		costField.setAccessible(true);
+		baseLevelField.setAccessible(true);
+		for (Recipe.WeaponRecipe recipe : recipes) {
+			if (outputField.get(recipe) == AuxiliaryCore.class) {
+				found = recipe;
+				break;
+			}
+		}
+
+		assertTrue("Auxiliary Core recipe must be registered", found != null);
+		assertEquals(Arrays.asList(ScrollOfMysticalEnergy.class, WondrousResin.class,
+				MetamorphosisPrism.class), Arrays.asList((Class<?>[]) inputsField.get(found)));
+		assertTrue(Arrays.equals(new int[]{1, 1, 1}, (int[]) quantitiesField.get(found)));
+		assertEquals(5, costField.getInt(found));
+		assertEquals(0, baseLevelField.getInt(found));
 	}
 
 	@Test

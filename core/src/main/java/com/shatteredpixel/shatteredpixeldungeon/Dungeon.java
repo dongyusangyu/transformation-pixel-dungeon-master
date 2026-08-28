@@ -163,6 +163,7 @@ public class Dungeon {
 		GUARD_ARM,
 		SHAMAN_WAND,
 		DM200_EQUIP,
+		DARK_MECHANICAL_FIST_WEAPON,
 		GOLEM_EQUIP,
 		ROAST_LAMB_WAND,
 
@@ -870,6 +871,7 @@ public class Dungeon {
 		
 		Dungeon.level = level;
 		hero.pos = pos;
+		Badges.validateTowerProgress(depth, branch);
 		NewCycleHungerProtection.updateForCurrentFloor(hero);
 
 		if (hero.buff(AscensionChallenge.class) != null){
@@ -1073,6 +1075,7 @@ public class Dungeon {
 	private static final String TALENT_ITEM = "talent_item";
 	private static final String EAT_ITEM = "eat_item";
 	private static final String DROPPED     = "dropped%d";
+	private static final String DROPPED_ITEMS = "dropped_items";
 	private static final String PORTED      = "ported%d";
 	private static final String LEVEL		= "level";
 	private static final String LIMDROPS    = "limited_drops";
@@ -1128,9 +1131,8 @@ public class Dungeon {
 				bundle.put( NEW_CYCLE_SOURCE_GAME_ID, newCycleSourceGameID );
 			}
 
-			for (int d : droppedItems.keyArray()) {
-				bundle.put(Messages.format(DROPPED, d), droppedItems.get(d));
-			}
+			storeDroppedItems(bundle);
+			Mob.storeHeldAllies(bundle);
 
 			quickslot.storePlaceholders( bundle );
 
@@ -1254,6 +1256,7 @@ public class Dungeon {
 
 		Actor.clear();
 		Actor.restoreNextID( bundle );
+		Mob.restoreHeldAllies(bundle);
 
 		quickslot.reset();
 		QuickSlotButton.reset();
@@ -1364,20 +1367,63 @@ public class Dungeon {
         }else{
             droneVison = true;
         }
-		droppedItems = new SparseArray<>();
-		for (int i=1; i <= 26; i++) {
-			
-			//dropped items
-			ArrayList<Item> items = new ArrayList<>();
-			if (bundle.contains(Messages.format( DROPPED, i )))
-				for (Bundlable b : bundle.getCollection( Messages.format( DROPPED, i ) ) ) {
-					items.add( (Item)b );
-				}
-			if (!items.isEmpty()) {
-				droppedItems.put( i, items );
-			}
+		restoreDroppedItems(bundle);
+	}
 
+	static void storeDroppedItems(Bundle bundle) {
+		Bundle events = new Bundle();
+		if (droppedItems != null) {
+			for (int locationKey : droppedItems.keyArray()) {
+				ArrayList<Item> items = droppedItems.get(locationKey);
+				if (items == null || items.isEmpty()) continue;
+				Bundle event = new Bundle();
+				event.put(DROPPED_ITEMS, items);
+				events.put(Integer.toString(locationKey), event);
+			}
 		}
+		// An empty bundle is significant: it removes event shards whose effects
+		// were consumed after entering their destination level.
+		bundle.put(SaveManager.PENDING_LEVEL_EVENTS_KEY, events);
+	}
+
+	static void restoreDroppedItems(Bundle bundle) {
+		droppedItems = new SparseArray<>();
+		if (bundle.contains(SaveManager.PENDING_LEVEL_EVENTS_KEY)) {
+			Bundle events = bundle.getBundle(SaveManager.PENDING_LEVEL_EVENTS_KEY);
+			if (events != null && !events.isNull()) {
+				for (String key : events.getKeys()) {
+					try {
+						restoreDroppedItemsAt(Integer.parseInt(key),
+								events.getBundle(key).getCollection(DROPPED_ITEMS));
+					} catch (NumberFormatException ignored) {
+						// Ignore an event owned by a newer client rather than losing the save.
+					}
+				}
+			}
+			return;
+		}
+
+		// Legacy saves flattened the destination into keys such as dropped22.
+		// Enumerating keys also restores tower destinations, whose encoded values
+		// are negative and were previously missed by the fixed 1..26 loop.
+		for (String key : bundle.getKeys()) {
+			if (!key.startsWith("dropped")) continue;
+			try {
+				int locationKey = Integer.parseInt(key.substring("dropped".length()));
+				restoreDroppedItemsAt(locationKey, bundle.getCollection(key));
+			} catch (NumberFormatException ignored) {
+				// Not a legacy dropped-item entry.
+			}
+		}
+	}
+
+	private static void restoreDroppedItemsAt(int locationKey,
+			java.util.Collection<Bundlable> storedItems) {
+		ArrayList<Item> items = new ArrayList<>();
+		for (Bundlable stored : storedItems) {
+			if (stored instanceof Item) items.add((Item) stored);
+		}
+		if (!items.isEmpty()) droppedItems.put(locationKey, items);
 	}
 	
 	public static Level loadLevel( int save ) throws IOException {
@@ -1470,7 +1516,9 @@ public class Dungeon {
 	}
 
 	public static void updateLevelExplored(){
-		if (branch == 0 && level instanceof RegularLevel && !Dungeon.bossLevel()){
+		if (((branch == 0 && level instanceof RegularLevel)
+				|| (newCycle && branch == TowerLevel.BRANCH && level instanceof TowerLevel))
+				&& !Dungeon.bossLevel()){
 			Statistics.floorsExplored.put( depth, level.levelExplorePercent(depth));
 		}
 	}

@@ -179,6 +179,14 @@ public class MetamorphosisPrism extends Spell {
 				smokeMask.detach();
 			}
 		}
+		if (replacing == Talent.NATURAL_CHILD) {
+			Talent.NaturalChildAction action = hero.buff(Talent.NaturalChildAction.class);
+			if (action != null) action.detach();
+			Talent.NaturalChildBarkskin barkskin = hero.buff(Talent.NaturalChildBarkskin.class);
+			if (barkskin != null) barkskin.detach();
+			Talent.NaturalChildCooldown cooldown = hero.buff(Talent.NaturalChildCooldown.class);
+			if (cooldown != null) cooldown.detach();
+		}
 
 		LinkedHashMap<Talent, Integer> currentTier = hero.talents.get(tier - 1);
 		hero.talents.set(tier - 1, replaceInTier(currentTier, replacing, replacement));

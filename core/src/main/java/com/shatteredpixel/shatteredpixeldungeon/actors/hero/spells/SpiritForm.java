@@ -262,9 +262,8 @@ public class SpiritForm extends ClericSpell {
 			return true;
 
 		} else if (effect instanceof PrecognitiveEye) {
-			if (hero.buff(PrecognitiveEye.PrecognitiveOverheat.class) != null) return false;
 			Buff.affect(hero, PrecognitiveEye.MomentaryForesight.class)
-					.set(PrecognitiveEye.trinityDodgeUses(hero.pointsInTalent(Talent.SPIRIT_FORM)), false);
+					.set(PrecognitiveEye.trinityDodgeUses(hero.pointsInTalent(Talent.SPIRIT_FORM)));
 			hero.spendAndNext(1f);
 			return true;
 
@@ -313,13 +312,7 @@ public class SpiritForm extends ClericSpell {
 	}
 
 	public static boolean activeArtifactNeedsTarget(Class<?> artifactClass) {
-		return EtherealChains.class.isAssignableFrom(artifactClass)
-				|| MasterThievesArmband.class.isAssignableFrom(artifactClass)
-				|| SandalsOfNature.class.isAssignableFrom(artifactClass)
-				|| TalismanOfForesight.class.isAssignableFrom(artifactClass)
-				|| Shuriken_Box.class.isAssignableFrom(artifactClass)
-				|| LloydsBeacon.class.isAssignableFrom(artifactClass)
-				|| SkeletonKey.class.isAssignableFrom(artifactClass);
+		return Trinity.activeArtifactNeedsTarget(artifactClass);
 	}
 
 }

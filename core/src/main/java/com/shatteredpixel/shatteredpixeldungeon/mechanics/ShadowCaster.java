@@ -44,12 +44,14 @@ public final class ShadowCaster {
 			}
 		}
 	}
+
+	public static int limitDistance(int distance) {
+		return Math.max(0, Math.min(MAX_DISTANCE, distance));
+	}
 	
 	public static void castShadow( int x, int y, int w, boolean[] fieldOfView, boolean[] blocking, int distance ) {
-		
-		if (distance >= MAX_DISTANCE){
-			distance = MAX_DISTANCE;
-		}
+
+		distance = limitDistance(distance);
 
 		BArray.setFalse(fieldOfView);
 

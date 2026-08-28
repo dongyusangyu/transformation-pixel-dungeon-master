@@ -157,15 +157,13 @@ public class LloydsBeacon extends Artifact {
 	
 	@Override
 	public void execute( Hero hero, String action ) {
-        super.execute( hero, action );
-
-		if (cursed && (AC_ZAP.equals(action) || AC_SET.equals(action) || AC_RETURN.equals(action))) {
-			GLog.w( Messages.get(this, "cursed") );
-			return;
+		if (AC_ZAP.equals(action) || AC_SET.equals(action) || AC_RETURN.equals(action)) {
+			if (!canUseActiveAction(hero)) {
+				usesTargeting = false;
+				return;
+			}
 		}
-        if(!isEquipped( hero ) && (AC_ZAP.equals(action) || AC_SET.equals(action) || AC_RETURN.equals(action))){
-            GLog.i( Messages.get(Artifact.class, "need_to_equip") );
-        }
+		super.execute( hero, action );
 
 		if (AC_SET.equals(action) || AC_RETURN.equals(action)) {
 			refreshReturnMarkerReachability();
@@ -188,7 +186,8 @@ public class LloydsBeacon extends Artifact {
 		}
 
 		if (AC_ZAP.equals(action)){
-            GameScene.selectCell(zapper);
+			usesTargeting = true;
+			GameScene.selectCell(zapper);
 
 		} else if (AC_SET.equals(action)) {
 			Invisibility.dispel();
@@ -254,10 +253,16 @@ public class LloydsBeacon extends Artifact {
 		public void onSelect(Integer target) {
 
 
-			if (target == null) return;
-			if(!curItem.isEquipped(curUser)){
+			if (target == null || curUser == null) return;
+			if (curItem == LloydsBeacon.this) {
+				if (!canUseActiveAction(curUser)) return;
+			} else if (curItem == null || !curItem.isEquipped(curUser)){
                 return;
-            }else if (charge < 1) {
+            }
+			if (curUser.buff(MagicImmune.class) != null) {
+				GLog.w(Messages.get(Artifact.class, "no_magic"));
+				return;
+			} else if (charge < 1) {
                 GLog.w( Messages.get(LloydsBeacon.class, "no_charge_zap", 1) );
                 return;
             }
@@ -324,6 +329,11 @@ public class LloydsBeacon extends Artifact {
 
 	public void useTrinityTeleport(ClassArmor armor) {
 		curUser = Dungeon.hero;
+		if (curUser == null || curUser.buff(MagicImmune.class) != null) {
+			usesTargeting = false;
+			GLog.w(Messages.get(Artifact.class, "no_magic"));
+			return;
+		}
 		charge = Math.max(charge, 1);
 		GameScene.selectCell(zapper);
 		if (Dungeon.quickslot.contains(armor)) {

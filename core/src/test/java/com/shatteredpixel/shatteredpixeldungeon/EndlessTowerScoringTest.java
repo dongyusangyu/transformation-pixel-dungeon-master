@@ -98,13 +98,50 @@ public class EndlessTowerScoringTest {
 	}
 
 	@Test
-	public void newCycleUsesTowerDepthAndDoesNotCapScores() {
-		assertEquals(101, Rankings.progressDepth(true, 25, 101));
-		assertEquals(25, Rankings.progressDepth(false, 25, 101));
-		assertEquals(5_000_000_000d,
-				Rankings.applyScoreLimit(5_000_000_000d, 50_000d, true), 0d);
-		assertEquals(50_000d,
-				Rankings.applyScoreLimit(5_000_000_000d, 50_000d, false), 0d);
+	public void towerProgressUsesProtectedLinearThenUnitSquareGrowth() {
+		assertEquals(0d, Rankings.towerProgressScore(0), 0d);
+		assertEquals(20_000d, Rankings.towerProgressScore(25), 0d);
+		assertEquals(20_051d, Rankings.towerProgressScore(26), 0d);
+		assertEquals(29_375d, Rankings.towerProgressScore(100), 0d);
+		assertEquals(100_019_375d, Rankings.towerProgressScore(10_000), 0d);
+	}
+
+	@Test
+	public void towerProgressRemainsFiniteAtMaximumIntDepth() {
+		double score = Rankings.towerProgressScore(Integer.MAX_VALUE);
+		assertTrue(Double.isFinite(score));
+		assertTrue(score > Rankings.towerProgressScore(10_000));
+	}
+
+	@Test
+	public void towerTreasureCompressesOnlyWealthAboveThreshold() {
+		assertEquals(20_000d, Rankings.towerTreasureScore(20_000d), 0d);
+		assertEquals(26_931.47180559945d,
+				Rankings.towerTreasureScore(30_000d), 0.000001d);
+		assertTrue(Rankings.towerTreasureScore(100_000d)
+				> Rankings.towerTreasureScore(30_000d));
+	}
+
+	@Test
+	public void towerBossScoreIsTenThousandPerDefeat() {
+		assertEquals(0d, Rankings.towerBossScore(0), 0d);
+		assertEquals(50_000d, Rankings.towerBossScore(5), 0d);
+		assertEquals(0d, Rankings.towerBossScore(-1), 0d);
+	}
+
+	@Test
+	public void towerBossDefeatCountSurvivesStatisticsSave() {
+		Statistics.reset();
+		Statistics.recordTowerBossDefeated();
+		Statistics.recordTowerBossDefeated();
+		assertEquals(2, Statistics.towerBossesDefeated);
+
+		Bundle bundle = new Bundle();
+		Statistics.storeInBundle(bundle);
+		Statistics.reset();
+		Statistics.restoreFromBundle(bundle);
+
+		assertEquals(2, Statistics.towerBossesDefeated);
 	}
 
 	@Test

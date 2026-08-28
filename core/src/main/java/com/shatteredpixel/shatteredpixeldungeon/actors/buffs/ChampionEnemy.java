@@ -276,6 +276,12 @@ public abstract class ChampionEnemy extends Buff {
 
 	public static class RandomMiniBoss extends ChampionEnemy {
 
+		private static final String HEALTH_BOOST = "health_boost";
+
+		private int healthBoost;
+		private boolean restoredFromBundle;
+		private boolean healthBoostApplied;
+
 		{
 			color = 0xFFFFFF;
 			rays = 6;
@@ -294,12 +300,43 @@ public abstract class ChampionEnemy extends Buff {
 		@Override
 		public boolean attachTo(Char target) {
 			if (super.attachTo(target)) {
-				int boost = Dungeon.scalingDepth() * 3;
-				target.HT += boost;
-				target.HP += boost;
+				if (healthBoost <= 0) {
+					healthBoost = Math.max(0, Dungeon.scalingDepth() * 3);
+				}
+				if (!restoredFromBundle) {
+					target.HT += healthBoost;
+					target.HP += healthBoost;
+				}
+				restoredFromBundle = false;
+				healthBoostApplied = true;
 				return true;
 			}
 			return false;
+		}
+
+		@Override
+		public void detach() {
+			if (healthBoostApplied && target != null) {
+				target.HT = Math.max(1, target.HT - healthBoost);
+				target.HP = Math.min(target.HP, target.HT);
+				healthBoostApplied = false;
+			}
+			super.detach();
+		}
+
+		@Override
+		public void storeInBundle(Bundle bundle) {
+			super.storeInBundle(bundle);
+			bundle.put(HEALTH_BOOST, healthBoost);
+		}
+
+		@Override
+		public void restoreFromBundle(Bundle bundle) {
+			super.restoreFromBundle(bundle);
+			healthBoost = bundle.contains(HEALTH_BOOST)
+					? Math.max(0, bundle.getInt(HEALTH_BOOST))
+					: Math.max(0, Dungeon.scalingDepth() * 3);
+			restoredFromBundle = true;
 		}
 
 		@Override

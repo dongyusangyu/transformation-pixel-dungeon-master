@@ -79,6 +79,50 @@ public class TalentAttackProcContextTest {
 		assertFalse(context.allows(Talent.AttackProcChannel.MELEE_SPECIAL));
 	}
 
+	@Test
+	public void huntingTechniquePlusOneInheritsOnlyDamageOnSuccessfulRoll() {
+		Talent.AttackProcContext context = Talent.AttackProcContext.create(
+				new TestMissileWeapon(), DamageTag.Delivery.RANGED, false, false);
+
+		Talent.AttackProcContext inherited = Talent.AttackProcContext.applyHuntingTechnique(context, 1, 0);
+
+		assertTrue(inherited.allows(Talent.AttackProcChannel.MELEE_DAMAGE));
+		assertFalse(inherited.allows(Talent.AttackProcChannel.MELEE_SPECIAL));
+	}
+
+	@Test
+	public void huntingTechniquePlusTwoUsesTheSameSuccessfulRollForBothChannels() {
+		Talent.AttackProcContext context = Talent.AttackProcContext.create(
+				new TestMissileWeapon(), DamageTag.Delivery.RANGED, false, false);
+
+		Talent.AttackProcContext inherited = Talent.AttackProcContext.applyHuntingTechnique(context, 2, 0);
+
+		assertTrue(inherited.allows(Talent.AttackProcChannel.MELEE_DAMAGE));
+		assertTrue(inherited.allows(Talent.AttackProcChannel.MELEE_SPECIAL));
+	}
+
+	@Test
+	public void huntingTechniqueFailedRollInheritsNeitherChannel() {
+		Talent.AttackProcContext context = Talent.AttackProcContext.create(
+				new TestMissileWeapon(), DamageTag.Delivery.RANGED, false, false);
+
+		Talent.AttackProcContext inherited = Talent.AttackProcContext.applyHuntingTechnique(context, 2, 3);
+
+		assertFalse(inherited.allows(Talent.AttackProcChannel.MELEE_DAMAGE));
+		assertFalse(inherited.allows(Talent.AttackProcChannel.MELEE_SPECIAL));
+	}
+
+	@Test
+	public void huntingTechniqueRequiresAnActualMissileWeapon() {
+		Talent.AttackProcContext context = Talent.AttackProcContext.create(
+				new TestMeleeWeapon(), DamageTag.Delivery.RANGED, false, false);
+
+		Talent.AttackProcContext inherited = Talent.AttackProcContext.applyHuntingTechnique(context, 2, 0);
+
+		assertFalse(inherited.allows(Talent.AttackProcChannel.MELEE_DAMAGE));
+		assertFalse(inherited.allows(Talent.AttackProcChannel.MELEE_SPECIAL));
+	}
+
 	private static class TestMeleeWeapon extends MeleeWeapon {
 		@Override
 		public int min(int lvl) {

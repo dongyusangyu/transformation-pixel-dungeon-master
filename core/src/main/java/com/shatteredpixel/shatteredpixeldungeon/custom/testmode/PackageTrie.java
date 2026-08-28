@@ -27,6 +27,12 @@ public class PackageTrie {
 
     public PackageTrie() { this("com.shatteredpixel.shatteredpixeldungeon"); }  // backwards compatibility
 
+    /** Loads class metadata without running the class initializer. */
+    public static Class<?> loadClassWithoutInitialization(String className, ClassLoader loader)
+            throws ClassNotFoundException {
+        return Class.forName(className, false, loader);
+    }
+
     private final HashMap<String, PackageTrie> subTries = new HashMap<>();
     private final ArrayList<Class<?>> classes = new ArrayList<>();
     private HashMap<Class<?>, HashMap<String, Class<?>>> localizedClassCache = new HashMap<>();
@@ -336,11 +342,12 @@ public class PackageTrie {
             for (final String file : files) {
                 if (file.endsWith(".class")) {
                     try {
-                        Class cls = Class.forName(pckgname + '.'
-                                + file.substring(0, file.length() - 6));
+                        Class cls = loadClassWithoutInitialization(
+                                pckgname + '.' + file.substring(0, file.length() - 6),
+                                PackageTrie.class.getClassLoader());
                         //if(canInstantiate(cls))
                         trie.classes.add(cls);
-                    } catch (final NoClassDefFoundError e) {
+                    } catch (final ClassNotFoundException | LinkageError e) {
                         // do nothing. this class hasn't been found by the
                         // loader, and we don't care.
                     }
@@ -369,7 +376,12 @@ public class PackageTrie {
             name = name.substring(0, index)
                     .replace('/', '.');
             if (name.contains(pckgname) /*&& canInstantiate(cls = Class.forName(name))*/) {
-                tree.addClass(Class.forName(name),pckgname);
+                try {
+                    tree.addClass(loadClassWithoutInitialization(
+                            name, PackageTrie.class.getClassLoader()), pckgname);
+                } catch (ClassNotFoundException | LinkageError ignored) {
+                    // A single optional or incompatible class must not abort discovery.
+                }
             }
         }
     }

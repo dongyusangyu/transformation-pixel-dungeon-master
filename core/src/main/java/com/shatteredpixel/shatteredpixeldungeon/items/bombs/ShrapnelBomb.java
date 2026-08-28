@@ -76,8 +76,10 @@ public class ShrapnelBomb extends Bomb {
 		for (Char ch : affected){
 			//regular bomb damage over an FOV up to 8-range
 			int damage = Random.NormalIntRange( 4 + Dungeon.scalingDepth(), 12 + 3*Dungeon.scalingDepth() );
+			damage = damageWithBombTalents(this, Dungeon.hero, damage);
 			damage -= ch.drRoll();
 			ch.damage(damage, this, DamageTag.PHYSICAL);
+			applyShockBomb(this, Dungeon.hero, ch);
 			if (ch == Dungeon.hero && !ch.isAlive()) {
 				Dungeon.fail(this);
 			}

@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightEquipmentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Momentum;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ninja_Energy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
@@ -41,6 +42,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetRecorder;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
@@ -56,6 +58,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.curses.Explosive;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -63,12 +66,14 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.MissileSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.InventoryPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.QuickSlotButton;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
@@ -95,8 +100,120 @@ abstract public class MissileWeapon extends Weapon {
 
 	public long setID = newSetID();
 
+	/*
+	 * The bow's shared enchantment is resolved once for each physical throw.
+	 * It is deliberately transient: it describes an attack in progress, not
+	 * an item property that should be saved or shown in inventory information.
+	 */
+	private SharedEnchantmentSnapshot sharedEnchantmentSnapshot;
+
+	static final class SharedEnchantmentSnapshot {
+		private final Weapon.Enchantment enchantment;
+
+		private SharedEnchantmentSnapshot(Weapon.Enchantment enchantment) {
+			this.enchantment = enchantment;
+		}
+
+		boolean matches(Class<? extends Weapon.Enchantment> type) {
+			return enchantment != null && enchantment.getClass() == type;
+		}
+	}
+
+	static boolean sharedEnchantmentRollSucceeds(int talentPoints, int roll) {
+		return talentPoints > 0 && roll >= 0 && roll < 3 && roll < talentPoints;
+	}
+
+	static SharedEnchantmentSnapshot createSharedEnchantmentSnapshot(
+			Weapon.Enchantment enchantment, int talentPoints, int roll) {
+		return enchantment != null && sharedEnchantmentRollSucceeds(talentPoints, roll)
+				? new SharedEnchantmentSnapshot(enchantment) : null;
+	}
+
+	private void prepareSharedEnchantment(Hero user) {
+		sharedEnchantmentSnapshot = null;
+		if (user == null || user != Dungeon.hero || this instanceof SpiritBow.SpiritArrow
+				|| user.buff(MagicImmune.class) != null
+				|| HungerKnightEquipmentSeal.isActive(user)) {
+			return;
+		}
+
+		SpiritBow bow = user.belongings.getItem(SpiritBow.class);
+		int talentPoints = user.pointsInTalent(Talent.SHARED_ENCHANTMENT);
+		if (bow != null && bow.enchantment != null && talentPoints > 0) {
+			sharedEnchantmentSnapshot = createSharedEnchantmentSnapshot(
+					bow.enchantment, talentPoints, Random.Int(3));
+		}
+	}
+
+	private void clearSharedEnchantment() {
+		sharedEnchantmentSnapshot = null;
+	}
+
+	private boolean hasSharedEnchantment(Class<? extends Weapon.Enchantment> type,
+			Char owner) {
+		return owner == Dungeon.hero && owner != null
+				&& owner.buff(MagicImmune.class) == null
+				&& !HungerKnightEquipmentSeal.isActive(owner)
+				&& sharedEnchantmentSnapshot != null
+				&& sharedEnchantmentSnapshot.matches(type);
+	}
+
 	//whether or not this instance of the item exists purely to trigger its effect. i.e. no dropping
 	public boolean spawnedForEffect = false;
+	//A phantom projectile repeats the attack pipeline without recursively spawning another phantom.
+	protected boolean phantomProjectile = false;
+
+	public enum QianfaVolleyMode {
+		STACK,
+		REPEAT_THREE
+	}
+
+	public interface QianfaRepeatProjectile {
+	}
+
+	public QianfaVolleyMode qianfaVolleyMode() {
+		return this instanceof QianfaRepeatProjectile
+				? QianfaVolleyMode.REPEAT_THREE
+				: QianfaVolleyMode.STACK;
+	}
+
+	public static int qianfaVolleyCount(MissileWeapon weapon, int talentPoints,
+			int roll, boolean hasCharTarget) {
+		if (weapon == null || !hasCharTarget || talentPoints <= 0 || roll >= talentPoints) {
+			return 1;
+		}
+		if (weapon.qianfaVolleyMode() == QianfaVolleyMode.REPEAT_THREE) {
+			return 3;
+		}
+		return Math.max(1, weapon.quantity());
+	}
+
+	public static int phantomShooterChance(int talentPoints) {
+		return Math.min(3, Math.max(0, talentPoints)) * 10;
+	}
+
+	public static boolean shouldTriggerPhantomShooter(int talentPoints, int roll) {
+		return roll >= 0 && roll < 10
+				&& roll < phantomShooterChance(talentPoints) / 10;
+	}
+
+	protected final MissileWeapon markAsPhantom(MissileWeapon projectile) {
+		if (projectile != null) {
+			projectile.phantomProjectile = true;
+			projectile.spawnedForEffect = true;
+			projectile.parent = null;
+		}
+		return projectile;
+	}
+
+	protected MissileWeapon createPhantomProjectile() {
+		Item item = duplicate();
+		if (!(item instanceof MissileWeapon)) {
+			return null;
+		}
+		item.quantity(0);
+		return markAsPhantom((MissileWeapon) item);
+	}
 
 	protected boolean sticky = true;
 	
@@ -277,12 +394,6 @@ abstract public class MissileWeapon extends Weapon {
 		if (hasEnchant(Projecting.class, user)){
 			projecting += 4;
 		}
-		if ((!(this instanceof SpiritBow.SpiritArrow) && Random.Int(3) < user.pointsInTalent(Talent.SHARED_ENCHANTMENT))){
-			SpiritBow bow = Dungeon.hero.belongings.getItem(SpiritBow.class);
-			if (bow != null && bow.hasEnchant(Projecting.class, user)) {
-				projecting += 4;
-			}
-		}
 		if(user.pointsInTalent(Talent.ARROW_PENETRATION)==2 && (Dungeon.level.passable[dst] || Dungeon.level.avoid[dst] || Actor.findChar(dst) != null)
 				&& Dungeon.level.distance(user.pos, dst) <=12){
 			return dst;
@@ -297,6 +408,144 @@ abstract public class MissileWeapon extends Weapon {
 			return dst;
 		} else {
 			return super.throwPos(user, dst);
+		}
+	}
+
+	@Override
+	public void cast(final Hero user, final int dst) {
+		clearSharedEnchantment();
+		prepareSharedEnchantment(user);
+		final int cell = throwPos(user, dst);
+		final Char enemy = Actor.findChar(cell);
+		final boolean hasCharTarget = enemy != null && enemy != user;
+		final int talentPoints = user.pointsInTalent(Talent.QIANFA_THROWING);
+		final int roll = talentPoints > 0 && hasCharTarget ? Random.Int(10) : 10;
+		final int volleyCount = qianfaVolleyCount(this, talentPoints, roll, hasCharTarget);
+
+		if (volleyCount <= 1) {
+			super.cast(user, dst);
+			return;
+		}
+
+		AgentMinDatasetRecorder.onItemCast(this, user, dst);
+		QuickSlotButton.target(enemy);
+		float delay = castDelay(user, cell) + TwoHandedGreatsword.extraActionDelay(user);
+		castQianfaVolley(user, enemy, cell, volleyCount, delay);
+	}
+
+	private void castQianfaVolley(Hero user, Char enemy, int firstCell,
+			int volleyCount, float delay) {
+		user.busy();
+		new QianfaVolley(user, enemy, firstCell, volleyCount, delay).launchNext();
+	}
+
+	private final class QianfaVolley {
+
+		private final Hero user;
+		private final Char enemy;
+		private final int firstCell;
+		private final float delay;
+		private int remaining;
+		private boolean firstShot = true;
+		private Actor continuationActor;
+
+		private QianfaVolley(Hero user, Char enemy, int firstCell,
+				int volleyCount, float delay) {
+			this.user = user;
+			this.enemy = enemy;
+			this.firstCell = firstCell;
+			this.remaining = volleyCount;
+			this.delay = delay;
+		}
+
+		private void launchNext() {
+			if (remaining <= 0 || enemy == null || !enemy.isAlive()) {
+				MissileWeapon.this.clearSharedEnchantment();
+				finishQianfaVolley(user, delay);
+				releaseContinuationActor();
+				return;
+			}
+
+			if (!firstShot) {
+				MissileWeapon.this.prepareSharedEnchantment(user);
+			}
+			final int shotCell = firstShot ? firstCell : throwPos(user, enemy.pos);
+			firstShot = false;
+			if (Actor.findChar(shotCell) != enemy) {
+				MissileWeapon.this.clearSharedEnchantment();
+				finishQianfaVolley(user, delay);
+				releaseContinuationActor();
+				return;
+			}
+
+			user.sprite.zap(shotCell);
+			throwSound();
+			((MissileSprite) user.sprite.parent.recycle(MissileSprite.class)).reset(
+					user.sprite, enemy.sprite, MissileWeapon.this, new Callback() {
+						@Override
+						public void call() {
+							curUser = user;
+							MissileWeapon projectile = qianfaVolleyMode() == QianfaVolleyMode.STACK
+									? detachVolleyProjectile(user)
+									: MissileWeapon.this;
+							if (projectile != null) {
+								projectile.onThrow(shotCell);
+								MissileWeapon.this.clearSharedEnchantment();
+								remaining--;
+							} else {
+								MissileWeapon.this.clearSharedEnchantment();
+								remaining = 0;
+							}
+
+							Actor actorToRelease = continuationActor;
+							continuationActor = null;
+							if (remaining > 0 && enemy.isAlive()) {
+								scheduleNext();
+							} else {
+								finishQianfaVolley(user, delay);
+							}
+							if (actorToRelease != null) actorToRelease.next();
+						}
+					});
+		}
+
+		private MissileWeapon detachVolleyProjectile(Hero user) {
+			Item detached = MissileWeapon.this.detach(user.belongings.backpack);
+			return detached instanceof MissileWeapon ? (MissileWeapon) detached : null;
+		}
+
+		private void scheduleNext() {
+			Actor.add(new Actor() {
+				{
+					actPriority = VFX_PRIO - 1;
+				}
+
+				@Override
+				protected boolean act() {
+					continuationActor = this;
+					launchNext();
+					Actor.remove(this);
+					return false;
+				}
+			});
+			user.next();
+		}
+
+		private void releaseContinuationActor() {
+			if (continuationActor != null) {
+				Actor actor = continuationActor;
+				continuationActor = null;
+				actor.next();
+			}
+		}
+	}
+
+	private void finishQianfaVolley(Hero user, float delay) {
+		if (user.buff(Talent.LethalMomentumTracker.class) != null) {
+			user.buff(Talent.LethalMomentumTracker.class).detach();
+			user.next();
+		} else {
+			user.spendAndNext(delay);
 		}
 	}
 
@@ -355,6 +604,8 @@ abstract public class MissileWeapon extends Weapon {
 
 	@Override
 	protected void onThrow( int cell ) {
+		MissileWeapon source = parent;
+		try {
 		Char enemy = Actor.findChar( cell );
 		if (enemy == null || enemy == curUser) {
 			parent = null;
@@ -368,9 +619,86 @@ abstract public class MissileWeapon extends Weapon {
 			} else {
 				
 				rangedHit( enemy, cell );
+				onSuccessfulThrow(enemy);
 
 			}
 		}
+		} finally {
+			clearSharedEnchantment();
+			if (source != null) source.clearSharedEnchantment();
+		}
+	}
+
+	protected void onSuccessfulThrow(final Char enemy) {
+		final Hero user = curUser;
+		if (phantomProjectile || user == null || user != Dungeon.hero
+				|| enemy == null || !enemy.isAlive()) {
+			return;
+		}
+
+		int talentPoints = user.pointsInTalent(Talent.PHANTOM_SHOOTER);
+		if (talentPoints <= 0
+				|| !shouldTriggerPhantomShooter(talentPoints, Random.Int(10))) {
+			return;
+		}
+
+		MissileWeapon phantom = createPhantomProjectile();
+		if (phantom == null) {
+			return;
+		}
+		schedulePhantomThrow(user, enemy, phantom);
+	}
+
+	private void schedulePhantomThrow(final Hero user, final Char enemy,
+			final MissileWeapon phantom) {
+		if (userSpriteUnavailable(user, enemy)) {
+			curUser = user;
+			phantom.prepareSharedEnchantment(user);
+			phantom.onThrow(enemy.pos);
+			return;
+		}
+
+		Actor.add(new Actor() {
+			{
+				actPriority = VFX_PRIO;
+			}
+
+			@Override
+			protected boolean act() {
+				if (!enemy.isAlive() || Actor.findChar(enemy.pos) != enemy) {
+					Actor.remove(this);
+					return true;
+				}
+				if (userSpriteUnavailable(user, enemy)) {
+					curUser = user;
+					phantom.prepareSharedEnchantment(user);
+					phantom.onThrow(enemy.pos);
+					Actor.remove(this);
+					return true;
+				}
+
+				final Actor continuation = this;
+				phantom.throwSound();
+				((MissileSprite) user.sprite.parent.recycle(MissileSprite.class)).reset(
+						user.sprite, enemy.sprite, phantom, new Callback() {
+							@Override
+							public void call() {
+								curUser = user;
+								if (enemy.isAlive() && Actor.findChar(enemy.pos) == enemy) {
+									phantom.prepareSharedEnchantment(user);
+									phantom.onThrow(enemy.pos);
+								}
+								continuation.next();
+							}
+						});
+				Actor.remove(this);
+				return false;
+			}
+		});
+	}
+
+	private boolean userSpriteUnavailable(Hero user, Char enemy) {
+		return user.sprite == null || user.sprite.parent == null || enemy.sprite == null;
 	}
 
 	protected void triggerSeerShot(int cell) {
@@ -387,11 +715,10 @@ abstract public class MissileWeapon extends Weapon {
 
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
-		if (attacker == Dungeon.hero && Random.Int(3) < Dungeon.hero.pointsInTalent(Talent.SHARED_ENCHANTMENT)){
-			SpiritBow bow = Dungeon.hero.belongings.getItem(SpiritBow.class);
-			if (bow != null && bow.enchantment != null && Dungeon.hero.buff(MagicImmune.class) == null) {
-				damage = bow.enchantment.proc(this, attacker, defender, damage);
-			}
+		if (attacker == Dungeon.hero && sharedEnchantmentSnapshot != null
+				&& attacker.buff(MagicImmune.class) == null
+				&& !HungerKnightEquipmentSeal.isActive(attacker)) {
+			damage = sharedEnchantmentSnapshot.enchantment.proc(this, attacker, defender, damage);
 		}
 
 		if ((cursed || hasCurseEnchant()) && !cursedKnown){
@@ -429,15 +756,17 @@ abstract public class MissileWeapon extends Weapon {
 			result *=1.0f+0.2f* hero.pointsInTalent(Talent.SURPRISE_THROW);
 		}
 
-		if(hero.hasTalent(Talent.PHANTOM_SHOOTER)){
-			defender.damage((int)(damage*hero.pointsInTalent(Talent.PHANTOM_SHOOTER)*0.1),hero, DamageTag.PHYSICAL);
-		}
 		if(hero.hasTalent(Talent.STRENGTH_GREATEST)){
 			result+=hero.pointsInTalent(Talent.STRENGTH_GREATEST);
 		}
 
 
 		return result;
+	}
+
+	@Override
+	public boolean hasEnchant(Class<? extends Enchantment> type, Char owner) {
+		return hasSharedEnchantment(type, owner) || super.hasEnchant(type, owner);
 	}
 
 	@Override
@@ -606,6 +935,10 @@ abstract public class MissileWeapon extends Weapon {
 	}
 	
 	protected void decrementDurability(){
+		//Virtual projectiles (for example Phantom Shooter's extra throw) must not
+		//consume or break the real weapon stack that they mirror.
+		if (spawnedForEffect) return;
+
 		//if this weapon was thrown from a source stack, degrade that stack.
 		//unless a weapon is about to break, then break the one being thrown
 		if (parent != null){
@@ -753,6 +1086,7 @@ abstract public class MissileWeapon extends Weapon {
 		//have it reduce the durability of the main stack. Cleaner to the player this way
 		if (split != null){
 			MissileWeapon m = (MissileWeapon)split;
+			m.sharedEnchantmentSnapshot = sharedEnchantmentSnapshot;
 			m.durability = MAX_DURABILITY;
 			m.parent = this;
 			extraThrownLeft = m.extraThrownLeft = true;

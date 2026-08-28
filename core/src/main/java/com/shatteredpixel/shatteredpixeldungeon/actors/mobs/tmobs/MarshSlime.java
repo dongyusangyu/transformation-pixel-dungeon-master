@@ -13,6 +13,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.MarshSlimeSprite;
@@ -41,8 +42,8 @@ public class MarshSlime extends Mob {
 		EXP = 13;
 		maxLvl = 30;
 
-		loot = null;
-		lootChance = 0f;
+		loot = GooBlob.class;
+		lootChance = 1f / 4f;
 
 		properties.add(Property.DARKSLIME);
 		properties.add(Property.LARGE);

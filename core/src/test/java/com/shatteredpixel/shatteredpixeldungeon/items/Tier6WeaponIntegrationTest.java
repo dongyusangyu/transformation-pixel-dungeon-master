@@ -14,6 +14,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHand
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.VenomousSickle;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.RadiantGoldHalberd;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.LakeSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.PortableBlackHole;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
@@ -48,9 +51,12 @@ public class Tier6WeaponIntegrationTest {
 				DemonTailWhip.class,
 				OracleTerminal.class,
 				VenomousSickle.class,
-				RadiantGoldHalberd.class
+				RadiantGoldHalberd.class,
+				SoulBlade.class,
+				LakeSword.class,
+				MountainGuard.class
 		}, tierSix.classes);
-		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
+		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
 		assertEquals(6, Generator.wepTiers.length);
 		assertEquals(tierSix, Generator.wepTiers[5]);
 	}
@@ -125,7 +131,10 @@ public class Tier6WeaponIntegrationTest {
 				DemonTailWhip.class,
 				OracleTerminal.class,
 				VenomousSickle.class,
-				RadiantGoldHalberd.class
+				RadiantGoldHalberd.class,
+				SoulBlade.class,
+				LakeSword.class,
+				MountainGuard.class
 		}, tierSix);
 	}
 

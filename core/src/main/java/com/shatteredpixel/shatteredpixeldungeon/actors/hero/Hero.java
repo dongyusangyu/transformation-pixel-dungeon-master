@@ -217,6 +217,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RoundShield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Sai;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Scimitar;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
@@ -290,6 +291,7 @@ public class Hero extends Char {
 	public String[] randomClassTalents = null;
 	public HeroSubClass[] randomSubClasses = null;
 	public String[] randomArmorAbilities = null;
+	private boolean martialMastery = false;
 	public ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
 	public LinkedHashMap<Talent, Talent> metamorphedTalents = new LinkedHashMap<>();
 	public LinkedHashMap<Talent, String> sublimationTalents = new LinkedHashMap<>();
@@ -424,6 +426,7 @@ public class Hero extends Char {
 	private static final String SKIN		= "skin";
 	private static final String EXPERIENCE	= "exp";
 	private static final String HTBOOST     = "htboost";
+	private static final String MARTIAL_MASTERY = "martial_mastery";
 
 	
 	@Override
@@ -434,6 +437,7 @@ public class Hero extends Char {
 		bundle.put( CLASS, heroClass );
 		bundle.put( SUBCLASS, subClass );
 		bundle.put( ABILITY, armorAbility );
+		bundle.put( MARTIAL_MASTERY, hasMartialMastery() );
 		HeroRandomizer.storeInBundle( bundle, this );
 		Talent.storeTalentsInBundle( bundle, this );
 
@@ -468,6 +472,8 @@ public class Hero extends Char {
 		heroClass = bundle.getEnum( CLASS, HeroClass.class );
 		subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class );
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
+		martialMastery = bundle.getBoolean(MARTIAL_MASTERY)
+				|| buff(MeleeWeapon.MartialMastery.class) != null;
 		HeroRandomizer.restoreFromBundle( bundle, this );
 		Talent.restoreTalentsFromBundle( bundle, this );
 		if(heroClass==HeroClass.DM400){
@@ -480,6 +486,7 @@ public class Hero extends Char {
 		STR = bundle.getInt( STRENGTH );
 
 		belongings.restoreFromBundle( bundle );
+		ensureWeaponAbilityBuffs();
 		if(pointsNegative(Talent.FAST_DIE)>0){
 			HP=Math.max(HP-(int)(HT*0.2*pointsNegative(Talent.FAST_DIE)),1);
 
@@ -543,6 +550,12 @@ public class Hero extends Char {
 	private static final ArrayList<Talent> RT_T3_7 = new ArrayList<>(Arrays.asList(Talent.FARSIGHT, Talent.SHARED_ENCHANTMENT, Talent.SHARED_UPGRADES));
 	private static final ArrayList<Talent> RT_T3_8 = new ArrayList<>(Arrays.asList(Talent.DURABLE_TIPS, Talent.BARKSKIN, Talent.SHIELDING_DEW));
 	public int pointsInTalent( Talent talent ){
+		int points = unsealedPointsInTalent(talent);
+		return com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightTalentSeal
+				.isSealed(this, talent) ? 0 : points;
+	}
+
+	private int unsealedPointsInTalent( Talent talent ){
 		// 如果查询的天赋在替换列表中，则返回 ROYAL_PRIVILEGE 的点数
 		if (heroClass == HeroClass.RATKING){
 			if(RT_T1_1.contains(talent)) return pointsInTalent(Talent.ROYAL_PRIVILEGE);
@@ -577,6 +590,16 @@ public class Hero extends Char {
 				}
 				if (f == talent) return Math.min(talentlvl,f.maxPoints);
 			}
+		}
+		return 0;
+	}
+
+	/** Raw invested points, without challenge, revelation, rat-king mapping, or boss seals. */
+	public int rawTalentPoints( Talent talent ){
+		if (talent == null) return 0;
+		for (LinkedHashMap<Talent, Integer> tier : talents){
+			Integer points = tier.get(talent);
+			if (points != null) return Math.max(0, points);
 		}
 		return 0;
 	}
@@ -696,6 +719,12 @@ public class Hero extends Char {
 		}else if(hasTalent(Talent.SMOKE_MASK)){
 			Buff.affect(this,Talent.SmokeMask.class);
 		}
+		if (hasTalent(Talent.NATURAL_CHILD) && buff(Talent.NaturalChildAction.class) != null
+				&& buff(Talent.NaturalChildCooldown.class) == null) {
+			ActionIndicator.setAction(buff(Talent.NaturalChildAction.class));
+		} else if (hasTalent(Talent.NATURAL_CHILD)) {
+			Buff.affect(this, Talent.NaturalChildAction.class);
+		}
 	}
 
 	/**
@@ -704,7 +733,10 @@ public class Hero extends Char {
 	 * normal subclass-selection screen, such as a new-cycle restart.
 	 */
 	public void ensureSubclassBuffs() {
-		if (subClass == null) return;
+		if (subClass == null) {
+			ensureWeaponAbilityBuffs();
+			return;
+		}
 
 		if (subClass.is(HeroSubClass.ASSASSIN) && invisible > 0) {
 			Buff.affect(this, Preparation.class);
@@ -739,7 +771,23 @@ public class Hero extends Char {
 			ActionIndicator.setAction(reason);
 		}
 
-		// This also covers Champion and the briefcase's MartialMastery marker.
+		ensureWeaponAbilityBuffs();
+	}
+
+	public void grantMartialMastery() {
+		martialMastery = true;
+		ensureWeaponAbilityBuffs();
+	}
+
+	public boolean hasMartialMastery() {
+		return martialMastery || buff(MeleeWeapon.MartialMastery.class) != null;
+	}
+
+	/** Restores weapon-ability Buffs derived from permanent choices and talents. */
+	public void ensureWeaponAbilityBuffs() {
+		if (martialMastery) {
+			Buff.affect(this, MeleeWeapon.MartialMastery.class);
+		}
 		MeleeWeapon.syncCharger(this);
 	}
 	
@@ -2540,6 +2588,7 @@ public class Hero extends Char {
 
 
 		dmg = Talent.onDamage(dmg, src, resolvedDamageTags);
+		dmg = MountainGuard.interceptEnemyDamage(this, dmg, src, resolvedDamageTags);
 		if(!unavoidable && hasTalent(Talent.KING_PROTECT) && pointsInTalent(Talent.KING_PROTECT)+1>=Random.Int(4) &&
 				!(src instanceof Viscosity.DeferedDamage) && !(src instanceof Hunger)){
 			processFriarReasonLoss(dmg, src, unavoidable);
@@ -2560,6 +2609,7 @@ public class Hero extends Char {
 		int postHP = HP + shielding();
 		if (src instanceof Hunger) postHP -= shielding();
 		int effectiveDamage = preHP - postHP;
+		MountainGuard.onHeroEffectiveDamage(this, src, effectiveDamage);
 
 		if (effectiveDamage <= 0) return;
 		if (Dungeon.depth == 15 && DM300.hasSuperchargedDM300()){
@@ -2974,6 +3024,13 @@ public class Hero extends Char {
 					buff(Talent.RejuvenatingStepsFurrow.class).detach();
 				}
 			}
+			if (buff(Talent.NaturalChildFurrowCounter.class) != null){
+				Talent.NaturalChildFurrowCounter counter = buff(Talent.NaturalChildFurrowCounter.class);
+				counter.recoverFromExperience(percent, pointsInTalent(Talent.NATURAL_CHILD));
+				if (counter.count() <= 0){
+					counter.detach();
+				}
+			}
 			if (buff(ElementalStrike.ElementalStrikeFurrowCounter.class) != null){
 				buff(ElementalStrike.ElementalStrikeFurrowCounter.class).countDown(percent*20f);
 				if (buff(ElementalStrike.ElementalStrikeFurrowCounter.class).count() <= 0){
@@ -3173,6 +3230,7 @@ public class Hero extends Char {
 				Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
 				GLog.w(Messages.get(this, "revive"));
 				Statistics.ankhsUsed++;
+				Badges.validateDeathKnightBlessedAnkh();
 				Catalog.countUse(Ankh.class);
 
 				ankh.detach(belongings.backpack);

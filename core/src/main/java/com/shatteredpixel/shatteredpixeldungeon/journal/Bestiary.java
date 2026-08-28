@@ -32,6 +32,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CamouflageGnol
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.ChainShadowThief;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.CorrosiveSwarm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.Corpse;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DeathButterfly;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.DarkMechanicalFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MyriadBlackShadow;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TapirCrocodile;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.EarthlySerpent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.HeavyCrabification;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.MarshSlime;
@@ -44,6 +48,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.HungerKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.SmokeBomb;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.ally.AttackDrone;
@@ -303,9 +308,10 @@ public enum Bestiary {
 				MechanicalFist.class, MimicCrocodile.class, Obscura.class,
 				AlienatedPrismaticGuard.class, SoulCollector.class,
 				HeavyCrabification.class, MarshSlime.class, RuneSpinner.class,
-				ChainShadowThief.class);
+				ChainShadowThief.class, DeathButterfly.class, DarkMechanicalFist.class,
+				MyriadBlackShadow.class, TapirCrocodile.class);
 		TOWER_BOSSES.addEntities(PestilenceKnight.class, DeathKnight.class,
-				GentlemanElf.class);
+				GentlemanElf.class, HungerKnight.class);
 
 	}
 

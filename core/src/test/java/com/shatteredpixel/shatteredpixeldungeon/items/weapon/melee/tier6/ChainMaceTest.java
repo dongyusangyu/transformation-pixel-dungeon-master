@@ -274,6 +274,13 @@ public class ChainMaceTest {
 		assertFalse(source.contains("hero.attack(target)"));
 	}
 
+    @Test
+    public void bowlingBadgeRequiresAtLeastSixEnemyTargets() {
+        assertFalse(ChainMace.qualifiesForBowlingBadge(5));
+        assertTrue(ChainMace.qualifiesForBowlingBadge(6));
+        assertTrue(ChainMace.qualifiesForBowlingBadge(12));
+    }
+
 	@Test
 	public void sourceQualifiesCommandsFromHeroAndReconcilesFloorChanges()
 			throws IOException {

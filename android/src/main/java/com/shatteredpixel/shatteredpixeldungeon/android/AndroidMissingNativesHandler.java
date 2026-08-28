@@ -29,6 +29,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.shatteredpixel.shatteredpixeldungeon.SaveManager;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -329,15 +331,17 @@ public class AndroidMissingNativesHandler extends Activity {
     private void shareLatestSave() {
         new Thread(() -> {
             File saveDir = getFilesDir();
-            File[] saves = saveDir.listFiles((dir, name) -> name.matches("save-\\d{3}\\.json"));
+			File[] saves = saveDir.listFiles((dir, name) ->
+					name.matches("save-\\d{3}\\.(json|checkpoint)"));
             if (saves == null || saves.length == 0) {
                 runOnUiThread(() -> Toast.makeText(this, "没有找到存档文件", Toast.LENGTH_SHORT).show());
                 return;
             }
 
             Arrays.sort(saves, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
-            File latestSave = saves[0];
-            shareSaveFile(latestSave);
+			String name = saves[0].getName();
+			int slot = Integer.parseInt(name.substring(5, 8));
+			prepareAndShareSave(slot);
         }).start();
     }
 
@@ -347,17 +351,24 @@ public class AndroidMissingNativesHandler extends Activity {
      */
     public void shareSaveBySlot(int slot) {
         new Thread(() -> {
-            String filename = String.format("save-%03d.json", slot);
-            File saveFile = new File(getFilesDir(), filename);
-
-            if (!saveFile.exists()) {
+			if (!SaveManager.saveExists(slot)) {
                 runOnUiThread(() -> Toast.makeText(this, "存档槽 " + slot + " 不存在", Toast.LENGTH_SHORT).show());
                 return;
             }
 
-            shareSaveFile(saveFile);
+			prepareAndShareSave(slot);
         }).start();
     }
+
+	private void prepareAndShareSave(int slot) {
+		String filename = String.format("shared-save-%03d.json", slot);
+		try {
+			SaveManager.writePortableSave(slot, filename);
+			shareSaveFile(new File(getFilesDir(), filename));
+		} catch (IOException | RuntimeException e) {
+			runOnUiThread(() -> Toast.makeText(this, "存档打包失败", Toast.LENGTH_SHORT).show());
+		}
+	}
 
     /**
      * 分享指定的存档文件

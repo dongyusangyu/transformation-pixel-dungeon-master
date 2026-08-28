@@ -44,6 +44,11 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 
 public class LastShopLevel extends RegularLevel {
+
+	@Override
+	protected boolean lakeSwordScabbardGenerationEnabled() {
+		return false;
+	}
 	
 	{
 		color1 = 0x4b6636;

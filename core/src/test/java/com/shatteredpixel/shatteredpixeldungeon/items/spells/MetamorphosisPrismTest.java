@@ -37,9 +37,11 @@ public class MetamorphosisPrismTest {
 	public void smallBossSlotsReturnTheirActualCandidateCount() {
 		List<Talent> candidates = MetamorphosisPrism.chooseBossCandidates(Talent.FASTING, 4);
 
-		assertEquals(2, candidates.size());
+		assertEquals(4, candidates.size());
 		assertTrue(candidates.contains(Talent.THUNDER_STRIKE));
 		assertTrue(candidates.contains(Talent.DIRECTIONAL_COLLAPSE));
+		assertTrue(candidates.contains(Talent.HUNTING_TECHNIQUE));
+		assertTrue(candidates.contains(Talent.NATURAL_CHILD));
 	}
 
 	@Test

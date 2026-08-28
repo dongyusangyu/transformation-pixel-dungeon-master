@@ -111,6 +111,10 @@ final class TowerBossLayout {
 				|| terrain == Terrain.FURROWED_GRASS;
 	}
 
+	static boolean isGentlemanElfSpawnTerrainAllowed(int terrain) {
+		return terrain != Terrain.HIGH_GRASS && terrain != Terrain.FURROWED_GRASS;
+	}
+
 	static boolean isProtectedCell(int cell) {
 		return !isArenaCell(cell) || isReservedRoute(cell % WIDTH, cell / WIDTH);
 	}

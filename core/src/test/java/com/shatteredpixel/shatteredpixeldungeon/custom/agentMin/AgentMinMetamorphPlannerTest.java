@@ -11,12 +11,10 @@ import static org.junit.Assert.assertEquals;
 public class AgentMinMetamorphPlannerTest {
 
 	@Test
-	public void huntressSublimationTargetsMatchDm300() {
+	public void huntressSublimationTargetsIncludeHuntingTechnique() {
+		assertEquals(3, AgentMinMetamorphPlanner.sublimationTargets("DM300").size());
 		assertEquals(
-				AgentMinMetamorphPlanner.sublimationTargets("DM300"),
-				AgentMinMetamorphPlanner.sublimationTargets("HUNTRESS"));
-		assertEquals(
-				Arrays.asList(Talent.FASTING, Talent.THUNDER_STRIKE, Talent.DIRECTIONAL_COLLAPSE),
+				Arrays.asList(Talent.HUNTING_TECHNIQUE, Talent.NATURAL_CHILD, Talent.FALCON_EYE),
 				AgentMinMetamorphPlanner.sublimationTargets("HUNTRESS"));
 	}
 

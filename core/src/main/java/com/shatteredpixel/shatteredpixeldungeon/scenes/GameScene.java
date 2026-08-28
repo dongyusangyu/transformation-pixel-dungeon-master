@@ -616,8 +616,10 @@ public class GameScene extends PixelScene {
 					level.drop(((Honeypot) item).shatter(null, pos), pos);
 				}else if(item instanceof SpiderJar.Spider){
 					level.drop(item, pos);
-					((SpiderJar.Spider)item).fuse = ((SpiderJar.Spider)item).createFuse().ignite((SpiderJar.Spider)item);
-					Actor.add(((SpiderJar.Spider)item).fuse);
+					SpiderJar.Spider spider = (SpiderJar.Spider) item;
+					if (spider.fuse == null || !Actor.all().contains(spider.fuse)) {
+						spider.armAt(pos);
+					}
 				} else {
 					level.drop(item, pos);
 				}
@@ -952,6 +954,7 @@ public class GameScene extends PixelScene {
 		commitCheckpointIfSafe(hero);
 
 		super.update();
+		level.updateLevelMusic(Game.elapsed);
 
 		if (notifyDelay > 0) notifyDelay -= Game.elapsed;
 
