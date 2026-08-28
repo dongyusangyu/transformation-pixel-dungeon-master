@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
@@ -108,6 +109,51 @@ public class Necronomicon extends Artifact {
 				&& !Char.hasProp(target, Char.Property.MINIBOSS)
 				&& !Char.hasProp(target, Char.Property.BOSS_MINION)
 				&& !target.isImmune(Corruption.class);
+	}
+
+	public enum SoulBoundDeathResult {
+		CONTINUE_DEATH,
+		INTERCEPTED_DEATH
+	}
+
+	public static boolean hasSoulBound(Mob mob) {
+		return mob != null && mob.buff(SoulBound.class) != null;
+	}
+
+	public static SoulBoundDeathResult resolveSoulBoundDeath(Mob mob, Object cause) {
+		if (!hasSoulBound(mob)) return SoulBoundDeathResult.CONTINUE_DEATH;
+
+		// Detaching first makes repeated die() calls idempotent, including callbacks
+		// from Actor removal or a second damage source in the same tick.
+		SoulBound marker = mob.buff(SoulBound.class);
+		marker.detach();
+		if (cause == Chasm.class) {
+			spawnCorruptedWraithNear(mob.pos);
+			return SoulBoundDeathResult.CONTINUE_DEATH;
+		}
+
+		mob.HP = mob.HT;
+		Corruption.corruptionHeal(mob);
+		Buff.affect(mob, Corruption.class);
+		spawnCorruptedWraithNear(mob.pos);
+		return SoulBoundDeathResult.INTERCEPTED_DEATH;
+	}
+
+	private static Wraith spawnCorruptedWraithNear(int origin) {
+		if (Dungeon.level == null) return null;
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = origin + offset;
+			if (cell >= 0 && cell < Dungeon.level.length()
+					&& !Dungeon.level.solid[cell]
+					&& Actor.findChar(cell) == null) {
+				candidates.add(cell);
+			}
+		}
+		if (candidates.isEmpty()) return null;
+		Wraith wraith = Wraith.spawnAt(Random.element(candidates), Wraith.class);
+		if (wraith != null) Buff.affect(wraith, Corruption.class);
+		return wraith;
 	}
 
 	@Override

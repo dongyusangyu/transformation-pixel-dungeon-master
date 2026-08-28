@@ -101,6 +101,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.RedEnvelope;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.CloakOfShadows;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
@@ -1130,6 +1131,11 @@ public abstract class Mob extends Char {
 			Buff.affect(this, Invulnerability.class,5);
 			Buff b = this.buff(ChampionEnemy.Holy.class);
 			b.detach();
+			return;
+		}
+
+		if (Necronomicon.resolveSoulBoundDeath(this, cause)
+				== Necronomicon.SoulBoundDeathResult.INTERCEPTED_DEATH) {
 			return;
 		}
 
