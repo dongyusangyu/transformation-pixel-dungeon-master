@@ -48,6 +48,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Warlock;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.AuxiliaryCore;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.ArcaneBomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.HolyBomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRetribution;
@@ -82,6 +83,7 @@ public class AntiMagic extends Armor.Glyph {
 	
 	public static final HashSet<Class> RESISTS = new HashSet<>();
 	static {
+		RESISTS.add( AuxiliaryCore.MagicProc.class );
 		RESISTS.add( MagicalSleep.class );
 		RESISTS.add( Charm.class );
 		RESISTS.add( Weakness.class );

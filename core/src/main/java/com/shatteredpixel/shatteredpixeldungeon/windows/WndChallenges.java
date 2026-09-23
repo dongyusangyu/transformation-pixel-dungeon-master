@@ -41,6 +41,8 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.watabou.noosa.Gizmo;
+import com.watabou.noosa.Group;
 import com.watabou.utils.Random;
 
 import java.util.ArrayList;
@@ -104,11 +106,10 @@ public class WndChallenges extends Window {
 					if (infos.get(i).inside(x, y)) {
 						String challenge = finalChallenges.keys().toArray().get(i);
 
-						ShatteredPixelDungeon.scene().add(
+						addInfoWindowToFront(ShatteredPixelDungeon.scene(),
 								new WndTitledMessage(Icons.get(Icons.CHALLENGE_COLOR),
 										Messages.titleCase(Messages.get(Challenges.class, challenge)),
-										Messages.get(Challenges.class, challenge+"_desc"))
-						);
+										Messages.get(Challenges.class, challenge+"_desc")));
 
 						break;
 					}
@@ -182,6 +183,10 @@ public class WndChallenges extends Window {
 		}
 
 		content.setSize(WIDTH, pos);
+	}
+
+	static void addInfoWindowToFront(Group scene, Gizmo infoWindow) {
+		scene.addToFront(infoWindow);
 	}
 
 	public void updateConduitBox() {

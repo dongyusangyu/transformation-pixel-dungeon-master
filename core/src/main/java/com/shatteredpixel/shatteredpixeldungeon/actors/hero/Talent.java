@@ -562,7 +562,7 @@ public enum Talent {
 	BOSS_TALENT_SLOT_1(530, 0, 1, TalentType.BOSS), BOSS_TALENT_SLOT_2(530, 0, 1, TalentType.BOSS), BOSS_TALENT_SLOT_3(530, 0, 2, TalentType.BOSS), BOSS_TALENT_SLOT_4(530, 0, 2, TalentType.BOSS), BOSS_TALENT_SLOT_5(530, 0, 3, TalentType.BOSS),
 	ERODING_SOUL(531, 2, 1, TalentType.MAGIC), CREDULOUS(532, 2, 1, TalentType.SPELL), PENETRATING_CAST(533, 2, 2, TalentType.MAGIC), BOUNTIFUL_ENHANCEMENT(534, 3, 3, TalentType.SPELL), ICE_HELL(535, 3, 3, TalentType.MAGIC),
 	//Huntress boss talent
-	HUNTING_TECHNIQUE(602, 2, 2, TalentType.BOSS), NATURAL_CHILD(603, 2, 2, TalentType.BOSS), FALCON_EYE(604, 2, 2, TalentType.BOSS),
+	HUNTING_TECHNIQUE(603, 2, 2, TalentType.BOSS), NATURAL_CHILD(604, 2, 2, TalentType.BOSS), FALCON_EYE(605, 2, 2, TalentType.BOSS),
 	//Friar T1
 	TRANQUIL_TINCTURE(576, 2, 1, TalentType.RESOURCE), RAVENS_EYE(577, 2, 1, TalentType.ASSIST), CRYSTAL_GUNPOWDER(578, 2, 1, TalentType.ATTACK), BULWARK_GREATSHIELD(579, 2, 1, TalentType.ASSIST),
 	//Friar T2
@@ -3780,6 +3780,26 @@ public enum Talent {
 
 
 
+	static boolean isValidLarvaSpawnCell(int heroPos, int cell, boolean adjacent,
+			boolean passable, boolean pit, boolean occupied) {
+		return cell != heroPos && adjacent && passable && !pit && !occupied;
+	}
+
+	private static int findLarvaSpawnCell(Hero hero) {
+		if (Dungeon.level == null) return -1;
+		ArrayList<Integer> spawnCells = new ArrayList<>();
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = hero.pos + offset;
+			if (Dungeon.level.insideMap(cell)
+					&& isValidLarvaSpawnCell(hero.pos, cell,
+					Dungeon.level.distance(hero.pos, cell) == 1, Dungeon.level.passable[cell],
+					Dungeon.level.pit[cell], Actor.findChar(cell) != null)) {
+				spawnCells.add(cell);
+			}
+		}
+		return spawnCells.isEmpty() ? -1 : Random.element(spawnCells);
+	}
+
 	public static int onDamage(int dmg, Object src, DamageTag... damageTags) {
 		EnumSet<DamageTag> tags = DamageTag.of(damageTags);
 		boolean unavoidable = tags.contains(DamageTag.UNAVOIDABLE);
@@ -3820,12 +3840,15 @@ public enum Talent {
 		if(dmg>4 && hero.hasTalent(Talent.YOG_LARVA)){
 			int maxcnt=Math.min(2,hero.pointsInTalent(Talent.YOG_LARVA));
 			for(int cnt=0;cnt<maxcnt;cnt++){
+				int spawnCell = findLarvaSpawnCell(hero);
+				if (spawnCell == -1) continue;
 				YogDzewa.Larva mob=new YogDzewa.Larva();
 				//YogFist.BurningFist mob=new YogFist.BurningFist();
 				//AllyBuff.affectAndLoot(mob, hero, ScrollOfSirensSong.Enthralled.class);
 				Buff.affect(mob,ScrollOfSirensSong.Enthralled.class);
+				mob.pos = spawnCell;
 				GameScene.add( mob );
-				ScrollOfTeleportation.appear( mob, hero.pos );
+				ScrollOfTeleportation.appear( mob, spawnCell );
 				if(hero.pointsInTalent(Talent.YOG_LARVA)==3 && Random.Int(2)==1){
 					Class<?extends ChampionEnemy> buffCls;
 					int random = 6;

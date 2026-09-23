@@ -39,6 +39,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RotHeart;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CeremonialCandle;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Embers;
@@ -129,20 +131,7 @@ public class Wandmaker extends NPC {
 		}
 
 		if (Quest.given) {
-			
-			Item item;
-			switch (Quest.type) {
-				case 1:
-				default:
-					item = Dungeon.hero.belongings.getItem(CorpseDust.class);
-					break;
-				case 2:
-					item = Dungeon.hero.belongings.getItem(Embers.class);
-					break;
-				case 3:
-					item = Dungeon.hero.belongings.getItem(Rotberry.Seed.class);
-					break;
-			}
+			Item item = Quest.itemForQuest(Dungeon.hero.belongings.backpack, Quest.type);
 
 			if (item != null) {
 				Game.runOnRenderThread(new Callback() {
@@ -273,6 +262,46 @@ public class Wandmaker extends NPC {
 		
 		public static Wand wand1;
 		public static Wand wand2;
+
+		static Item selectDustQuestItem(CorpseDust dust, Necronomicon book) {
+			return dust != null ? dust : book;
+		}
+
+		public static boolean isDustQuestAlternative(int questType, Class<?> itemClass) {
+			return questType == 1 && itemClass != null
+					&& Necronomicon.class.isAssignableFrom(itemClass);
+		}
+
+		public static boolean isQuestItemConsumed(Class<?> itemClass) {
+			return itemClass != null && (CorpseDust.class.isAssignableFrom(itemClass)
+					|| Embers.class.isAssignableFrom(itemClass)
+					|| Rotberry.Seed.class.isAssignableFrom(itemClass));
+		}
+
+		static Item itemForQuest(Bag backpack, int questType) {
+			if (backpack == null) return null;
+			switch (questType) {
+				case 1:
+				default:
+					return selectDustQuestItem(findInBag(backpack, CorpseDust.class),
+							findInBag(backpack, Necronomicon.class));
+				case 2:
+					return findInBag(backpack, Embers.class);
+				case 3:
+					return findInBag(backpack, Rotberry.Seed.class);
+			}
+		}
+
+		private static <T extends Item> T findInBag(Bag bag, Class<T> itemClass) {
+			for (Item item : bag.items) {
+				if (itemClass.isInstance(item)) return itemClass.cast(item);
+				if (item instanceof Bag) {
+					T nested = findInBag((Bag) item, itemClass);
+					if (nested != null) return nested;
+				}
+			}
+			return null;
+		}
 		
 		public static void reset() {
 			spawned = false;

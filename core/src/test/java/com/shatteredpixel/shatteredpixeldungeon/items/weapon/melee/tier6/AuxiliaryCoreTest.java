@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
+import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMysticalEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
@@ -48,6 +49,13 @@ public class AuxiliaryCoreTest {
 		assertEquals(3f, AuxiliaryCore.boostDuration(), 0f);
 		assertEquals(BuffIndicator.UPGRADE,
 				new AuxiliaryCore.MagicPowerBoost().icon());
+	}
+
+	@Test
+	public void magicProcSourceIsIncludedInAntiMagicResistanceSources() throws Exception {
+		assertTrue(AntiMagic.RESISTS.contains(AuxiliaryCore.MagicProc.class));
+		String ringSource = readMainSource("items/rings/RingOfElements.java");
+		assertTrue(ringSource.contains("RESISTS = ElementalResistance.RESISTS"));
 	}
 
 	@Test

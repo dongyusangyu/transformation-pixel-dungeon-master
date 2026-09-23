@@ -91,12 +91,18 @@ public class AuxiliaryCore extends MeleeWeapon {
 		return BOOST_DURATION;
 	}
 
+	/** Source marker for the core's magical proc, distinct from its melee hit. */
+	public static final class MagicProc {
+		private MagicProc() {
+		}
+	}
+
 	@Override
 	public int proc(Char attacker, Char defender, int damage) {
 		int result = super.proc(attacker, defender, damage);
 		if (defender.isAlive() && defender.alignment != Char.Alignment.ALLY) {
 			defender.damage(magicDamage(attacker.buff(MagicPowerBoost.class) != null),
-					this, DamageTag.MAGICAL);
+					MagicProc.class, DamageTag.MAGICAL);
 		}
 		return result;
 	}
