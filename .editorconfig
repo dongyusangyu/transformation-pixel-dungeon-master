@@ -1,0 +1,4 @@
+root = true
+
+[*.properties]
+charset = utf-8

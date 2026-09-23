@@ -51,14 +51,6 @@ public class MercuryBladeTest {
 	}
 
 	@Test
-	public void quickActionPrefersAbilityOnlyWhenItIsUsableAndBuffIsAbsent() {
-		assertTrue(MercuryBlade.defaultActionPrefersAbility(true, false));
-		assertFalse(MercuryBlade.defaultActionPrefersAbility(false, false));
-		assertFalse(MercuryBlade.defaultActionPrefersAbility(true, true));
-		assertFalse(MercuryBlade.defaultActionPrefersAbility(false, true));
-	}
-
-	@Test
 	public void shootingHasItsOwnActionAndQuickslotTargetingState() {
 		assertEquals("SHOOT", MercuryBlade.AC_SHOOT);
 		assertTrue(MercuryBlade.actionUsesTargeting(MercuryBlade.AC_SHOOT));
@@ -66,16 +58,6 @@ public class MercuryBladeTest {
 		assertFalse(MercuryBlade.actionUsesTargeting(MercuryBlade.AC_ABILITY));
 		assertFalse(MercuryBlade.canShootAt(17, 17));
 		assertTrue(MercuryBlade.canShootAt(17, 18));
-	}
-
-	@Test
-	public void equippedQuickActionUsesShootWheneverAbilityIsNotPreferred() {
-		assertEquals(MercuryBlade.AC_ABILITY,
-				MercuryBlade.equippedDefaultAction(true, false));
-		assertEquals(MercuryBlade.AC_SHOOT,
-				MercuryBlade.equippedDefaultAction(false, false));
-		assertEquals(MercuryBlade.AC_SHOOT,
-				MercuryBlade.equippedDefaultAction(true, true));
 	}
 
 	@Test

@@ -94,8 +94,9 @@ public class Sungrass extends Plant {
 		
 		@Override
 		public boolean act() {
-			//史莱姆
-			if (target.pos != pos && hero.pointsInTalent(Talent.ORIGINAL_MONSTER) < 3) {
+			boolean preservesHealingOnMove = target instanceof Hero
+					&& ((Hero) target).pointsInTalent(Talent.ORIGINAL_MONSTER) >= 3;
+			if (target.pos != pos && !preservesHealingOnMove) {
 				detach();
 			}
 			

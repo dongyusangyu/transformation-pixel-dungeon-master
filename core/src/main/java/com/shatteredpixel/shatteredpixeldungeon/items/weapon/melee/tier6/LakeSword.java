@@ -13,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.QuickSlot;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecialAction;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
@@ -32,7 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 import com.watabou.noosa.audio.Sample;
 
-public class LakeSword extends MeleeWeapon {
+public class LakeSword extends MeleeWeapon implements WeaponSpecialAction {
 
 	public static final int TIER = 6;
 	public static final String AC_DRAW = "DRAW";
@@ -65,7 +66,7 @@ public class LakeSword extends MeleeWeapon {
 
 	@Override
 	public int STRReq(int level) {
-		return STRReq(TIER, level);
+		return super.STRReq(level);
 	}
 
 	@Override
@@ -93,17 +94,13 @@ public class LakeSword extends MeleeWeapon {
 	}
 
 	@Override
-	public String defaultAction() {
-		Hero hero = Dungeon.hero;
-		if (hero != null && canDraw(hero)) return AC_DRAW;
-		return super.defaultAction();
+	public String specialActionId() {
+		return AC_DRAW;
 	}
 
 	@Override
-	public java.util.ArrayList<String> actions(Hero hero) {
-		java.util.ArrayList<String> actions = super.actions(hero);
-		if (isEquipped(hero) && canDraw(hero)) actions.add(AC_DRAW);
-		return actions;
+	public boolean specialActionAvailable(Hero hero) {
+		return canDraw(hero);
 	}
 
 	@Override
@@ -340,6 +337,18 @@ public class LakeSword extends MeleeWeapon {
 	@Override
 	public String abilityInfo() {
 		return Messages.get(this, "ability_desc", windProtectionDurationForLevel(buffedLvl()));
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE,
+				augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level))));
+		result.add(abilityStat(UpgradeAbilityStatType.EFFECT_RANGE,
+				Integer.toString(drawRangeForLevel(level))));
+		result.add(abilityStat(UpgradeAbilityStatType.DURATION,
+				Integer.toString(windProtectionDurationForLevel(level))));
+		return result;
 	}
 
 	public static class MagicTracker extends Buff {

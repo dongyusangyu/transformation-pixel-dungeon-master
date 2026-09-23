@@ -1,9 +1,19 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DeathCurse;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfSirensSong;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -14,6 +24,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class DeathButterflyTest {
 
@@ -148,6 +161,63 @@ public class DeathButterflyTest {
 	}
 
 	@Test
+	public void externalFearKeepsAZeroHealthMarkedButterflyFleeing() {
+		TestButterfly butterfly = new TestButterfly(true);
+		butterfly.HP = 0;
+		butterfly.deathMarked = true;
+		butterfly.state = butterfly.FLEEING;
+		butterfly.externalFearForTest();
+
+		butterfly.refreshFleeingStateForTest();
+
+		assertSame(butterfly.FLEEING, butterfly.state);
+	}
+
+	@Test
+	public void leavingFleeingStateAdvancesActorTime() {
+		TestButterfly butterfly = new TestButterfly(true);
+		butterfly.state = butterfly.FLEEING;
+		float before = butterfly.cooldown();
+
+		assertTrue(butterfly.fleeingActionForTest());
+		assertSame(butterfly.HUNTING, butterfly.state);
+		assertEquals(Actor.TICK, butterfly.cooldown() - before, 0f);
+	}
+
+	@Test
+	public void burningDeathDoesNotContinueAfterButterflyIsDestroyed() {
+		Level previousLevel = Dungeon.level;
+		try {
+			TestLevel level = new TestLevel();
+			level.setSize(5, 5);
+			level.blobs = new HashMap<>();
+			level.buildFlagMaps();
+			level.mobs = new HashSet<>();
+			Dungeon.level = level;
+
+			TestButterfly butterfly = new TestButterfly(true);
+			butterfly.HP = 1;
+			butterfly.pos = 12;
+			level.mobs.add(butterfly);
+			Gnoll cursedTarget = new Gnoll();
+			butterfly.curseTargetForTest(cursedTarget);
+			Burning burning = Buff.affect(butterfly, Burning.class);
+			burning.reignite(butterfly, Actor.TICK);
+			float before = burning.cooldown();
+
+			assertTrue(butterfly.burningActionForTest());
+			assertEquals(before, burning.cooldown(), 0f);
+			assertTrue(butterfly.died);
+			assertFalse(butterfly.isAlive());
+			assertFalse(level.mobs.contains(butterfly));
+			assertNull(butterfly.buff(Burning.class));
+			assertNull(cursedTarget.buff(DeathCurse.class));
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
 	public void corneredButterflyGetsOneHuntingActionBeforeFleeingAgain() {
 		TestButterfly butterfly = new TestButterfly(true);
 		Gnoll target = new Gnoll();
@@ -211,6 +281,44 @@ public class DeathButterflyTest {
 	}
 
 	@Test
+	public void permanentCorruptionImmediatelyClearsOwnedCurse() {
+		TestButterfly butterfly = new TestButterfly(true);
+		Gnoll target = new Gnoll();
+		butterfly.curseTargetForTest(target);
+
+		Buff.affect(butterfly, Corruption.class);
+
+		assertNull(target.buff(DeathCurse.class));
+		assertEquals(-1, butterfly.cursedTargetIdForTest());
+		assertFalse(butterfly.state == butterfly.FLEEING);
+	}
+
+	@Test
+	public void permanentEnthralmentImmediatelyClearsOwnedCurse() {
+		TestButterfly butterfly = new TestButterfly(true);
+		Gnoll target = new Gnoll();
+		butterfly.curseTargetForTest(target);
+
+		Buff.affect(butterfly, ScrollOfSirensSong.Enthralled.class);
+
+		assertNull(target.buff(DeathCurse.class));
+		assertEquals(-1, butterfly.cursedTargetIdForTest());
+		assertFalse(butterfly.state == butterfly.FLEEING);
+	}
+
+	@Test
+	public void temporaryCharmDoesNotClearOwnedCurse() {
+		TestButterfly butterfly = new TestButterfly(true);
+		Gnoll target = new Gnoll();
+		butterfly.curseTargetForTest(target);
+
+		butterfly.add(new Charm());
+
+		assertNotNull(target.buff(DeathCurse.class));
+		assertEquals(butterfly.id(), target.buff(DeathCurse.class).sourceId());
+	}
+
+	@Test
 	public void cursedTargetIdentitySurvivesSaveAndLoad() {
 		TestButterfly original = new TestButterfly(true);
 		Gnoll target = new Gnoll();
@@ -226,6 +334,9 @@ public class DeathButterflyTest {
 
 	private static final class TestButterfly extends DeathButterfly {
 		private final boolean curseRoll;
+		private boolean externalFear;
+		private boolean died;
+		private final Terror terror = new Terror();
 
 		private TestButterfly(boolean curseRoll) {
 			this.curseRoll = curseRoll;
@@ -260,6 +371,38 @@ public class DeathButterflyTest {
 			refreshFleeingState();
 		}
 
+		private void externalFearForTest() {
+			externalFear = true;
+		}
+
+		private boolean fleeingActionForTest() {
+			return state.act(false, false);
+		}
+
+		private boolean burningActionForTest() {
+			return buff(Burning.class).act();
+		}
+
+		@Override
+		public void die(Object cause) {
+			died = true;
+			destroy();
+		}
+
+		@Override
+		public void damage(int damage, Object source, DamageTag... damageTags) {
+			HP -= damage;
+			if (!isAlive()) {
+				die(source);
+			}
+		}
+
+		@Override
+		public synchronized <T extends Buff> T buff(Class<T> c) {
+			if (externalFear && c == Terror.class) return c.cast(terror);
+			return super.buff(c);
+		}
+
 		private int cursedTargetIdForTest() {
 			return cursedTargetId();
 		}
@@ -278,6 +421,21 @@ public class DeathButterflyTest {
 
 		private void finishBoundActionForTest(boolean counterattacking) {
 			finishCurseBoundAction(counterattacking);
+		}
+	}
+
+	private static class TestLevel extends Level {
+		@Override
+		protected boolean build() {
+			return true;
+		}
+
+		@Override
+		protected void createMobs() {
+		}
+
+		@Override
+		protected void createItems() {
 		}
 	}
 }

@@ -29,4 +29,11 @@ public class GreatGreatGreatsword extends Greatsword {
 	public String statsInfo() {
 		return Messages.get(this, "stats_desc");
 	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, super.upgradeAbilityStat(level)));
+		return result;
+	}
 }

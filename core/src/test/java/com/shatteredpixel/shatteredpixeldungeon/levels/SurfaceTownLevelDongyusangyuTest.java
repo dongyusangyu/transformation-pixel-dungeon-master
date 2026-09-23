@@ -293,7 +293,7 @@ public class SurfaceTownLevelDongyusangyuTest {
 	}
 
 	@Test
-	public void keepsCentralManorLockedAndItsUpstairsUnreachable() {
+	public void keepsCentralManorDoorUnlockedAndItsUpstairsReachable() {
 		SurfaceTownLevel level = testLevel();
 
 		level.create();
@@ -302,14 +302,11 @@ public class SurfaceTownLevelDongyusangyuTest {
 		int manorDoorInterior = cell(level, 22, 19);
 		assertEquals(Terrain.ENTRANCE, level.map[manorStair]);
 		assertEquals(manorStair, level.exit);
-		assertEquals(Terrain.LOCKED_DOOR, level.map[cell(level, 22, 20)]);
+		assertEquals(Terrain.DOOR, level.map[cell(level, 22, 20)]);
 		assertEquals(Terrain.EMPTY_SP, level.map[manorDoorInterior]);
-		assertTrue(level.solid[manorDoorInterior]);
-		assertFalse(reachable(level, level.entrance, manorStair));
-
-		level.map[cell(level, 22, 20)] = Terrain.OPEN_DOOR;
-		level.buildFlagMaps();
-		assertFalse(reachable(level, level.entrance, manorStair));
+		assertTrue(level.passable[manorDoorInterior]);
+		assertFalse(level.solid[manorDoorInterior]);
+		assertTrue(reachable(level, level.entrance, manorStair));
 	}
 
 	@Test

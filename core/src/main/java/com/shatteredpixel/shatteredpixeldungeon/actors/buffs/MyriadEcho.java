@@ -4,9 +4,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.watabou.noosa.Image;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.utils.Random;
 
 /** Hidden marker for one-HP Myriad Black Shadow echoes. */
 public class MyriadEcho extends Buff {
+
+	private static final float CONVERSION_CHANCE = 1f / 8f;
 
 	{
 		type = buffType.NEUTRAL;
@@ -21,6 +24,16 @@ public class MyriadEcho extends Buff {
 		}
 		normalize((Mob) target);
 		return true;
+	}
+
+	/** Returns whether a conversion roll succeeds for the marked echo. */
+	public static boolean conversionSucceeds(float roll) {
+		return roll < CONVERSION_CHANCE;
+	}
+
+	/** Marked echoes are exceptionally resistant, but not immune, to ally conversion. */
+	public static boolean resistsConversion(Mob mob) {
+		return isMarked(mob) && !conversionSucceeds(Random.Float());
 	}
 
 	@Override
@@ -52,6 +65,5 @@ public class MyriadEcho extends Buff {
 		mob.HT = 1;
 		mob.HP = Math.max(0, Math.min(1, mob.HP));
 		mob.EXP = 0;
-		mob.alignment = Char.Alignment.ENEMY;
 	}
 }

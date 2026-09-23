@@ -34,18 +34,32 @@ public class TestHuntressBossTest {
 
 		assertTrue(source.contains("TestBossUtil.summonNear"));
 		assertTrue(source.contains("TestBossUtil.randomSpawnCellNear"));
+		assertTrue(source.contains("spawnWardenPlants"));
 		assertTrue(source.contains("onWardenPhaseStarted"));
-		assertTrue(source.contains("triggerFadeleafBoon"));
+		assertTrue(source.contains("tryTriggerFadeleafBoon"));
+		assertTrue(source.contains("teleportBossAndTargetApart"));
+		assertTrue(source.contains("performBossOnlyEscape"));
+		assertTrue(source.contains("summonChallengeHawk"));
 		assertFalse(source.contains("HuntressBossLevel"));
 	}
 
 	@Test
-	public void mobPlacerRegistersTestHuntressBoss() throws IOException {
+	public void testVariantDoesNotDisableOfficialHawkRelayTargeting() throws IOException {
 		String source = readMainSource(
-				"com/shatteredpixel/shatteredpixeldungeon/custom/testmode/MobPlacer.java");
+				"com/shatteredpixel/shatteredpixeldungeon/custom/testmode/testboss/TestHuntressBoss.java");
 
-		assertTrue(source.contains("import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.testboss.TestHuntressBoss;"));
-		assertTrue(source.contains("TEST_HUNTRESS_BOSS(TestHuntressBoss.class"));
+		assertFalse(source.contains("visibleEnemyOrNull"));
+		assertFalse(source.contains("hasVisibleAttackableEnemy"));
+		assertFalse(source.contains("protected Char chooseEnemy()"));
+	}
+
+	@Test
+	public void bossPlacerRegistersTestHuntressBoss() throws IOException {
+		String source = readMainSource(
+				"com/shatteredpixel/shatteredpixeldungeon/custom/testmode/MobPlacementCatalog.java");
+
+		assertTrue(source.contains("TestHuntressBoss.class"));
+		assertTrue(source.contains("new Page(\"test_bosses\""));
 	}
 
 	@Test

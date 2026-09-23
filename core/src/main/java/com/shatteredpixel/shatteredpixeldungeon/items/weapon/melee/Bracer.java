@@ -34,6 +34,11 @@ public class Bracer extends MeleeWeapon {
         return 2 + lvl;
     }
 
+    @Override
+    public Integer upgradeBlockingStat(int level) {
+        return DRMax(level);
+    }
+
     public String statsInfo(){
         if (isIdentified()){
             return Messages.get(this, "stats_desc", 2+1*buffedLvl());

@@ -69,6 +69,7 @@ public final class TestHeroFactory {
 
     private static class MinimalHero extends Hero {
         @Override public void updateHT(boolean boostHP) {}
+        @Override public int STR() { return STR; }
         @Override public boolean isImmune(Class effect) { return false; }
         @Override public float resist(Class effect) { return 1f; }
     }

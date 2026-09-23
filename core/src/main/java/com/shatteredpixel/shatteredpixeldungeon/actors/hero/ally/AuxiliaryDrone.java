@@ -530,12 +530,9 @@ public class AuxiliaryDrone extends InstructionTool.Drone {
 
                 for (int p = 0; p < PathFinder.NEIGHBOURS9.length; p++) {
                     int i = cell + PathFinder.NEIGHBOURS9[p];
-                    if ((Dungeon.level.map[i] == Terrain.REGION_DECO
-                            || Dungeon.level.map[i] == Terrain.REGION_DECO_ALT)
-                            && !(Dungeon.level instanceof SewerLevel)){
+                    if (Dungeon.level.destroyRegionDeco(i)){
                         Splash.at(i, 0x555555, 10);
                         Sample.INSTANCE.play( Assets.Sounds.MINE, 0.6f );
-                        Level.set( i, Terrain.EMPTY_DECO );
                         GameScene.updateMap(i);
                         terrainAffected = true;
                     }

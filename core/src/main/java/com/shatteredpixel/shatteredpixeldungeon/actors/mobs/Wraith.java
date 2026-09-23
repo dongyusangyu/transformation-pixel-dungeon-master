@@ -91,9 +91,13 @@ public class Wraith extends Mob {
 	}
 	
 	public void adjustStats( int level ) {
+		adjustStats(level, true);
+	}
+
+	public void adjustStats( int level, boolean initiallyAware ) {
 		this.level = level;
 		defenseSkill = attackSkill( null ) * 5;
-		enemySeen = true;
+		enemySeen = initiallyAware;
 	}
 	@Override
 	public int attackProc( Char enemy, int damage , DamageTag... damageTags) {

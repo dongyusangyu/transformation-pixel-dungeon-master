@@ -11,6 +11,8 @@ import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
+import java.util.ArrayList;
+
 final class TestBossUtil {
 
     private TestBossUtil() {
@@ -56,6 +58,20 @@ final class TestBossUtil {
             }
         }
         return best;
+    }
+
+    static int randomSpawnCellNearStrict(int center, int minDistance, int maxDistance) {
+        ArrayList<Integer> candidates = new ArrayList<>();
+        for (int cell = 0; cell < Dungeon.level.length(); cell++) {
+            if (canUseCell(cell)
+                    && Dungeon.level.plants.get(cell) == null
+                    && Dungeon.level.heaps.get(cell) == null
+                    && Dungeon.level.distance(center, cell) >= minDistance
+                    && Dungeon.level.distance(center, cell) <= maxDistance) {
+                candidates.add(cell);
+            }
+        }
+        return candidates.isEmpty() ? -1 : Random.element(candidates);
     }
 
     static Mob summonNear(Mob owner, Class<? extends Mob> type, int center, int minDistance, int maxDistance) {

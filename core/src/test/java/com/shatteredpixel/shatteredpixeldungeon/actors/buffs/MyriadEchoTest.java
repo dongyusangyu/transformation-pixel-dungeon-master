@@ -16,7 +16,7 @@ public class MyriadEchoTest {
 		CamouflageGnoll mob = new CamouflageGnoll();
 		mob.HP = mob.HT = 100;
 		mob.EXP = 13;
-		mob.alignment = Char.Alignment.ALLY;
+		mob.alignment = Char.Alignment.ENEMY;
 
 		MyriadEcho marker = Buff.affect(mob, MyriadEcho.class);
 
@@ -37,5 +37,22 @@ public class MyriadEchoTest {
 		MyriadEcho.normalize(mob);
 		assertEquals(0, mob.HP);
 		assertEquals(1, mob.HT);
+	}
+
+	@Test
+	public void markerDoesNotOverwriteAnAllyAlignment() {
+		CamouflageGnoll mob = new CamouflageGnoll();
+		Buff marker = Buff.affect(mob, MyriadEcho.class);
+		mob.alignment = Char.Alignment.ALLY;
+
+		assertTrue(marker.act());
+
+		assertEquals(Char.Alignment.ALLY, mob.alignment);
+	}
+
+	@Test
+	public void markedEchoConversionHasOneInEightSuccessWindow() {
+		assertTrue(MyriadEcho.conversionSucceeds(0f));
+		assertFalse(MyriadEcho.conversionSucceeds(0.125f));
 	}
 }

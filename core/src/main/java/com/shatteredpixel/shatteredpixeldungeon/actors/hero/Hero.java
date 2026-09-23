@@ -715,7 +715,7 @@ public class Hero extends Char {
 		Buff.affect( this, Hunger.class );
 		ensureSubclassBuffs();
 		if(hasTalent(Talent.SMOKE_MASK) && buff(Talent.SmokeMask.class)!=null && buff(Talent.SmokeCooldown.class)==null){
-			ActionIndicator1.setAction(buff(Talent.SmokeMask.class));
+			ActionIndicator.setAction(buff(Talent.SmokeMask.class));
 		}else if(hasTalent(Talent.SMOKE_MASK)){
 			Buff.affect(this,Talent.SmokeMask.class);
 		}
@@ -1391,10 +1391,14 @@ public class Hero extends Char {
 		
 		Momentum momentum = buff(Momentum.class);
 		if (momentum != null){
-			((HeroSprite)sprite).sprint( momentum.freerunning() ? 1.5f : 1f );
+			if (sprite instanceof HeroSprite) {
+				((HeroSprite)sprite).sprint( momentum.freerunning() ? 1.5f : 1f );
+			}
 			speed *= momentum.speedMultiplier();
 		} else {
-			((HeroSprite)sprite).sprint( 1f );
+			if (sprite instanceof HeroSprite) {
+				((HeroSprite)sprite).sprint( 1f );
+			}
 		}
 
 		NaturesPower.naturesPowerTracker natStrength = buff(NaturesPower.naturesPowerTracker.class);
@@ -1464,7 +1468,7 @@ public class Hero extends Char {
 		if (!(w instanceof Weapon))             return true;
 		if (RingOfForce.fightingUnarmed(this))  return true;
 		if (STR() < ((Weapon)w).STRReq())       return false;
-		if (w instanceof Flail)                 return false;
+		if (MeleeWeapon.hasTrait(w, MeleeWeapon.WeaponTrait.FLAIL, this)) return false;
 		if (w instanceof Tatteki || w instanceof Tatteki.Tamaru)                 return false;
 		return super.canSurpriseAttack();
 	}
@@ -1520,43 +1524,9 @@ public class Hero extends Char {
             return 0;
         }
 
-		float delay = 1f;
-		Berserk berserk = buff(Berserk.class);
-		if (berserk != null) delay /= berserk.actionSpeedMultiplier();
-		Combo combo = buff(Combo.class);
-		if (combo != null) {
-			delay /= Combo.relentlessAttackSpeedMultiplier(combo.combatCount(),
-					pointsInTalent(Talent.RELENTLESS_COMBAT));
-		}
-		if(buff(OneSword.OKU_OneSword.class)!=null  && belongings.attackingWeapon() instanceof MeleeWeapon){
-			float spd=1.5f;
-			if(hasTalent(Talent.OFFENSIVE)){
-				spd+=0.125f*pointsInTalent(Talent.OFFENSIVE);
-			}
-			delay/=spd;
-		}
-		if(buff(Routine.OverLoad.class)!=null){
-			delay/=2;
-		}
-        if(glyphLevel(Swiftness.class)>=0 && subClass.is(HeroSubClass.COMBATMASTER)){
-
-            delay/=1.0f+0.75f * (0.2f + 0.04f * glyphLevel(Swiftness.class)) * Swiftness.genericProcChanceMultiplier(this);
-        }
-        FightStance fightStance = buff(FightStance.class);
-        if(fightStance!=null){
-            if(fightStance.stance==fightStance.balance && pointsInTalent(Talent.STANCE_MASTERY)>2){
-                delay/=1.15f;
-            }
-        }
-        if ( buff( Suffering.Paranoia.class ) != null) delay/=1.2f;
-		if ( buff( Suffering.Ecstasy.class ) != null) delay/=1.5f;
-		if (buff(PostPlagueFatigue.class) != null) {
-			delay *= PostPlagueFatigue.ATTACK_DELAY_MULTIPLIER;
-		}
+		float delay = 1f / attackSpeedMultiplier(true);
 		if (!RingOfForce.fightingUnarmed(this)) {
-			
 			return delay * belongings.attackingWeapon().delayFactor( this );
-			
 		} else {
 			//Normally putting furor speed on unarmed attacks would be unnecessary
 			//But there's going to be that one guy who gets a furor+force ring combo
@@ -1577,11 +1547,47 @@ public class Hero extends Char {
 				delay = ((Weapon)belongings.weapon).augment.delayFactor(delay);
 			}
 
-
-
-
 			return delay/speed;
 		}
+	}
+
+	/** Returns the shared attack-speed multiplier used by melee and thrown attacks. */
+	public float attackSpeedMultiplier(boolean melee) {
+		float speed = 1f;
+		Berserk berserk = buff(Berserk.class);
+		if (berserk != null) speed *= berserk.actionSpeedMultiplier();
+		Combo combo = buff(Combo.class);
+		if (combo != null) {
+			speed *= Combo.relentlessAttackSpeedMultiplier(combo.combatCount(),
+					pointsInTalent(Talent.RELENTLESS_COMBAT));
+		}
+		if (melee && buff(OneSword.OKU_OneSword.class) != null
+				&& belongings.attackingWeapon() instanceof MeleeWeapon) {
+			float oneSwordSpeed = 1.5f;
+			if(hasTalent(Talent.OFFENSIVE)){
+				oneSwordSpeed += 0.125f * pointsInTalent(Talent.OFFENSIVE);
+			}
+			speed *= oneSwordSpeed;
+		}
+		if (buff(Routine.OverLoad.class) != null) {
+			speed *= 2f;
+		}
+		if (glyphLevel(Swiftness.class) >= 0 && subClass.is(HeroSubClass.COMBATMASTER)) {
+			speed *= 1.0f + 0.75f * (0.2f + 0.04f * glyphLevel(Swiftness.class))
+					* Swiftness.genericProcChanceMultiplier(this);
+		}
+		FightStance fightStance = buff(FightStance.class);
+		if (fightStance != null) {
+			if (fightStance.stance == fightStance.balance && pointsInTalent(Talent.STANCE_MASTERY) > 2) {
+				speed *= 1.15f;
+			}
+		}
+		if (buff(Suffering.Paranoia.class) != null) speed *= 1.2f;
+		if (buff(Suffering.Ecstasy.class) != null) speed *= 1.5f;
+		if (buff(PostPlagueFatigue.class) != null) {
+			speed /= PostPlagueFatigue.ATTACK_DELAY_MULTIPLIER;
+		}
+		return speed;
 	}
 
 	@Override
@@ -1602,6 +1608,9 @@ public class Hero extends Char {
 	}
 
 	public void spendAndNext( float time ) {
+		if (automaticPickupInProgress) {
+			return;
+		}
 		busy();
 		spend( time );
 		next();
@@ -1889,6 +1898,65 @@ public class Hero extends Char {
 	//used to keep track if the wait/pickup action was used
 	// so that the hero spends a turn even if the fail to pick up an item
 	public boolean waitOrPickup = false;
+	private boolean automaticPickupInProgress = false;
+
+	private void logPickedUpItem(Item item) {
+		if (item instanceof Dewdrop
+				|| item instanceof TimekeepersHourglass.sandBag
+				|| item instanceof DriedRose.Petal
+				|| item instanceof Key
+				|| item instanceof Guidebook
+				|| (item instanceof MissileWeapon
+				&& !MissileWeapon.UpgradedSetTracker.pickupValid(this, (MissileWeapon) item))) {
+			return;
+		}
+
+		if (item instanceof DarkGold) {
+			DarkGold existing = belongings.getItem(DarkGold.class);
+			if (existing != null) {
+				if (existing.quantity() >= 40) {
+					GLog.p(Messages.get(DarkGold.class, "you_now_have", existing.quantity()));
+				} else {
+					GLog.i(Messages.get(DarkGold.class, "you_now_have", existing.quantity()));
+				}
+			}
+			return;
+		}
+
+		boolean important = item.unique && item.isIdentified()
+				&& (item instanceof Scroll || item instanceof Potion);
+		if (important) {
+			GLog.p(Messages.capitalize(Messages.get(this, "you_now_have", item.name())));
+		} else {
+			GLog.i(Messages.capitalize(Messages.get(this, "you_now_have", item.name())));
+		}
+	}
+
+	private void autoPickUpAtCurrentCell() {
+		if (pointsInTalent(Talent.AUTO_PICK) < 2 || !isAlive()) {
+			return;
+		}
+
+		Heap heap = Dungeon.level.heaps.get(pos);
+		while (heap != null && heap.type == Type.HEAP && !heap.isEmpty() && isAlive()) {
+			Item item = heap.peek();
+			boolean pickedUp;
+			automaticPickupInProgress = true;
+			try {
+				pickedUp = item.doPickUp(this);
+			} finally {
+				automaticPickupInProgress = false;
+			}
+
+			if (!pickedUp) {
+				return;
+			}
+
+			heap.pickUp();
+			logPickedUpItem(item);
+			heap = Dungeon.level.heaps.get(pos);
+		}
+	}
 
 	private boolean actPickUp( HeroAction.PickUp action ) {
 		int dst = action.dst;
@@ -1899,34 +1967,7 @@ public class Hero extends Char {
 				Item item = heap.peek();
 				if (item.doPickUp( this )) {
 					heap.pickUp();
-
-					if (item instanceof Dewdrop
-							|| item instanceof TimekeepersHourglass.sandBag
-							|| item instanceof DriedRose.Petal
-							|| item instanceof Key
-							|| item instanceof Guidebook
-							|| (item instanceof MissileWeapon && !MissileWeapon.UpgradedSetTracker.pickupValid(this, (MissileWeapon) item))) {
-						//Do Nothing
-					} else if (item instanceof DarkGold) {
-						DarkGold existing = belongings.getItem(DarkGold.class);
-						if (existing != null){
-							if (existing.quantity() >= 40) {
-								GLog.p(Messages.get(DarkGold.class, "you_now_have", existing.quantity()));
-							} else {
-								GLog.i(Messages.get(DarkGold.class, "you_now_have", existing.quantity()));
-							}
-						}
-					} else {
-
-						//TODO make all unique items important? or just POS / SOU?
-						boolean important = item.unique && item.isIdentified() &&
-								(item instanceof Scroll || item instanceof Potion);
-						if (important) {
-							GLog.p( Messages.capitalize(Messages.get(this, "you_now_have", item.name())) );
-						} else {
-							GLog.i( Messages.capitalize(Messages.get(this, "you_now_have", item.name())) );
-						}
-					}
+					logPickedUpItem(item);
 					
 					curAction = null;
 				} else {
@@ -2855,15 +2896,19 @@ public class Hero extends Char {
 			move(step);
 			if (oldPos != pos) MeleeWeapon.notifyHeroStep(this, oldPos, pos);
             MarchForward.Forward f=buff(MarchForward.Forward.class);
-            if(f!=null){
+			if(f!=null){
                 if(f.speed<1.0f+0.125f*pointsInTalent(Talent.SPEEDUP)){
                     f.speed+=0.05f;
                 }
                 if(f.speed>1.0f+0.125f*pointsInTalent(Talent.SPEEDUP)){
                     f.speed=1.0f+0.125f*pointsInTalent(Talent.SPEEDUP);
-                }
-            }
-			spend( delay / speed() );
+				}
+			}
+			float movementTime = delay / speed();
+			if (oldPos != pos) {
+				autoPickUpAtCurrentCell();
+			}
+			spend(movementTime);
 			justMoved = true;
 			
 			search(false);
@@ -3681,7 +3726,8 @@ public class Hero extends Char {
 						Dungeon.level.mapped[curr] = true;
 					}
 					
-					if (Dungeon.level.secret[curr]){
+					boolean hiddenTrap = Dungeon.level.hiddenTrapAt(curr);
+					if (Dungeon.level.secret[curr] || hiddenTrap){
 						
 						Trap trap = Dungeon.level.traps.get( curr );
 						float chance;
@@ -3703,7 +3749,7 @@ public class Hero extends Char {
 							chance = 0f;
 							
 						//unintentional trap detection scales from 40% at floor 0 to 30% at floor 25
-						} else if (Dungeon.level.map[curr] == Terrain.SECRET_TRAP) {
+						} else if (hiddenTrap || Dungeon.level.map[curr] == Terrain.SECRET_TRAP) {
 							chance = 0.4f - (Dungeon.scalingDepth() / 250f);
 							
 						//unintentional door detection scales from 20% at floor 0 to 0% at floor 20
@@ -3729,7 +3775,7 @@ public class Hero extends Char {
 							if (fieldOfView[curr]) smthFound = true;
 	
 							if (talisman != null){
-								if (oldValue == Terrain.SECRET_TRAP){
+								if (hiddenTrap || oldValue == Terrain.SECRET_TRAP){
 									talisman.charge(2);
 								} else if (oldValue == Terrain.SECRET_DOOR){
 									talisman.charge(10);

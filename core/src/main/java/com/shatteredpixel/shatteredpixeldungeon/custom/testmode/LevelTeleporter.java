@@ -196,6 +196,7 @@ public class LevelTeleporter extends TestItem {
         private int selectedLevel = 0;
         private ArrayList<DepthButton> btns = new ArrayList<>();
         private StyledButton icb;
+        private ScrollPane pane;
 
         public WndSelectLevel(){
             super();
@@ -205,7 +206,7 @@ public class LevelTeleporter extends TestItem {
             add(ttl);
             ttl.setPos(WIDTH/2f-ttl.width()/2f, GAP);
             PixelScene.align(ttl);
-            ScrollPane sp = new ScrollPane(new Component()){
+            pane = new ScrollPane(new Component()){
                 @Override
                 public void onClick(float x, float y) {
                     super.onClick(x, y);
@@ -216,10 +217,8 @@ public class LevelTeleporter extends TestItem {
                     }
                 }
             };
-            add(sp);
-            //sp.setRect(0, ttl.bottom() + GAP * 2, WIDTH, PANE_MAX_HEIGHT);
-            //GLog.i("%f", ttl.bottom() + GAP * 2);
-            Component content = sp.content();
+            add(pane);
+            Component content = pane.content();
             float xpos = (WIDTH - 5*BTN_SIZE - GAP*8)/2f;
             float ypos = 0;
             float each = GAP*2 + BTN_SIZE;
@@ -242,7 +241,7 @@ public class LevelTeleporter extends TestItem {
             }
 
             content.setSize(WIDTH, btns.get(btns.size() - 1).bottom());
-            sp.setRect(0, ttl.bottom() + GAP * 2, WIDTH, Math.min(btns.get(btns.size()-1).bottom(), PANE_MAX_HEIGHT));
+            pane.setRect(0, ttl.bottom() + GAP * 2, WIDTH, Math.min(btns.get(btns.size()-1).bottom(), PANE_MAX_HEIGHT));
 
             icb = new StyledButton(Chrome.Type.RED_BUTTON, M.L(LevelTeleporter.class, "interlevel_teleport_go", selectedLevel)){
                 @Override
@@ -262,14 +261,22 @@ public class LevelTeleporter extends TestItem {
             };
             add(icb);
             icb.icon(Icons.get(Icons.DEPTH));
-            icb.setRect(0, sp.bottom() + GAP * 2, WIDTH, BTN_SIZE);
+            icb.setRect(0, pane.bottom() + GAP * 2, WIDTH, BTN_SIZE);
             setSelectedLevel(0);
 
-            sp.scrollTo(0, 0);
+            pane.scrollTo(0, 0);
 
             resize(WIDTH, (int) (icb.bottom()));
 
-            sp.setPos(0, ttl.bottom() + GAP * 2);
+            pane.setPos(0, ttl.bottom() + GAP * 2);
+        }
+
+        @Override
+        public void offset(int xOffset, int yOffset) {
+            super.offset(xOffset, yOffset);
+            if (pane != null) {
+                pane.setPos(pane.left(), pane.top());
+            }
         }
 
         private void setSelectedLevel(int lvl){

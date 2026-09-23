@@ -42,7 +42,8 @@ public class Corruption extends AllyBuff {
         target.heal(target.HT);
 		for (Buff buff : target.buffs()) {
 			if (buff.type == Buff.buffType.NEGATIVE
-					&& !(buff instanceof SoulMark)) {
+					&& !(buff instanceof SoulMark)
+					&& !(buff instanceof Corruption)) {
 				buff.detach();
 			}
 		}

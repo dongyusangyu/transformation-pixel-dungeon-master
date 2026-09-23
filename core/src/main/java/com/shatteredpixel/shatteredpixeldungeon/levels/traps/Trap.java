@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -78,6 +79,35 @@ public abstract class Trap implements Bundlable {
 	public Trap set(int pos){
 		this.pos = pos;
 		return this;
+	}
+
+	public boolean preservesTerrain() {
+		return false;
+	}
+
+	/** Returns whether this trap may be placed on the supplied terrain. */
+	public boolean canPlaceOnTerrain(int terrain) {
+		return terrain == Terrain.EMPTY
+				|| terrain == Terrain.GRASS
+				|| terrain == Terrain.DOOR
+				|| terrain == Terrain.OPEN_DOOR
+				|| terrain == Terrain.EMBERS
+				|| terrain == Terrain.PEDESTAL
+				|| terrain == Terrain.EMPTY_SP
+				|| terrain == Terrain.HIGH_GRASS
+				|| terrain == Terrain.FURROWED_GRASS
+				|| terrain == Terrain.TRAP
+				|| terrain == Terrain.INACTIVE_TRAP
+				|| terrain == Terrain.EMPTY_DECO
+				|| terrain == Terrain.WATER;
+	}
+
+	public boolean triggersOnEntry() {
+		return false;
+	}
+
+	public boolean avoids(Char ch) {
+		return false;
 	}
 
 	public Trap reveal() {

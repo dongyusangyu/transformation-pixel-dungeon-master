@@ -67,6 +67,15 @@ public abstract class ClericSpell {
 		return false;
 	}
 
+	/**
+	 * Returns whether this spell currently owns an active target selection.
+	 * Targeted spells override this so repeated action-button input can be ignored
+	 * until the existing selection is resolved or cancelled.
+	 */
+	public boolean isTargeting(){
+		return false;
+	}
+
 	public int targetingFlags(){
 		return -1; //-1 for no targeting
 	}

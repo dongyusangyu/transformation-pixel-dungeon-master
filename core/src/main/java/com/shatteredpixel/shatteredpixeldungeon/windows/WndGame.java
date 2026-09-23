@@ -30,13 +30,11 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.HeroSelectScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.RankingsScene;
-import com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RedButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.Game;
 
-import java.io.IOException;
 
 public class WndGame extends Window {
 
@@ -111,12 +109,7 @@ public class WndGame extends Window {
 		addButton(curBtn = new RedButton(Messages.get(this, "menu")) {
 			@Override
 			protected void onClick() {
-				try {
-					Dungeon.saveAll();
-				} catch (IOException e) {
-					ShatteredPixelDungeon.reportException(e);
-				}
-				Game.switchScene(TitleScene.class);
+				GameScene.requestSaveAndReturnToTitle();
 			}
 		});
 		curBtn.icon(Icons.get(Icons.DISPLAY));

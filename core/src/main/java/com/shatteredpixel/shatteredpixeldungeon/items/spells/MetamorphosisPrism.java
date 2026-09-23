@@ -46,6 +46,7 @@ public class MetamorphosisPrism extends Spell {
 
 	{
 		image = EXItemSpriteSheet.META_INFUSE;
+		unique = true;
 	}
 
 	@Override

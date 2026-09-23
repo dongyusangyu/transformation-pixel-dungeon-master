@@ -335,13 +335,17 @@ public class DwarfKing extends Mob {
 		return super.act();
 	}
 
-	static boolean shouldResolveAttackSynchronously(int phase, boolean animationsEnabled) {
-		return phase == 3 && !animationsEnabled;
+	static boolean shouldUseAnimationCallbacks(boolean animationsEnabled) {
+		return animationsEnabled;
+	}
+
+	static boolean shouldResolveAttackSynchronously(boolean animationsEnabled) {
+		return !shouldUseAnimationCallbacks(animationsEnabled);
 	}
 
 	@Override
 	protected boolean doAttack(Char enemy) {
-		if (shouldResolveAttackSynchronously(phase, SPDSettings.charAnimations())) {
+		if (shouldResolveAttackSynchronously(SPDSettings.charAnimations())) {
 			boolean hit = attack(enemy);
 			completePhysicalAttack(enemy, hit);
 			Invisibility.dispel(this);
@@ -468,8 +472,15 @@ public class DwarfKing extends Mob {
 				}
 			}
 
-			Actor.add(new Pushing(this, pos, bestPos));
+			if (shouldUseAnimationCallbacks(SPDSettings.charAnimations())) {
+				Actor.add(new Pushing(this, pos, bestPos));
+			} else if (sprite != null) {
+				sprite.interruptMotion();
+				sprite.place(bestPos);
+				sprite.idle();
+			}
 			pos = bestPos;
+			GameScene.sortMobSprites();
 
 			//find closest cell that's adjacent to enemy, place subject there
 			bestDist = Dungeon.level.trueDistance(enemy.pos, pos);
@@ -723,12 +734,26 @@ public class DwarfKing extends Mob {
 			}
 			super.zap();
 		}
+
+		@Override
+		public boolean doRangedAttack(Char enemy) {
+			if (shouldUseAnimationCallbacks(SPDSettings.charAnimations())) {
+				return super.doRangedAttack(enemy);
+			}
+			zap();
+			return true;
+		}
 	}
 
 	public static class DKGolem extends Golem {
 		{
 			properties.add(Property.BOSS_MINION);
 			state = HUNTING;
+		}
+
+		@Override
+		protected boolean shouldUseZapAnimation() {
+			return shouldUseAnimationCallbacks(SPDSettings.charAnimations());
 		}
 	}
 

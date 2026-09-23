@@ -586,6 +586,9 @@ public class Armor extends EquipableItem {
 
 	@Override
 	public void resetUpgradeStateForNewCycle() {
+		if (seal != null) {
+			seal.resetUpgradeStateForNewCycle();
+		}
 		curseInfusionBonus = false;
 		super.resetUpgradeStateForNewCycle();
 	}

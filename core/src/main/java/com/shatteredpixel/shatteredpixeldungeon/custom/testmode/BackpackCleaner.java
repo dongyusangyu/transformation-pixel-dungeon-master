@@ -27,6 +27,12 @@ public class BackpackCleaner extends TestItem {
     private static final String AC_CLEAR_EQUIP = "clear_equip";
     private static final String AC_CLEAR_MISC = "clear_misc";
 
+    private enum ClearMode {
+        ALL,
+        EQUIPMENT,
+        MISC
+    }
+
     @Override
     public ArrayList<String> actions(Hero hero ) {
         ArrayList<String> actions = super.actions(hero);
@@ -38,23 +44,7 @@ public class BackpackCleaner extends TestItem {
 
 
     private void clearAllItem(){
-        int count = 0;
-
-        for (Item it : Dungeon.hero.belongings.backpack.items.toArray(new Item[0])){
-            if(!it.unique){
-                if(!(it instanceof Key) && !(it.isEquipped(curUser))){
-                    it.detachAll(Dungeon.hero.belongings.backpack);
-                    ++count;
-                }
-            }else if(it instanceof Bag){
-                for(Item item_in_bag: ((Bag) it).items.toArray(new Item[0])){
-                    if(!item_in_bag.unique){
-                        item_in_bag.detachAll(Dungeon.hero.belongings.backpack);
-                        ++count;
-                    }
-                }
-            }
-        }
+        int count = clearItems(ClearMode.ALL);
         GLog.i(Messages.get(this, "clear_all_result", count));
     }
 
@@ -63,47 +53,49 @@ public class BackpackCleaner extends TestItem {
     }
 
     private void clearAllEquipment(){
-        int count = 0;
-        for (Item it : Dungeon.hero.belongings.backpack.items.toArray(new Item[0])){
-            if(!it.unique){
-                if(isEquipment(it)){
-                    if(!it.isEquipped(curUser)){
-                        it.detachAll(Dungeon.hero.belongings.backpack);
-                        ++count;
-                    }
-                }
-            }else if(it instanceof Bag){
-                for(Item item_in_bag: ((Bag) it).items.toArray(new Item[0])){
-                    if(isEquipment(item_in_bag) && !item_in_bag.unique){
-                        item_in_bag.detachAll(Dungeon.hero.belongings.backpack);
-                        ++count;
-                    }
-                }
-            }
-        }
+        int count = clearItems(ClearMode.EQUIPMENT);
         GLog.i(Messages.get(this, "clear_equipment_result", count));
     }
 
     private void clearAllMisc(){
+        int count = clearItems(ClearMode.MISC);
+        GLog.i(Messages.get(this, "clear_misc_result", count));
+    }
+
+    private int clearItems(ClearMode mode) {
+        ArrayList<Item> candidates = new ArrayList<>();
+        for (Item item : Dungeon.hero.belongings.backpack) {
+            if (!(item instanceof Bag) && shouldClear(item, mode)) {
+                candidates.add(item);
+            }
+        }
+
         int count = 0;
-        for (Item it : Dungeon.hero.belongings.backpack.items.toArray(new Item[0])){
-            if(!it.unique){
-                if(!isEquipment(it)){
-                    if(!it.isEquipped(curUser)){
-                        it.detachAll(Dungeon.hero.belongings.backpack);
-                        ++count;
-                    }
-                }
-            }else if(it instanceof Bag){
-                for(Item item_in_bag: ((Bag) it).items.toArray(new Item[0])){
-                    if(!isEquipment(item_in_bag) && !item_in_bag.unique){
-                        item_in_bag.detachAll(Dungeon.hero.belongings.backpack);
-                        ++count;
-                    }
+        for (Item item : candidates) {
+            if (Dungeon.hero.belongings.backpack.contains(item)) {
+                item.detachAll(Dungeon.hero.belongings.backpack);
+                if (!Dungeon.hero.belongings.backpack.contains(item)) {
+                    count++;
                 }
             }
         }
-        GLog.i(Messages.get(this, "clear_misc_result", count));
+
+        Dungeon.hero.belongings.backpack.rebalanceFallbackStorage();
+        Item.updateQuickslot();
+        return count;
+    }
+
+    private boolean shouldClear(Item item, ClearMode mode) {
+        if (item.unique || item instanceof Key || item.isEquipped(curUser)) {
+            return false;
+        }
+        if (mode == ClearMode.EQUIPMENT) {
+            return isEquipment(item);
+        }
+        if (mode == ClearMode.MISC) {
+            return !isEquipment(item);
+        }
+        return true;
     }
 
     @Override

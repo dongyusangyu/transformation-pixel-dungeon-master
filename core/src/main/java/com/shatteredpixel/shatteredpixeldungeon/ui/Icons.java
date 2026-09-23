@@ -98,6 +98,9 @@ public enum Icons {
 	STAIRS_LARGE,
 	STAIRS_TRAPS,
 	STAIRS_SECRETS,
+	STAIRS_SKY_ISLAND,
+	STAIRS_BARREN,
+	STAIRS_CHAOS,
 	WELL_HEALTH,
 	WELL_AWARENESS,
 	SACRIFICE_ALTAR,
@@ -119,6 +122,9 @@ public enum Icons {
 	DEPTH_LARGE,
 	DEPTH_TRAPS,
 	DEPTH_SECRETS,
+	DEPTH_SKY_ISLAND,
+	DEPTH_BARREN,
+	DEPTH_CHAOS,
 	CHAL_COUNT,
 	REDCHAL_COUNT,
 	COIN_SML,
@@ -149,7 +155,7 @@ public enum Icons {
 	}
 	
 	public static Image get( Icons type ) {
-		Image icon = new Image( Assets.Interfaces.icons() );
+		Image icon = new Image( textureFor(type) );
 		switch (type) {
 
 			case ENTER:
@@ -330,6 +336,15 @@ public enum Icons {
 			case STAIRS_SECRETS:
 				icon.frame( icon.texture.uvRectBySize( 112, 64, 15, 16 ) );
 				break;
+			case STAIRS_SKY_ISLAND:
+				icon.frame( icon.texture.uvRectBySize( 0, 128, 15, 16 ) );
+				break;
+			case STAIRS_BARREN:
+				icon.frame( icon.texture.uvRectBySize( 16, 128, 15, 16 ) );
+				break;
+			case STAIRS_CHAOS:
+				icon.frame( icon.texture.uvRectBySize( 32, 128, 15, 16 ) );
+				break;
 			case WELL_HEALTH:
 				icon.frame( icon.texture.uvRectBySize( 128, 64, 16, 16 ) );
 				break;
@@ -387,6 +402,15 @@ public enum Icons {
 				break;
 			case DEPTH_SECRETS:
 				icon.frame( icon.texture.uvRectBySize( 88 + runTypeOfsX(), 80 + runTypeOfsY(), 7, 7 ) );
+				break;
+			case DEPTH_SKY_ISLAND:
+				icon.frame( icon.texture.uvRectBySize( runTypeOfsX(), 144 + runTypeOfsY(), 7, 7 ) );
+				break;
+			case DEPTH_BARREN:
+				icon.frame( icon.texture.uvRectBySize( 8 + runTypeOfsX(), 144 + runTypeOfsY(), 7, 7 ) );
+				break;
+			case DEPTH_CHAOS:
+				icon.frame( icon.texture.uvRectBySize( 16 + runTypeOfsX(), 144 + runTypeOfsY(), 7, 7 ) );
 				break;
 			case CHAL_COUNT:
 				icon.frame( icon.texture.uvRectBySize( 160, 80, 7, 7 ) );
@@ -470,6 +494,13 @@ public enum Icons {
 		return icon;
 	}
 
+	static String textureFor(Icons type) {
+		if (type == STAIRS_CHAOS || type == DEPTH_CHAOS) {
+			return "interfaces/icons.png";
+		}
+		return Assets.Interfaces.icons();
+	}
+
 	private static int runTypeOfsX(){
 		return Dungeon.daily ? 64 : 0;
 	}
@@ -521,44 +552,64 @@ public enum Icons {
 	}
 
 	public static Image get(Level.Feeling feeling){
+		return get(smallFeelingIcon(feeling));
+	}
+
+	static Icons smallFeelingIcon(Level.Feeling feeling) {
 		switch (feeling){
 			case NONE: default:
-				return get(DEPTH);
+				return DEPTH;
 			case CHASM:
-				return get(DEPTH_CHASM);
+				return DEPTH_CHASM;
+			case SKY_ISLAND:
+				return DEPTH_SKY_ISLAND;
 			case WATER:
-				return get(DEPTH_WATER);
+				return DEPTH_WATER;
 			case GRASS:
-				return get(DEPTH_GRASS);
+				return DEPTH_GRASS;
 			case DARK:
-				return get(DEPTH_DARK);
+				return DEPTH_DARK;
 			case LARGE:
-				return get(DEPTH_LARGE);
+				return DEPTH_LARGE;
 			case TRAPS:
-				return get(DEPTH_TRAPS);
+				return DEPTH_TRAPS;
 			case SECRETS:
-				return get(DEPTH_SECRETS);
+				return DEPTH_SECRETS;
+			case BARREN:
+				return DEPTH_BARREN;
+			case CHAOS:
+				return DEPTH_CHAOS;
 		}
 	}
 
 	public static Image getLarge(Level.Feeling feeling){
+		return get(largeFeelingIcon(feeling));
+	}
+
+	static Icons largeFeelingIcon(Level.Feeling feeling) {
 		switch (feeling){
 			case NONE: default:
-				return get(STAIRS);
+				return STAIRS;
 			case CHASM:
-				return get(STAIRS_CHASM);
+				return STAIRS_CHASM;
+			case SKY_ISLAND:
+				return STAIRS_SKY_ISLAND;
 			case WATER:
-				return get(STAIRS_WATER);
+				return STAIRS_WATER;
 			case GRASS:
-				return get(STAIRS_GRASS);
+				return STAIRS_GRASS;
 			case DARK:
-				return get(STAIRS_DARK);
+				return STAIRS_DARK;
 			case LARGE:
-				return get(STAIRS_LARGE);
+				return STAIRS_LARGE;
 			case TRAPS:
-				return get(STAIRS_TRAPS);
+				return STAIRS_TRAPS;
 			case SECRETS:
-				return get(STAIRS_SECRETS);
+				return STAIRS_SECRETS;
+			case BARREN:
+				return STAIRS_BARREN;
+			case CHAOS:
+				return STAIRS_CHAOS;
 		}
 	}
 }

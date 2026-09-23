@@ -120,14 +120,15 @@ public class PrismaticImage extends NPC {
 	
 	@Override
 	public void die(Object cause) {
+		Hero owner = owner();
 		if (deathTimer == -1) {
 			if (cause == Chasm.class){
 				super.die( cause );
-				if(hero.pointsInTalent(Talent.BEHEST)>=1){
-					Buff.affect(hero,Adrenaline.class,hero.pointsInTalent(Talent.BEHEST)*5);}
+				if(owner != null && owner.pointsInTalent(Talent.BEHEST)>=1){
+					Buff.affect(owner,Adrenaline.class,owner.pointsInTalent(Talent.BEHEST)*5);}
 			} else {
-				if(hero.pointsInTalent(Talent.BEHEST)>=1){
-					Buff.affect(hero,Adrenaline.class,hero.pointsInTalent(Talent.BEHEST)*5);}
+				if(owner != null && owner.pointsInTalent(Talent.BEHEST)>=1){
+					Buff.affect(owner,Adrenaline.class,owner.pointsInTalent(Talent.BEHEST)*5);}
 				deathTimer = 5;
 				sprite.add(CharSprite.State.PARALYSED);
 			}
@@ -161,6 +162,14 @@ public class PrismaticImage extends NPC {
 		heroID = this.hero.id();
 		this.HP = HP;
 		HT = PrismaticGuard.maxHP( hero );
+	}
+
+	private Hero owner() {
+		if (hero == null && heroID != 0) {
+			Actor owner = Actor.findById(heroID);
+			if (owner instanceof Hero) hero = (Hero) owner;
+		}
+		return hero;
 	}
 	
 	@Override

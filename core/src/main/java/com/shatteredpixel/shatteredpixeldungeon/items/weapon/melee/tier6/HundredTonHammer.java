@@ -61,12 +61,7 @@ public class HundredTonHammer extends MeleeWeapon {
 		return maxForLevel(lvl);
 	}
 
-	@Override
-	public int STRReq(int lvl) {
-		int requirement = strengthRequirementForLevel(lvl);
-		if (masteryPotionBonus) requirement -= 2;
-		return requirement;
-	}
+
 
 	public static int minForLevel(int level) {
 		return 6 + Math.max(0, level);
@@ -109,6 +104,16 @@ public class HundredTonHammer extends MeleeWeapon {
 	@Override
 	public String upgradeAbilityStat(int level) {
 		return Integer.toString(bounceDamage(level, bouncePower(level)));
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.KNOCKBACK_DISTANCE,
+				Integer.toString(bouncePower(level))));
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE,
+				"0-" + upgradeAbilityStat(level)));
+		return result;
 	}
 
 	@Override

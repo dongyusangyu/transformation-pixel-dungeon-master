@@ -233,7 +233,9 @@ public class MeleeWeapon extends Weapon {
 
 	public enum WeaponTrait {
 		DAGGER,
-		BLOCKING
+		BLOCKING,
+		ONE_SWORD_BLADE,
+		FLAIL
 	}
 
 	public Class<?> abilityType() {
@@ -271,6 +273,8 @@ public class MeleeWeapon extends Weapon {
 		if (trait == null) return false;
 		switch (trait) {
 			case DAGGER:
+			case ONE_SWORD_BLADE:
+			case FLAIL:
 				return hasTrait(getClass(), trait);
 			case BLOCKING:
 				return defenseFactor(owner) > 0;
@@ -280,8 +284,17 @@ public class MeleeWeapon extends Weapon {
 	}
 
 	public static boolean hasTrait(Class<?> weaponClass, WeaponTrait trait) {
-		return trait == WeaponTrait.DAGGER && isWeaponClass(weaponClass,
-				Dagger.class, Dirk.class, AssassinsBlade.class, RitualDagger.class);
+		switch (trait) {
+			case DAGGER:
+				return isWeaponClass(weaponClass,
+						Dagger.class, Dirk.class, AssassinsBlade.class, RitualDagger.class);
+			case ONE_SWORD_BLADE:
+				return isWeaponClass(weaponClass, Katana.class, Wakizashi.class);
+			case FLAIL:
+				return isWeaponClass(weaponClass, Flail.class);
+			default:
+				return false;
+		}
 	}
 
 	public static boolean hasTrait(KindOfWeapon weapon, WeaponTrait trait, Char owner) {
@@ -575,7 +588,53 @@ public class MeleeWeapon extends Weapon {
 		return Messages.get(this, "ability_desc");
 	}
 
+	public enum UpgradeAbilityStatType {
+		LEGACY(null),
+		DAMAGE("ability_damage"),
+		DURATION("ability_duration"),
+		KNOCKBACK_DISTANCE("ability_knockback_distance"),
+		EFFECT_RANGE("ability_effect_range"),
+		BONUS_MAGIC_DAMAGE("ability_bonus_magic_damage");
+
+		private final String messageKey;
+
+		UpgradeAbilityStatType(String messageKey) {
+			this.messageKey = messageKey;
+		}
+
+		public String messageKey() {
+			return messageKey;
+		}
+	}
+
+	public static class UpgradeAbilityStat {
+		public final UpgradeAbilityStatType type;
+		public final String value;
+
+		public UpgradeAbilityStat(UpgradeAbilityStatType type, String value) {
+			this.type = type;
+			this.value = value;
+		}
+	}
+
+	protected UpgradeAbilityStat abilityStat(UpgradeAbilityStatType type, String value) {
+		return new UpgradeAbilityStat(type, value);
+	}
+
 	public String upgradeAbilityStat(int level){
+		return null;
+	}
+
+	public ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		ArrayList<UpgradeAbilityStat> result = new ArrayList<>();
+		String value = upgradeAbilityStat(level);
+		if (value != null) {
+			result.add(new UpgradeAbilityStat(UpgradeAbilityStatType.LEGACY, value));
+		}
+		return result;
+	}
+
+	public Integer upgradeBlockingStat(int level) {
 		return null;
 	}
 

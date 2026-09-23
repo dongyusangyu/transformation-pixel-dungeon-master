@@ -24,6 +24,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.VelvetPouch;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnchantment;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.watabou.utils.Bundle;
@@ -93,6 +95,68 @@ public class RankingRestartTest {
 		assertTrue(Dungeon.LimitedDrops.POTION_BANDOLIER.dropped());
 		assertTrue(Dungeon.LimitedDrops.MAGICAL_HOLSTER.dropped());
 		assertTrue(Dungeon.LimitedDrops.HIKING_BACKPACK.dropped());
+	}
+
+	@Test
+	public void newCycleKeepsOneHikingBackpackAndMergesDistinctCopies() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		HikingBackpack first = emptyBag(HikingBackpack.class);
+		HikingBackpack second = emptyBag(HikingBackpack.class);
+		PersistentStateItem carriedInFirst = new PersistentStateItem(1);
+		PersistentStateItem carriedInSecond = new PersistentStateItem(2);
+		first.items.add(carriedInFirst);
+		second.items.add(carriedInSecond);
+		hero.belongings.backpack.items.add(first);
+		hero.belongings.backpack.items.add(second);
+		Dungeon.quickslot.setSlot(1, second);
+
+		RankingRestart.normalizeUniqueBags(hero);
+
+		assertEquals(1, hero.belongings.backpack.items.size());
+		assertEquals(1, hero.belongings.getAllItems(HikingBackpack.class).size());
+		HikingBackpack kept = (HikingBackpack) hero.belongings.backpack.items.get(0);
+		assertTrue(kept.items.contains(carriedInFirst));
+		assertTrue(kept.items.contains(carriedInSecond));
+		assertSame(kept, Dungeon.quickslot.getItem(1));
+	}
+
+	@Test
+	public void newCycleDropsAnExactDuplicateHikingBackpackWithoutCopyingContents() throws Exception {
+		Hero hero = headlessHeroWithBelongings();
+		HikingBackpack first = emptyBag(HikingBackpack.class);
+		HikingBackpack second = emptyBag(HikingBackpack.class);
+		PersistentStateItem carried = new PersistentStateItem(7);
+		first.items.add(carried);
+		second.items.add(carried.duplicate());
+		hero.belongings.backpack.items.add(first);
+		hero.belongings.backpack.items.add(second);
+
+		RankingRestart.normalizeUniqueBags(hero);
+
+		assertEquals(1, hero.belongings.backpack.items.size());
+		assertEquals(1, hero.belongings.getAllItems(HikingBackpack.class).size());
+		HikingBackpack kept = (HikingBackpack) hero.belongings.backpack.items.get(0);
+		assertEquals(1, kept.items.size());
+	}
+
+	@Test
+	public void newCyclePreparesItemsInsideHikingBackpack() throws Exception {
+		Bag backpack = new Bag();
+		HikingBackpack hikingBackpack = emptyBag(HikingBackpack.class);
+		hikingBackpack.unique = true;
+		DepthPricedItem consumable = new DepthPricedItem();
+		TestEquipment weapon = new TestEquipment();
+		weapon.level(3);
+		hikingBackpack.items.add(consumable);
+		hikingBackpack.items.add(weapon);
+		backpack.items.add(hikingBackpack);
+
+		RankingRestart.Preparation result = RankingRestart.prepareInventory(backpack);
+
+		assertEquals(1, result.convertedGold);
+		assertFalse(hikingBackpack.items.contains(consumable));
+		assertTrue(hikingBackpack.items.contains(weapon));
+		assertEquals(0, weapon.trueLevel());
 	}
 
 	@Test
@@ -513,6 +577,28 @@ public class RankingRestartTest {
 	public void restartPreparationRemovesTheAmuletDespiteItsUniqueFlag() {
 		assertTrue(RankingRestart.isRemovedFromNewCycle(Amulet.class));
 		assertFalse(RankingRestart.isRemovedFromNewCycle(TestEquipment.class));
+	}
+
+	@Test
+	public void restartPreparationRemovesInfusionItemsDespiteTheirUniqueFlag() {
+		assertTrue(RankingRestart.isRemovedFromNewCycle(MagicalInfusion.class));
+		assertTrue(RankingRestart.isRemovedFromNewCycle(ScrollOfEnchantment.class));
+	}
+
+	@Test
+	public void restartPreparationRemovesNestedExcludedUniqueItemsAndTheirQuickslots() throws Exception {
+		Bag backpack = new Bag();
+		Bag nestedBag = new Bag();
+		Amulet excluded = (Amulet) unsafe().allocateInstance(Amulet.class);
+		excluded.unique = true;
+		nestedBag.items.add(excluded);
+		backpack.items.add(nestedBag);
+		Dungeon.quickslot.setSlot(0, excluded);
+
+		RankingRestart.prepareInventory(backpack);
+
+		assertFalse(nestedBag.items.contains(excluded));
+		assertEquals(-1, Dungeon.quickslot.getSlot(excluded));
 	}
 
 	@Test

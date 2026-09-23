@@ -8,11 +8,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class MarshSlimeTest {
 
@@ -94,6 +98,37 @@ public class MarshSlimeTest {
 	}
 
 	@Test
+	public void chaosUsesConvertedDamageTypeBeforeChoosingImmunity() {
+		Level previousLevel = Dungeon.level;
+		try {
+			Dungeon.level = openLevel(5, 5);
+			Dungeon.level.feeling = Level.Feeling.CHAOS;
+
+			TestMarshSlime slime = new TestMarshSlime();
+			slime.damage(17, this, DamageTag.PHYSICAL);
+			assertEquals(MarshSlime.AdaptedDamageType.MAGICAL, slime.adaptedDamageType());
+
+			slime.damage(31, this, DamageTag.PHYSICAL);
+			assertEquals(0, slime.lastAppliedDamage);
+			assertEquals(183, slime.HP);
+
+			slime.damage(11, this, DamageTag.MAGICAL);
+			assertEquals(11, slime.lastAppliedDamage);
+
+			slime = new TestMarshSlime();
+			slime.damage(17, this, DamageTag.MAGICAL);
+			assertEquals(MarshSlime.AdaptedDamageType.PHYSICAL, slime.adaptedDamageType());
+
+			slime.damage(31, this, DamageTag.MAGICAL);
+			assertEquals(0, slime.lastAppliedDamage);
+			slime.damage(11, this, DamageTag.PHYSICAL);
+			assertEquals(11, slime.lastAppliedDamage);
+		} finally {
+			Dungeon.level = previousLevel;
+		}
+	}
+
+	@Test
 	public void zeroOrFullyNegatedDamageDoesNotChooseAnImmunity() {
 		TestMarshSlime slime = new TestMarshSlime();
 
@@ -142,6 +177,31 @@ public class MarshSlimeTest {
 				return;
 			}
 			HP = Math.max(0, HP - damage);
+		}
+	}
+
+	private static Level openLevel(int width, int height) {
+		TestLevel level = new TestLevel();
+		level.setSize(width, height);
+		Arrays.fill(level.passable, true);
+		Arrays.fill(level.solid, false);
+		level.mobs = new HashSet<>();
+		return level;
+	}
+
+	private static class TestLevel extends Level {
+
+		@Override
+		protected boolean build() {
+			return true;
+		}
+
+		@Override
+		protected void createMobs() {
+		}
+
+		@Override
+		protected void createItems() {
 		}
 	}
 }

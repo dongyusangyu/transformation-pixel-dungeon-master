@@ -76,6 +76,15 @@ public class Gungnir extends MissileWeapon {
 	}
 
 	@Override
+	protected boolean canPerformTriggeredThrow(Hero user, Char target, boolean notify) {
+		if (user != null && canThrowWithCurrentHP(user.HP)) return true;
+		if (notify && user != null) {
+			GLog.w(Messages.get(this, "not_enough_health"));
+		}
+		return false;
+	}
+
+	@Override
 	public void execute(Hero hero, String action) {
 		if (AC_THROW.equals(action)) {
 			if (!canThrowWithCurrentHP(hero.HP)) {
@@ -113,6 +122,7 @@ public class Gungnir extends MissileWeapon {
 			Hero hero = (Hero) attacker;
 			int lifeCost = lifeCostForCurrentHP(hero.HP);
 			hero.HP -= lifeCost;
+			hero.HP = Math.max(1, hero.HP);
 			hero.sprite.showStatus(CharSprite.NEGATIVE, Integer.toString(lifeCost));
 		}
 		wasBleedingBeforeHit = defender.buff(Bleeding.class) != null;

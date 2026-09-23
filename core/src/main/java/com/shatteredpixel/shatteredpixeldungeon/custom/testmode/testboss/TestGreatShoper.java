@@ -314,7 +314,8 @@ public class TestGreatShoper extends Mob {
         if (b != null) {
             b.detach();
         }
-        Dungeon.level.drop(new Gold().quantity(114514), pos).sprite.drop(pos);
+        int dropCell = GreatShoper.rewardDropCell(Dungeon.level, pos);
+        Dungeon.level.drop(new Gold().quantity(114514), dropCell).sprite.drop(dropCell);
         super.die(cause);
     }
 

@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.LiquidMetal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Blandfruit;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
@@ -52,6 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfIc
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfMight;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.elixirs.ElixirOfToxicEssence;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ExoticScroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
@@ -68,7 +70,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
-import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -180,6 +181,42 @@ public class QuickRecipe extends Component {
 		quickAlchemyEnabled = false;
 		arrow.enable(false);
 		return this;
+	}
+
+	static class GuideRecipe {
+		final Recipe recipe;
+		final Class<? extends Item>[] ingredientTypes;
+		final Class<? extends Item> outputType;
+
+		@SafeVarargs
+		GuideRecipe(Recipe recipe, Class<? extends Item> outputType,
+				Class<? extends Item>... ingredientTypes) {
+			this.recipe = recipe;
+			this.ingredientTypes = ingredientTypes;
+			this.outputType = outputType;
+		}
+
+		QuickRecipe create() {
+			ArrayList<Item> inputs = new ArrayList<>();
+			for (Class<? extends Item> ingredientType : ingredientTypes) {
+				inputs.add(Reflection.newInstance(ingredientType));
+			}
+			return new QuickRecipe(recipe, inputs, Reflection.newInstance(outputType));
+		}
+	}
+
+	static ArrayList<GuideRecipe> enhancedWeaponGuideRecipes() {
+		ArrayList<GuideRecipe> recipes = new ArrayList<>();
+		recipes.add(new GuideRecipe(new LiquidMetal.Recipe(), LiquidMetal.class,
+				MissileWeapon.PlaceHolder.class));
+		recipes.add(new GuideRecipe(new ArcaneResin.Recipe(), ArcaneResin.class,
+				Wand.PlaceHolder.class));
+		recipes.add(new GuideRecipe(new RubbingsTome.Recipe(), RubbingsTome.class,
+				Scroll.PlaceHolder.class, Scroll.PlaceHolder.class, Stylus.class));
+		recipes.add(new GuideRecipe(new Necronomicon.Recipe(), Necronomicon.class,
+				CorpseDust.class, RubbingsTome.class,
+				Necronomicon.AlchemyWandPlaceholder.class));
+		return recipes;
 	}
 	
 	@Override
@@ -357,26 +394,9 @@ public class QuickRecipe extends Component {
 				}
 				return result;
 			case 6:
-				result.add(new QuickRecipe( new LiquidMetal.Recipe(),
-						new ArrayList<Item>(Arrays.asList(new MissileWeapon.PlaceHolder())),
-						new LiquidMetal()));
-				/*
-				result.add(new QuickRecipe( new LiquidMetal.Recipe(),
-						new ArrayList<Item>(Arrays.asList(new MissileWeapon.PlaceHolder().quantity(2))),
-						new LiquidMetal()));
-				result.add(new QuickRecipe( new LiquidMetal.Recipe(),
-						new ArrayList<Item>(Arrays.asList(new MissileWeapon.PlaceHolder().quantity(3))),
-						new LiquidMetal()));
-
-				 */
-				//result.add(null);
-				//result.add(null);
-				result.add(new QuickRecipe( new ArcaneResin.Recipe(),
-						new ArrayList<Item>(Arrays.asList(new Wand.PlaceHolder())),
-						new ArcaneResin()));
-				result.add(new QuickRecipe( new RubbingsTome.Recipe(),
-						new ArrayList<Item>(Arrays.asList(new Scroll.PlaceHolder(),new Scroll.PlaceHolder(),new Stylus())),
-						new RubbingsTome()));
+				for (GuideRecipe recipe : enhancedWeaponGuideRecipes()) {
+					result.add(recipe.create());
+				}
 				return result;
 			case 7:
 				result.add(new QuickRecipe(new UnstableBrew.Recipe(), new ArrayList<>(Arrays.asList(new Potion.PlaceHolder(), new  Plant.Seed.PlaceHolder())), new UnstableBrew()));

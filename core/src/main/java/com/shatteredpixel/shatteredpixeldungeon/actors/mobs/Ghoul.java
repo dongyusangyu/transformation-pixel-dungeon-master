@@ -153,7 +153,7 @@ public class Ghoul extends Mob {
 
 	@Override
 	public void die(Object cause) {
-		if (cause != Chasm.class && cause != GhoulLifeLink.class && !Dungeon.level.pit[pos]){
+		if (cause != Chasm.class && !(cause instanceof GhoulLifeLink) && !Dungeon.level.pit[pos]){
 			Ghoul nearby = GhoulLifeLink.searchForHost(this);
 			if (nearby != null){
 				beingLifeLinked = true;
@@ -167,6 +167,22 @@ public class Ghoul extends Mob {
 		}
 
 		super.die(cause);
+	}
+
+	private void restoreFromLifeLink() {
+		HP = Math.round(HT / 10f);
+		beingLifeLinked = false;
+		Actor.add(this);
+		timeToNow();
+		Dungeon.level.mobs.add(this);
+		Dungeon.level.occupyCell(this);
+		if (sprite != null) {
+			sprite.idle();
+			sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(HP), FloatingText.HEALING);
+		}
+		if (enemy != null && enemy.alignment == alignment) {
+			enemy = null;
+		}
 	}
 
 	@Override
@@ -293,17 +309,7 @@ public class Ghoul extends Mob {
 						return true;
 					}
 				}
-				ghoul.HP = Math.round(ghoul.HT/10f);
-				ghoul.beingLifeLinked = false;
-				Actor.add(ghoul);
-				ghoul.timeToNow();
-				Dungeon.level.mobs.add(ghoul);
-				Dungeon.level.occupyCell( ghoul );
-				ghoul.sprite.idle();
-				ghoul.sprite.showStatusWithIcon(CharSprite.POSITIVE, Integer.toString(Math.round(ghoul.HT/10f)), FloatingText.HEALING);
-				if (ghoul.enemy != null && ghoul.enemy.alignment == ghoul.alignment){
-					ghoul.enemy = null; //reset enemy
-				}
+				ghoul.restoreFromLifeLink();
 				super.detach();
 				return true;
 			}
@@ -341,6 +347,9 @@ public class Ghoul extends Mob {
 			} else {
 				ghoul.beingLifeLinked = false;
 				ghoul.die(this);
+				if (ghoul.isAlive()) {
+					ghoul.restoreFromLifeLink();
+				}
 			}
 		}
 

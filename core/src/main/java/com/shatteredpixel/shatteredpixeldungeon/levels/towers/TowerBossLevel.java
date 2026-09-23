@@ -547,6 +547,7 @@ public class TowerBossLevel extends TowerLevel {
 
 	@Override
 	public void onHeroTurnStarted(Hero hero) {
+		super.onHeroTurnStarted(hero);
 		if (hero != null && encounter.bossEncounterDefeated()
 				&& TowerBossGenerator.HUNGER_KNIGHT_ID.equals(encounter.selectedBossId())) {
 			HungerKnight.cleanupOrphanedEffects(hero);
@@ -568,6 +569,7 @@ public class TowerBossLevel extends TowerLevel {
 
 	@Override
 	public void onHeroConsumableUsed(Hero hero, Item item) {
+		super.onHeroConsumableUsed(hero, item);
 		if (pestilenceArena != null && !encounter.bossEncounterDefeated()) {
 			pestilenceArena.onHeroConsumableUsed(hero, item);
 		}

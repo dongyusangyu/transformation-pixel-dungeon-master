@@ -185,4 +185,11 @@ public class DemonTailWhip extends MeleeWeapon {
 	public String upgradeAbilityStat(int level) {
 		return augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level));
 	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, upgradeAbilityStat(level)));
+		return result;
+	}
 }

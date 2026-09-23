@@ -8,10 +8,14 @@ import static org.junit.Assert.assertTrue;
 public class DwarfKingTest {
 
 	@Test
-	public void phaseThreeAttackIsSynchronousOnlyWhenAnimationsAreDisabled() {
-		assertTrue(DwarfKing.shouldResolveAttackSynchronously(3, false));
-		assertFalse(DwarfKing.shouldResolveAttackSynchronously(3, true));
-		assertFalse(DwarfKing.shouldResolveAttackSynchronously(1, false));
-		assertFalse(DwarfKing.shouldResolveAttackSynchronously(2, false));
+	public void attackIsSynchronousWhenAnimationsAreDisabled() {
+		assertTrue(DwarfKing.shouldResolveAttackSynchronously(false));
+		assertFalse(DwarfKing.shouldResolveAttackSynchronously(true));
+	}
+
+	@Test
+	public void visualCallbackPathsAreSkippedWhenAnimationsAreDisabled() {
+		assertFalse(DwarfKing.shouldUseAnimationCallbacks(false));
+		assertTrue(DwarfKing.shouldUseAnimationCallbacks(true));
 	}
 }

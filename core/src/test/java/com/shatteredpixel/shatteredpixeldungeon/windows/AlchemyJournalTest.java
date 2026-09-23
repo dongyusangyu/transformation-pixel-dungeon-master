@@ -55,8 +55,8 @@ public class AlchemyJournalTest {
 		assertTrue(recipes.contains("GreatGreatGreatsword.class"));
 		assertTrue(recipes.contains("Gungnir.class"));
 		assertTrue(recipes.contains("public static ArrayList<WeaponRecipe> weaponRecipes()"));
-		assertTrue(alchemyScene.contains("shouldDetachWholeStack(item)"));
-		assertTrue(alchemyScene.contains("shouldDetachWholeStack(finding)"));
+		assertTrue(alchemyScene.contains("static Item detachIngredient(Item item, Bag container)"));
+		assertTrue(alchemyScene.contains("detached = detachIngredient(found.get(0), inventory.backpack)"));
 	}
 
 	@Test

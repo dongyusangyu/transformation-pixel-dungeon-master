@@ -74,7 +74,7 @@ public final class EXItemSpriteSheet {
 	public static final int LAKE_SWORD_SHEATHED = encode(159, 16, 16);
 
 	// Rows 11-13 (indices 160-207): tier 6 melee weapon expansion area.
-	public static final int MOUNTAIN_GUARD = encode(160, 16, 16);
+	public static final int MOUNTAIN_GUARD = encode(160, 12, 16);
 
 	// Row 14 (indices 208-223): new tier 6 missile weapons.
 	public static final int GUNGNIR = encode(208, 16, 16);
@@ -84,7 +84,7 @@ public final class EXItemSpriteSheet {
 	// Rows 15-17 (indices 224-271) remain blank for future tier 6 missile weapons.
 	// Row 18 (indices 272-287): artifacts added to the extension sheet.
 	public static final int PRECOGNITIVE_EYE = encode(272, 16, 16);
-	public static final int NECRONOMICON = encode(273, 14, 16);
+	public static final int NECRONOMICON = encode(273, 16, 16);
 	// Row 19: recovery component for the Lake Sword.
 	public static final int LAKE_SWORD_SCABBARD = encode(288, 14, 14);
 

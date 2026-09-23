@@ -58,10 +58,7 @@ public class SoulBlade extends MeleeWeapon {
 		return 24 + 6 * level;
 	}
 
-	@Override
-	public int STRReq(int level) {
-		return STRReq(tier, level);
-	}
+
 
 	@Override
 	public int defenseFactor(Char owner) {
@@ -73,6 +70,11 @@ public class SoulBlade extends MeleeWeapon {
 	}
 
 	public int DRMax(int level) {
+		return maxBlockForLevel(level);
+	}
+
+	@Override
+	public Integer upgradeBlockingStat(int level) {
 		return maxBlockForLevel(level);
 	}
 
@@ -205,7 +207,21 @@ public class SoulBlade extends MeleeWeapon {
 		String cooldown = shieldCooldownRemaining() > 0
 				? Messages.get(this, "shield_cooldown", shieldCooldownRemaining())
 				: Messages.get(this, "shield_ready");
-		return Messages.get(this, "stats_desc", cooldown);
+		if (isIdentified()) {
+			return Messages.get(this, "stats_desc", maxBlockForLevel(buffedLvl()), cooldown);
+		} else {
+			return Messages.get(this, "typical_stats_desc", maxBlockForLevel(0));
+		}
+	}
+
+	@Override
+	public void resetUpgradeStateForNewCycle() {
+		super.resetUpgradeStateForNewCycle();
+		shieldReadyAt = 0f;
+		duskAttackPending = false;
+		pendingTarget = null;
+		pendingSoulDamage = 0;
+		pendingShield = false;
 	}
 
 	@Override

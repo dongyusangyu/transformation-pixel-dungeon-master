@@ -90,6 +90,14 @@ public abstract class ArmorAbility implements Bundlable {
 		return chargeUse;
 	}
 
+	/**
+	 * Calculates charge use for a specific class armor, such as an armor being
+	 * previewed while it is not currently equipped.
+	 */
+	public float chargeUse( Hero hero, ClassArmor armor ){
+		return chargeUse(hero);
+	}
+
 	protected abstract void activate( ClassArmor armor, Hero hero, Integer target );
 
 	public String name(){

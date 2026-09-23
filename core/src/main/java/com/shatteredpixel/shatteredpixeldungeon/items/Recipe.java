@@ -83,6 +83,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBla
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Trident;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.watabou.utils.Random;
 import com.watabou.utils.Reflection;
 
@@ -499,7 +501,8 @@ public abstract class Recipe {
 		new Potion.SeedToPotion(),
 		new StewedMeat.threeMeat(),
 		new MeatPie.Recipe(),
-		new RubbingsTome.Recipe()
+		new RubbingsTome.Recipe(),
+		new Necronomicon.Recipe()
 	};
 	
 	public static ArrayList<Recipe> findRecipes(ArrayList<Item> ingredients){
@@ -545,6 +548,9 @@ public abstract class Recipe {
 	
 	public static boolean usableInRecipe(Item item){
 		if (isEquippedWeapon(item)) return false;
+		// Corpse Dust is intentionally cursed; the Necronomicon recipe is the
+		// single recipe allowed to present it to the alchemy selector.
+		if (item instanceof CorpseDust) return true;
 
 		if (item instanceof MeleeWeapon && usableInWeaponRecipe(item)) {
 			Weapon weapon = (Weapon) item;

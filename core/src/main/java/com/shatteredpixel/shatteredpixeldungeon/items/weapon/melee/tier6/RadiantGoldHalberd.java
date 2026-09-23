@@ -3,7 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
@@ -60,8 +60,8 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	}
 
 	public static int strengthRequirementForLevel(int level) {
-		int l = effectiveLevel(level);
-		return 22 - (l >= 9 ? 1 : 0) - (l >= 15 ? 1 : 0);
+		//The halberd remains two strength points heavier than a standard tier-six weapon.
+		return STRReq(TIER, level) + 2;
 	}
 
 	@Override
@@ -74,11 +74,7 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		return maxForLevel(level);
 	}
 
-	@Override
-	public int STRReq(int level) {
-		int requirement = strengthRequirementForLevel(level);
-		return masteryPotionBonus ? requirement - 2 : requirement;
-	}
+
 
 	public static int abilityMin(int level) {
 		return 7 + effectiveLevel(level);
@@ -91,6 +87,13 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	public static boolean abilityTargetAllowed(boolean alive, Char.Alignment alignment,
 			boolean charmed, boolean onPath) {
 		return alive && alignment == Char.Alignment.ENEMY && !charmed && onPath;
+	}
+
+	static boolean abilityTargetAllowed(Char target, boolean charmed, boolean onPath) {
+		if (target == null) return false;
+		boolean hostile = target.alignment == Char.Alignment.ENEMY
+				|| (target instanceof Mimic && target.alignment == Char.Alignment.NEUTRAL);
+		return target.isAlive() && hostile && !charmed && onPath;
 	}
 
 	public static boolean wallCollision(boolean boundary, boolean terrainObstacle) {
@@ -123,6 +126,13 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		return abilityMin(level) + "-" + abilityMax(level);
 	}
 
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, upgradeAbilityStat(level)));
+		return result;
+	}
+
 	static float splashDamageMultiplier(int targetCount) {
 		if (targetCount <= 1) return 1.25f;
 		if (targetCount == 2) return 1.12f;
@@ -138,15 +148,6 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 			boolean charmed, boolean primaryTarget, boolean attacker) {
 		return alive && alignment == Char.Alignment.ENEMY && !charmed
 				&& !primaryTarget && !attacker;
-	}
-
-	public static int falsehoodPowerReduction(boolean hasTalent) {
-		return hasTalent ? 2 : 0;
-	}
-
-	@Override
-	protected int falsehoodPowerEncumbranceReduction(Hero owner) {
-		return falsehoodPowerReduction(owner.hasTalent(Talent.FALSEHOOD_POWER));
 	}
 
 	private transient boolean abilityResolving;
@@ -298,8 +299,7 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 		ArrayList<LineTarget> targets = new ArrayList<>();
 		for (Char target : Actor.chars()) {
 			Integer pathIndex = pathIndices.get(target.pos);
-			if (!abilityTargetAllowed(target.isAlive(), target.alignment,
-					hero.isCharmedBy(target), pathIndex != null)) continue;
+			if (!abilityTargetAllowed(target, hero.isCharmedBy(target), pathIndex != null)) continue;
 			int nextIndex = pathIndex + 1;
 			int nextCell = nextIndex < trajectory.path.size()
 					? trajectory.path.get(nextIndex) : -1;
@@ -354,8 +354,7 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	private boolean validRecordedTarget(Hero hero, Char target, LineTarget record) {
 		return target != null && target.id() == record.actorId
 				&& target.pos == record.expectedCell
-				&& abilityTargetAllowed(target.isAlive(), target.alignment,
-						hero.isCharmedBy(target), true);
+				&& abilityTargetAllowed(target, hero.isCharmedBy(target), true);
 	}
 
 	private void finishAbility(Hero hero) {

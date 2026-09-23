@@ -229,12 +229,21 @@ public class MirrorImage extends NPC {
 		immunities.add( Burning.class );
 		immunities.add( AllyBuff.class );
 	}
-    @Override
-    public void die( Object cause ) {
-        if(hero.pointsInTalent(Talent.BEHEST)>=1){
-            Buff.affect(hero, Adrenaline.class,hero.pointsInTalent(Talent.BEHEST)*5);}
-        super.die(cause);
-    }
+	@Override
+	public void die( Object cause ) {
+		Hero owner = owner();
+		if (owner != null && owner.pointsInTalent(Talent.BEHEST) >= 1){
+			Buff.affect(owner, Adrenaline.class, owner.pointsInTalent(Talent.BEHEST)*5);}
+		super.die(cause);
+	}
+
+	private Hero owner() {
+		if (hero == null && heroID != 0) {
+			Actor owner = Actor.findById(heroID);
+			if (owner instanceof Hero) hero = (Hero) owner;
+		}
+		return hero;
+	}
 
 	public static class MirrorInvis extends Invisibility {
 

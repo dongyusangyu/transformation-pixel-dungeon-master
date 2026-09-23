@@ -182,6 +182,15 @@ public abstract class Mob extends Char {
 	protected static final float TIME_TO_WAKE_UP = 1f;
 
 	protected boolean firstAdded = true;
+
+	/**
+	 * Called after an AllyBuff permanently converts this mob to an ally.
+	 * Subclasses can clear effects that must not survive the conversion.
+	 */
+	public void onAllyConversion(AllyBuff source) {
+		// Most mobs have no conversion-specific state to clear.
+	}
+
 	protected void onAdd(){
 		if (firstAdded) {
 			//modify health for ascension challenge if applicable, only on first add
@@ -348,7 +357,7 @@ public abstract class Mob extends Char {
 			Buff.affect(enemy, Slow.class,1);
 			Buff.affect(enemy, Weakness.class,1);
 		}
-		if(buff(SalesContract.SaleSelf.class)!=null && hero!=null && hero.hasTalent(Talent.PRIM_ACCU)){
+		if(canGrantSaleGold() && buff(SalesContract.SaleSelf.class)!=null && hero!=null && hero.hasTalent(Talent.PRIM_ACCU)){
 			int quantity = hero.pointsInTalent(Talent.PRIM_ACCU)*10;
 			Dungeon.gold+= quantity;
 			Statistics.goldCollected += quantity;
@@ -363,6 +372,11 @@ public abstract class Mob extends Char {
             }
         }
 		return damage;
+	}
+
+	/** Surface-floor test targets must not be usable as an infinite gold source. */
+	static boolean canGrantSaleGold() {
+		return Dungeon.depth != 0;
 	}
 
 
@@ -622,6 +636,9 @@ public abstract class Mob extends Char {
 	}
 
 	private boolean cellIsPathable( int cell ){
+		if (Dungeon.level.trapAvoidedBy(this, cell)){
+			return false;
+		}
 		if (!Dungeon.level.passable[cell]){
 			if (flying || buff(Amok.class) != null){
 				if (!Dungeon.level.avoid[cell]){
@@ -1247,6 +1264,17 @@ public abstract class Mob extends Char {
 
 	public float lootChance(){
 		return adjustedLootChance(lootChance);
+	}
+
+	/** Removes a mob without applying normal death rewards or kill-side effects. */
+	public void destroyWithoutRewards() {
+		super.destroy();
+		if (Dungeon.level != null) {
+			Dungeon.level.mobs.remove(this);
+		}
+		if (sprite != null) {
+			sprite.killAndErase();
+		}
 	}
 
 	protected float adjustedLootChance(float baseChance){

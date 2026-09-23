@@ -37,6 +37,13 @@ public class WarriorSubclassEnhancementTest {
 		assertEquals(8, Combo.sealComboCap(1));
 		assertEquals(20, Combo.sealComboCooldown(2));
 		assertEquals(10, Combo.sealComboCooldown(3));
+		assertTrue(Combo.consumesAllCombo(Combo.ComboMove.FURY));
+		assertFalse(Combo.consumesAllCombo(Combo.ComboMove.CRUSH));
+		assertEquals(480, Combo.slamBonusPercent(24));
+		assertEquals(500, Combo.slamBonusPercent(25));
+		assertEquals(475, Combo.crushDamagePercent(19));
+		assertEquals(500, Combo.crushDamagePercent(20));
+		assertEquals(500, Combo.crushDamagePercent(100));
 
 		assertEquals(2, Combo.moveRequirement(2, 1));
 		assertEquals(1, Combo.moveRequirement(2, 2));

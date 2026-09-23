@@ -26,9 +26,11 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Alchemy;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.items.EnergyCrystal;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.AlchemyPage;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.IronKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
@@ -120,6 +122,51 @@ public class LaboratoryRoom extends SpecialRoom {
 		entrance.set( Door.Type.LOCKED );
 		level.addItemToSpawn( new IronKey( Dungeon.depth ) );
 		
+	}
+
+	public void ensureTowerRewards(Level level) {
+		boolean hasEnergyCrystals = false;
+		boolean hasNonStrengthPotion = false;
+		for (Heap heap : level.heaps.valueList()) {
+			if (!inside(level.cellToPoint(heap.pos))) continue;
+			for (Item item : heap.items) {
+				if (item instanceof EnergyCrystal) {
+					hasEnergyCrystals = true;
+				} else if (item instanceof Potion && !(item instanceof PotionOfStrength)) {
+					hasNonStrengthPotion = true;
+				}
+			}
+		}
+
+		if (!hasEnergyCrystals) {
+			dropReward(level, new EnergyCrystal().quantity(5));
+		}
+		if (!hasNonStrengthPotion) {
+			Item potion;
+			do {
+				potion = Generator.randomUsingDefaults(Generator.Category.POTION);
+			} while (potion instanceof PotionOfStrength);
+			dropReward(level, potion);
+		}
+	}
+
+	private void dropReward(Level level, Item reward) {
+		ArrayList<Integer> emptyCells = new ArrayList<>();
+		ArrayList<Integer> occupiedCells = new ArrayList<>();
+		for (Point point : itemPlaceablePoints(level)) {
+			int cell = level.pointToCell(point);
+			if (level.map[cell] != Terrain.EMPTY_SP) continue;
+			if (level.heaps.get(cell) == null) {
+				emptyCells.add(cell);
+			} else {
+				occupiedCells.add(cell);
+			}
+		}
+		if (!emptyCells.isEmpty()) {
+			level.drop(reward, Random.element(emptyCells));
+		} else if (!occupiedCells.isEmpty()) {
+			level.drop(reward, Random.element(occupiedCells));
+		}
 	}
 	
 	private static Item prize( Level level ) {

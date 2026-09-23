@@ -175,14 +175,15 @@ public class TalismanOfForesight extends Artifact {
 						earnedExp++;
 					}
 
-					if (Dungeon.level.secret[cell]) {
+					boolean hiddenTrap = Dungeon.level.hiddenTrapAt(cell);
+					if (Dungeon.level.secret[cell] || hiddenTrap) {
 						int oldValue = Dungeon.level.map[cell];
 						GameScene.discoverTile(cell, oldValue);
 						Dungeon.level.discover( cell );
 						ScrollOfMagicMapping.discover(cell);
 						noticed = true;
 
-						if (oldValue == Terrain.SECRET_TRAP){
+						if (hiddenTrap || oldValue == Terrain.SECRET_TRAP){
 							earnedExp += 10;
 						} else if (oldValue == Terrain.SECRET_DOOR){
 							earnedExp += 100;
@@ -330,7 +331,7 @@ public class TalismanOfForesight extends Artifact {
 				for (int x = ax, p = ax + y * Dungeon.level.width(); x <= bx; x++, p++) {
 
 					if (Dungeon.level.heroFOV[p]
-							&& Dungeon.level.secret[p]
+							&& (Dungeon.level.secret[p] || Dungeon.level.hiddenTrapAt(p))
 							&& Dungeon.level.map[p] != Terrain.SECRET_DOOR) {
 						if (Dungeon.level.traps.get(p) != null && Dungeon.level.traps.get(p).canBeSearched) {
 							smthFound = true;

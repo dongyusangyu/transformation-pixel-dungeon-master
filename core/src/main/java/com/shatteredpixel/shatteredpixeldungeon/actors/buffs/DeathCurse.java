@@ -86,7 +86,9 @@ public class DeathCurse extends Buff {
 		}
 
 		Actor source = Actor.findById(sourceId);
-		if (!(source instanceof DeathButterfly) || !((DeathButterfly) source).isAlive()) {
+		if (!(source instanceof DeathButterfly)
+				|| !((DeathButterfly) source).isAlive()
+				|| ((DeathButterfly) source).alignment == Char.Alignment.ALLY) {
 			detach();
 			return true;
 		}

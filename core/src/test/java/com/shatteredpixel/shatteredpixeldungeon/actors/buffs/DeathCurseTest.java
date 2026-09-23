@@ -113,6 +113,24 @@ public class DeathCurseTest {
 	}
 
 	@Test
+	public void sourceBecomingAllyReleasesCurseBeforeExpiry() {
+		DeathButterfly source = new DeathButterfly();
+		TestTarget target = new TestTarget();
+		Actor.add(source);
+		try {
+			DeathCurse curse = DeathCurse.apply(target, source);
+			source.alignment = Char.Alignment.ALLY;
+
+			curse.act();
+
+			assertNull(target.buff(DeathCurse.class));
+			assertFalse(target.died);
+		} finally {
+			Actor.remove(source);
+		}
+	}
+
+	@Test
 	public void naturalExpiryKillsNonHeroThroughNormalDeathEntryPoint() {
 		TestTarget target = new TestTarget();
 		DeathCurse curse = DeathCurse.apply(target, new DeathButterfly());

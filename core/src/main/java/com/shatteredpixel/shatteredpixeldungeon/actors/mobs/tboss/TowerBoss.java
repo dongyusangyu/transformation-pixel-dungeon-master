@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.LockedFloor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -21,6 +22,15 @@ public abstract class TowerBoss extends Mob {
     }
 
     public abstract String towerBossId();
+
+    /** Initializes a boss placed by the standalone test tool. */
+    public void prepareForStandalonePlacement(Char initialTarget) {
+        if (initialTarget != null) {
+            enemy = initialTarget;
+            target = initialTarget.pos;
+        }
+        state = HUNTING;
+    }
 
     public boolean prepareArena(TowerBossLevel level, int spawnCell) {
         return true;

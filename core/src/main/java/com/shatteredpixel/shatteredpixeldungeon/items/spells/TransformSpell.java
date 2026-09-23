@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 public class TransformSpell extends Spell {
     {
         image = ItemSpriteSheet.TRANSFORM_SPELL;
+        unique = true;
     }
     @Override
     protected void onCast(Hero hero) {

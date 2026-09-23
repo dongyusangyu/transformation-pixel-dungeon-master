@@ -62,6 +62,11 @@ public class RoundShield extends MeleeWeapon {
 	public int DRMax(int lvl){
 		return 4 + lvl;
 	}
+
+	@Override
+	public Integer upgradeBlockingStat(int level) {
+		return DRMax(level);
+	}
 	
 	public String statsInfo(){
 		if (isIdentified()){

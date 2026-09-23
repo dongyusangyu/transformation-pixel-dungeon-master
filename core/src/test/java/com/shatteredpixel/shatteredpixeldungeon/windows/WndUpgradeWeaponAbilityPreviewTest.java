@@ -1,5 +1,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.windows;
 
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.HundredTonHammer;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.LakeSword;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MercuryBlade;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBlade;
+
 import org.junit.Test;
 
 import java.io.IOException;
@@ -8,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -19,7 +27,7 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/windows/WndUpgrade.java");
 
 		assertTrue(source.contains("MeleeWeapon.canUseWeaponAbility(Dungeon.hero)"));
-		assertTrue(source.contains("upgradeAbilityStat(levelFrom) == null"));
+		assertTrue(source.contains("upgradeAbilityStats(levelFrom)"));
 		assertFalse(source.contains("Dungeon.hero.heroClass == HeroClass.DUELIST"));
 		assertFalse(source.contains("Dungeon.hero.subClass.is(HeroSubClass.CHAMPION)"));
 		assertFalse(source.contains("Dungeon.hero.hasTalent(Talent.MARTIAL_TRAIN)"));
@@ -30,7 +38,7 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 		String source = sourceFile(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/windows/WndUpgrade.java");
 
-		assertTrue(source.contains("bottom = fillFields(Messages.get(toUpgrade, \"upgrade_ability_stat_name\")"));
+		assertTrue(source.contains("upgradeAbilityStats(levelTo)"));
 		assertFalse(source.contains("levelFrom).equals(levelTo)"));
 		assertFalse(source.contains("levelFrom == levelTo"));
 	}
@@ -68,6 +76,74 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 
 		assertTrue(messages.contains("items.weapon.melee.tier6.chainmace.upgrade_ability_stat_name=武技伤害"));
 		assertTrue(messages.contains("items.weapon.melee.tier6.twohandedgreatsword.upgrade_ability_stat_name=武技伤害"));
+	}
+
+	@Test
+	public void upgradePreviewUsesTypedRowsAndGenericBlockingCapability() throws IOException {
+		String meleeWeapon = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/MeleeWeapon.java");
+		String wndUpgrade = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/windows/WndUpgrade.java");
+
+		assertTrue(meleeWeapon.contains("class UpgradeAbilityStat"));
+		assertTrue(meleeWeapon.contains("upgradeAbilityStats(int level)"));
+		assertTrue(meleeWeapon.contains("upgradeBlockingStat(int level)"));
+		assertTrue(wndUpgrade.contains("upgradeAbilityStats(levelFrom)"));
+		assertTrue(wndUpgrade.contains("upgradeBlockingStat(levelFrom)"));
+		assertFalse(wndUpgrade.contains("toUpgrade instanceof RoundShield"));
+		assertFalse(wndUpgrade.contains("toUpgrade instanceof Greatshield"));
+		assertFalse(wndUpgrade.contains("toUpgrade instanceof Bracer"));
+	}
+
+	@Test
+	public void tierSixPreviewRowsMatchTheirActualMechanics() throws IOException {
+		String hundredTonHammer = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/HundredTonHammer.java");
+		String mercuryBlade = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/MercuryBlade.java");
+		String lakeSword = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/LakeSword.java");
+		String mountainGuard = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/MountainGuard.java");
+		String soulBlade = sourceFile(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/SoulBlade.java");
+
+		assertTrue(hundredTonHammer.contains("KNOCKBACK_DISTANCE"));
+		assertTrue(mercuryBlade.contains("UpgradeAbilityStatType.DURATION"));
+		assertTrue(lakeSword.contains("EFFECT_RANGE"));
+		assertTrue(mountainGuard.contains("UpgradeAbilityStatType.DURATION"));
+		assertTrue(soulBlade.contains("upgradeBlockingStat(int level)"));
+	}
+
+	@Test
+	public void typedRowsExposeTheExpectedValues() {
+		MeleeWeapon.UpgradeAbilityStat hammerDistance = new HundredTonHammer()
+				.upgradeAbilityStats(3).get(0);
+		assertEquals(MeleeWeapon.UpgradeAbilityStatType.KNOCKBACK_DISTANCE, hammerDistance.type);
+		assertEquals("4", hammerDistance.value);
+
+		MeleeWeapon.UpgradeAbilityStat mercuryDuration = new MercuryBlade()
+				.upgradeAbilityStats(3).get(0);
+		assertEquals(MeleeWeapon.UpgradeAbilityStatType.DURATION, mercuryDuration.type);
+		assertEquals("4", mercuryDuration.value);
+
+		MeleeWeapon.UpgradeAbilityStat lakeRange = new LakeSword()
+				.upgradeAbilityStats(3).get(1);
+		assertEquals(MeleeWeapon.UpgradeAbilityStatType.EFFECT_RANGE, lakeRange.type);
+		assertEquals("8", lakeRange.value);
+
+		assertEquals(16, MountainGuard.maxBlockForLevel(3));
+		assertEquals(12, SoulBlade.maxBlockForLevel(3));
+	}
+
+	@Test
+	public void blockingDescriptionsIncludeCurrentMaximum() throws IOException {
+		String messages = sourceFile("src/main/assets/messages/items/items_zh.properties");
+
+		assertTrue(messages.contains("items.weapon.melee.tier6.mountainguard.stats_desc="));
+		assertTrue(messages.contains("items.weapon.melee.tier6.soulblade.stats_desc="));
+		assertTrue(messages.contains("items.weapon.melee.tier6.mountainguard.typical_stats_desc="));
+		assertTrue(messages.contains("items.weapon.melee.tier6.soulblade.typical_stats_desc="));
 	}
 
 	private static String sourceFile(String relativePath) throws IOException {

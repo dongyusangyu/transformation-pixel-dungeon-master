@@ -54,6 +54,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.rogue.ShadowClone;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Resurrection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Sheep;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SmokeParticle;
@@ -214,15 +215,16 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
         if (!this.buffs(AbsoluteInvisibility.class).isEmpty() && this.buff(AbsoluteInvisibility.class).InvisibilityAttack >= 10){
             //隐身10回合斩杀玩家
             if (enemy!=null && enemySeen) {
-                for (int i : PathFinder.NEIGHBOURS8) {
-                    //寻找玩家身边安全位置
-                    int candidate = enemy.pos + i;
-                    if (isValidRelocationCell(candidate)
-                            && Dungeon.level.distance(candidate, enemy.pos) == 1) {
-                        execute(candidate);
-                        break;
-                    }
+                int executionCell = findExecutionCell(enemy);
+                if (executionCell != -1) {
+                    execute(executionCell);
+                    spend(TICK);
+                    return true;
                 }
+                // A blocked execution still consumes a turn. Otherwise this actor
+                // remains at the same timestamp and prevents the whole dungeon
+                // from advancing.
+                spend(TICK);
                 return true;
             }
 
@@ -274,11 +276,41 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
     }
 
     static int advanceSpecialCounter(int current, int paralysed, boolean sleeping) {
+        if (current >= 10) return 10;
         return canAdvanceSpecialCounter(paralysed, sleeping) ? current + 1 : current;
     }
 
     static float advanceSpecialCounter(float current, int paralysed, boolean sleeping) {
+        if (current >= 10f) return 10f;
         return canAdvanceSpecialCounter(paralysed, sleeping) ? current + 1 : current;
+    }
+
+    private int findExecutionCell(Char target) {
+        int sheepCell = -1;
+        for (int i : PathFinder.NEIGHBOURS8) {
+            int candidate = target.pos + i;
+            if (isValidRelocationCell(candidate)
+                    && Dungeon.level.distance(candidate, target.pos) == 1) {
+                return candidate;
+            }
+            if (candidate >= 0 && candidate < Dungeon.level.length()
+                    && Dungeon.level.passable[candidate]
+                    && Dungeon.level.distance(candidate, target.pos) == 1
+                    && (!properties().contains(Property.LARGE) || Dungeon.level.openSpace[candidate])
+                    && Actor.findChar(candidate) instanceof Sheep) {
+                sheepCell = candidate;
+            }
+        }
+        if (sheepCell != -1) {
+            Char blocker = Actor.findChar(sheepCell);
+            if (blocker instanceof Sheep) {
+                blocker.die(null);
+            }
+            if (isValidRelocationCell(sheepCell)) {
+                return sheepCell;
+            }
+        }
+        return -1;
     }
 
     static boolean shouldResetInvisibilityCooldown(boolean hunting, boolean sleeping,
@@ -367,12 +399,22 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
             HP = 100;
             phase = 1;
             if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES)){
-                Mob s = new ShadowRogue();
-                s.alignment = alignment;
-                s.updateSpriteState();
-                GameScene.add(s);
-                ShadowRogue.appear(s,pos);
-                s.beckon(enemy.pos);
+                int spawnCell = findShadowSpawnCell();
+                if (spawnCell >= 0) {
+                    Mob s = new ShadowRogue();
+                    s.pos = spawnCell;
+                    s.alignment = alignment;
+                    s.updateSpriteState();
+                    GameScene.add(s);
+                    int levelLength = Dungeon.level.length();
+                    int targetCell = summonTargetCell(
+                            enemy == null ? -1 : enemy.pos,
+                            enemy != null && enemy != this && enemy.isAlive(),
+                            Dungeon.hero == null ? -1 : Dungeon.hero.pos,
+                            Dungeon.hero != null && Dungeon.hero.isAlive(),
+                            levelLength);
+                    if (targetCell >= 0) s.beckon(targetCell);
+                }
             }
         }
         if ((HP <= HT/2) && !bleeding){
@@ -411,6 +453,58 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
             });
             return;
         }
+    }
+
+    static int summonTargetCell(int primaryCell, boolean primaryValid,
+                                int fallbackCell, boolean fallbackValid,
+                                int levelLength) {
+        if (levelLength <= 0) return -1;
+        if (primaryValid && primaryCell >= 0 && primaryCell < levelLength) {
+            return primaryCell;
+        }
+        if (fallbackValid && fallbackCell >= 0 && fallbackCell < levelLength) {
+            return fallbackCell;
+        }
+        return -1;
+    }
+
+    private int findShadowSpawnCell() {
+        if (Dungeon.level == null) return -1;
+
+        int[] candidates = new int[PathFinder.NEIGHBOURS8.length + 1];
+        candidates[0] = pos;
+        for (int i = 0; i < PathFinder.NEIGHBOURS8.length; i++) {
+            int candidate = pos + PathFinder.NEIGHBOURS8[i];
+            candidates[i + 1] = Dungeon.level.adjacent(pos, candidate) ? candidate : -1;
+        }
+
+        int length = Dungeon.level.length();
+        boolean[] passable = new boolean[length];
+        boolean[] occupied = new boolean[length];
+        for (int cell : candidates) {
+            if (cell >= 0 && cell < length) {
+                passable[cell] = Dungeon.level.passable[cell]
+                        && (!properties().contains(Property.LARGE) || Dungeon.level.openSpace[cell]);
+                occupied[cell] = Actor.findChar(cell) != null;
+            }
+        }
+        int adjacentCell = firstValidSpawnCell(candidates, length, passable, occupied);
+        return adjacentCell >= 0 ? adjacentCell : Dungeon.level.randomRespawnCell(this);
+    }
+
+    static int firstValidSpawnCell(int[] candidates, int levelLength,
+                                   boolean[] passable, boolean[] occupied) {
+        if (candidates == null || passable == null || occupied == null || levelLength <= 0) {
+            return -1;
+        }
+        for (int cell : candidates) {
+            if (cell >= 0 && cell < levelLength
+                    && cell < passable.length && cell < occupied.length
+                    && passable[cell] && !occupied[cell]) {
+                return cell;
+            }
+        }
+        return -1;
     }
 
     @Override

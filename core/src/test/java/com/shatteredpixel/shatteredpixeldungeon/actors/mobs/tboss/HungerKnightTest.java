@@ -20,6 +20,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
@@ -355,5 +360,33 @@ public class HungerKnightTest {
         assertEquals(50, boss.meleeHungerForTest(HungerKnight.Skill.THRUST));
         assertEquals(20, boss.meleeHungerForTest(HungerKnight.Skill.QUAKE));
         assertEquals(20, boss.meleeHungerForTest(HungerKnight.Skill.COMBO));
+    }
+
+    @Test
+    public void comboPathRefreshesFieldOfViewBeforePathfinding() throws IOException {
+        assertTrue(HungerKnight.needsFieldOfViewRefresh(null, 100));
+        assertTrue(HungerKnight.needsFieldOfViewRefresh(new boolean[99], 100));
+        assertFalse(HungerKnight.needsFieldOfViewRefresh(new boolean[100], 100));
+
+        String source = readCoreSource(
+                "com/shatteredpixel/shatteredpixeldungeon/actors/mobs/tboss/HungerKnight.java");
+        int approach = source.indexOf("private void approachForCombo");
+        int nextMethod = source.indexOf("private int[] warningLine", approach);
+        String block = source.substring(approach, nextMethod);
+
+        assertTrue("combo path must refresh a missing field-of-view array",
+                block.contains("fieldOfView = new boolean[levelLength]"));
+        assertTrue("combo path must refresh stale field-of-view data",
+                block.contains("Dungeon.level.updateFieldOfView(this, fieldOfView)"));
+    }
+
+    private static String readCoreSource(String relativePath) throws IOException {
+        Path workingDirectory = Paths.get(System.getProperty("user.dir"));
+        Path coreDirectory = workingDirectory.resolve("core");
+        if (!Files.isDirectory(coreDirectory)) {
+            coreDirectory = workingDirectory;
+        }
+        Path source = coreDirectory.resolve("src/main/java").resolve(relativePath);
+        return new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
     }
 }

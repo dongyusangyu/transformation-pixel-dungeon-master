@@ -16,6 +16,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corruption;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
@@ -25,6 +26,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.RubbingsTome;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
@@ -120,12 +124,82 @@ public class Necronomicon extends Artifact {
 		return mob != null && mob.buff(SoulBound.class) != null;
 	}
 
+	public static void clearSoulBound(Mob mob) {
+		if (mob != null) {
+			SoulBound marker = mob.buff(SoulBound.class);
+			if (marker != null) marker.detach();
+		}
+	}
+
+	public static class Recipe extends com.shatteredpixel.shatteredpixeldungeon.items.Recipe {
+		static boolean isValidWandIngredient(boolean identified, boolean cursedKnown,
+				boolean cursed, boolean equipped) {
+			return identified && cursedKnown && !cursed && !equipped;
+		}
+
+		@Override
+		public boolean testIngredients(ArrayList<Item> ingredients) {
+			if (ingredients == null || ingredients.size() != 3) return false;
+			boolean dust = false;
+			boolean tome = false;
+			boolean wand = false;
+			for (Item item : ingredients) {
+				if (item == null || item.quantity() < 1) return false;
+				if (item instanceof CorpseDust && !dust) {
+					dust = true;
+				} else if (item instanceof RubbingsTome && !tome) {
+					tome = true;
+				} else if (item instanceof Wand && !wand
+						&& isValidWandIngredient(item.isIdentified(), item.cursedKnown,
+						item.cursed, item.isEquipped(Dungeon.hero))) {
+					wand = true;
+				} else {
+					return false;
+				}
+			}
+			return dust && tome && wand;
+		}
+
+		@Override
+		public int cost(ArrayList<Item> ingredients) {
+			return 10;
+		}
+
+		@Override
+		public Item brew(ArrayList<Item> ingredients) {
+			if (!testIngredients(ingredients)) return null;
+			for (Item ingredient : ingredients) ingredient.quantity(ingredient.quantity() - 1);
+			CorpseDust.syncGhostSpawner(Dungeon.hero);
+			return sampleOutput(ingredients);
+		}
+
+		@Override
+		public Item sampleOutput(ArrayList<Item> ingredients) {
+			return new Necronomicon().identify();
+		}
+	}
+
+	/** Wand placeholder used by quick alchemy to select only recipe-valid wands. */
+	public static class AlchemyWandPlaceholder extends Wand.PlaceHolder {
+		@Override
+		public boolean isSimilar(Item item) {
+			if (!(item instanceof Wand)) return false;
+			Wand wand = (Wand) item;
+			return Recipe.isValidWandIngredient(wand.isIdentified(), wand.cursedKnown,
+					wand.cursed, wand.isEquipped(Dungeon.hero));
+		}
+	}
+
 	public static SoulBoundDeathResult resolveSoulBoundDeath(Mob mob, Object cause) {
 		if (!hasSoulBound(mob)) return SoulBoundDeathResult.CONTINUE_DEATH;
 
 		// Detaching first makes repeated die() calls idempotent, including callbacks
 		// from Actor removal or a second damage source in the same tick.
 		SoulBound marker = mob.buff(SoulBound.class);
+		if (mob.alignment == null || !mob.alignment.name().startsWith("ENEMY")) {
+			marker.detach();
+			return SoulBoundDeathResult.CONTINUE_DEATH;
+		}
 		marker.detach();
 		if (cause == Chasm.class) {
 			spawnCorruptedWraithNear(mob.pos);
@@ -134,7 +208,18 @@ public class Necronomicon extends Artifact {
 
 		mob.HP = mob.HT;
 		Corruption.corruptionHeal(mob);
-		Buff.affect(mob, Corruption.class);
+		boolean converted;
+		if (Dungeon.hero != null) {
+			converted = AllyBuff.affectAndLoot(mob, Dungeon.hero, Corruption.class);
+		} else {
+			converted = Buff.affect(mob, Corruption.class) != null;
+		}
+		if (!converted || mob.alignment != Char.Alignment.ALLY) {
+			// If immunity was added between marking and death, keep the original
+			// death path instead of leaving an unkillable, unconverted mob.
+			mob.HP = 0;
+			return SoulBoundDeathResult.CONTINUE_DEATH;
+		}
 		spawnCorruptedWraithNear(mob.pos);
 		return SoulBoundDeathResult.INTERCEPTED_DEATH;
 	}
@@ -188,7 +273,7 @@ public class Necronomicon extends Artifact {
 	@Override
 	public void charge(Hero target, float amount) {
 		if (!canCharge(target)) return;
-		partialCharge += 0.5f * amount;
+		partialCharge += 0.25f * amount;
 		convertPartialCharge();
 	}
 
@@ -220,18 +305,37 @@ public class Necronomicon extends Artifact {
 		return new BookRecharge();
 	}
 
+	@Override
+	public void activate(Char ch) {
+		super.activate(ch);
+		if (ch instanceof Hero) CorpseDust.syncGhostSpawner((Hero) ch);
+	}
+
+	@Override
+	public boolean doUnequip(Hero hero, boolean collect, boolean single) {
+		if (super.doUnequip(hero, collect, single)) {
+			CorpseDust.syncGhostSpawner(hero);
+			return true;
+		}
+		return false;
+	}
+
 	public final CellSelector.Listener caster = new CellSelector.Listener() {
 		@Override
 		public void onSelect(Integer target) {
 			if (target == null || curUser == null || Dungeon.level == null) return;
 			if (target < 0 || target >= Dungeon.level.length()
 					|| (!Dungeon.level.visited[target] && !Dungeon.level.mapped[target])) return;
+			if (target == curUser.pos) {
+				resolveCast((Hero) curUser, target, false);
+				return;
+			}
 
-			final Ballistica shot = new Ballistica(curUser.pos, target, Ballistica.MAGIC_BOLT);
+			final Ballistica shot = new Ballistica(curUser.pos, target, Ballistica.PROJECTILE);
 			final int cell = shot.collisionPos;
 			curUser.sprite.zap(cell);
 			MagicMissile.boltFromChar(curUser.sprite.parent, MagicMissile.SHADOW,
-					curUser.sprite, cell, () -> resolveCast((Hero) curUser, cell));
+					curUser.sprite, cell, () -> resolveCast((Hero) curUser, cell, true));
 			Sample.INSTANCE.play(Assets.Sounds.ZAP);
 			curUser.busy();
 		}
@@ -242,36 +346,38 @@ public class Necronomicon extends Artifact {
 		}
 	};
 
-	private boolean resolveCast(Hero hero, int cell) {
+	private boolean resolveCast(Hero hero, int cell, boolean projectileCallback) {
 		if (hero == null || Dungeon.level == null || !canCast(hero)
 				|| !isEquipped(hero)) {
-			if (hero != null) hero.next();
+			if (projectileCallback && hero != null) hero.next();
 			return false;
 		}
 
-		Char target = Actor.findChar(cell);
-		if (target instanceof Mob && isValidSoulBoundTarget((Mob) target)) {
-			if (charge < 1) {
-				hero.next();
+		if (cell != hero.pos) {
+			Char target = Actor.findChar(cell);
+			if (target instanceof Mob && isValidSoulBoundTarget((Mob) target)) {
+				if (charge < 1) {
+					if (projectileCallback) hero.next();
+					return false;
+				}
+				Buff.affect(target, SoulBound.class);
+				charge -= 1;
+				Invisibility.dispel(hero);
+				Talent.onArtifactUsed(hero);
+				updateQuickslot();
+				hero.spendAndNext(Actor.TICK);
+				return true;
+			}
+
+			if (target != null) {
+				if (projectileCallback) hero.next();
 				return false;
 			}
-			Buff.affect(target, SoulBound.class);
-			charge -= 1;
-			Invisibility.dispel(hero);
-			Talent.onArtifactUsed(hero);
-			updateQuickslot();
-			hero.spendAndNext(Actor.TICK);
-			return true;
-		}
-
-		if (target != null) {
-			hero.next();
-			return false;
 		}
 
 		ArrayList<Integer> candidates = summonCandidates(Dungeon.level, cell);
 		if (candidates.isEmpty() || charge < 2) {
-			hero.next();
+			if (projectileCallback) hero.next();
 			return false;
 		}
 		Random.shuffle(candidates);
@@ -291,6 +397,7 @@ public class Necronomicon extends Artifact {
 	public class BookRecharge extends ArtifactBuff {
 		@Override
 		public boolean act() {
+			if (target instanceof Hero) CorpseDust.syncGhostSpawner((Hero) target);
 			if (target instanceof Hero && canCharge((Hero) target)
 					&& Regeneration.regenOn()) {
 				partialCharge += naturalChargePerTurn(level(), charge,

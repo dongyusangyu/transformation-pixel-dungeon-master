@@ -43,6 +43,11 @@ public class ChainMaceTest {
 	}
 
 	@Test
+	public void exposesTheFlailTraitForSurpriseAttackRules() throws IOException {
+		assertTrue(source().contains("WeaponTrait.FLAIL"));
+	}
+
+	@Test
 	public void followerCannotReceiveAlignmentChangingOrAggressionEffects() {
 		ChainMace.BallFollower follower = new ChainMace.BallFollower();
 
@@ -157,7 +162,6 @@ public class ChainMaceTest {
 		assertEquals(22, weapon.STRReq(0));
 		assertEquals(21, weapon.STRReq(1));
 		assertEquals(1, weapon.reachFactor(null));
-		assertEquals(ChainMace.AC_THROW, weapon.defaultAction());
 	}
 
 	@Test
@@ -313,7 +317,7 @@ public class ChainMaceTest {
 			throws IOException {
 		String source = source();
 
-		assertTrue(source.contains("public void cast(Hero user, int dst)"));
+		assertTrue(source.contains("private void commandThrow(Hero user, int dst)"));
 		assertTrue(source.contains("if (!isEquipped(user))"));
 		assertTrue(source.contains("super.cast(user, dst)"));
 		assertTrue(source.contains("dispatchThrow(user, ball, dst)"));
@@ -345,9 +349,9 @@ public class ChainMaceTest {
 		assertTrue(source.contains("linkedWeapon()"));
 		assertTrue(source.contains("isCommandValid"));
 		assertTrue(source.contains("abortCommand"));
-		assertTrue(source.contains("canUseWeaponAbility(Dungeon.hero)"));
-		assertTrue(source.contains("return AC_ABILITY"));
-		assertTrue(source.contains("return AC_THROW"));
+		assertTrue(source.contains("implements WeaponSpecialAction"));
+		assertTrue(source.contains("String specialActionId()"));
+		assertTrue(source.contains("return AC_COMMAND_THROW"));
 	}
 
 	@Test

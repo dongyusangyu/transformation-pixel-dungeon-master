@@ -192,6 +192,13 @@ public class OracleTerminal extends MeleeWeapon {
 				+ augment.damageFactor(max(level) + damageBonus);
 	}
 
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, upgradeAbilityStat(level)));
+		return result;
+	}
+
 	public String catalogDesc() {
 		return Messages.get(this, "catalog_desc");
 	}

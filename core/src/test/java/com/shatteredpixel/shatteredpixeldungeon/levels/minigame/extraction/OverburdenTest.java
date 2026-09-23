@@ -76,6 +76,13 @@ public class OverburdenTest {
 	}
 
 	@Test
+	public void slotCounterUsesAStableItemSnapshot() throws IOException {
+		String source = readCoreSource(
+				"levels/minigame/extraction/Overburden.java");
+		assertTrue(source.contains("bag.items.toArray(new Item[0])"));
+	}
+
+	@Test
 	public void englishAndChineseBuffMessagesArePresent() throws IOException {
 		String english = readCoreResource("messages/actors/actors.properties");
 		String chinese = readCoreResource("messages/actors/actors_zh.properties");

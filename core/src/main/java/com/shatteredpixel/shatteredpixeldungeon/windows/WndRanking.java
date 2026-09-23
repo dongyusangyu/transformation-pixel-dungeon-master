@@ -346,47 +346,38 @@ public class WndRanking extends WndTabbed {
 				add(btnSeed);
 			}
 
-			if (!record.newCycle) {
-				final RedButton heroHall = new RedButton(Messages.get(
-						this, fromHeroHall ? "remove_from_hero_hall" : "copy_to_hero_hall")) {
+			if (RankingRestart.canBegin(record)
+					&& GamesInProgress.firstEmpty() != -1) {
+				RedButton restart = new RedButton(Messages.get(ChallengesTab.class, "restart")) {
 					@Override
 					protected void onClick() {
 						super.onClick();
-						if (fromHeroHall) {
-							ShatteredPixelDungeon.scene().addToFront(new WndOptions(
-									new ItemSprite(ItemSpriteSheet.CROWN, null),
-									Messages.get(StatsTab.this, "remove_title"),
-									Messages.get(StatsTab.this, "remove_desc"),
-									Messages.get(StatsTab.this, "remove_confirm"),
-									Messages.get(StatsTab.this, "remove_cancel")) {
-								@Override
-								protected void onSelect(int index) {
-									super.onSelect(index);
-									if (index == 0 && Rankings.INSTANCE.removeFromHeroHall(record)) {
-										WndRanking.this.hide();
-										ShatteredPixelDungeon.switchNoFade(HeroHallScene.class);
-									} else if (index == 0) {
-										ShatteredPixelDungeon.scene().addToFront(
-												new WndMessage(Messages.get(StatsTab.this, "hero_hall_save_failed")));
-									}
+						ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+								Icons.get(Icons.STAIRS),
+								Messages.get(ChallengesTab.class, "restart_title"),
+								Messages.get(ChallengesTab.class, "restart_desc"),
+								Messages.get(ChallengesTab.class, "restart_confirm"),
+								Messages.get(ChallengesTab.class, "restart_cancel")) {
+							@Override
+							protected void onSelect(int index) {
+								super.onSelect(index);
+								if (index != 0) return;
+								int slot = GamesInProgress.firstEmpty();
+								if (slot == -1) {
+									ShatteredPixelDungeon.scene().addToFront(
+											new WndMessage(Messages.get(ChallengesTab.class, "no_slots")));
+								} else if (RankingRestart.begin(record)) {
+									GamesInProgress.curSlot = slot;
+									InterlevelScene.mode = InterlevelScene.Mode.RESTART;
+									Game.switchScene(InterlevelScene.class);
 								}
-							});
-						} else if (Rankings.INSTANCE.addToHeroHall(record)) {
-							text(Messages.get(StatsTab.this, "in_hero_hall"));
-							enable(false);
-						} else if (!Rankings.INSTANCE.isInHeroHall(record)) {
-							ShatteredPixelDungeon.scene().addToFront(
-									new WndMessage(Messages.get(StatsTab.this, "hero_hall_save_failed")));
-						}
+							}
+						});
 					}
 				};
-				heroHall.icon(new ItemSprite(ItemSpriteSheet.CROWN, null));
-				heroHall.setRect(0, HEIGHT - 16, WIDTH, 16);
-				if (!fromHeroHall && Rankings.INSTANCE.isInHeroHall(record)) {
-					heroHall.text(Messages.get(this, "in_hero_hall"));
-					heroHall.enable(false);
-				}
-				add(heroHall);
+				restart.icon(Icons.get(Icons.STAIRS));
+				restart.setRect(0, HEIGHT - 16, WIDTH, 16);
+				add(restart);
 			}
 
 		}
@@ -682,40 +673,47 @@ public class WndRanking extends WndTabbed {
 			scoreInfo.setPos(WIDTH - scoreInfo.width(), 10);
 			add(scoreInfo);
 
-			if (RankingRestart.canBegin(record)
-					&& GamesInProgress.firstEmpty() != -1) {
-				RedButton restart = new RedButton(Messages.get(this, "restart")) {
+			if (!record.newCycle) {
+				final RedButton heroHall = new RedButton(Messages.get(
+						StatsTab.class, fromHeroHall ? "remove_from_hero_hall" : "copy_to_hero_hall")) {
 					@Override
 					protected void onClick() {
 						super.onClick();
-						ShatteredPixelDungeon.scene().addToFront(new WndOptions(
-								Icons.get(Icons.STAIRS),
-								Messages.get(ChallengesTab.this, "restart_title"),
-								Messages.get(ChallengesTab.this, "restart_desc"),
-								Messages.get(ChallengesTab.this, "restart_confirm"),
-								Messages.get(ChallengesTab.this, "restart_cancel")) {
+						if (fromHeroHall) {
+							ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+									new ItemSprite(ItemSpriteSheet.CROWN, null),
+									Messages.get(StatsTab.class, "remove_title"),
+									Messages.get(StatsTab.class, "remove_desc"),
+									Messages.get(StatsTab.class, "remove_confirm"),
+									Messages.get(StatsTab.class, "remove_cancel")) {
 							@Override
 							protected void onSelect(int index) {
 								super.onSelect(index);
-								if (index != 0) {
-									return;
-								}
-								int slot = GamesInProgress.firstEmpty();
-								if (slot == -1) {
+								if (index == 0 && Rankings.INSTANCE.removeFromHeroHall(record)) {
+									WndRanking.this.hide();
+									ShatteredPixelDungeon.switchNoFade(HeroHallScene.class);
+								} else if (index == 0) {
 									ShatteredPixelDungeon.scene().addToFront(
-											new WndMessage(Messages.get(ChallengesTab.this, "no_slots")));
-								} else if (RankingRestart.begin(record)) {
-									GamesInProgress.curSlot = slot;
-									InterlevelScene.mode = InterlevelScene.Mode.RESTART;
-									Game.switchScene(InterlevelScene.class);
+											new WndMessage(Messages.get(StatsTab.class, "hero_hall_save_failed")));
 								}
 							}
 						});
+						} else if (Rankings.INSTANCE.addToHeroHall(record)) {
+							text(Messages.get(StatsTab.class, "in_hero_hall"));
+							enable(false);
+						} else if (!Rankings.INSTANCE.isInHeroHall(record)) {
+							ShatteredPixelDungeon.scene().addToFront(
+									new WndMessage(Messages.get(StatsTab.class, "hero_hall_save_failed")));
+						}
 					}
 				};
-				restart.icon(Icons.get(Icons.STAIRS));
-				restart.setRect(0, title.bottom() + 12, WIDTH, 18);
-				add(restart);
+				heroHall.icon(new ItemSprite(ItemSpriteSheet.CROWN, null));
+				heroHall.setRect(0, title.bottom() + 12, WIDTH, 18);
+				if (!fromHeroHall && Rankings.INSTANCE.isInHeroHall(record)) {
+					heroHall.text(Messages.get(StatsTab.class, "in_hero_hall"));
+					heroHall.enable(false);
+				}
+				add(heroHall);
 			}
 
 			/*

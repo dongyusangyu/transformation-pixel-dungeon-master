@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.DriedRose;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
@@ -45,11 +46,18 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.entrance.LibraryHallEntranceRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.exit.LibraryHallExitRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CorrosionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DigestionTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisarmingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.FrostTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GuardianTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.InfernalTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.MaliceTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RedCrossTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RimeTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RoastSheepTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.StormTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.SummoningTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TransformationTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WarpingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -178,7 +186,11 @@ public class TowerLevel extends RegularLevel {
 		if (!built) {
 			return false;
 		}
+		if (feeling == Feeling.BARREN) {
+			TowerGenerationRules.clearBarrenTerrain(this);
+		}
 		TowerRoomSanitizer.clearEntranceRoomDecor(this, roomEntrance, entrance());
+		TowerGenerationRules.retainSkyIslandDoorLandings(this, rooms);
 
 		for (LevelTransition transition : transitions) {
 			if (transition.type == LevelTransition.Type.REGULAR_ENTRANCE) {
@@ -193,7 +205,19 @@ public class TowerLevel extends RegularLevel {
 				transition.destType = LevelTransition.Type.REGULAR_ENTRANCE;
 			}
 		}
+		placeAbyssTraps();
+		TowerGenerationRules.ensureLaboratoryRewards(this, rooms);
 		return true;
+	}
+
+	protected void placeAbyssTraps() {
+		int randomRange = feeling == Feeling.SKY_ISLAND ? 6 : 3;
+		TowerGenerationRules.placeAbyssTraps(this, feeling, Random.Int(randomRange));
+	}
+
+	@Override
+	protected Feeling randomLevelFeeling() {
+		return withLevelFeelingEffects(TowerGenerationRules.feelingForRoll(Random.Int(4)));
 	}
 
 	@Override
@@ -267,8 +291,8 @@ public class TowerLevel extends RegularLevel {
 	@Override
 	protected Painter painter() {
 		return new TowerPainter()
-				.setWater(feeling == Feeling.WATER ? 0.65f : 0.15f, 4)
-				.setGrass(feeling == Feeling.GRASS ? 0.55f : 0.12f, 3)
+				.setWater(TowerGenerationRules.waterFill(feeling), 4)
+				.setGrass(TowerGenerationRules.grassFill(feeling), 3)
 				.setTraps(nTraps(), trapClasses(), trapChances());
 	}
 
@@ -286,13 +310,20 @@ public class TowerLevel extends RegularLevel {
 				GuardianTrap.class,
 				DisarmingTrap.class,
 				SummoningTrap.class,
-				WarpingTrap.class
+				WarpingTrap.class,
+				MaliceTrap.class,
+				InfernalTrap.class,
+				RimeTrap.class,
+				RedCrossTrap.class,
+				DigestionTrap.class,
+				TransformationTrap.class,
+				RoastSheepTrap.class
 		};
 	}
 
 	@Override
 	protected float[] trapChances() {
-		return new float[]{4, 4, 3, 2, 2, 1, 1};
+		return new float[]{4, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 	}
 
 	@Override
@@ -306,7 +337,7 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	public Mob createMob() {
-		return TowerMobRules.createNaturalSpawn();
+		return TowerMobRules.createNaturalSpawn(feeling == Feeling.SKY_ISLAND);
 	}
 
 	@Override
@@ -316,6 +347,11 @@ public class TowerLevel extends RegularLevel {
 		Dungeon.depth = contentDepthForFloor(actualDepth);
 		try {
 			super.createItems();
+			if (feeling == Feeling.SKY_ISLAND) {
+				for (int cell : TowerGenerationRules.skyIslandPotionCells(this, rooms)) {
+					drop(new PotionOfLevitation(), cell);
+				}
+			}
 		} finally {
 			Dungeon.depth = actualDepth;
 			generationTowerFloor = -1;

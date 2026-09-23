@@ -586,6 +586,8 @@ public abstract class ChampionEnemy extends Buff {
 
 	public static class Transform extends ChampionEnemy {
 
+		private boolean detached;
+
 		{
 			color = 0x808080;
 			rays = 6;
@@ -597,14 +599,18 @@ public abstract class ChampionEnemy extends Buff {
 		}
 		@Override
 		public void detach() {
-			//don't trigger when killed by being knocked into a pit
+			if (detached || target == null) return;
+			detached = true;
 			int pos = target.pos;
+			Char.Alignment alignment = target.alignment;
+			super.detach();
+			if (Dungeon.level == null || pos < 0 || pos >= Dungeon.level.length()) return;
 			Mob mob = Dungeon.level.createMob();
+			if (mob == null) return;
 			if (mob.state != mob.PASSIVE) {
 				mob.state = mob.WANDERING;
 			}
-            mob.alignment = target.alignment;
-            mob.updateSpriteState();
+			mob.alignment = alignment;
 
 			Class<?extends ChampionEnemy> buffCls;
 			int random = 6;
@@ -631,7 +637,8 @@ public abstract class ChampionEnemy extends Buff {
 			mob.pos = pos;
 			mob.HP=Math.round(mob.HT/3);
 			GameScene.add( mob );
-			ScrollOfTeleportation.appear(mob, mob.pos);
+			mob.updateSpriteState();
+			if (mob.sprite != null) ScrollOfTeleportation.appear(mob, mob.pos);
 		}
 	}
 

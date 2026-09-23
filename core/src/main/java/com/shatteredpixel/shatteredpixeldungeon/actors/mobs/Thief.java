@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
@@ -121,13 +122,26 @@ public class Thief extends Mob {
 
 	@Override
 	public void rollToDropLoot() {
-		if (item != null) {
-			Dungeon.level.drop( item, pos ).sprite.drop();
-			//updates position
-			if (item instanceof Honeypot.ShatteredPot) ((Honeypot.ShatteredPot)item).dropPot( this, pos );
-			item = null;
-		}
+		dropCarriedItem();
 		super.rollToDropLoot();
+	}
+
+	@Override
+	public void onAllyConversion(AllyBuff source) {
+		dropCarriedItem();
+	}
+
+	private void dropCarriedItem() {
+		if (item == null) return;
+
+		Item carried = item;
+		item = null;
+		if (Dungeon.level == null) return;
+
+		Dungeon.level.drop(carried, pos).sprite.drop();
+		if (carried instanceof Honeypot.ShatteredPot) {
+			((Honeypot.ShatteredPot) carried).dropPot(this, pos);
+		}
 	}
 
 	@Override

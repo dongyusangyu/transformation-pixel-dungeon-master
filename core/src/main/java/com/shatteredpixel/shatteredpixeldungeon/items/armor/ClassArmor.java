@@ -345,7 +345,7 @@ abstract public class ClassArmor extends Armor {
 			ArmorAbility ability = hero.armorAbility;
 			if (ability != null) {
 				desc += "\n\n" + ability.shortDesc();
-				float chargeUse = ability.chargeUse(Dungeon.hero);
+				float chargeUse = ability.chargeUse(Dungeon.hero, this);
 				//trinity has variable charge cost
 				if (!(ability instanceof Trinity)) {
 					desc += " " + Messages.get(this, "charge_use", Messages.decimalFormat("#.##", chargeUse));

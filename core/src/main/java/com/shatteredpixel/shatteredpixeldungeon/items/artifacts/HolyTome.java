@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 import static com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
@@ -362,6 +363,21 @@ public class HolyTome extends Artifact {
 
 		@Override
 		public void doAction() {
+			if (quickSpell == null) return;
+
+			if (quickSpell.isTargeting()) {
+				Char target = QuickSlotButton.lastTarget;
+				if (target == null || !Actor.chars().contains(target) || !target.isAlive()
+						|| target.alignment == Char.Alignment.ALLY
+						|| Dungeon.level == null || Dungeon.level.heroFOV == null
+						|| target.pos < 0 || target.pos >= Dungeon.level.heroFOV.length
+						|| !Dungeon.level.heroFOV[target.pos]) return;
+				targetingSpell = quickSpell;
+				int cell = QuickSlotButton.autoAim(target, HolyTome.this);
+				GameScene.handleCell(cell == -1 ? target.pos : cell);
+				return;
+			}
+
 			if (cursed){
 				GLog.w(Messages.get(HolyTome.this, "cursed"));
 				return;
@@ -372,30 +388,25 @@ public class HolyTome extends Artifact {
 				return;
 			}
 
-			if (QuickSlotButton.targetingSlot != -1 &&
-					Dungeon.quickslot.getItem(QuickSlotButton.targetingSlot) == HolyTome.this) {
+			if (quickSpell.targetingFlags() != -1) {
 				targetingSpell = quickSpell;
-				int cell = QuickSlotButton.autoAim(QuickSlotButton.lastTarget, HolyTome.this);
-
-				if (cell != -1){
-					GameScene.handleCell(cell);
-				} else {
-					//couldn't auto-aim, just target the position and hope for the best.
-					GameScene.handleCell( QuickSlotButton.lastTarget.pos );
-				}
-			} else {
-				quickSpell.onCast(HolyTome.this, Dungeon.hero);
-
-				if (quickSpell.targetingFlags() != -1 && Dungeon.quickslot.contains(HolyTome.this)){
-					targetingSpell = quickSpell;
-					QuickSlotButton.useTargeting(Dungeon.quickslot.getSlot(HolyTome.this));
-				}
 			}
+			quickSpell.onCast(HolyTome.this, Dungeon.hero);
 		}
 
 		@Override
 		public boolean usable() {
 			return quickSpell != null;
+		}
+
+		@Override
+		public boolean isActionInProgress() {
+			return quickSpell != null && quickSpell.isTargeting();
+		}
+
+		@Override
+		public boolean canHandleClickWhileInProgress() {
+			return true;
 		}
 	}
 

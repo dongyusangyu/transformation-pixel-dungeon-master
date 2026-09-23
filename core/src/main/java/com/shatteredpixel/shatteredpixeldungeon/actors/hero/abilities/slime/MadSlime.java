@@ -39,8 +39,17 @@ public class MadSlime extends ArmorAbility {
     }
     @Override
     public float chargeUse( Hero hero ) {
+        ClassArmor armor = null;
+        if (hero != null && hero.belongings != null && hero.belongings.armor instanceof ClassArmor) {
+            armor = (ClassArmor) hero.belongings.armor;
+        }
+        return chargeUse(hero, armor);
+    }
+
+    @Override
+    public float chargeUse( Hero hero, ClassArmor armor ) {
         float chargeUse = super.chargeUse(hero);
-        if(hero.hasTalent(Talent.DELICIOUS_DIGESTION) && ((ClassArmor)hero.belongings.armor).charge == 100){
+        if(hero.hasTalent(Talent.DELICIOUS_DIGESTION) && armor != null && armor.charge >= 100f){
             chargeUse *= Math.pow(0.84, hero.pointsInTalent(Talent.DELICIOUS_DIGESTION));
         }
         return chargeUse;

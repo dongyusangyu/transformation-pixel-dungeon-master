@@ -80,10 +80,7 @@ public class VenomousSickle extends MeleeWeapon {
 		return 47 + 7 * level;
 	}
 
-	@Override
-	public int STRReq(int level) {
-		return STRReq(TIER, level);
-	}
+
 
 	int tierForTest() {
 		return tier;

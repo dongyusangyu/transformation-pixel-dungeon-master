@@ -39,6 +39,7 @@ import com.badlogic.gdx.backends.android.AndroidAudio;
 import com.badlogic.gdx.backends.android.AsynchronousAndroidAudio;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
 import com.badlogic.gdx.utils.GdxNativesLoader;
+import android.support.multidex.MultiDex;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.services.news.News;
@@ -58,7 +59,13 @@ public class AndroidLauncher extends AndroidApplication {
 	
 	private static AndroidPlatformSupport support;
     public Handler killHandler;
-    public Runnable killRunnable;
+	public Runnable killRunnable;
+
+	@Override
+	protected void attachBaseContext(Context base) {
+		super.attachBaseContext(base);
+		MultiDex.install(this);
+	}
 	
 	@SuppressLint("SetTextI18n")
 	@Override

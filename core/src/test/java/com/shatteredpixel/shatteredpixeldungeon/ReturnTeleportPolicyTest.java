@@ -9,7 +9,11 @@ import com.watabou.utils.Bundle;
 
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -61,6 +65,14 @@ public class ReturnTeleportPolicyTest {
 
 		assertTrue(Dungeon.returnTeleportLocationAllowed(targetDepth, targetBranch));
 		assertFalse(Dungeon.returnTeleportLocationAllowed(targetDepth, 0));
+	}
+
+	@Test
+	public void cursedWandInterFloorTeleportPreservesCurrentBranch() throws Exception {
+		String source = new String(Files.readAllBytes(cursedWandSource()), StandardCharsets.UTF_8);
+
+		assertTrue(source.contains("returnTeleportLocationAllowed(i, Dungeon.branch)"));
+		assertTrue(source.contains("InterlevelScene.returnBranch = Dungeon.branch"));
 	}
 
 	@Test
@@ -301,6 +313,14 @@ public class ReturnTeleportPolicyTest {
 		Field field = target.getClass().getDeclaredField(name);
 		field.setAccessible(true);
 		return field.getBoolean(target);
+	}
+
+	private static Path cursedWandSource() {
+		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
+		Path coreDirectory = workingDirectory.resolve("core");
+		if (!Files.isDirectory(coreDirectory)) coreDirectory = workingDirectory;
+		return coreDirectory.resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/wands/CursedWand.java");
 	}
 
 	private static class TestLevel extends Level {

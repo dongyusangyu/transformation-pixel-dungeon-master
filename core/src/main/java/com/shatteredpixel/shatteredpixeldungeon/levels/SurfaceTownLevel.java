@@ -595,17 +595,6 @@ public class SurfaceTownLevel extends Level {
 	}
 
 	@Override
-	public void buildFlagMaps() {
-		super.buildFlagMaps();
-		int manorDoorInterior = cell(MANOR_DOOR_X, MANOR_DOOR_Y - 1);
-		passable[manorDoorInterior] = false;
-		avoid[manorDoorInterior] = false;
-		solid[manorDoorInterior] = true;
-		losBlocking[manorDoorInterior] = true;
-		openSpace[manorDoorInterior] = false;
-	}
-
-	@Override
 	protected void createMobs() {
 		boolean hasDongyusangyu = false;
 		boolean hasDungeonDoctor = false;

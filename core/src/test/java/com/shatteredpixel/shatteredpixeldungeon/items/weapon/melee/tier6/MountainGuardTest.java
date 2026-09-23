@@ -118,16 +118,6 @@ public class MountainGuardTest {
     }
 
     @Test
-    public void releaseActionWinsDefaultPriority() {
-        assertEquals(MountainGuard.AC_RELEASE,
-                MountainGuard.preferredDefaultAction(true, true, "fallback"));
-        assertEquals(MeleeWeapon.AC_ABILITY,
-                MountainGuard.preferredDefaultAction(false, true, "fallback"));
-        assertEquals("fallback",
-                MountainGuard.preferredDefaultAction(false, false, "fallback"));
-    }
-
-    @Test
     public void wallCounterUsesTwoChargesAndExactDuration() {
         MountainGuard guard = newGuard();
         assertEquals(2, guard.baseChargeUseForTest());

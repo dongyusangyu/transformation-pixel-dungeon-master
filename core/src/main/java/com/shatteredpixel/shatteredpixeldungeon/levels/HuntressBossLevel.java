@@ -25,18 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Blindweed;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Earthroot;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Fadeleaf;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Firebloom;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Icecap;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Mageroyal;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Sorrowmoss;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Starflower;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Stormvine;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Sungrass;
-import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
 import com.watabou.noosa.Game;
@@ -93,21 +82,6 @@ public class HuntressBossLevel extends Level {
 			{{0, 0}, {1, 0}, {2, 0}, {0, 1}},
 			{{0, 0}, {1, 0}, {2, 0}, {2, 1}},
 			{{0, 0}, {0, 1}, {1, 1}, {2, 1}}
-	};
-
-	@SuppressWarnings("unchecked")
-	private static final Class<? extends Plant.Seed>[] ARENA_SEEDS = new Class[]{
-			Sungrass.Seed.class,
-			Fadeleaf.Seed.class,
-			Icecap.Seed.class,
-			Firebloom.Seed.class,
-			Sorrowmoss.Seed.class,
-			Swiftthistle.Seed.class,
-			Blindweed.Seed.class,
-			Stormvine.Seed.class,
-			Earthroot.Seed.class,
-			Mageroyal.Seed.class,
-			Starflower.Seed.class
 	};
 
 	public enum State {
@@ -182,11 +156,11 @@ public class HuntressBossLevel extends Level {
 	}
 
 	static int arenaSeedClassCount() {
-		return ARENA_SEEDS.length;
+		return HuntressBoss.wardenSeedClassCount();
 	}
 
 	static Class<? extends Plant.Seed> arenaSeedClassForIndex(int index) {
-		return ARENA_SEEDS[index];
+		return HuntressBoss.wardenSeedClassForIndex(index);
 	}
 
 	private static Class<? extends Plant.Seed> arenaSeedClassForCurrentGenerator() {

@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -166,6 +167,11 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 		return FINISHING_HASTE[points][level - 1];
 	}
 
+	/** Returns the closing-stage haste after equipment-wide duration modifiers. */
+	public static int finishingHasteDurationFor(Hero hero, int attackLevel, int talentPoints) {
+		return BronzeWatch.adjustDuration(hero, finishingHasteDuration(attackLevel, talentPoints));
+	}
+
 	public static float perfectFinaleCharge(int attackLevel, int talentPoints) {
 		if (talentPoints <= 0) return 0f;
 		int points = Math.min(3, talentPoints);
@@ -194,8 +200,8 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 		if (target instanceof Hero && turnsInvis > 0) {
 			Hero hero = (Hero) target;
 			int points = hero.pointsInTalent(Talent.CLOSING_STAGE);
-			int duration = finishingHasteDuration(attackLevel(), points);
-			int cap = finishingHasteDuration(4, points);
+			int duration = finishingHasteDurationFor(hero, attackLevel(), points);
+			int cap = finishingHasteDurationFor(hero, 4, points);
 			if (duration > 0) {
 				Buff.affect(hero, Haste.class).extendCapped(duration, cap);
 			}

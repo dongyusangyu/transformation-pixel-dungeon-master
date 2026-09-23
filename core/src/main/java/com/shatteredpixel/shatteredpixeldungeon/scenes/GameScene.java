@@ -626,6 +626,16 @@ public class GameScene extends PixelScene {
 			}
 			Dungeon.droppedItems.remove(droppedItemsKey);
 		}
+
+		ArrayList<Item> ported = Dungeon.takePortedItems(Dungeon.depth, Dungeon.branch);
+		if (ported != null) {
+			for (Item item : ported) {
+				if (item == null) continue;
+				int pos = level.randomRespawnCell(null);
+				if (pos == -1) pos = level.entrance();
+				level.drop(item, pos);
+			}
+		}
         if(Dungeon.hero!=null && Dungeon.hero.heroClass==HeroClass.ROGUE && !level.mapped[level.exit()] && level instanceof RegularLevel){
             level.mapped[level.exit()]=true;
         }
@@ -758,6 +768,9 @@ public class GameScene extends PixelScene {
 				case SECRETS:
 					GLog.w(level.feeling.desc());
 					Notes.add(Notes.Landmark.SECRETS_FLOOR);
+					break;
+				case CHAOS:
+					GLog.w(level.feeling.desc());
 					break;
 			}
             int cnt = 0;
@@ -916,6 +929,7 @@ public class GameScene extends PixelScene {
 	}
 
 	private static Thread actorThread;
+	private static boolean saveAndReturnToTitleRequested;
 
 	//sometimes UI changes can be prompted by the actor thread.
 	// We queue any removed element destruction, rather than destroying them in the actor thread.
@@ -948,6 +962,10 @@ public class GameScene extends PixelScene {
 
 		Hero hero = Dungeon.hero;
 		if (hero == null || scene == null) {
+			return;
+		}
+
+		if (commitSaveAndReturnToTitleIfSafe(hero)) {
 			return;
 		}
 
@@ -2065,6 +2083,43 @@ public class GameScene extends PixelScene {
 
 	public static void requestCheckpoint() {
 		checkpointRequested = true;
+	}
+
+	public static void requestSaveAndReturnToTitle() {
+		saveAndReturnToTitleRequested = true;
+	}
+
+	private static boolean commitSaveAndReturnToTitleIfSafe(Hero hero) {
+		boolean heroAtSaveBoundary = hero.ready || !hero.isAlive();
+		if (!canCommitCheckpoint(saveAndReturnToTitleRequested, actorThreadIdle(), heroAtSaveBoundary)) {
+			return false;
+		}
+
+		Thread thread = actorThread;
+		if (thread == null || !thread.isAlive()) {
+			return saveAndReturnToTitle();
+		}
+
+		synchronized (thread) {
+			if (!canCommitCheckpoint(saveAndReturnToTitleRequested, Actor.threadIdle(),
+					hero.ready || !hero.isAlive())) {
+				return false;
+			}
+			return saveAndReturnToTitle();
+		}
+	}
+
+	private static boolean saveAndReturnToTitle() {
+		try {
+			Dungeon.saveAll();
+			saveAndReturnToTitleRequested = false;
+			Game.switchScene(TitleScene.class);
+			return true;
+		} catch (IOException e) {
+			saveAndReturnToTitleRequested = false;
+			ShatteredPixelDungeon.reportException(e);
+			return false;
+		}
 	}
 
 

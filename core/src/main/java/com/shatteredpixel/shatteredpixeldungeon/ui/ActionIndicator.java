@@ -163,7 +163,8 @@ public class ActionIndicator extends Tag {
 	protected void onClick() {
 		super.onClick();
 		if (action != null && canShowAction(action)) {
-			if (hero != null && hero.ready) {
+			if (hero != null && hero.ready
+					&& (!action.isActionInProgress() || action.canHandleClickWhileInProgress())) {
 				action.doAction();
 			}
 		} else if (action != null) {
@@ -342,6 +343,10 @@ public class ActionIndicator extends Tag {
 		void doAction();
 
 		default boolean usable() { return true; }
+
+		default boolean isActionInProgress() { return false; }
+
+		default boolean canHandleClickWhileInProgress() { return false; }
 	}
 
 }

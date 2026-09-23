@@ -783,7 +783,7 @@ public class CursedWand {
 				float[] depths = new float[Dungeon.depth-1];
 				int start = Math.max(1, Dungeon.depth-10);
 				for (int i = start; i < Dungeon.depth; i++) {
-					if (Dungeon.returnTeleportLocationAllowed(i, 0)) {
+					if (Dungeon.returnTeleportLocationAllowed(i, Dungeon.branch)) {
 						depths[i-1] = i-start+1;
 					}
 				}
@@ -797,7 +797,7 @@ public class CursedWand {
 				Level.beforeTransition();
 				InterlevelScene.mode = InterlevelScene.Mode.RETURN;
 				InterlevelScene.returnDepth = depth;
-				InterlevelScene.returnBranch = 0;
+				InterlevelScene.returnBranch = Dungeon.branch;
 				InterlevelScene.returnPos = -1;
 				Game.switchScene(InterlevelScene.class);
 

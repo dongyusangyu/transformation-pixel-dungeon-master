@@ -85,12 +85,7 @@ public class PalermoSword extends MeleeWeapon {
 		return maxForLevel(lvl);
 	}
 
-	@Override
-	public int STRReq(int lvl) {
-		int requirement = strengthRequirementForLevel(lvl);
-		if (masteryPotionBonus) requirement -= 2;
-		return requirement;
-	}
+
 
 	public static int minForLevel(int level) {
 		return 6 + Math.max(0, level) * 2;
@@ -423,6 +418,13 @@ public class PalermoSword extends MeleeWeapon {
 		int damageBoost = xiexiangDamageBoost(level);
 		return augment.damageFactor(min(level)) + damageBoost + "-"
 				+ (augment.damageFactor(max(level)) + damageBoost);
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, upgradeAbilityStat(level)));
+		return result;
 	}
 
 	@Override

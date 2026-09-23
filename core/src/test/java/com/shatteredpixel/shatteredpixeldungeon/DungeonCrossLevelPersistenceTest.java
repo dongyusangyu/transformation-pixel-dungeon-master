@@ -6,6 +6,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Rat;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.SparseArray;
 
@@ -31,6 +32,7 @@ public class DungeonCrossLevelPersistenceTest {
 	@After
 	public void tearDown() throws Exception {
 		Dungeon.droppedItems = new SparseArray<>();
+		Dungeon.portedItems = new SparseArray<>();
 		heldAllies().clear();
 		Gdx.files = previousFiles;
 	}
@@ -63,6 +65,26 @@ public class DungeonCrossLevelPersistenceTest {
 		Dungeon.restoreDroppedItems(legacy);
 
 		assertEquals(9, Dungeon.droppedItems.get(towerFloor22).get(0).quantity());
+	}
+
+	@Test
+	public void safeTowerPortSurvivesBundleRoundTripAlongsideLegacyDrops() {
+		int towerFloor23 = Integer.MIN_VALUE + 23;
+		Dungeon.droppedItems = new SparseArray<>();
+		Dungeon.portedItems = new SparseArray<>();
+		ArrayList<Item> items = new ArrayList<>();
+		Item item = new PlainItem().quantity(4);
+		items.add(item);
+		Dungeon.queuePortedItem(item, 23, TowerLevel.BRANCH);
+
+		Bundle bundle = new Bundle();
+		Dungeon.storeDroppedItems(bundle);
+		Dungeon.portedItems = new SparseArray<>();
+		Dungeon.restoreDroppedItems(bundle);
+
+		assertEquals(1, Dungeon.portedItems.get(towerFloor23).size());
+		assertEquals(4, Dungeon.portedItems.get(towerFloor23).get(0).quantity());
+		assertEquals(0, Dungeon.droppedItems.keyArray().length);
 	}
 
 	@Test

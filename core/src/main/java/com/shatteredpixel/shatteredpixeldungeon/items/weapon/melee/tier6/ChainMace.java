@@ -27,13 +27,16 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.DirectableAlly;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Projecting;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecialAction;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
@@ -53,8 +56,9 @@ import java.util.ArrayList;
  * A tier-six heavy weapon whose iron ball is also represented by a following ally.
  * All gameplay and rendering code for the follower intentionally lives in this file.
  */
-public class ChainMace extends MeleeWeapon {
+public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 
+	public static final String AC_COMMAND_THROW = "COMMAND_THROW";
 	private static final String FOLLOWER_ID = "follower_id";
 
 	private BallFollower follower;
@@ -72,6 +76,12 @@ public class ChainMace extends MeleeWeapon {
 		tier = 6;
 		RCH = 1;
 		usesTargeting = true;
+	}
+
+	@Override
+	public boolean hasTrait(WeaponTrait trait, Char owner) {
+		if (trait == WeaponTrait.FLAIL) return true;
+		return super.hasTrait(trait, owner);
 	}
 
 	@Override
@@ -110,9 +120,53 @@ public class ChainMace extends MeleeWeapon {
 	}
 
 	@Override
+	public String specialActionId() {
+		return AC_COMMAND_THROW;
+	}
+
+	@Override
 	public String defaultAction() {
-		if (canUseWeaponAbility(Dungeon.hero)) return AC_ABILITY;
-		return AC_THROW;
+		Hero hero = Dungeon.hero;
+		if (hero != null && hero.belongings.weapon() == this
+				&& !canUseWeaponAbility(hero)) {
+			return null;
+		}
+		return super.defaultAction();
+	}
+
+	@Override
+	public ArrayList<String> actions(Hero hero) {
+		ArrayList<String> actions = super.actions(hero);
+		if (hero != null && hero.belongings.weapon() == this) actions.remove(AC_THROW);
+		return actions;
+	}
+
+	@Override
+	public String actionName(String action, Hero hero) {
+		if (AC_COMMAND_THROW.equals(action)) return super.actionName(AC_THROW, hero);
+		return super.actionName(action, hero);
+	}
+
+	@Override
+	public void execute(final Hero hero, String action) {
+		if (!AC_COMMAND_THROW.equals(action)) {
+			super.execute(hero, action);
+			return;
+		}
+		if (hero == null || hero.belongings.weapon() != this) return;
+
+		usesTargeting = true;
+		GameScene.selectCell(new CellSelector.Listener() {
+			@Override
+			public void onSelect(Integer cell) {
+				if (cell != null) commandThrow(hero, cell);
+			}
+
+			@Override
+			public String prompt() {
+				return Messages.get(Item.class, "prompt");
+			}
+		});
 	}
 
 	@Override
@@ -127,6 +181,13 @@ public class ChainMace extends MeleeWeapon {
 	@Override
 	public String upgradeAbilityStat(int level) {
 		return augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level));
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, upgradeAbilityStat(level)));
+		return result;
 	}
 
 	@Override
@@ -180,17 +241,7 @@ public class ChainMace extends MeleeWeapon {
 		return true;
 	}
 
-	/**
-	 * Throwing an equipped chain mace commands its follower instead of unequipping and
-	 * dropping the weapon. Throwing an unequipped copy keeps the standard item behavior.
-	 */
-	@Override
-	public void cast(Hero user, int dst) {
-		if (!isEquipped(user)) {
-			super.cast(user, dst);
-			return;
-		}
-
+	private void commandThrow(Hero user, int dst) {
 		BallFollower ball = ensureFollower(user);
 		if (ball == null || !ball.isAlive()) {
 			GLog.w(Messages.get(this, "no_follower"));

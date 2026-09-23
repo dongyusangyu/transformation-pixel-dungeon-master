@@ -96,6 +96,11 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	}
 
 	@Override public String towerBossId() { return TowerBossGenerator.GENTLEMAN_ELF_ID; }
+	@Override public void prepareForStandalonePlacement(Char initialTarget) {
+		introResolved = true;
+		initializeEncounterTarget(initialTarget);
+		if (state != HUNTING) state = HUNTING;
+	}
 	@Override public boolean prepareArena(TowerBossLevel level, int spawnCell) {
 		arena = level.prepareGentlemanElfArena(this);
 		return true;

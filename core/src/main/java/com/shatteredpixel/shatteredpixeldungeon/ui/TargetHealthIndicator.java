@@ -30,7 +30,7 @@ public class TargetHealthIndicator extends HealthBar {
 	
 	public static TargetHealthIndicator instance;
 	
-	private Char target;
+	private volatile Char target;
 	
 	public TargetHealthIndicator() {
 		super();
@@ -41,14 +41,15 @@ public class TargetHealthIndicator extends HealthBar {
 	@Override
 	public void update() {
 		super.update();
-		if (target != null && target.isAlive() && target.isActive()
-				&& target.sprite != null && target.sprite.visible
-				&& target.buff(Invisibility.class) == null) {  // 检查隐身状态
-			CharSprite sprite = target.sprite;
+		Char currentTarget = target;
+		CharSprite sprite = currentTarget == null ? null : currentTarget.sprite;
+		if (currentTarget != null && currentTarget.isAlive() && currentTarget.isActive()
+				&& sprite != null && sprite.visible
+				&& currentTarget.buff(Invisibility.class) == null) {  // 检查隐身状态
 			width = sprite.width();
 			x = sprite.x;
 			y = sprite.y - 3;
-			level(target);
+			level(currentTarget);
 			visible = true;
 		} else {
 			visible = false;  // 隐身时隐藏血条

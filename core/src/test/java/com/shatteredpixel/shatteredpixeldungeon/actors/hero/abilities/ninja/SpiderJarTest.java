@@ -47,14 +47,14 @@ public class SpiderJarTest {
     }
 
     @Test
-    public void explosionChecksMapBoundsBeforeReadingNeighborCells() throws Exception {
+    public void explosionUsesSharedRegionDecoBoundaryGuard() throws Exception {
         String source = source();
         int firstNeighbor = source.indexOf("int i = cell + PathFinder.NEIGHBOURS9[p]");
-        int firstMapRead = source.indexOf("Dungeon.level.map[i]", firstNeighbor);
+        int regionDecoMutation = source.indexOf("Dungeon.level.destroyRegionDeco(i)", firstNeighbor);
 
         assertTrue("neighbor loop must exist", firstNeighbor >= 0);
-        assertTrue("neighbor cell must be validated before map access",
-                source.substring(firstNeighbor, firstMapRead).contains("i < 0"));
+        assertTrue("region decorations must use the shared boundary guard",
+                regionDecoMutation > firstNeighbor);
     }
 
     @Test

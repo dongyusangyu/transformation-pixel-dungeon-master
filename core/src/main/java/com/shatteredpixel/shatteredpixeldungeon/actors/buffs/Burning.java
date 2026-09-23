@@ -173,6 +173,12 @@ public class Burning extends Buff implements Hero.Doom {
 				target.damage( damage, this , DamageTag.PHYSICAL, DamageTag.FIRE);
 			}
 
+			// Final death removes this buff while damage is being resolved.
+			// Do not continue with the now-detached target or burning actor.
+			if (target == null || !target.isAlive()) {
+				return true;
+			}
+
 			if (target instanceof Thief && ((Thief) target).item != null) {
 
 				Item item = ((Thief) target).item;

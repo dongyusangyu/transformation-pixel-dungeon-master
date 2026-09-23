@@ -11,6 +11,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatshield;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecialAction;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -20,7 +21,7 @@ import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
 
-public class MountainGuard extends Greatshield {
+public class MountainGuard extends Greatshield implements WeaponSpecialAction {
 
     public static final int TIER = 6;
     public static final int MAX_ENERGY = 100;
@@ -66,6 +67,11 @@ public class MountainGuard extends Greatshield {
         return maxBlockForLevel(level);
     }
 
+    @Override
+    public Integer upgradeBlockingStat(int level) {
+        return maxBlockForLevel(level);
+    }
+
     public static int minForLevel(int level) {
         return 6 + level;
     }
@@ -101,14 +107,6 @@ public class MountainGuard extends Greatshield {
         int dx = Math.abs(center % width - target % width);
         int dy = Math.abs(center / width - target / width);
         return dx <= 4 && dy <= 4;
-    }
-
-    public static String preferredDefaultAction(boolean canRelease,
-                                                boolean canUseAbility,
-                                                String fallback) {
-        if (canRelease) return AC_RELEASE;
-        if (canUseAbility) return AC_ABILITY;
-        return fallback;
     }
 
     public int energy() {
@@ -201,6 +199,16 @@ public class MountainGuard extends Greatshield {
         return isPrimary(hero) && isReleaseReady();
     }
 
+    @Override
+    public String specialActionId() {
+        return AC_RELEASE;
+    }
+
+    @Override
+    public boolean specialActionAvailable(Hero hero) {
+        return canRelease(hero);
+    }
+
     private void releaseMountainPower(Hero hero) {
         if (!canRelease(hero)) return;
         int width = Dungeon.level == null ? 0 : Dungeon.level.width();
@@ -218,20 +226,6 @@ public class MountainGuard extends Greatshield {
         Sample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.75f);
         if (hero.sprite != null) hero.sprite.operate(hero.pos);
         hero.spendAndNext(Actor.TICK);
-    }
-
-    @Override
-    public String defaultAction() {
-        Hero hero = Dungeon.hero;
-        return preferredDefaultAction(canRelease(hero), canUseWeaponAbilityAction(hero),
-                super.defaultAction());
-    }
-
-    @Override
-    public ArrayList<String> actions(Hero hero) {
-        ArrayList<String> result = super.actions(hero);
-        if (canRelease(hero)) result.add(AC_RELEASE);
-        return result;
     }
 
     @Override
@@ -260,12 +254,30 @@ public class MountainGuard extends Greatshield {
 
     @Override
     public String statsInfo() {
-        return Messages.get(this, "stats_desc");
+        if (isIdentified()) {
+            return Messages.get(this, "stats_desc", maxBlockForLevel(buffedLvl()));
+        } else {
+            return Messages.get(this, "typical_stats_desc", maxBlockForLevel(0));
+        }
     }
 
     @Override
     public String abilityInfo() {
         return Messages.get(this, "ability_desc");
+    }
+
+    @Override
+    public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+        java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+        result.add(abilityStat(UpgradeAbilityStatType.DURATION,
+                formatDuration(wallDurationForLevel(level))));
+        return result;
+    }
+
+    private static String formatDuration(float duration) {
+        return duration == Math.round(duration)
+                ? Integer.toString(Math.round(duration))
+                : Float.toString(duration);
     }
 
     @Override

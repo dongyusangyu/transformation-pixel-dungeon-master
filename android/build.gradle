@@ -18,6 +18,7 @@ android {
         //noinspection MinSdkTooLow
         minSdkVersion appAndroidMinSDK
         targetSdkVersion appAndroidTargetSDK
+        multiDexEnabled true
         resourceConfigurations += ['en_US', 'cs', 'de', 'el', 'es', 'fr', 'hu', 'in', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ru', 'tr', 'uk', 'vi', 'zh_CN']
 
     }
@@ -78,6 +79,7 @@ dependencies {
     implementation "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion"
 
     implementation 'cat.ereza:customactivityoncrash:2.2.0'
+    implementation 'com.android.support:multidex:1.0.3'
 }
 
 // called every time gradle gets executed, takes the native dependencies of

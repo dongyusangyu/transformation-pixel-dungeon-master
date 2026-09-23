@@ -1,6 +1,8 @@
 # Gradle
 .gradle/
 **/.gradle/
+.gradle-codex-verification/
+.gradle-test-home/
 build/
 **/build/
 

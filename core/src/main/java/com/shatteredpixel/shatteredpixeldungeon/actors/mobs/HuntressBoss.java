@@ -101,6 +101,21 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	public static final int NATURE_HUNT_PLANT_CHANCE_DENOMINATOR = 4;
 	public static final int MAX_FADELEAF_ESCAPES = 3;
 
+	@SuppressWarnings("unchecked")
+	private static final Class<? extends Plant.Seed>[] WARDEN_SEEDS = new Class[]{
+			Sungrass.Seed.class,
+			Fadeleaf.Seed.class,
+			Icecap.Seed.class,
+			Firebloom.Seed.class,
+			Sorrowmoss.Seed.class,
+			Swiftthistle.Seed.class,
+			Blindweed.Seed.class,
+			Stormvine.Seed.class,
+			Earthroot.Seed.class,
+			Mageroyal.Seed.class,
+			Starflower.Seed.class
+	};
+
 	public enum Phase {
 		SNIPER,
 		WARDEN
@@ -545,11 +560,9 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			switch (plantHuntState) {
 			case SELECTED:
 				plantGraceTurns = 0;
-				HuntressBossLevel level = huntressLevel();
 				if (Dungeon.level == null) {
 					restoredPlantValidationPending = true;
-				} else if (level == null
-						|| !level.isMarkedPlantReachable(this, markedPlantCell)) {
+				} else if (!isMarkedPlantReachable(markedPlantCell)) {
 					plantHuntState = PlantHuntState.LOST_TRACK;
 					markedPlantCell = -1;
 					plantHuntTurns = 0;
@@ -657,6 +670,14 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 		return null;
 	}
 
+	public static int wardenSeedClassCount() {
+		return WARDEN_SEEDS.length;
+	}
+
+	public static Class<? extends Plant.Seed> wardenSeedClassForIndex(int index) {
+		return WARDEN_SEEDS[index];
+	}
+
 	public static int hawksSpawnedAtFightStart() {
 		return 1;
 	}
@@ -757,7 +778,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 				isConfusedForCustomActionPriority())) {
 			return super.act();
 		}
-		validateRestoredPlantHunt(huntressLevel());
+		validateRestoredPlantHunt();
 
 		if (encounterDelay) {
 			encounterDelay = false;
@@ -854,16 +875,16 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	public void finishLevelRestore(HuntressBossLevel level) {
-		validateRestoredPlantHunt(level);
+		validateRestoredPlantHunt();
 	}
 
-	private void validateRestoredPlantHunt(HuntressBossLevel level) {
+	private void validateRestoredPlantHunt() {
 		if (!restoredPlantValidationPending) {
 			return;
 		}
 		restoredPlantValidationPending = false;
 		if (phase == Phase.WARDEN && plantHuntState == PlantHuntState.SELECTED
-				&& level != null && level.isMarkedPlantReachable(this, markedPlantCell)) {
+				&& isMarkedPlantReachable(markedPlantCell)) {
 			return;
 		}
 		plantHuntState = PlantHuntState.LOST_TRACK;
@@ -968,22 +989,89 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	private boolean levelHasMarkedPlant() {
-		HuntressBossLevel level = huntressLevel();
-		return level != null && markedPlantCell >= 0
-				&& level.isMarkedPlantReachable(this, markedPlantCell);
+		return markedPlantCell >= 0 && isMarkedPlantReachable(markedPlantCell);
 	}
 
-	private boolean hasReachablePlant() {
+	protected boolean hasReachablePlant() {
 		HuntressBossLevel level = huntressLevel();
-		return level != null && level.hasReachablePlant(this);
+		if (level != null) {
+			return level.hasReachablePlant(this);
+		}
+		buildGenericPlantDistanceMap();
+		if (Dungeon.level == null) {
+			return false;
+		}
+		for (int cell : Dungeon.level.plants.keyArray()) {
+			if (PathFinder.distance[cell] != Integer.MAX_VALUE
+					&& PathFinder.distance[cell] > 2 && Actor.findChar(cell) == null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected boolean isMarkedPlantReachable(int cell) {
+		HuntressBossLevel level = huntressLevel();
+		if (level != null) {
+			return level.isMarkedPlantReachable(this, cell);
+		}
+		if (Dungeon.level == null || cell < 0 || cell >= Dungeon.level.length()
+				|| Dungeon.level.plants.get(cell) == null || Actor.findChar(cell) != null) {
+			return false;
+		}
+		buildGenericPlantDistanceMap();
+		return PathFinder.distance[cell] != Integer.MAX_VALUE;
+	}
+
+	protected int selectMarkedPlant() {
+		HuntressBossLevel level = huntressLevel();
+		if (level != null) {
+			return level.selectMarkedPlant(this);
+		}
+		buildGenericPlantDistanceMap();
+		if (Dungeon.level == null) {
+			return -1;
+		}
+		ArrayList<Integer> preferred = new ArrayList<>();
+		ArrayList<Integer> fallback = new ArrayList<>();
+		for (int cell : Dungeon.level.plants.keyArray()) {
+			int path = PathFinder.distance[cell];
+			if (path == Integer.MAX_VALUE || path <= 2 || Actor.findChar(cell) != null) {
+				continue;
+			}
+			fallback.add(cell);
+			if (path >= 4 && path <= 8) {
+				preferred.add(cell);
+			}
+		}
+		ArrayList<Integer> pool = preferred.isEmpty() ? fallback : preferred;
+		return pool.isEmpty() ? -1 : Random.element(pool);
+	}
+
+	private void buildGenericPlantDistanceMap() {
+		if (Dungeon.level == null || pos < 0 || pos >= Dungeon.level.length()) {
+			return;
+		}
+		boolean[] plantPassable = Dungeon.level.passable.clone();
+		for (Char ch : Actor.chars()) {
+			if (ch != this && ch.pos >= 0 && ch.pos < plantPassable.length) {
+				plantPassable[ch.pos] = false;
+			}
+		}
+		if (Char.hasProp(this, Char.Property.LARGE)) {
+			for (int cell = 0; cell < plantPassable.length; cell++) {
+				plantPassable[cell] &= Dungeon.level.openSpace[cell];
+			}
+		}
+		plantPassable[pos] = true;
+		PathFinder.buildDistanceMap(pos, plantPassable);
 	}
 
 	private boolean markNextPlant() {
 		if (isBlindedForPlantMark()) {
 			return false;
 		}
-		HuntressBossLevel level = huntressLevel();
-		markedPlantCell = level == null ? -1 : level.selectMarkedPlant(this);
+		markedPlantCell = selectMarkedPlant();
 		if (markedPlantCell < 0) {
 			plantHuntState = PlantHuntState.NO_PLANTS;
 			return false;

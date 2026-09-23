@@ -244,11 +244,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Grim;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocking;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Gloves;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Katana;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Wakizashi;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SakuraBlossomBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Gungnir;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -1203,7 +1201,7 @@ public enum Talent {
 		public void detach(){
 			if(hero.hasTalent(SMOKE_MASK)) {
 				//Buff.affect(Dungeon.hero, SmokeMask.class);
-				ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
+				ActionIndicator.setAction( hero.buff(SmokeMask.class) );
 			}
 			BuffIndicator.refreshHero();
 			super.detach();
@@ -2005,7 +2003,7 @@ public enum Talent {
 		if (talent == SMOKE_MASK && hero.buff(SmokeCooldown.class)==null && hero.pointsInTalent(SMOKE_MASK) >0){
 
 			Buff.affect(hero, SmokeMask.class);
-			ActionIndicator1.setAction( hero.buff(SmokeMask.class) );
+			ActionIndicator.setAction( hero.buff(SmokeMask.class) );
 			BuffIndicator.refreshHero();
 		}
 		if (talent == NATURAL_CHILD && hero.buff(NaturalChildCooldown.class) == null
@@ -3190,7 +3188,7 @@ public enum Talent {
 		}
 		if(hero.buff(OneSword.OKU_OneSword.class)!=null && context.isActualMeleeWeapon()){
 			float onesword = 1.3f;
-			if((context.weapon() instanceof Katana) || (context.weapon() instanceof Wakizashi)){
+			if(MeleeWeapon.hasTrait(context.weapon(), MeleeWeapon.WeaponTrait.ONE_SWORD_BLADE, hero)){
 				onesword+=0.2f;
 			}
 			if(hero.hasTalent(OFFENSIVE)){
@@ -4785,7 +4783,7 @@ public enum Talent {
 					&& Dungeon.hero.buff(NaturalChildCooldown.class) == null;
 		}
 	}
-	public static class SmokeMask extends Buff implements ActionIndicator1.Action {
+	public static class SmokeMask extends Buff implements ActionIndicator.Action {
 		{
 			//always acts after other buffs, so invisibility effects can process first
 			actPriority = BUFF_PRIO - 1;
@@ -4794,7 +4792,7 @@ public enum Talent {
 		@Override
 		public void detach() {
 			super.detach();
-			ActionIndicator1.clearAction(this);
+			ActionIndicator.clearAction(this);
 		}
 		@Override
 		public int icon() {
@@ -4803,9 +4801,9 @@ public enum Talent {
 		@Override
 		public boolean act() {
 			if(target.buff(SmokeCooldown.class)!=null){
-				ActionIndicator1.clearAction(this);
+				ActionIndicator.clearAction(this);
 			}else if(hero.hasTalent(SMOKE_MASK)){
-				ActionIndicator1.setAction(this);
+				ActionIndicator.setAction(this);
 				BuffIndicator.refreshHero();
 			}
 
@@ -4830,7 +4828,7 @@ public enum Talent {
 		public void doAction() {
 			Buff.affect(hero, SmokeCooldown.class, 24f);
 			GameScene.add( Blob.seed( hero.pos, 50+50*hero.pointsInTalent(SMOKE_MASK), SmokeScreen.class ) );
-			ActionIndicator1.clearAction(this);
+			ActionIndicator.clearAction(this);
 			BuffIndicator.refreshHero();
 		}
 		@Override

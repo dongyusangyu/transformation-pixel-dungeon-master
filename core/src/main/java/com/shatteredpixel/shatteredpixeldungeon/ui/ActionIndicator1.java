@@ -26,7 +26,8 @@ package com.shatteredpixel.shatteredpixeldungeon.ui;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecialAction;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.input.GameAction;
@@ -39,6 +40,7 @@ public class ActionIndicator1 extends Tag {
     Visual secondVis;
 
     public static Action action;
+    private static Action registeredAction;
     public static ActionIndicator1 instance;
 
     public ActionIndicator1() {
@@ -90,9 +92,8 @@ public class ActionIndicator1 extends Tag {
     public void update() {
         super.update();
 
+        reconcileActionState();
         synchronized (ActionIndicator1.class) {
-            if (action != null && !canShowAction(action)) clearAction(action);
-
             if (!visible && action != null) {
                 visible = true;
                 needsRefresh = true;
@@ -164,7 +165,11 @@ public class ActionIndicator1 extends Tag {
     public static boolean setAction(Action action){
         if (!canShowAction(action)) return false;
         synchronized (ActionIndicator1.class) {
-            ActionIndicator1.action = action;
+            if (!(action instanceof WeaponSpecialAction)) {
+                registeredAction = action;
+            }
+            Action weaponAction = mainHandWeaponAction();
+            ActionIndicator1.action = weaponAction != null ? weaponAction : action;
             refresh();
         }
         return true;
@@ -183,17 +188,30 @@ public class ActionIndicator1 extends Tag {
 
     public static void reconcileActionState() {
         synchronized (ActionIndicator1.class) {
-            if (action != null && !canShowAction(action)) {
-                action = null;
+            if (registeredAction == null && action != null
+                    && !(action instanceof WeaponSpecialAction)
+                    && canShowAction(action)) {
+                registeredAction = action;
             }
-            if (action == null && Dungeon.hero != null) {
-                Talent.SmokeMask smokeMask = Dungeon.hero.buff(Talent.SmokeMask.class);
-                if (smokeMask != null && canShowAction(smokeMask)) {
-                    action = smokeMask;
-                }
+            if (registeredAction != null && !canShowAction(registeredAction)) {
+                registeredAction = null;
             }
-            refresh();
+
+            Action weaponAction = mainHandWeaponAction();
+            Action next = weaponAction != null ? weaponAction : registeredAction;
+            if (action != next) {
+                action = next;
+                refresh();
+            }
         }
+    }
+
+    private static Action mainHandWeaponAction() {
+        if (Dungeon.hero == null || Dungeon.hero.belongings == null) return null;
+        KindOfWeapon weapon = Dungeon.hero.belongings.weapon();
+        if (!(weapon instanceof WeaponSpecialAction)) return null;
+        Action weaponAction = (WeaponSpecialAction) weapon;
+        return canShowAction(weaponAction) ? weaponAction : null;
     }
 
     public static void clearAction(){
@@ -202,9 +220,14 @@ public class ActionIndicator1 extends Tag {
 
     public static void clearAction(Action action){
         synchronized (ActionIndicator1.class) {
-            if (action == null || ActionIndicator1.action == action) {
+            if (action == null) {
                 ActionIndicator1.action = null;
+                registeredAction = null;
+            } else {
+                if (ActionIndicator1.action == action) ActionIndicator1.action = null;
+                if (registeredAction == action) registeredAction = null;
             }
+            refresh();
         }
     }
 

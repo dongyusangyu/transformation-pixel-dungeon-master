@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.badlogic.gdx.Files;
 import com.badlogic.gdx.Gdx;
@@ -154,6 +155,16 @@ public class ChainShadowThiefTest {
 		assertTrue(restored.chainUsedFromBundle());
 		assertEquals(4, restored.item.quantity());
 		assertTrue(!restored.stealForTest(hero));
+	}
+
+	@Test
+	public void allyConversionReleasesCarriedItem() {
+		TestThief thief = new TestThief();
+		thief.item = new TestItem().quantity(4);
+
+		thief.onAllyConversion(new AllyBuff() { });
+
+		assertNull(thief.item);
 	}
 
 	private static class TestThief extends ChainShadowThief {

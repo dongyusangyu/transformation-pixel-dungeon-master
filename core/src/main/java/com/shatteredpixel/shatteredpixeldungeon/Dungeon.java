@@ -251,6 +251,7 @@ public class Dungeon {
 	public static HashSet<Integer> chapters;
 
 	public static SparseArray<ArrayList<Item>> droppedItems;
+	public static SparseArray<ArrayList<Item>> portedItems;
 
 	//first variable is only assigned when game is started, second is updated every time game is saved
 	public static int initialVersion;
@@ -324,8 +325,10 @@ public class Dungeon {
 		gold = 0;
 		energy = 0;
 		talent_item=0;
+		resetRunLimitedCounters();
 
 		droppedItems = new SparseArray<>();
+		portedItems = new SparseArray<>();
 
 		LimitedDrops.reset();
 		
@@ -389,8 +392,10 @@ public class Dungeon {
 		gold = 0;
 		energy = 0;
 		talent_item=0;
+		resetRunLimitedCounters();
 
 		droppedItems = new SparseArray<>();
+		portedItems = new SparseArray<>();
 
 		LimitedDrops.reset();
 
@@ -418,6 +423,10 @@ public class Dungeon {
 
 	public static void reinit(boolean ignored) {
 		reinit();
+	}
+
+	static void resetRunLimitedCounters() {
+		eat_item = 0;
 	}
 
 	public static boolean isChallenged( int mask ) {
@@ -927,6 +936,25 @@ public class Dungeon {
 		dropped.add( item );
 	}
 
+	public static void queuePortedItem(Item item, int depth, int branch) {
+		if (item == null) return;
+		if (portedItems == null) portedItems = new SparseArray<>();
+		int locationKey = droppedItemsKeyForLocation(depth, branch);
+		ArrayList<Item> ported = portedItems.get(locationKey);
+		if (ported == null) {
+			portedItems.put(locationKey, ported = new ArrayList<>());
+		}
+		ported.add(item);
+	}
+
+	public static ArrayList<Item> takePortedItems(int depth, int branch) {
+		if (portedItems == null) return null;
+		int locationKey = droppedItemsKeyForLocation(depth, branch);
+		ArrayList<Item> ported = portedItems.get(locationKey);
+		if (ported != null) portedItems.remove(locationKey);
+		return ported;
+	}
+
 	public static int droppedItemsKeyForLocation(int depth, int branch) {
 		return branch == TowerLevel.BRANCH ? Integer.MIN_VALUE + depth : depth;
 	}
@@ -1076,6 +1104,7 @@ public class Dungeon {
 	private static final String EAT_ITEM = "eat_item";
 	private static final String DROPPED     = "dropped%d";
 	private static final String DROPPED_ITEMS = "dropped_items";
+	private static final String PORTED_ITEMS = "ported_items";
 	private static final String PORTED      = "ported%d";
 	private static final String LEVEL		= "level";
 	private static final String LIMDROPS    = "limited_drops";
@@ -1330,7 +1359,7 @@ public class Dungeon {
 		if(bundle.contains(EAT_ITEM)){
 			eat_item = bundle.getInt(EAT_ITEM);
 		}else{
-			eat_item = 10;
+			eat_item = 0;
 		}
 		Statistics.restoreFromBundle( bundle );
 		TreasureHuntRecords.restoreFromBundle( bundle );
@@ -1372,29 +1401,46 @@ public class Dungeon {
 
 	static void storeDroppedItems(Bundle bundle) {
 		Bundle events = new Bundle();
-		if (droppedItems != null) {
-			for (int locationKey : droppedItems.keyArray()) {
-				ArrayList<Item> items = droppedItems.get(locationKey);
-				if (items == null || items.isEmpty()) continue;
-				Bundle event = new Bundle();
-				event.put(DROPPED_ITEMS, items);
-				events.put(Integer.toString(locationKey), event);
-			}
-		}
+		storeItemEvents(events, DROPPED_ITEMS, droppedItems);
+		storeItemEvents(events, PORTED_ITEMS, portedItems);
 		// An empty bundle is significant: it removes event shards whose effects
 		// were consumed after entering their destination level.
 		bundle.put(SaveManager.PENDING_LEVEL_EVENTS_KEY, events);
 	}
 
+	private static void storeItemEvents(Bundle events, String eventKey,
+			SparseArray<ArrayList<Item>> itemsByLocation) {
+		if (itemsByLocation == null) return;
+		for (int locationKey : itemsByLocation.keyArray()) {
+			ArrayList<Item> items = itemsByLocation.get(locationKey);
+			if (items == null || items.isEmpty()) continue;
+			String key = Integer.toString(locationKey);
+			Bundle event = events.getBundle(key);
+			if (event == null || event.isNull()) {
+				event = new Bundle();
+				events.put(key, event);
+			}
+			event.put(eventKey, items);
+		}
+	}
+
 	static void restoreDroppedItems(Bundle bundle) {
 		droppedItems = new SparseArray<>();
+		portedItems = new SparseArray<>();
 		if (bundle.contains(SaveManager.PENDING_LEVEL_EVENTS_KEY)) {
 			Bundle events = bundle.getBundle(SaveManager.PENDING_LEVEL_EVENTS_KEY);
 			if (events != null && !events.isNull()) {
 				for (String key : events.getKeys()) {
 					try {
-						restoreDroppedItemsAt(Integer.parseInt(key),
-								events.getBundle(key).getCollection(DROPPED_ITEMS));
+						Bundle event = events.getBundle(key);
+						if (event == null || event.isNull()) continue;
+						int locationKey = Integer.parseInt(key);
+						if (event.contains(DROPPED_ITEMS)) {
+							restoreDroppedItemsAt(locationKey, event.getCollection(DROPPED_ITEMS));
+						}
+						if (event.contains(PORTED_ITEMS)) {
+							restorePortedItemsAt(locationKey, event.getCollection(PORTED_ITEMS));
+						}
 					} catch (NumberFormatException ignored) {
 						// Ignore an event owned by a newer client rather than losing the save.
 					}
@@ -1419,11 +1465,22 @@ public class Dungeon {
 
 	private static void restoreDroppedItemsAt(int locationKey,
 			java.util.Collection<Bundlable> storedItems) {
+		if (storedItems == null) return;
 		ArrayList<Item> items = new ArrayList<>();
 		for (Bundlable stored : storedItems) {
 			if (stored instanceof Item) items.add((Item) stored);
 		}
 		if (!items.isEmpty()) droppedItems.put(locationKey, items);
+	}
+
+	private static void restorePortedItemsAt(int locationKey,
+			java.util.Collection<Bundlable> storedItems) {
+		if (storedItems == null) return;
+		ArrayList<Item> items = new ArrayList<>();
+		for (Bundlable stored : storedItems) {
+			if (stored instanceof Item) items.add((Item) stored);
+		}
+		if (!items.isEmpty()) portedItems.put(locationKey, items);
 	}
 	
 	public static Level loadLevel( int save ) throws IOException {
@@ -1702,6 +1759,7 @@ public class Dungeon {
 		}
 
 		ch.modifyPassable(passable);
+		Dungeon.level.applyTrapAvoidance(ch, passable);
 
 		if (chars) {
 			for (Char c : Actor.chars()) {
@@ -1723,7 +1781,8 @@ public class Dungeon {
 	public static int findStep(Char ch, int to, boolean[] pass, boolean[] visible, boolean chars ) {
 
 		if (Dungeon.level.adjacent( ch.pos, to )) {
-			return Actor.findChar( to ) == null && pass[to] ? to : -1;
+			return Actor.findChar(to) == null && pass[to]
+					&& !Dungeon.level.trapAvoidedBy(ch, to) ? to : -1;
 		}
 
 		return PathFinder.getStep( ch.pos, to, findPassable(ch, pass, visible, chars) );

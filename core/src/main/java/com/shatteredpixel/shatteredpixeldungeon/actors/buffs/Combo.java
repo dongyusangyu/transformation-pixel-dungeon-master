@@ -291,9 +291,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 					}
 				case SLAM:
 					if (count >= 3 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 3){
-						return Messages.get(this, name() + ".empower_desc", count/3, count*20);
+						return Messages.get(this, name() + ".empower_desc", count/3, slamBonusPercent(count));
 					} else {
-						return Messages.get(this, name() + ".desc", count*20);
+						return Messages.get(this, name() + ".desc", slamBonusPercent(count));
 					}
 				case PARRY:
 					if (count >= 9 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 2){
@@ -303,9 +303,9 @@ public class Combo extends Buff implements ActionIndicator.Action {
 					}
 				case CRUSH:
 					if (count >= 3 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 3){
-						return Messages.get(this, name() + ".empower_desc", count/3, count*25);
+						return Messages.get(this, name() + ".empower_desc", count/3, crushDamagePercent(count));
 					} else {
-						return Messages.get(this,  name() + ".desc", count*25);
+						return Messages.get(this,  name() + ".desc", crushDamagePercent(count));
 					}
 				case FURY:
 					if (count >= 3 && Dungeon.hero.pointsInTalent(Talent.ENHANCED_COMBO) >= 3){
@@ -321,12 +321,12 @@ public class Combo extends Buff implements ActionIndicator.Action {
 			switch (this) {
 				case SLAM:
 					return Messages.get(this, name() + suffix,
-							empowered ? count / 3 : count * 20,
-							count * 20);
+							empowered ? count / 3 : slamBonusPercent(count),
+							slamBonusPercent(count));
 				case CRUSH:
 					return Messages.get(this, name() + suffix,
-							empowered ? count / 3 : count * 25,
-							count * 25);
+							empowered ? count / 3 : crushDamagePercent(count),
+							crushDamagePercent(count));
 				case FURY:
 					return empowered
 							? Messages.get(this, name() + suffix, count / 3)
@@ -369,6 +369,18 @@ public class Combo extends Buff implements ActionIndicator.Action {
 
 	public static int moveRequirement(int baseRequirement, int masteryPoints) {
 		return Math.max(1, baseRequirement - (masteryPoints >= 2 ? 1 : 0));
+	}
+
+	public static boolean consumesAllCombo(ComboMove move) {
+		return move == ComboMove.FURY;
+	}
+
+	public static int slamBonusPercent(int comboCount) {
+		return Math.min(500, comboCount * 20);
+	}
+
+	public static int crushDamagePercent(int comboCount) {
+		return Math.min(500, comboCount * 25);
 	}
 
 	public static int focusDamageBonus(int comboCount, int talentPoints) {
@@ -524,10 +536,10 @@ public class Combo extends Buff implements ActionIndicator.Action {
 				dmgMulti = 0;
 				break;
 			case SLAM:
-				dmgBonus = Math.round(target.drRoll() * effectiveCount / 5f);
+				dmgBonus = Math.round(target.drRoll() * slamBonusPercent(effectiveCount) / 100f);
 				break;
 			case CRUSH:
-				dmgMulti = 0.25f * effectiveCount;
+				dmgMulti = crushDamagePercent(effectiveCount) / 100f;
 				break;
 			case FURY:
 				dmgMulti = 0.6f;
@@ -568,7 +580,8 @@ public class Combo extends Buff implements ActionIndicator.Action {
 					for (Char ch : Actor.chars()) {
 						if (ch != enemy && ch.alignment == Char.Alignment.ENEMY
 								&& PathFinder.distance[ch.pos] < Integer.MAX_VALUE) {
-							int aoeHit = Math.round(target.damageRoll() * 0.25f * effectiveCount);
+							int aoeHit = Math.round(target.damageRoll()
+									* crushDamagePercent(effectiveCount) / 100f);
 							aoeHit /= 2;
 							aoeHit -= ch.drRoll();
 							if (ch.buff(Vulnerable.class) != null) aoeHit *= 1.33f;
@@ -617,7 +630,7 @@ public class Combo extends Buff implements ActionIndicator.Action {
 			case FURY:
 				if (furyHitsLeft == 0 && effectiveCount > 0){
 					furyHitsLeft = effectiveCount;
-					if (!hasComboMastery()) count = 0;
+					if (consumesAllCombo(moveBeingUsed)) count = 0;
 					hero.spend(hero.attackDelay());
 				}
 				furyHitsLeft--;

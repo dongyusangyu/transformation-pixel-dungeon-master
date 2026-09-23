@@ -68,18 +68,20 @@ public class TestArtifact extends TestGenerator {
         }
         a.cursed = cursed;
     }
-    private void createArtifact(){
+    private boolean createArtifact(){
         Artifact a = Reflection.newInstance(selectedArtifactType());
         if(a != null){
             modifyArtifact(a);
-            if(Challenges.isItemBlocked(a)) return;
+            if(Challenges.isItemBlocked(a)) return false;
             a.identify();
             if(a.collect()){
                 GLog.i(Messages.get(this, "collect_success", a.name()));
             }else{
                 a.doDrop(curUser);
             }
+            return true;
         }
+        return false;
     }
     @Override
     public void storeInBundle(Bundle bundle) {
@@ -190,7 +192,9 @@ public class TestArtifact extends TestGenerator {
             b_create = new RedButton(Messages.get(this, "create_button")) {
                 @Override
                 protected void onClick() {
-                    createArtifact();
+                    if (createArtifact()) {
+                        SettingsWindow.this.hide();
+                    }
                 }
             };
             add(b_create);

@@ -53,6 +53,12 @@ public class SakuraBlossomBlade extends AssassinsBlade {
 	}
 
 	@Override
+	public boolean hasTrait(WeaponTrait trait, Char owner) {
+		if (trait == WeaponTrait.ONE_SWORD_BLADE) return true;
+		return super.hasTrait(trait, owner);
+	}
+
+	@Override
 	public int image() {
 		return state.image();
 	}
@@ -100,6 +106,13 @@ public class SakuraBlossomBlade extends AssassinsBlade {
 	@Override
 	public String upgradeAbilityStat(int level) {
 		return "2";
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DURATION, upgradeAbilityStat(level)));
+		return result;
 	}
 
 	@Override

@@ -13,7 +13,10 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.DeathCurse;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Dread;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.DeathButterflySprite;
@@ -102,6 +105,16 @@ public class DeathButterfly extends Mob {
 		}
 	}
 
+	@Override
+	public void onAllyConversion(AllyBuff source) {
+		clearOwnedCurses();
+		enemy = null;
+		target = -1;
+		if (state == FLEEING) {
+			state = HUNTING;
+		}
+	}
+
 	protected boolean rollCurse() {
 		return curseRollSucceeds(Random.Float());
 	}
@@ -121,7 +134,7 @@ public class DeathButterfly extends Mob {
 			resetCorneredCounterattack();
 			cursedTarget = null;
 			cursedTargetId = -1;
-			if (state == FLEEING) {
+			if (state == FLEEING && buff(Terror.class) == null && buff(Dread.class) == null) {
 				state = HUNTING;
 			}
 		}
@@ -238,6 +251,7 @@ public class DeathButterfly extends Mob {
 		public boolean act(boolean enemyInFOV, boolean justAlerted) {
 			refreshFleeingState();
 			if (state != FLEEING) {
+				spend(TICK);
 				return true;
 			}
 			return super.act(enemyInFOV, justAlerted);

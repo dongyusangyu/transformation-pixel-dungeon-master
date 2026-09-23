@@ -64,6 +64,29 @@ import java.util.ArrayList;
 
 
 public class GreatShoper extends Mob implements MagicalRangedAttack {
+
+    public static int rewardDropCell(com.shatteredpixel.shatteredpixeldungeon.levels.Level level, int origin) {
+        if (level == null || origin < 0 || origin >= level.length()) return origin;
+        if (validRewardCell(level, origin)) return origin;
+        for (int radius = 1; radius < level.length(); radius++) {
+            int row = origin / level.width();
+            int col = origin % level.width();
+            for (int y = Math.max(0, row - radius); y <= Math.min(level.height() - 1, row + radius); y++) {
+                for (int x = Math.max(0, col - radius); x <= Math.min(level.width() - 1, col + radius); x++) {
+                    if (Math.max(Math.abs(x - col), Math.abs(y - row)) != radius) continue;
+                    int cell = x + y * level.width();
+                    if (validRewardCell(level, cell)) return cell;
+                }
+            }
+        }
+        return origin;
+    }
+
+	private static boolean validRewardCell(com.shatteredpixel.shatteredpixeldungeon.levels.Level level, int cell) {
+		return level.insideMap(cell) && level.passable[cell] && !level.pit[cell]
+				&& (level.transitions == null || level.getTransition(cell) == null);
+	}
+
     {
         spriteClass = GreatShoperSprite.class;
 
@@ -459,7 +482,8 @@ public class GreatShoper extends Mob implements MagicalRangedAttack {
         if(b != null){
             b.detach();
         }
-        Dungeon.level.drop(new Gold().quantity(114514),pos).sprite.drop(pos);
+        int dropCell = rewardDropCell(Dungeon.level, pos);
+        Dungeon.level.drop(new Gold().quantity(114514), dropCell).sprite.drop(dropCell);
         //Dungeon.level.drop(new RegionLorePage.Backs(),pos).sprite.drop(pos);
         super.die(cause);
         /*

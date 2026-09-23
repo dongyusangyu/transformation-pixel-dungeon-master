@@ -52,7 +52,9 @@ public class Overburden extends Buff {
 	public static int countSlots(Bag bag) {
 		if (bag == null) return 0;
 		int count = 0;
-		for (Item item : bag.items) {
+		// Inventory changes can happen on the actor thread while the buff icon is drawn.
+		for (Item item : bag.items.toArray(new Item[0])) {
+			if (item == null) continue;
 			if (item instanceof Bag) {
 				count += countSlots((Bag) item);
 			} else if (!(item instanceof Waterskin)) {

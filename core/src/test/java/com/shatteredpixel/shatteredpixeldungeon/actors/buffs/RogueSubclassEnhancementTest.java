@@ -1,7 +1,10 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.BronzeWatch;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 
 import org.junit.Test;
 
@@ -60,6 +63,14 @@ public class RogueSubclassEnhancementTest {
 		stacked.extendCapped(3, 8);
 		stacked.extendCapped(6, 8);
 		assertEquals(8f, stacked.getturns(), 0.0001f);
+	}
+
+	@Test
+	public void closingStageHasteUsesBronzeWatchDurationAdjustment() {
+		Hero hero = TestHeroFactory.create();
+		hero.belongings.backpack.items.add(TestHeroFactory.allocateItem(BronzeWatch.class));
+
+		assertEquals(6, Preparation.finishingHasteDurationFor(hero, 4, 3));
 	}
 
 	@Test

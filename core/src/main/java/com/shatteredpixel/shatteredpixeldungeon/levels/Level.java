@@ -36,6 +36,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SmokeScreen;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Web;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.RuneWeb;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WellWater;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Awareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -47,9 +50,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.PinCushion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Shadows;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -64,6 +70,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.HuntressBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MobSpawner;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Piranha;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RogueBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
@@ -87,6 +94,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.ExoticPotion;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
@@ -146,12 +154,15 @@ public abstract class Level implements Bundlable {
 	public static enum Feeling {
 		NONE,
 		CHASM,
+		SKY_ISLAND,
 		WATER,
 		GRASS,
 		DARK,
 		LARGE,
 		TRAPS,
-		SECRETS;
+		SECRETS,
+		BARREN,
+		CHAOS;
 
 		public String title(){
 			return Messages.get(this, name()+"_title");
@@ -232,6 +243,11 @@ public abstract class Level implements Bundlable {
 	private static final String MOBS		= "mobs";
 	private static final String BLOBS		= "blobs";
 	private static final String FEELING		= "feeling";
+	private static final String PESTILENCE_WATER_CELL = "pestilence_water_cell";
+	private static final String PESTILENCE_WATER_TURNS = "pestilence_water_turns";
+
+	private int pestilenceWaterCell = -1;
+	private int pestilenceWaterTurns;
 
 	public void create() {
 
@@ -319,46 +335,53 @@ public abstract class Level implements Bundlable {
 	}
 
 	private void generateLevelFeeling() {
+		feeling = randomLevelFeeling();
+	}
+
+	protected Feeling withLevelFeelingEffects(Feeling selected) {
+		if (selected == Feeling.DARK) {
+			viewDistance = Math.round(5 * viewDistance / 8f);
+		} else if (selected == Feeling.LARGE) {
+			addItemToSpawn(Generator.random(Generator.Category.FOOD));
+		}
+		return selected;
+	}
+
+	protected Feeling randomLevelFeeling() {
 		//50% chance of getting a level feeling
 		//~7.15% chance for each feeling
 		switch (Random.Int(14)) {
 			case 0:
-				feeling = Feeling.CHASM;
-				break;
+				return withLevelFeelingEffects(Feeling.CHASM);
 			case 1:
-				feeling = Feeling.WATER;
-				break;
+				return withLevelFeelingEffects(Feeling.WATER);
 			case 2:
-				feeling = Feeling.GRASS;
-				break;
+				return withLevelFeelingEffects(Feeling.GRASS);
 			case 3:
-				feeling = Feeling.DARK;
-				viewDistance = Math.round(5 * viewDistance / 8f);
-				break;
+				return withLevelFeelingEffects(Feeling.DARK);
 			case 4:
-				feeling = Feeling.LARGE;
-				addItemToSpawn(Generator.random(Generator.Category.FOOD));
-				break;
+				return withLevelFeelingEffects(Feeling.LARGE);
 			case 5:
-				feeling = Feeling.TRAPS;
-				break;
+				return withLevelFeelingEffects(Feeling.TRAPS);
 			case 6:
-				feeling = Feeling.SECRETS;
-				break;
+				return withLevelFeelingEffects(Feeling.SECRETS);
 			default:
-				// Only one fallback atmosphere override can apply per floor.
-				if (Random.Float() < 1 / 7
-						&& Dungeon.isChallenged(Challenges.DARKNESS)
-						&& Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)) {
-					feeling = Feeling.DARK;
-					viewDistance = Math.round(5 * viewDistance / 8f);
-				} else if (Random.Float() < MossyClump.overrideNormalLevelChance()) {
-					feeling = MossyClump.getNextFeeling();
-				} else if (Random.Float() < TrapMechanism.overrideNormalLevelChance()) {
-					feeling = TrapMechanism.getNextFeeling();
-				} else {
-					feeling = Feeling.NONE;
-				}
+				return randomNormalLevelFeeling();
+		}
+	}
+
+	protected Feeling randomNormalLevelFeeling() {
+		// Only one fallback atmosphere override can apply per floor.
+		if (Random.Float() < 1 / 7
+				&& Dungeon.isChallenged(Challenges.DARKNESS)
+				&& Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)) {
+			return Feeling.DARK;
+		} else if (Random.Float() < MossyClump.overrideNormalLevelChance()) {
+			return MossyClump.getNextFeeling();
+		} else if (Random.Float() < TrapMechanism.overrideNormalLevelChance()) {
+			return TrapMechanism.getNextFeeling();
+		} else {
+			return Feeling.NONE;
 		}
 	}
 
@@ -373,7 +396,7 @@ public abstract class Level implements Bundlable {
 		length = w * h;
 		
 		map = new int[length];
-		Arrays.fill( map, feeling == Level.Feeling.CHASM ? Terrain.CHASM : Terrain.WALL );
+		Arrays.fill( map, usesChasmBase() ? Terrain.CHASM : Terrain.WALL );
 		
 		visited     = new boolean[length];
 		mapped      = new boolean[length];
@@ -406,6 +429,10 @@ public abstract class Level implements Bundlable {
 
 	public void playLevelMusic(){
 		//do nothing by default
+	}
+
+	protected boolean usesChasmBase() {
+		return feeling == Feeling.CHASM || feeling == Feeling.SKY_ISLAND;
 	}
 
 	public void updateLevelMusic(float elapsed){
@@ -490,6 +517,10 @@ public abstract class Level implements Bundlable {
 		}
 
 		feeling = bundle.getEnum( FEELING, Feeling.class );
+		pestilenceWaterCell = bundle.contains(PESTILENCE_WATER_CELL)
+				? bundle.getInt(PESTILENCE_WATER_CELL) : -1;
+		pestilenceWaterTurns = bundle.contains(PESTILENCE_WATER_TURNS)
+				? Math.max(0, bundle.getInt(PESTILENCE_WATER_TURNS)) : 0;
 		if (feeling == Feeling.DARK) {
 			viewDistance = Math.round(5 * viewDistance / 8f);
 		}
@@ -527,11 +558,16 @@ public abstract class Level implements Bundlable {
 		bundle.put( MOBS, mobs );
 		bundle.put( BLOBS, blobs.values() );
 		bundle.put( FEELING, feeling );
+		bundle.put( PESTILENCE_WATER_CELL, pestilenceWaterCell );
+		bundle.put( PESTILENCE_WATER_TURNS, pestilenceWaterTurns );
 		bundle.put( "mobs_to_spawn", mobsToSpawn.toArray(new Class[0]));
 		bundle.put( "respawner", respawner );
 	}
 	
 	public int tunnelTile() {
+		if (feeling == Feeling.SKY_ISLAND) {
+			return Terrain.CHASM;
+		}
 		return feeling == Feeling.CHASM ? Terrain.EMPTY_SP : Terrain.EMPTY;
 	}
 
@@ -610,7 +646,7 @@ public abstract class Level implements Bundlable {
 
 	public LevelTransition getTransition(int cell){
 		for (LevelTransition transition : transitions){
-			if (transition.inside(cell)){
+			if (transition.inside(this, cell)){
 				return transition;
 			}
 		}
@@ -619,12 +655,60 @@ public abstract class Level implements Bundlable {
 
 	//returns true if we immediately transition, false otherwise
 	public void onHeroTurnStarted(Hero hero) {
+		if (hero == null || !hasActivePestilenceBoss()) return;
+
+		Class<? extends Blob> miasma = activePestilenceMiasmaAt(hero.pos);
+		if (miasma == null || hero.isImmune(miasma)) {
+			pestilenceWaterCell = -1;
+			pestilenceWaterTurns = 0;
+			return;
+		}
+
+		if (water != null && hero.pos >= 0 && hero.pos < water.length && water[hero.pos]) {
+			if (pestilenceWaterCell != hero.pos) {
+				pestilenceWaterCell = hero.pos;
+				pestilenceWaterTurns = 1;
+			} else {
+				pestilenceWaterTurns++;
+			}
+			if ((pestilenceWaterTurns & 1) == 1) return;
+		} else {
+			pestilenceWaterCell = -1;
+			pestilenceWaterTurns = 0;
+		}
+
+		Infection.addStacks(hero, 1);
+		if (miasma == OutbreakMiasma.class) {
+			Buff.affect(hero, Poison.class).set(3f);
+		} else if (miasma == PaleMiasma.class) {
+			Buff.prolong(hero, Slow.class, 2f);
+		}
 	}
 
 	public void onHeroWaited(Hero hero) {
 	}
 
 	public void onHeroConsumableUsed(Hero hero, Item item) {
+		if (hero != null && item != null && hasActivePestilenceBoss()
+				&& (item instanceof Potion || item instanceof Food || item instanceof Scroll)
+				&& Blob.volumeAt(hero.pos, OutbreakMiasma.class) > 0) {
+			Infection.addStacks(hero, 1);
+		}
+	}
+
+	private boolean hasActivePestilenceBoss() {
+		if (mobs == null) return false;
+		for (Mob mob : mobs) {
+			if (mob instanceof PestilenceKnight && mob.isAlive()) return true;
+		}
+		return false;
+	}
+
+	private static Class<? extends Blob> activePestilenceMiasmaAt(int cell) {
+		if (Blob.volumeAt(cell, PaleMiasma.class) > 0) return PaleMiasma.class;
+		if (Blob.volumeAt(cell, OutbreakMiasma.class) > 0) return OutbreakMiasma.class;
+		if (Blob.volumeAt(cell, IncubatingMiasma.class) > 0) return IncubatingMiasma.class;
+		return null;
 	}
 
 	public boolean activateTransition(Hero hero, LevelTransition transition){
@@ -1014,6 +1098,7 @@ public abstract class Level implements Bundlable {
 	//updates open space both on the cell itself and adjacent cells
 	public void updateOpenSpace(int cell){
 		for (int i : PathFinder.NEIGHBOURS9) {
+			if (!insideMap(cell + i)) continue;
 			if (solid[cell+i]){
 				openSpace[cell+i] = false;
 			} else {
@@ -1054,6 +1139,19 @@ public abstract class Level implements Bundlable {
 		}
 	}
 
+	/**
+	 * Removes a region decoration that can be destroyed by area effects.
+	 * The outer map border is structural and must remain intact.
+	 */
+	public boolean destroyRegionDeco(int cell) {
+		if (!insideMap(cell) || this instanceof SewerLevel) return false;
+		if (map[cell] != Terrain.REGION_DECO && map[cell] != Terrain.REGION_DECO_ALT) {
+			return false;
+		}
+		set(cell, Terrain.EMPTY_DECO, this);
+		return true;
+	}
+
 	public void cleanWalls() {
 		if (discoverable == null || discoverable.length != length) {
 			discoverable = new boolean[length()];
@@ -1080,6 +1178,7 @@ public abstract class Level implements Bundlable {
 	}
 	
 	public static void set( int cell, int terrain, Level level ) {
+		if (level == null || cell < 0 || cell >= level.length()) return;
 		Painter.set( level, cell, terrain );
 
 		if (terrain != Terrain.TRAP && terrain != Terrain.SECRET_TRAP && terrain != Terrain.INACTIVE_TRAP){
@@ -1105,6 +1204,7 @@ public abstract class Level implements Bundlable {
 
 		for (int i : PathFinder.NEIGHBOURS9){
 			i = cell + i;
+			if (!level.insideMap(i)) continue;
 			if (level.solid[i]){
 				level.openSpace[i] = false;
 			} else {
@@ -1135,6 +1235,10 @@ public abstract class Level implements Bundlable {
 		}
 		
 		Heap heap = heaps.get( cell );
+		if (blocksItemDrop(heap)) {
+			cell = redirectedDropCell(cell);
+			heap = heaps.get(cell);
+		}
 		if (heap == null) {
 			
 			heap = new Heap();
@@ -1149,14 +1253,6 @@ public abstract class Level implements Bundlable {
 				GameScene.add( heap );
 			}
 			
-		} else if (heap.type == Heap.Type.LOCKED_CHEST || heap.type == Heap.Type.CRYSTAL_CHEST) {
-			
-			int n;
-			do {
-				n = cell + PathFinder.NEIGHBOURS8[Random.Int( 8 )];
-			} while (!passable[n] && !avoid[n]);
-			return drop( item, n );
-			
 		} else {
 			heap.drop(item);
 		}
@@ -1166,6 +1262,38 @@ public abstract class Level implements Bundlable {
 		}
 		
 		return heap;
+	}
+
+	private static boolean blocksItemDrop(Heap heap) {
+		return heap != null && (heap.type == Heap.Type.LOCKED_CHEST
+				|| heap.type == Heap.Type.CRYSTAL_CHEST);
+	}
+
+	private int redirectedDropCell(int origin) {
+		boolean[] visited = new boolean[length()];
+		ArrayList<Integer> pending = new ArrayList<>();
+		pending.add(origin);
+		visited[origin] = true;
+		for (int index = 0; index < pending.size(); index++) {
+			int cell = pending.get(index);
+			ArrayList<Integer> candidates = new ArrayList<>();
+			for (int dy = -1; dy <= 1; dy++) {
+				for (int dx = -1; dx <= 1; dx++) {
+					int x = cell % width() + dx;
+					int y = cell / width() + dy;
+					if (x < 0 || x >= width() || y < 0 || y >= height()) continue;
+					int next = x + y * width();
+					if (visited[next] || (!passable[next] && !avoid[next])) continue;
+					visited[next] = true;
+					if (blocksItemDrop(heaps.get(next))) pending.add(next);
+					else candidates.add(next);
+				}
+			}
+			if (!candidates.isEmpty()) return Random.element(candidates);
+		}
+		// No space outside this chest cluster: keep the item in the original chest,
+		// retaining its lock and contents rather than losing the item or recursing.
+		return origin;
 	}
 	
 	public Plant plant( Plant.Seed seed, int pos ) {
@@ -1222,16 +1350,49 @@ public abstract class Level implements Bundlable {
 		return trap;
 	}
 
+	public boolean hiddenTrapAt(int cell) {
+		Trap trap = traps.get(cell);
+		return trap != null && trap.active && !trap.visible;
+	}
+
+	public boolean trapAvoidedBy(Char ch, int cell) {
+		if (traps == null || cell < 0 || cell >= length()) {
+			return false;
+		}
+		Trap trap = traps.get(cell);
+		return trap != null && trap.avoids(ch);
+	}
+
+	public void applyTrapAvoidance(Char ch, boolean[] pathable) {
+		if (traps == null || ch == null || pathable == null) {
+			return;
+		}
+		for (Trap trap : traps.valueList()) {
+			if (trap != null && trap.pos >= 0 && trap.pos < pathable.length && trap.avoids(ch)) {
+				pathable[trap.pos] = false;
+			}
+		}
+	}
+
 	public void disarmTrap( int pos ) {
+		Trap trap = traps.get(pos);
+		if (trap != null && trap.preservesTerrain()) {
+			traps.remove(pos);
+			GameScene.updateMap(pos);
+			return;
+		}
 		set(pos, Terrain.INACTIVE_TRAP);
 		GameScene.updateMap(pos);
 	}
 
 	public void discover( int cell ) {
-		set( cell, Terrain.discover( map[cell] ) );
 		Trap trap = traps.get( cell );
-		if (trap != null)
+		if (trap != null && trap.preservesTerrain()) {
 			trap.reveal();
+		} else {
+			set( cell, Terrain.discover( map[cell] ) );
+			if (trap != null) trap.reveal();
+		}
 		GameScene.updateMap( cell );
 	}
 
@@ -1281,6 +1442,8 @@ public abstract class Level implements Bundlable {
 	}
 	
 	public void occupyCell( Char ch ){
+		claimHuntressBossPlant(ch);
+
 		if (!ch.isImmune(Web.class) && Blob.volumeAt(ch.pos, Web.class) > 0){
 			blobs.get(Web.class).clear(ch.pos);
 			Web.affectChar( ch );
@@ -1296,6 +1459,12 @@ public abstract class Level implements Bundlable {
 				CellEmitter.get(ch.pos).burst( SacrificialParticle.FACTORY, 5 );
 			}
 			Buff.prolong( ch, SacrificialFire.Marked.class, SacrificialFire.Marked.DURATION );
+		}
+
+		Trap entryTrap = traps.get(ch.pos);
+		if (entryTrap != null && entryTrap.triggersOnEntry()) {
+			pressCell(ch.pos, ch instanceof Hero);
+			if (!ch.isAlive()) return;
 		}
 
 		if (!ch.flying){
@@ -1357,7 +1526,16 @@ public abstract class Level implements Bundlable {
 	//a 'hard' press triggers all things
 	private void pressCell( int cell, boolean hard ) {
 
-		Trap trap = null;
+		Trap trap = traps.get(cell);
+		if (trap == null || !trap.triggersOnEntry()) {
+			trap = null;
+		} else if (!trap.visible) {
+			if (hard) {
+				GLog.i(Messages.get(Level.class, "hidden_trap", trap.name()));
+			} else {
+				trap = null;
+			}
+		}
 		
 		switch (map[cell]) {
 		
@@ -1431,6 +1609,21 @@ public abstract class Level implements Bundlable {
 		if (hard && Blob.volumeAt(cell, Web.class) > 0){
 			blobs.get(Web.class).clear(cell);
 		}
+	}
+
+	private void claimHuntressBossPlant(Char ch) {
+		if (!(ch instanceof HuntressBoss)) {
+			return;
+		}
+		HuntressBoss boss = (HuntressBoss) ch;
+		Plant plant = plants.get(ch.pos);
+		HuntressBoss.WardenBoon boon = HuntressBoss.boonForPlant(plant);
+		if (plant == null || boss.phase() != HuntressBoss.Phase.WARDEN || boon == null) {
+			return;
+		}
+		uproot(ch.pos);
+		set(ch.pos, Terrain.FURROWED_GRASS, this);
+		boss.onPlantClaimed(ch.pos, boon);
 	}
 
 	private static boolean[] heroMindFov;

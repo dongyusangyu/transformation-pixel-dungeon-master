@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.LeatherArmor;
+import com.shatteredpixel.shatteredpixeldungeon.items.BrokenSeal;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Sword;
 
@@ -58,6 +59,26 @@ public class RankingRestartUpgradeStateTest {
 		assertEquals(0, armor.upgradeScrollUses);
 		assertFalse(armor.curseInfusionBonus);
 		assertTrue(armor.cursed);
+	}
+
+	@Test
+	public void newCycleResetsAttachedSealWithoutCreatingNegativeArmorLevel() throws Exception {
+		LeatherArmor armor = allocateWithoutConstructor(LeatherArmor.class);
+		armor.level(3);
+		BrokenSeal seal = new BrokenSeal();
+		seal.level(1);
+
+		Field attachedSeal = com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor.class
+				.getDeclaredField("seal");
+		attachedSeal.setAccessible(true);
+		attachedSeal.set(armor, seal);
+
+		armor.resetUpgradeStateForNewCycle();
+
+		assertEquals(0, armor.trueLevel());
+		assertEquals(0, armor.level());
+		assertEquals(0, seal.trueLevel());
+		assertEquals(seal, armor.upgradeScrollCreditTarget());
 	}
 
 	@Test

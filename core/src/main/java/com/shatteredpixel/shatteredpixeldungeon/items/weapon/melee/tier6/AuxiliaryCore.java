@@ -66,12 +66,6 @@ public class AuxiliaryCore extends MeleeWeapon {
 		return maxForLevel(lvl);
 	}
 
-	@Override
-	public int STRReq(int lvl) {
-		int requirement = strengthRequirementForLevel(lvl);
-		if (masteryPotionBonus) requirement -= 2;
-		return requirement;
-	}
 
 	public static int minForLevel(int level) {
 		return 6 + Math.max(0, level);
@@ -211,6 +205,14 @@ public class AuxiliaryCore extends MeleeWeapon {
 	@Override
 	public String upgradeAbilityStat(int level) {
 		return Integer.toString(BOOSTED_MAGIC_DAMAGE);
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.BONUS_MAGIC_DAMAGE,
+				upgradeAbilityStat(level)));
+		return result;
 	}
 
 	public static class MagicPowerBoost extends FlavourBuff {

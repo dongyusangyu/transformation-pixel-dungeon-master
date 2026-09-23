@@ -11,6 +11,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
@@ -22,7 +23,9 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.brews.ShockingBrew;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfDeepSleep;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tmobs.TapirCrocodileSprite;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
@@ -140,6 +143,11 @@ public class TapirCrocodile extends MimicCrocodile implements MagicalRangedAttac
 		}
 		int damage = ambush ? AMBUSH_DAMAGE : normalZapDamage(Random.Float());
 		target.damage(damage, new MentalShock(), DamageTag.MAGICAL);
+		if (target == Dungeon.hero && !target.isAlive()) {
+			Badges.validateDeathFromEnemyMagic();
+			Dungeon.fail(this);
+			GLog.n(Messages.get(Char.class, "kill", name()));
+		}
 		if (target.isAlive() && sleepRoll) {
 			Buff.affect(target, MagicalSleep.class);
 		}

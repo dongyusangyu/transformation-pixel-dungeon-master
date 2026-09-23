@@ -38,6 +38,11 @@ public class SakuraBlossomBladeTest {
 	}
 
 	@Test
+	public void exposesTheOneSwordBladeTrait() throws IOException {
+		assertTrue(source().contains("WeaponTrait.ONE_SWORD_BLADE"));
+	}
+
+	@Test
 	public void sneakAlwaysGrantsTwoTurnsInsteadOfScalingWithLevel() throws IOException {
 		assertTrue(source().contains("Dagger.sneakAbility(hero, target, 3, 2, this);"));
 		assertTrue(source().contains("public String upgradeAbilityStat(int level)"));

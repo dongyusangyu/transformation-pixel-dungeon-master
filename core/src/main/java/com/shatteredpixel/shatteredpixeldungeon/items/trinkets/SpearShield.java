@@ -76,9 +76,9 @@ public class SpearShield extends Trinket{
 
     @Override
     public boolean collect( Bag container ) {
-        if (mode == 0) mode = Random.Int(1,3);
-        super.collect(container);
-        return true;
+        boolean collected = super.collect(container);
+        if (collected && mode == 0) mode = Random.Int(1,3);
+        return collected;
     }
 
     public void switchMode(){

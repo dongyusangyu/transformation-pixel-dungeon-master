@@ -35,6 +35,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfStrength;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfUpgrade;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnchantment;
+import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.utils.DungeonSeed;
@@ -211,8 +213,99 @@ public final class RankingRestart {
 		ArrayList<ItemLocation> locations = new ArrayList<>();
 		collectItemLocations(hero.belongings.backpack, 0, locations);
 		normalizeWaterskins(locations);
+		normalizeUniqueBags(hero);
 
 		removeLegacyFlattenedItems(hero.belongings.backpack, Wand.class);
+	}
+
+	/**
+	 * Repairs duplicate bag instances from legacy ranking snapshots before the
+	 * new-cycle inventory conversion runs. Bags are unique by concrete type, so
+	 * keeping one instance also prevents their contents from being converted or
+	 * restored twice.
+	 */
+	static void normalizeUniqueBags(Hero hero) {
+		if (hero == null || hero.belongings == null || hero.belongings.backpack == null) {
+			return;
+		}
+
+		ArrayList<ItemLocation> locations = new ArrayList<>();
+		collectItemLocations(hero.belongings.backpack, 0, locations);
+		Map<Class<? extends Bag>, ArrayList<ItemLocation>> groups = new LinkedHashMap<>();
+		for (ItemLocation location : locations) {
+			if (location.item instanceof Bag) {
+				Bag bag = (Bag) location.item;
+				ArrayList<ItemLocation> group = groups.get(bag.getClass());
+				if (group == null) {
+					group = new ArrayList<>();
+					groups.put(bag.getClass(), group);
+				}
+				group.add(location);
+			}
+		}
+
+		for (ArrayList<ItemLocation> group : groups.values()) {
+			if (group.size() < 2) {
+				continue;
+			}
+
+			ItemLocation kept = group.get(0);
+			for (ItemLocation candidate : group) {
+				if (candidate.depth < kept.depth
+						|| (candidate.depth == kept.depth
+						&& Dungeon.quickslot.contains(candidate.item)
+						&& !Dungeon.quickslot.contains(kept.item))) {
+					kept = candidate;
+				}
+			}
+
+			Bag keptBag = (Bag) kept.item;
+			for (ItemLocation duplicateLocation : group) {
+				if (duplicateLocation == kept) {
+					continue;
+				}
+
+				Bag duplicate = (Bag) duplicateLocation.item;
+				if (QuickSlot.rankingSnapshotMatches(keptBag, duplicate)) {
+					rebindDuplicateContents(duplicate, keptBag);
+				} else {
+					mergeBagContents(duplicate, keptBag);
+				}
+				duplicateLocation.container.items.remove(duplicate);
+				rebindQuickslot(duplicate, keptBag);
+			}
+		}
+	}
+
+	private static void mergeBagContents(Bag source, Bag destination) {
+		for (Item item : source.items.toArray(new Item[0])) {
+			source.items.remove(item);
+			destination.items.add(item);
+			if (item instanceof Bag) {
+				((Bag) item).owner = destination.owner;
+			}
+		}
+	}
+
+	private static void rebindDuplicateContents(Bag duplicate, Bag kept) {
+		for (Item removed : duplicate.items) {
+			Item replacement = matchingDirectItem(kept, removed);
+			if (replacement != null) {
+				rebindQuickslot(removed, replacement);
+				if (removed instanceof Bag && replacement instanceof Bag) {
+					rebindDuplicateContents((Bag) removed, (Bag) replacement);
+				}
+			}
+		}
+	}
+
+	private static Item matchingDirectItem(Bag container, Item target) {
+		for (Item candidate : container.items) {
+			if (QuickSlot.rankingSnapshotMatches(candidate, target)) {
+				return candidate;
+			}
+		}
+		return null;
 	}
 
 	private static void normalizeWaterskins(List<ItemLocation> locations) {
@@ -300,8 +393,11 @@ public final class RankingRestart {
 	private static void rebindQuickslot(Item removed, Item kept) {
 		for (int slot = 0; slot < QuickSlot.SIZE; slot++) {
 			if (Dungeon.quickslot.getItem(slot) == removed) {
-				Dungeon.quickslot.setSlot(slot, kept);
-				return;
+				if (Dungeon.quickslot.getSlot(kept) == -1) {
+					Dungeon.quickslot.setSlot(slot, kept);
+				} else {
+					Dungeon.quickslot.clearSlot(slot);
+				}
 			}
 		}
 	}
@@ -383,7 +479,8 @@ public final class RankingRestart {
 	private static boolean shouldKeep(Item item) {
 		return !(item instanceof ScrollOfUpgrade)
 				&& !isRemovedFromNewCycle(item.getClass())
-				&& (item.unique
+				&& (item instanceof Bag
+				|| item.unique
 				|| item instanceof PotionOfStrength
 				|| item instanceof EquipableItem
 				|| item instanceof Wand);
@@ -424,7 +521,9 @@ public final class RankingRestart {
 	}
 
 	static boolean isRemovedFromNewCycle(Class<? extends Item> itemClass) {
-		return Amulet.class.isAssignableFrom(itemClass);
+		return Amulet.class.isAssignableFrom(itemClass)
+				|| MagicalInfusion.class.isAssignableFrom(itemClass)
+				|| ScrollOfEnchantment.class.isAssignableFrom(itemClass);
 	}
 
 	private static void resetEquipmentLevel(Item item) {

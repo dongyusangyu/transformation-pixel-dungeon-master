@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -93,8 +94,8 @@ public class ScrollOfSirensSong extends ExoticScroll {
 				}
 
 				if (target != null){
-					if (!target.isImmune(Enthralled.class)){
-						AllyBuff.affectAndLoot(target, curUser, Enthralled.class);
+					if (!target.isImmune(Enthralled.class)
+							&& AllyBuff.affectAndLoot(target, curUser, Enthralled.class)) {
 
 					} else {
 						Buff.affect( target, Charm.class, Charm.DURATION ).object = curUser.id();
@@ -127,6 +128,17 @@ public class ScrollOfSirensSong extends ExoticScroll {
 		{
 			type = buffType.NEGATIVE;
 			announced = true;
+		}
+
+		@Override
+		public boolean attachTo(Char target) {
+			if (super.attachTo(target)) {
+				if (target instanceof Mob) {
+					Necronomicon.clearSoulBound((Mob) target);
+				}
+				return true;
+			}
+			return false;
 		}
 
 		@Override

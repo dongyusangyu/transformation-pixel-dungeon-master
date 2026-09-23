@@ -64,6 +64,8 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
+
 public abstract class YogFist extends Mob implements MagicalRangedAttack {
 
 	{
@@ -165,6 +167,43 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 	}
 
 	protected abstract void zap();
+
+	protected int halfHealthTeleportDestination() {
+		Level level = Dungeon.level;
+		if (level == null) return -1;
+		int exit = level.exit();
+		if (exit < 0 || exit >= level.length()) return -1;
+
+		// One pathfinding pass, not an unbounded series of random searches.
+		PathFinder.buildDistanceMap(exit, level.passable);
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (int cell = 0; cell < level.length(); cell++) {
+			if (cell == exit || level.heroFOV[cell] || level.solid[cell]
+					|| Actor.findChar(cell) != null) continue;
+			boolean reachable = PathFinder.distance[cell] != Integer.MAX_VALUE;
+			// getStep also allowed a non-passable starting cell next to a path.
+			if (!reachable && !level.passable[cell]) {
+				for (int offset : PathFinder.NEIGHBOURS8) {
+					int next = cell + offset;
+					if (next >= 0 && next < level.length() && level.adjacent(cell, next)
+							&& PathFinder.distance[next] != Integer.MAX_VALUE) {
+						reachable = true;
+						break;
+					}
+				}
+			}
+			if (reachable) candidates.add(cell);
+		}
+		return candidates.isEmpty() ? -1 : Random.element(candidates);
+	}
+
+	protected void teleportAtHalfHealth() {
+		int destination = halfHealthTeleportDestination();
+		if (destination == -1) return;
+		if (sprite != null) ScrollOfTeleportation.appear(this, destination);
+		else pos = destination;
+		GLog.w(Messages.get(this, "teleport"));
+	}
 
 	public void onZapComplete(){
 		zap();
@@ -529,17 +568,9 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 			if (isAlive() && beforeHP > HT/2 && HP < HT/2){
 				HP = HT/2;
 				Buff.prolong( Dungeon.hero, Blindness.class, Blindness.DURATION*1.5f );
-				int i;
-				do {
-					i = Random.Int(Dungeon.level.length());
-				} while (Dungeon.level.heroFOV[i]
-						|| Dungeon.level.solid[i]
-						|| Actor.findChar(i) != null
-						|| PathFinder.getStep(i, Dungeon.level.exit(), Dungeon.level.passable) == -1);
-				ScrollOfTeleportation.appear(this, i);
+				teleportAtHalfHealth();
 				state = WANDERING;
 				GameScene.flash(0x80FFFFFF);
-				GLog.w( Messages.get( this, "teleport" ));
 			} else if (!isAlive()){
 				Buff.prolong( Dungeon.hero, Blindness.class, Blindness.DURATION*3f );
 				GameScene.flash(0x80FFFFFF);
@@ -602,17 +633,9 @@ public abstract class YogFist extends Mob implements MagicalRangedAttack {
 				if (l != null){
 					l.detach();
 				}
-				int i;
-				do {
-					i = Random.Int(Dungeon.level.length());
-				} while (Dungeon.level.heroFOV[i]
-						|| Dungeon.level.solid[i]
-						|| Actor.findChar(i) != null
-						|| PathFinder.getStep(i, Dungeon.level.exit(), Dungeon.level.passable) == -1);
-				ScrollOfTeleportation.appear(this, i);
+				teleportAtHalfHealth();
 				state = WANDERING;
 				GameScene.flash(0, false);
-				GLog.w( Messages.get( this, "teleport" ));
 			} else if (!isAlive()){
 				Light l = Dungeon.hero.buff(Light.class);
 				if (l != null){

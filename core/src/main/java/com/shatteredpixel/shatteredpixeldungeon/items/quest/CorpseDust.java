@@ -31,6 +31,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Wraith;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -73,7 +75,7 @@ public class CorpseDust extends Item {
 	public boolean doPickUp(Hero hero, int pos) {
 		if (super.doPickUp(hero, pos)){
 			GLog.n( Messages.get( this, "chill") );
-			Buff.affect(hero, DustGhostSpawner.class);
+			syncGhostSpawner(hero);
 			return true;
 		}
 		return false;
@@ -81,8 +83,57 @@ public class CorpseDust extends Item {
 
 	@Override
 	protected void onDetach() {
-		DustGhostSpawner spawner = Dungeon.hero.buff(DustGhostSpawner.class);
-		if (spawner != null){
+		if (!suppressDetachSync) {
+			syncGhostSpawner(Dungeon.hero);
+		}
+	}
+
+	private boolean suppressDetachSync;
+
+	public CorpseDust detachForAlchemy(Bag container) {
+		suppressDetachSync = true;
+		try {
+			return (CorpseDust) detachAll(container);
+		} finally {
+			suppressDetachSync = false;
+		}
+	}
+
+	@Override
+	public boolean collect(Bag container) {
+		boolean collected = super.collect(container);
+		if (collected) {
+			syncGhostSpawner(Dungeon.hero);
+		}
+		return collected;
+	}
+
+	public static boolean hasDustSource(Hero hero) {
+		return hero != null && hero.belongings != null
+				&& hero.belongings.getItem(CorpseDust.class) != null
+				&& hero.belongings.getItem(CorpseDust.class).quantity() > 0;
+	}
+
+	public static boolean hasCursedBookSource(Hero hero) {
+		if (hero == null || hero.belongings == null) return false;
+		Necronomicon book = hero.belongings.getItem(Necronomicon.class);
+		return book != null && book.isEquipped(hero) && book.cursed;
+	}
+
+	public static boolean hasGhostSpawnerSource(Hero hero) {
+		return hasDustSource(hero) || hasCursedBookSource(hero);
+	}
+
+	public static void syncGhostSpawner(Hero hero) {
+		if (hero == null) return;
+		DustGhostSpawner spawner = null;
+		for (DustGhostSpawner candidate : hero.buffs(DustGhostSpawner.class)) {
+			spawner = candidate;
+			break;
+		}
+		if (hasGhostSpawnerSource(hero)) {
+			if (spawner == null) Buff.affect(hero, DustGhostSpawner.class);
+		} else if (spawner != null) {
 			spawner.dispel();
 		}
 	}
@@ -98,9 +149,8 @@ public class CorpseDust extends Item {
 
 		@Override
 		public boolean act() {
-			if (target instanceof Hero && ((Hero) target).belongings.getItem(CorpseDust.class) == null){
-				spawnPower = 0;
-				spend(TICK);
+			if (target instanceof Hero && !hasGhostSpawnerSource((Hero) target)){
+				dispel();
 				return true;
 			}
 
@@ -147,9 +197,11 @@ public class CorpseDust extends Item {
 
 		public void dispel(){
 			detach();
-			for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
-				if (mob instanceof DustWraith){
-					mob.die(null);
+			if (Dungeon.level != null) {
+				for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])){
+					if (mob instanceof DustWraith){
+						mob.destroyWithoutRewards();
+					}
 				}
 			}
 			Game.runOnRenderThread(new Callback() {

@@ -109,8 +109,12 @@ public class LevelTransition extends Rect implements Bundlable {
 		return p.x >= left && p.x <= right && p.y >= top && p.y <= bottom;
 	}
 
+	public boolean inside(Level level, int cell) {
+		return level != null && inside(level.cellToPoint(cell));
+	}
+
 	public boolean inside(int cell){
-		return inside(new Point(Dungeon.level.cellToPoint(cell)));
+		return inside(Dungeon.level, cell);
 	}
 
 	public Point center() {

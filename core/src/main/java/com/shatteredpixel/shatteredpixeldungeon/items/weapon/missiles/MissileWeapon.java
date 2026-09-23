@@ -218,7 +218,43 @@ abstract public class MissileWeapon extends Weapon {
 	protected boolean sticky = true;
 	
 	public static final float MAX_DURABILITY = 100;
+	public static final int DURABILITY_WARNING_USES = 3;
 	protected float durability = MAX_DURABILITY;
+
+	public static int remainingDurabilityUses(float durability, float durabilityPerUse) {
+		if (durabilityPerUse <= 0f) return Integer.MAX_VALUE;
+		return Math.max(0, (int) Math.ceil(Math.max(0f, durability) / durabilityPerUse));
+	}
+
+	public static int durabilityWarningThreshold(float durabilityPerUse) {
+		if (durabilityPerUse <= 0f) return 0;
+		int maxUses = remainingDurabilityUses(MAX_DURABILITY, durabilityPerUse);
+		return maxUses <= 1 ? 0 : Math.min(DURABILITY_WARNING_USES, maxUses - 1);
+	}
+
+	public static boolean isNearBreaking(float durability, float durabilityPerUse) {
+		int threshold = durabilityWarningThreshold(durabilityPerUse);
+		int remaining = remainingDurabilityUses(durability, durabilityPerUse);
+		return threshold > 0 && remaining > 0 && remaining <= threshold;
+	}
+
+	public static boolean crossedDurabilityWarning(float durabilityBefore,
+			float durabilityAfter, float durabilityPerUse) {
+		if (durabilityAfter >= durabilityBefore) return false;
+		int threshold = durabilityWarningThreshold(durabilityPerUse);
+		if (threshold <= 0) return false;
+		int usesBefore = remainingDurabilityUses(durabilityBefore, durabilityPerUse);
+		int usesAfter = remainingDurabilityUses(durabilityAfter, durabilityPerUse);
+		return usesBefore > threshold && usesAfter > 0 && usesAfter <= threshold;
+	}
+
+	/**
+	 * Validates a throw that is triggered by another throw, such as Qianfa or
+	 * Phantom Shooter. This must not perform targeting or consume an action.
+	 */
+	protected boolean canPerformTriggeredThrow(Hero user, Char target, boolean notify) {
+		return true;
+	}
 	protected float baseUses = 10;
 	
 	public boolean holster;
@@ -465,6 +501,12 @@ abstract public class MissileWeapon extends Weapon {
 				releaseContinuationActor();
 				return;
 			}
+			if (!MissileWeapon.this.canPerformTriggeredThrow(user, enemy, true)) {
+				MissileWeapon.this.clearSharedEnchantment();
+				finishQianfaVolley(user, delay);
+				releaseContinuationActor();
+				return;
+			}
 
 			if (!firstShot) {
 				MissileWeapon.this.prepareSharedEnchantment(user);
@@ -641,6 +683,9 @@ abstract public class MissileWeapon extends Weapon {
 				|| !shouldTriggerPhantomShooter(talentPoints, Random.Int(10))) {
 			return;
 		}
+		if (!canPerformTriggeredThrow(user, enemy, true)) {
+			return;
+		}
 
 		MissileWeapon phantom = createPhantomProjectile();
 		if (phantom == null) {
@@ -666,6 +711,10 @@ abstract public class MissileWeapon extends Weapon {
 			@Override
 			protected boolean act() {
 				if (!enemy.isAlive() || Actor.findChar(enemy.pos) != enemy) {
+					Actor.remove(this);
+					return true;
+				}
+				if (!canPerformTriggeredThrow(user, enemy, true)) {
 					Actor.remove(this);
 					return true;
 				}
@@ -840,7 +889,7 @@ abstract public class MissileWeapon extends Weapon {
 	public float castDelay(Char user, int cell) {
 		if (Actor.findChar(cell) != null && Actor.findChar(cell) != user){
 			if (user instanceof Hero && ((Hero) user).justMoved && ((Hero) user).hasTalent(Talent.SURPRISE_THROW))  return 0;
-			else                                                    return delayFactor( user );
+			else return adjustAttackDelay(user, delayFactor(user));
 		} else {
 			//忍者技能
 			if(user instanceof Hero && hero.buff(Ninja_Energy.Throw_Skill.class)!=null && Dungeon.level.water[user.pos]){
@@ -942,28 +991,34 @@ abstract public class MissileWeapon extends Weapon {
 		//if this weapon was thrown from a source stack, degrade that stack.
 		//unless a weapon is about to break, then break the one being thrown
 		if (parent != null){
-			if (parent.durability <= parent.durabilityPerUse()){
+			float parentDurabilityBefore = parent.durability;
+			float parentDurabilityPerUse = parent.durabilityPerUse();
+			if (parentDurabilityBefore <= parentDurabilityPerUse){
 				durability = 0;
 				parent.durability = MAX_DURABILITY;
 				parent.extraThrownLeft = false;
-				if (parent.durabilityPerUse() < 100f) {
+				if (parentDurabilityPerUse < 100f) {
 					GLog.n(Messages.get(this, "has_broken"));
 				}
 			} else {
-				parent.durability -= parent.durabilityPerUse();
-				if (parent.durability > 0 && parent.durability <= parent.durabilityPerUse()){
+				parent.durability -= parentDurabilityPerUse;
+				if (crossedDurabilityWarning(parentDurabilityBefore,
+						parent.durability, parentDurabilityPerUse)){
 					GLog.w(Messages.get(this, "about_to_break"));
 				}
 			}
 			parent = null;
 		} else {
-			durability -= durabilityPerUse();
-			if (durability > 0 && durability <= durabilityPerUse()){
+			float durabilityBefore = durability;
+			float durabilityPerUse = durabilityPerUse();
+			durability -= durabilityPerUse;
+			if (crossedDurabilityWarning(durabilityBefore, durability, durabilityPerUse)){
 				GLog.w(Messages.get(this, "about_to_break"));
-			} else if (durabilityPerUse() < 100f && durability <= 0){
+			} else if (durabilityPerUse < 100f && durability <= 0){
 				GLog.n(Messages.get(this, "has_broken"));
 			}
 		}
+		updateQuickslot();
 	}
 	
 	@Override
@@ -1632,6 +1687,13 @@ abstract public class MissileWeapon extends Weapon {
 		if (usesIndependentSetID() && setID == UNASSIGNED_SET_ID){
 			setID = newSetID();
 		}
+	}
+
+	static float adjustAttackDelay(Char user, float delay) {
+		if (user instanceof Hero) {
+			return delay / ((Hero) user).attackSpeedMultiplier(false);
+		}
+		return delay;
 	}
 
 	private static long newSetID(){

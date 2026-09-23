@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.TengusMask;
 import com.shatteredpixel.shatteredpixeldungeon.items.Torch;
 import com.shatteredpixel.shatteredpixeldungeon.items.Waterskin;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
@@ -267,6 +268,8 @@ public enum Catalog {
         RINGS.addItems(RingOfKing.class);
 
 		ARTIFACTS.addItems(Generator.Category.ARTIFACT.classes);
+		// Alchemy-only artifact: catalogued for discovery, but absent from the random pool.
+		ARTIFACTS.addItems(Necronomicon.class);
 
 		TRINKETS.addItems(Generator.Category.TRINKET.classes);
 

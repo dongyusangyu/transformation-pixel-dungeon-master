@@ -6,15 +6,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
-import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
-import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
-import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
@@ -47,8 +41,6 @@ public class PestilenceArenaController implements Bundlable {
     private static final String RELOCATION_RNG_STATE = "relocation_rng_state";
     private static final String LEGACY_BRAZIER_CELLS = "brazier_cells";
     private static final String LEGACY_COOLDOWNS = "cooldowns";
-    private static final String WATER_CELL = "water_cell";
-    private static final String WATER_TURNS = "water_turns";
 
     private static final int MIN_BOSS_DISTANCE = 5;
     private static final int MIN_ANCHOR_DISTANCE = 4;
@@ -76,8 +68,6 @@ public class PestilenceArenaController implements Bundlable {
     private int[] safeRoute = new int[0];
     private int bossCell = -1;
     private long relocationRngState;
-    private int waterCell = -1;
-    private int waterTurns;
 
     public boolean prepare(TowerBossLevel level, int bossCell) {
         long seed = TowerBossGenerator.mix64(Dungeon.seed
@@ -365,31 +355,6 @@ public class PestilenceArenaController implements Bundlable {
         if (Dungeon.level instanceof TowerBossLevel) {
             advanceHeroTurn(new LevelArena((TowerBossLevel) Dungeon.level));
         }
-        if (hero == null || Dungeon.level == null) return;
-        Class<? extends Blob> miasma = activeMiasmaAt(hero.pos);
-        if (miasma == null || hero.isImmune(miasma)) {
-            waterCell = -1;
-            waterTurns = 0;
-            return;
-        }
-        if (Dungeon.level.water[hero.pos]) {
-            if (waterCell != hero.pos) {
-                waterCell = hero.pos;
-                waterTurns = 1;
-            } else {
-                waterTurns++;
-            }
-            if ((waterTurns & 1) != 0) return;
-        } else {
-            waterCell = -1;
-            waterTurns = 0;
-        }
-        Infection.addStacks(hero, 1);
-        if (miasma == OutbreakMiasma.class) {
-            Buff.affect(hero, Poison.class).set(3f);
-        } else if (miasma == PaleMiasma.class) {
-            Buff.prolong(hero, Slow.class, 2f);
-        }
     }
 
     public void onHeroWaited(Hero hero) {
@@ -397,11 +362,8 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     public void onHeroConsumableUsed(Hero hero, Item item) {
-        if (hero == null || item == null || Dungeon.level == null) return;
-        if ((item instanceof Potion || item instanceof Food || item instanceof Scroll)
-                && Blob.volumeAt(hero.pos, OutbreakMiasma.class) > 0) {
-            Infection.addStacks(hero, 1);
-        }
+        // Hero exposure is handled by Level so standalone test placements use
+        // the same miasma rules as the formal tower boss level.
     }
 
     public int nearestReadyBrazier(int origin) {
@@ -450,16 +412,7 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     public void finishEncounter() {
-        waterCell = -1;
-        waterTurns = 0;
         purifierCooldown = 0;
-    }
-
-    private static Class<? extends Blob> activeMiasmaAt(int cell) {
-        if (Blob.volumeAt(cell, PaleMiasma.class) > 0) return PaleMiasma.class;
-        if (Blob.volumeAt(cell, OutbreakMiasma.class) > 0) return OutbreakMiasma.class;
-        if (Blob.volumeAt(cell, IncubatingMiasma.class) > 0) return IncubatingMiasma.class;
-        return null;
     }
 
     @Override
@@ -471,8 +424,6 @@ public class PestilenceArenaController implements Bundlable {
         bundle.put(SAFE_ROUTE, safeRoute);
         bundle.put(BOSS_CELL, bossCell);
         bundle.put(RELOCATION_RNG_STATE, relocationRngState);
-        bundle.put(WATER_CELL, waterCell);
-        bundle.put(WATER_TURNS, waterTurns);
     }
 
     @Override
@@ -498,8 +449,6 @@ public class PestilenceArenaController implements Bundlable {
             relocationRngState = bundle.contains(RELOCATION_RNG_STATE)
                     ? bundle.getLong(RELOCATION_RNG_STATE)
                     : TowerBossGenerator.mix64(((long) restoredCell << 32) ^ RELOCATION_SALT);
-            waterCell = bundle.contains(WATER_CELL) ? bundle.getInt(WATER_CELL) : -1;
-            waterTurns = bundle.contains(WATER_TURNS) ? Math.max(0, bundle.getInt(WATER_TURNS)) : 0;
         } else {
             prepared = false;
             preludeStarted = false;
@@ -508,8 +457,6 @@ public class PestilenceArenaController implements Bundlable {
             safeRoute = new int[0];
             bossCell = -1;
             relocationRngState = 0L;
-            waterCell = -1;
-            waterTurns = 0;
         }
     }
 

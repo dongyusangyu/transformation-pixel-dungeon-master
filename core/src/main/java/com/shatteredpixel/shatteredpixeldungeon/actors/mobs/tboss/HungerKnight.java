@@ -558,6 +558,8 @@ public class HungerKnight extends TowerBoss {
                 clearPendingTalentAnnouncement();
             }
             yell(message);
+        }else{
+
         }
         spend(TICK);
         return true;
@@ -877,6 +879,8 @@ public class HungerKnight extends TowerBoss {
     }
 
     private void approachForCombo(Char target, int maximumSteps) {
+        if (!prepareFieldOfViewForPathfinding()) return;
+
         int oldPos = pos;
         for (int i = 0; i < maximumSteps && validTarget(target) && !canAttack(target); i++) {
             int step = Dungeon.findStep(this, target.pos, Dungeon.level.passable,
@@ -885,6 +889,21 @@ public class HungerKnight extends TowerBoss {
             move(step, false);
         }
         if (pos != oldPos) safeMoveSprite(oldPos, pos);
+    }
+
+    static boolean needsFieldOfViewRefresh(boolean[] fieldOfView, int levelLength) {
+        return fieldOfView == null || fieldOfView.length != levelLength;
+    }
+
+    private boolean prepareFieldOfViewForPathfinding() {
+        if (Dungeon.level == null || pos < 0 || pos >= Dungeon.level.length()) return false;
+
+        int levelLength = Dungeon.level.length();
+        if (needsFieldOfViewRefresh(fieldOfView, levelLength)) {
+            fieldOfView = new boolean[levelLength];
+        }
+        Dungeon.level.updateFieldOfView(this, fieldOfView);
+        return true;
     }
 
     private boolean safeMoveSprite(int from, int to) {
@@ -994,6 +1013,7 @@ public class HungerKnight extends TowerBoss {
                     clearPendingTalentAnnouncement();
                 }
                 yell(notice);
+
             }
         } else {
             flushPendingTalentAnnouncement();

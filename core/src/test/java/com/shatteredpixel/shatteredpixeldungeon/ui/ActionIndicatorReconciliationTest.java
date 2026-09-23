@@ -38,7 +38,7 @@ public class ActionIndicatorReconciliationTest {
 	public void clearStaticState() {
 		Dungeon.hero = null;
 		ActionIndicator.action = null;
-		ActionIndicator1.action = null;
+		ActionIndicator1.clearAction();
 	}
 
 	@Test
@@ -156,27 +156,21 @@ public class ActionIndicatorReconciliationTest {
 	}
 
 	@Test
-	public void secondaryActionIsRecoveredAfterColdLoadAttachment() throws Exception {
-		Hero hero = emptyHero(Talent.SMOKE_MASK);
-		Talent.SmokeMask smokeMask = new Talent.SmokeMask();
-
-		assertTrue(smokeMask.attachTo(hero));
-		assertNull(ActionIndicator1.action);
-
-		Dungeon.hero = hero;
+	public void secondaryRegisteredActionSurvivesReconciliation() throws Exception {
+		Dungeon.hero = emptyHero();
+		TestAction action = new TestAction();
+		assertTrue(ActionIndicator1.setAction(action));
 		ActionIndicator1.reconcileActionState();
 
-		assertSame(smokeMask, ActionIndicator1.action);
+		assertSame(action, ActionIndicator1.action);
 	}
 
 	@Test
-	public void secondaryActionIsHiddenDuringCooldown() throws Exception {
-		Hero hero = emptyHero(Talent.SMOKE_MASK);
-		Dungeon.hero = hero;
-		Talent.SmokeMask smokeMask = new Talent.SmokeMask();
-		assertTrue(smokeMask.attachTo(hero));
-		assertTrue(new Talent.SmokeCooldown().attachTo(hero));
-
+	public void secondaryUnusableActionIsCleared() throws Exception {
+		Dungeon.hero = emptyHero();
+		TestAction action = new TestAction();
+		assertTrue(ActionIndicator1.setAction(action));
+		action.usable = false;
 		ActionIndicator1.reconcileActionState();
 
 		assertNull(ActionIndicator1.action);
@@ -184,13 +178,12 @@ public class ActionIndicatorReconciliationTest {
 
 	@Test
 	public void secondaryReconciliationClearsActionOwnedByPreviousHero() throws Exception {
-		Hero firstHero = emptyHero(Talent.SMOKE_MASK);
+		Hero firstHero = emptyHero();
 		Dungeon.hero = firstHero;
-		Talent.SmokeMask smokeMask = new Talent.SmokeMask();
-		assertTrue(smokeMask.attachTo(firstHero));
-		ActionIndicator1.setAction(smokeMask);
+		TestAction action = new TestAction(firstHero);
+		assertTrue(ActionIndicator1.setAction(action));
 
-		Dungeon.hero = emptyHero(Talent.SMOKE_MASK);
+		Dungeon.hero = emptyHero();
 		ActionIndicator1.reconcileActionState();
 
 		assertNull(ActionIndicator1.action);
@@ -224,6 +217,15 @@ public class ActionIndicatorReconciliationTest {
 
 	private static class TestAction implements ActionIndicator.Action, ActionIndicator1.Action {
 		int calls;
+		boolean usable = true;
+		Hero owner;
+
+		TestAction() {
+		}
+
+		TestAction(Hero owner) {
+			this.owner = owner;
+		}
 
 		@Override
 		public String actionName() {
@@ -232,7 +234,7 @@ public class ActionIndicatorReconciliationTest {
 
 		@Override
 		public boolean usable() {
-			return true;
+			return usable && (owner == null || Dungeon.hero == owner);
 		}
 
 		@Override

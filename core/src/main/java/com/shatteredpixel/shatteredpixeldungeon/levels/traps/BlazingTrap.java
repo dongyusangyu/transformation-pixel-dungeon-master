@@ -45,7 +45,11 @@ public class BlazingTrap extends Trap {
 
 	@Override
 	public void activate() {
-		PathFinder.buildDistanceMap( pos, BArray.not( Dungeon.level.solid, null ), 2 );
+		activateAt(pos);
+	}
+
+	static void activateAt(int cell) {
+		PathFinder.buildDistanceMap( cell, BArray.not( Dungeon.level.solid, null ), 2 );
 		for (int i = 0; i < PathFinder.distance.length; i++) {
 			if (PathFinder.distance[i] < Integer.MAX_VALUE) {
 				if (Dungeon.level.pit[i] || Dungeon.level.water[i]) {

@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.AlchemistsToolkit;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMetamorphosis;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
@@ -313,11 +314,7 @@ public class AlchemyScene extends PixelScene {
 												if (item != null && inputs[0] != null) {
 													for (int i = 0; i < inputs.length; i++) {
 														if (inputs[i].item() == null) {
-															if (shouldDetachWholeStack(item)){
-																inputs[i].item(item.detachAll(hero.belongings.backpack));
-															} else {
-																inputs[i].item(item.detach(hero.belongings.backpack));
-															}
+										inputs[i].item(detachIngredient(item, hero.belongings.backpack));
 															break;
 														}
 													}
@@ -617,11 +614,7 @@ public class AlchemyScene extends PixelScene {
 				if (item != null && inputs[0] != null) {
 					for (int i = 0; i < inputs.length; i++) {
 						if (inputs[i].item() == null) {
-							if (shouldDetachWholeStack(item)){
-								inputs[i].item(item.detachAll(hero.belongings.backpack));
-							} else {
-								inputs[i].item(item.detach(hero.belongings.backpack));
-							}
+							inputs[i].item(detachIngredient(item, hero.belongings.backpack));
 							break;
 						}
 					}
@@ -636,6 +629,16 @@ public class AlchemyScene extends PixelScene {
 				|| item instanceof MissileWeapon
 				|| item instanceof ScrollOfMetamorphosis
 				|| Recipe.weaponRecipeRequiresWholeStack(item.getClass());
+	}
+
+	static Item detachIngredient(Item item, Bag container) {
+		if (item instanceof CorpseDust) {
+			return ((CorpseDust) item).detachForAlchemy(container);
+		}
+		if (shouldDetachWholeStack(item)) {
+			return item.detachAll(container);
+		}
+		return item.detach(container);
 	}
 	
 	private<T extends Item> ArrayList<T> filterInput(Class<? extends T> itemClass){
@@ -858,9 +861,22 @@ public class AlchemyScene extends PixelScene {
 			outputs[0].item(result);
 		}
 		if(hero!=null && hero.pointsNegative(Talent.ALCHEMY_ACCIDENT)> Random.Int(10)){
-			Game.switchScene(GameScene.class);
-			//Game.instance.bombExplodePos=Dungeon.hero.pos;
+			final int accidentPos = hero.pos;
+			Game.switchScene(GameScene.class, new Game.SceneChangeCallback() {
+				@Override
+				public void beforeCreate() {
+					//The explosion must wait until GameScene has rebuilt its visuals.
+				}
 
+				@Override
+				public void afterCreate() {
+					if (Dungeon.hero != null && Dungeon.hero.isAlive()
+							&& Dungeon.level != null
+							&& accidentPos >= 0 && accidentPos < Dungeon.level.length()) {
+						new Bomb.ConjuredBomb().explode(accidentPos);
+					}
+				}
+			});
 		}
 	}
 
@@ -881,11 +897,7 @@ public class AlchemyScene extends PixelScene {
 			ArrayList<Item> found = inventory.getAllSimilar(finding);
 			while (!found.isEmpty() && needed > 0){
 				Item detached;
-				if (shouldDetachWholeStack(finding)) {
-					detached = found.get(0).detachAll(inventory.backpack);
-				}else {
-					detached = found.get(0).detach(inventory.backpack);
-				}
+				detached = detachIngredient(found.get(0), inventory.backpack);
 				inputs[curslot].item(detached);
 				curslot++;
 				needed -= detached.quantity();

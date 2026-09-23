@@ -36,6 +36,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.SoulCollector;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tmobs.TapirCrocodile;
 import com.watabou.utils.Random;
 
+import java.util.ArrayList;
+
 public final class TowerMobRules {
 
 	static final float BASE_DARK_MECHANICAL_FIST_CHANCE = 0.025f;
@@ -140,9 +142,9 @@ public final class TowerMobRules {
 		return mob;
 	}
 
-	public static Mob createNaturalSpawn() {
+	static Mob create(Selection selection) {
 		Mob mob;
-		switch (select(Random.Float())) {
+		switch (selection) {
 			case CAMOUFLAGE_GNOLL:
 				mob = new CamouflageGnoll();
 				break;
@@ -191,7 +193,33 @@ public final class TowerMobRules {
 			default:
 				throw new IllegalStateException("Unknown tower mob selection");
 		}
-		return prepareNaturalSpawn(mob);
+		return mob;
+	}
+
+	static ArrayList<Selection> eligibleSelections(boolean flyingOnly) {
+		ArrayList<Selection> result = new ArrayList<>();
+		for (Selection selection : Selection.values()) {
+			if (!flyingOnly || create(selection).flying) {
+				result.add(selection);
+			}
+		}
+		return result;
+	}
+
+	public static Mob createNaturalSpawn() {
+		return createNaturalSpawn(false);
+	}
+
+	public static Mob createNaturalSpawn(boolean flyingOnly) {
+		if (!flyingOnly) {
+			return prepareNaturalSpawn(create(select(Random.Float())));
+		}
+
+		ArrayList<Selection> eligible = eligibleSelections(true);
+		if (eligible.isEmpty()) {
+			throw new IllegalStateException("No flying monsters are registered for sky island tower floors");
+		}
+		return prepareNaturalSpawn(create(Random.element(eligible)));
 	}
 
 	enum Selection {

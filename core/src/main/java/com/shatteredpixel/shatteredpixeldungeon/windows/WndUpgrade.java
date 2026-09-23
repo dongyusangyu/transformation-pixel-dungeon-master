@@ -31,12 +31,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.MagicalInfusion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Blowpipe;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Bracer;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatshield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RoundShield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Tomahawk;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
@@ -220,10 +217,21 @@ public class WndUpgrade extends Window {
 
 
 		if (canViewWeaponAbilityUpgrade(toUpgrade, levelFrom)){
-			bottom = fillFields(Messages.get(toUpgrade, "upgrade_ability_stat_name"),
-					((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelFrom),
-					((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelTo),
-					bottom);
+			MeleeWeapon weapon = (MeleeWeapon) toUpgrade;
+			java.util.ArrayList<MeleeWeapon.UpgradeAbilityStat> currentStats =
+					weapon.upgradeAbilityStats(levelFrom);
+			java.util.ArrayList<MeleeWeapon.UpgradeAbilityStat> nextStats =
+					weapon.upgradeAbilityStats(levelTo);
+			for (int i = 0; i < currentStats.size(); i++) {
+				MeleeWeapon.UpgradeAbilityStat current = currentStats.get(i);
+				MeleeWeapon.UpgradeAbilityStat next = matchingAbilityStat(nextStats, current.type);
+				String titleKey = current.type.messageKey();
+				String statTitle = titleKey == null
+						? Messages.get(toUpgrade, "upgrade_ability_stat_name")
+						: Messages.get(this, titleKey);
+				bottom = fillFields(statTitle, current.value,
+						next == null ? current.value : next.value, bottom);
+			}
 		}
 
 		//blocking (armor and shields)
@@ -233,22 +241,13 @@ public class WndUpgrade extends Window {
 					((Armor) toUpgrade).DRMin(levelFrom) + "-" + (((Armor) toUpgrade).DRMax(levelFrom)),
 					((Armor) toUpgrade).DRMin(levelTo) + "-" +  (((Armor) toUpgrade).DRMax(levelTo)),
 					bottom);
-		} else if (toUpgrade instanceof RoundShield){
+		} else if (toUpgrade instanceof MeleeWeapon
+				&& ((MeleeWeapon) toUpgrade).upgradeBlockingStat(levelFrom) != null) {
 			bottom = fillFields(Messages.get(this, "blocking"),
-					0 + "-" + ((RoundShield) toUpgrade).DRMax(levelFrom),
-					0 + "-" + ((RoundShield) toUpgrade).DRMax(levelTo),
+					0 + "-" + ((MeleeWeapon) toUpgrade).upgradeBlockingStat(levelFrom),
+					0 + "-" + ((MeleeWeapon) toUpgrade).upgradeBlockingStat(levelTo),
 					bottom);
-		} else if (toUpgrade instanceof Greatshield){
-			bottom = fillFields(Messages.get(this, "blocking"),
-					0 + "-" + ((Greatshield) toUpgrade).DRMax(levelFrom),
-					0 + "-" + ((Greatshield) toUpgrade).DRMax(levelTo),
-					bottom);
-		}else if (toUpgrade instanceof Bracer){
-            bottom = fillFields(Messages.get(this, "blocking"),
-                    0 + "-" + ((Bracer) toUpgrade).DRMax(levelFrom),
-                    0 + "-" + ((Bracer) toUpgrade).DRMax(levelTo),
-                    bottom);
-        }
+		}
 
 		//weight (i.e. strength requirement)
 		if (toUpgrade instanceof Weapon){
@@ -607,10 +606,19 @@ public class WndUpgrade extends Window {
 	private boolean canViewWeaponAbilityUpgrade(Item toUpgrade, int levelFrom){
 		if (Dungeon.hero == null
 				|| !(toUpgrade instanceof MeleeWeapon)
-				|| ((MeleeWeapon) toUpgrade).upgradeAbilityStat(levelFrom) == null) {
+				|| ((MeleeWeapon) toUpgrade).upgradeAbilityStats(levelFrom).isEmpty()) {
 			return false;
 		}
 		return MeleeWeapon.canUseWeaponAbility(Dungeon.hero);
+	}
+
+	private MeleeWeapon.UpgradeAbilityStat matchingAbilityStat(
+			java.util.ArrayList<MeleeWeapon.UpgradeAbilityStat> stats,
+			MeleeWeapon.UpgradeAbilityStatType type) {
+		for (MeleeWeapon.UpgradeAbilityStat stat : stats) {
+			if (stat.type == type) return stat;
+		}
+		return null;
 	}
 
 	private boolean unknownRandomModeWand(Item item){

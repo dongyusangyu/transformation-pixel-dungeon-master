@@ -5,7 +5,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -30,6 +32,11 @@ public class SoulBladeTest {
 
 	private static final String SOUL_BLADE_CLASS =
 			"com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.SoulBlade";
+
+	@After
+	public void resetGameTime() {
+		Statistics.duration = 0;
+	}
 
 	@Test
 	public void hasTierSixWeaponPanel() throws Exception {
@@ -60,6 +67,19 @@ public class SoulBladeTest {
 		assertEquals(25, invokeStaticInt(type, "shieldCooldown", 0));
 		assertEquals(10, invokeStaticInt(type, "shieldCooldown", 15));
 		assertEquals(1, invokeStaticInt(type, "shieldCooldown", 30));
+	}
+
+	@Test
+	public void newCycleClearsAbsoluteShieldCooldownFromPreviousRun() throws Exception {
+		SoulBlade blade = (SoulBlade) newSoulBlade();
+		Statistics.duration = 0;
+		Field readyAt = SoulBlade.class.getDeclaredField("shieldReadyAt");
+		readyAt.setAccessible(true);
+		readyAt.setFloat(blade, 10_000f);
+
+		blade.resetUpgradeStateForNewCycle();
+
+		assertEquals(0, blade.shieldCooldownRemaining());
 	}
 
 	@Test

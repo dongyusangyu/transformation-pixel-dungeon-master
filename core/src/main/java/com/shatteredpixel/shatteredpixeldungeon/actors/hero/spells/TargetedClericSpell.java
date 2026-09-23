@@ -30,12 +30,21 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 
 public abstract class TargetedClericSpell extends ClericSpell {
 
+	private boolean targetSelectionActive;
+	private int targetSelectionToken;
+
 	@Override
 	public void onCast(HolyTome tome, Hero hero ){
+		if (targetSelectionActive) return;
+
+		final int request = ++targetSelectionToken;
+		targetSelectionActive = true;
 		GameScene.selectCell(new CellSelector.Listener() {
 			@Override
 			public void onSelect(Integer cell) {
-				onTargetSelected(tome, hero, cell);
+				if (!isCurrentTargetSelection(request)) return;
+				finishTargetSelection(request, cell);
+				if (cell != null) onTargetSelected(tome, hero, cell);
 			}
 
 			@Override
@@ -43,6 +52,21 @@ public abstract class TargetedClericSpell extends ClericSpell {
 				return targetingPrompt();
 			}
 		});
+	}
+
+	@Override
+	public boolean isTargeting() {
+		return targetSelectionActive;
+	}
+
+	private boolean isCurrentTargetSelection(int request) {
+		return targetSelectionActive && targetSelectionToken == request;
+	}
+
+	private void finishTargetSelection(int request, Integer cell) {
+		if (isCurrentTargetSelection(request)) {
+			targetSelectionActive = false;
+		}
 	}
 
 	@Override

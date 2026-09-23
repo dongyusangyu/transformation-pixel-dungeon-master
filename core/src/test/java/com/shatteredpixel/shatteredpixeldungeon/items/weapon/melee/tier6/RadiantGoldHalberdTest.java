@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
@@ -16,6 +17,7 @@ import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 public class RadiantGoldHalberdTest {
@@ -39,10 +41,11 @@ public class RadiantGoldHalberdTest {
 		assertEquals(30, weapon.min(15));
 		assertEquals(209, weapon.max(15));
 		assertEquals(22, weapon.STRReq(0));
-		assertEquals(22, weapon.STRReq(8));
-		assertEquals(21, weapon.STRReq(9));
-		assertEquals(21, weapon.STRReq(14));
-		assertEquals(20, weapon.STRReq(15));
+		assertEquals(21, weapon.STRReq(1));
+		assertEquals(20, weapon.STRReq(3));
+		assertEquals(19, weapon.STRReq(6));
+		assertEquals(18, weapon.STRReq(10));
+		assertEquals(17, weapon.STRReq(15));
 		assertEquals(EXItemSpriteSheet.RADIANT_GOLD_HALBERD, weapon.image);
 		assertEquals(1f, weapon.actualAccuracy(), 0f);
 		assertEquals(2f, weapon.actualDelay(), 0f);
@@ -57,8 +60,19 @@ public class RadiantGoldHalberdTest {
 		assertEquals(22, weapon.STRReq(-5));
 		weapon.masteryPotionBonus = true;
 		assertEquals(20, weapon.STRReq(0));
-		assertEquals(19, weapon.STRReq(9));
-		assertEquals(18, weapon.STRReq(15));
+		assertEquals(18, weapon.STRReq(3));
+		assertEquals(15, weapon.STRReq(15));
+	}
+
+	@Test
+	public void usesTheCommonFalsehoodPowerEncumbranceRule() {
+		try {
+			RadiantGoldHalberd.class.getDeclaredMethod(
+					"falsehoodPowerEncumbranceReduction", Hero.class);
+			fail("RadiantGoldHalberd must use Weapon's common rule");
+		} catch (NoSuchMethodException expected) {
+			// The inherited Weapon implementation is intentionally used.
+		}
 	}
 
 	@Test
@@ -85,6 +99,20 @@ public class RadiantGoldHalberdTest {
 				true, Char.Alignment.ENEMY, true, true));
 		assertFalse(RadiantGoldHalberd.abilityTargetAllowed(
 				true, Char.Alignment.ENEMY, false, false));
+	}
+
+	@Test
+	public void hiddenMimicsAreValidLineTargetsButOtherNeutralCharsAreNot() {
+		Mimic hiddenMimic = new Mimic();
+		hiddenMimic.HP = hiddenMimic.HT = 10;
+		assertTrue(RadiantGoldHalberd.abilityTargetAllowed(
+				hiddenMimic, false, true));
+
+		TestMob neutralMob = new TestMob();
+		neutralMob.HP = neutralMob.HT = 10;
+		neutralMob.alignment = Char.Alignment.NEUTRAL;
+		assertFalse(RadiantGoldHalberd.abilityTargetAllowed(
+				neutralMob, false, true));
 	}
 
 	@Test

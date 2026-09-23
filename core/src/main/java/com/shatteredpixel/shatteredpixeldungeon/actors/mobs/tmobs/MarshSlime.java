@@ -66,7 +66,7 @@ public class MarshSlime extends Mob {
 
 	@Override
 	public void damage(int damage, Object source, DamageTag... damageTags) {
-		AdaptedDamageType incomingType = damageType(damageTags);
+		AdaptedDamageType incomingType = damageType(effectiveDamageTags(damageTags));
 		if (adaptedDamageType == incomingType) {
 			applyDamage(0, source, damageTags);
 			showImmunity();

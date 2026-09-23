@@ -173,6 +173,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Shocki
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Sickle;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.LuckyCoin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.SlimeBall;
@@ -412,9 +413,9 @@ public abstract class Char extends Actor {
 		if (alignment != null) {
 			bundle.put( TAG_ALIGNMENT, alignment );
 		}
-		bundle.put( BUFFS, buffs );
+		bundle.put( BUFFS, buffs() );
 	}
-	
+
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		
@@ -1218,12 +1219,45 @@ public abstract class Char extends Actor {
 		return tags.toArray(new DamageTag[0]);
 	}
 
+	static DamageTag[] resolveDamageTagsForFeeling(Level.Feeling feeling, DamageTag... damageTags) {
+		if (feeling != Level.Feeling.CHAOS) {
+			return damageTags;
+		}
+
+		EnumSet<DamageTag> tags = DamageTag.of(damageTags);
+		boolean physical = tags.contains(DamageTag.PHYSICAL);
+		boolean magical = tags.contains(DamageTag.MAGICAL);
+		if (physical == magical) {
+			return damageTags;
+		}
+
+		if (physical) {
+			tags.remove(DamageTag.PHYSICAL);
+			tags.add(DamageTag.MAGICAL);
+		} else {
+			tags.remove(DamageTag.MAGICAL);
+			tags.add(DamageTag.PHYSICAL);
+		}
+		return tags.toArray(new DamageTag[0]);
+	}
+
+	protected final DamageTag[] effectiveDamageTags(DamageTag... damageTags) {
+		return resolveDamageTagsForFeeling(
+				Dungeon.level == null ? null : Dungeon.level.feeling, damageTags);
+	}
+
+	static boolean shouldConsumeHarvestBleedTracker(DamageTag... damageTags) {
+		EnumSet<DamageTag> tags = DamageTag.of(damageTags);
+		return tags.contains(DamageTag.MELEE) && !tags.contains(DamageTag.RANGED);
+	}
+
 	public void damage(int dmg, Object src, DamageTag... damageTags) {
 
 		if (!isAlive() || dmg < 0) {
 			return;
 		}
 
+		damageTags = effectiveDamageTags(damageTags);
 		EnumSet<DamageTag> tags = DamageTag.of(damageTags);
 		boolean unavoidable = tags.contains(DamageTag.UNAVOIDABLE);
 		Class<?> srcClass = sourceClass(src);
@@ -1306,7 +1340,8 @@ public abstract class Char extends Actor {
 			damage *= 1.3f;
 		}
 
-		if (buff(Sickle.HarvestBleedTracker.class) != null){
+		if (buff(Sickle.HarvestBleedTracker.class) != null
+				&& shouldConsumeHarvestBleedTracker(damageTags)){
 			buff(Sickle.HarvestBleedTracker.class).detach();
 
 			if (!isImmune(Bleeding.class)){

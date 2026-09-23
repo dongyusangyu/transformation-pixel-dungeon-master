@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.items.LiquidMetal;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon.Enchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecialAction;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.SlimeBall;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -39,7 +40,7 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 
-public class MercuryBlade extends MeleeWeapon {
+public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 
 	public static final String AC_SHOOT = "SHOOT";
 	public static final int TIER = 6;
@@ -104,17 +105,6 @@ public class MercuryBlade extends MeleeWeapon {
 		return 1;
 	}
 
-	public static boolean defaultActionPrefersAbility(boolean canUseAbility,
-			boolean solidified) {
-		return canUseAbility && !solidified;
-	}
-
-	public static String equippedDefaultAction(boolean canUseAbility,
-			boolean solidified) {
-		return defaultActionPrefersAbility(canUseAbility, solidified)
-				? AC_ABILITY : AC_SHOOT;
-	}
-
 	public static boolean actionUsesTargeting(String action) {
 		return AC_SHOOT.equals(action);
 	}
@@ -124,20 +114,8 @@ public class MercuryBlade extends MeleeWeapon {
 	}
 
 	@Override
-	public String defaultAction() {
-		Hero hero = Dungeon.hero;
-		if (hero != null && isEquipped(hero)) {
-			boolean solidified = hero.buff(MercurySolidification.class) != null;
-			return equippedDefaultAction(canUseWeaponAbility(hero), solidified);
-		}
-		return super.defaultAction();
-	}
-
-	@Override
-	public ArrayList<String> actions(Hero hero) {
-		ArrayList<String> actions = super.actions(hero);
-		if (isEquipped(hero)) actions.add(AC_SHOOT);
-		return actions;
+	public String specialActionId() {
+		return AC_SHOOT;
 	}
 
 	@Override
@@ -219,6 +197,13 @@ public class MercuryBlade extends MeleeWeapon {
 	@Override
 	public String upgradeAbilityStat(int level) {
 		return Integer.toString((int) SOLIDIFICATION_DURATION);
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DURATION, upgradeAbilityStat(level)));
+		return result;
 	}
 
 	public class MercuryProjectile extends MissileWeapon implements MissileWeapon.QianfaRepeatProjectile {
