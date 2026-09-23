@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
@@ -91,7 +92,7 @@ public class Infection extends Buff implements Char.HealingModifier {
         }
         if (stacks >= MAX_STACKS) {
             showRuptureFeedback();
-            target.damage(25, Infection.class);
+            target.damage(25, Infection.class, DamageTag.PHYSICAL, DamageTag.PLAGUE);
             Buff.prolong(target, Vulnerable.class, 4f);
             stacks = 3;
             thirdThresholdArmed = true;

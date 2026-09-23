@@ -1352,6 +1352,10 @@ public class Dungeon {
 		
 		depth = bundle.getInt( DEPTH );
 		branch = bundle.getInt( BRANCH );
+		if (ExtractionRaidLevel.isRaidLocation(depth, branch)) {
+			Notes.migrateLegacyKeys(depth, branch);
+			Notes.migrateRaidCrystalKeys();
+		}
 
 		gold = bundle.getInt( GOLD );
 		energy = bundle.getInt( ENERGY );

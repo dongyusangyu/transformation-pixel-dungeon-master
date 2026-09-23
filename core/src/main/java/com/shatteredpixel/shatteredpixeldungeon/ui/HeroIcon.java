@@ -135,6 +135,8 @@ public class HeroIcon extends Image {
     public static final int PARRY = 119;
     public static final int REASON  = 120;
     public static final int RITUAL  = 121;
+    public static final int RAID_SESSION = 122;
+    public static final int NATURAL_CHILD = 123;
 
 	public static final int ASCENSION_CURSE  = 128;
 

@@ -1,10 +1,13 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageIconResolver;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
+import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
@@ -83,10 +86,16 @@ public class InfectionTest {
         Infection.set(target, 4);
         target.damageTaken = 0;
 
-        Infection.addStacks(target, 1);
+		Infection.addStacks(target, 1);
 
-        assertEquals(25, target.damageTaken);
-        assertEquals(3, Infection.stacks(target));
+		assertEquals(25, target.damageTaken);
+		assertEquals(Infection.class, target.damageSource);
+		assertEquals(DamageTag.PLAGUE, DamageTag.primaryIconTag(DamageTag.of(target.damageTags)));
+		assertTrue(DamageTag.has(DamageTag.of(target.damageTags), DamageTag.PHYSICAL));
+		assertFalse(DamageTag.has(DamageTag.of(target.damageTags), DamageTag.MAGICAL));
+		assertEquals(FloatingText.PLAGUE,
+				DamageIconResolver.resolve(DamageTag.of(target.damageTags)));
+		assertEquals(3, Infection.stacks(target));
         assertNotNull(target.buff(Vulnerable.class));
     }
 
@@ -164,6 +173,15 @@ public class InfectionTest {
 
     private static final class TestChar extends Char {
         int damageTaken;
+        Object damageSource;
+        DamageTag[] damageTags;
+
+        @Override
+        public void damage(int damage, Object source, DamageTag... tags) {
+            damageTaken += damage;
+            damageSource = source;
+            damageTags = tags;
+        }
 
         @Override
         public void damage(int damage, Object source) {

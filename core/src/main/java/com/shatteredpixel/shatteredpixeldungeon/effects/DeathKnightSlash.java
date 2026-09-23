@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.effects;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.Game;
@@ -19,17 +20,17 @@ public class DeathKnightSlash extends MovieClip {
     private float elapsedTime;
 
     private DeathKnightSlash(int from, int to) {
-        texture(Assets.Effects.DEATH_KNIGHT_SLASH);
-        TextureFilm film = new TextureFilm(texture, 32, 32);
-        Animation animation = new Animation(24, true);
-        animation.frames(film, 0, 1, 2, 3);
+        texture(Assets.Sprites.EX_ITEMS);
+        TextureFilm film = new TextureFilm(texture, 16, 16);
+        Animation animation = new Animation(1, true);
+        animation.frames(film, EXItemSpriteSheet.DEATH_KNIGHT_SLASH_FRAME);
 
         PointF start = DungeonTilemap.tileCenterToWorld(from);
         PointF end = DungeonTilemap.tileCenterToWorld(to);
         x = start.x - width / 2f;
         y = start.y - height / 2f;
         origin.set(width / 2f, height / 2f);
-        angle = (float) Math.toDegrees(Math.atan2(end.y - start.y, end.x - start.x));
+        scale.set(2f);
         float distance = PointF.distance(start, end);
         travelTime = Math.max(0.12f, Math.min(0.42f, distance / 180f));
         speed.set((end.x - start.x) / travelTime, (end.y - start.y) / travelTime);

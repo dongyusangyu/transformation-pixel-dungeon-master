@@ -12,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.CrystalKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.GoldenKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.RaidAccessCard;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.TreasureGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
@@ -46,6 +47,7 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.ListIterator;
 
 /**
  * Randomized combat floor for the extraction minigame.
@@ -380,7 +382,7 @@ public class ExtractionRaidLevel extends Level {
 		}
 
 		drop(createRaidGoldenKey(), nextLootCell());
-		Heap lockedChest = drop(createRaidCrystalKey(), nextLootCell());
+		Heap lockedChest = drop(createRaidAccessCard(), nextLootCell());
 		lockedChest.type = Heap.Type.LOCKED_CHEST;
 	}
 
@@ -403,12 +405,12 @@ public class ExtractionRaidLevel extends Level {
 		return new GoldenKey(DEPTH);
 	}
 
-	protected Item createRaidCrystalKey() {
-		return new CrystalKey(DEPTH);
+	protected Item createRaidAccessCard() {
+		return new RaidAccessCard();
 	}
 
-	public Item createCarrierCrystalKey() {
-		return createRaidCrystalKey();
+	public Item createCarrierAccessCard() {
+		return createRaidAccessCard();
 	}
 
 	private int nextLootCell() {
@@ -433,12 +435,12 @@ public class ExtractionRaidLevel extends Level {
 		return Dungeon.hero != null && Dungeon.hero.pos == extractionCell;
 	}
 
-	public int crystalKeyCount() {
-		return Notes.keyCount(new CrystalKey(DEPTH));
+	public int accessCardCount() {
+		return Notes.keyCount(new RaidAccessCard());
 	}
 
 	public boolean canExtract() {
-		return canExtractWithKeyCount(crystalKeyCount());
+		return canExtractWithKeyCount(accessCardCount());
 	}
 
 	public boolean canExtractWithKeyCount(int keyCount) {
@@ -452,10 +454,17 @@ public class ExtractionRaidLevel extends Level {
 	}
 
 	public static void clearRaidKeys() {
-		while (Notes.remove(new CrystalKey(DEPTH))) {
-			// Remove only extraction-floor crystal keys.
+		while (Notes.remove(new RaidAccessCard())) {
+			// Remove extraction cards from the raid branch.
 		}
-		while (Notes.remove(new GoldenKey(DEPTH))) {
+		CrystalKey legacyCard = new CrystalKey(DEPTH);
+		legacyCard.branch = BRANCH;
+		while (Notes.remove(legacyCard)) {
+			// Clear unmigrated cards from older raid saves.
+		}
+		GoldenKey goldenKey = new GoldenKey(DEPTH);
+		goldenKey.branch = BRANCH;
+		while (Notes.remove(goldenKey)) {
 			// Remove only extraction-floor golden keys.
 		}
 	}
@@ -541,6 +550,22 @@ public class ExtractionRaidLevel extends Level {
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
+		for (Heap heap : heaps.valueList()) {
+			ListIterator<Item> items = heap.items.listIterator();
+			while (items.hasNext()) {
+				Item item = items.next();
+				if (item.getClass() == CrystalKey.class) {
+					((CrystalKey) item).migrateLegacyLocation(DEPTH, BRANCH);
+				}
+				if (item.getClass() == CrystalKey.class
+						&& ((CrystalKey) item).depth == DEPTH
+						&& ((CrystalKey) item).branch == BRANCH) {
+					RaidAccessCard card = new RaidAccessCard();
+					card.quantity(item.quantity());
+					items.set(card);
+				}
+			}
+		}
 		raidSeed = bundle.getLong(RAID_SEED);
 		raidId = bundle.contains(RAID_ID)
 				? normalizeRaidId(bundle.getLong(RAID_ID))

@@ -26,6 +26,8 @@ public enum DamageTag {
 	UNAVOIDABLE,
 
 	PICKAXE,
+	// Identifies infection-specific damage for display; nature is still PHYSICAL or MAGICAL.
+	PLAGUE,
 	HUNGER,
 	FIRE,
 	FROST,
@@ -80,6 +82,7 @@ public enum DamageTag {
 
 	public static DamageTag primaryIconTag(EnumSet<DamageTag> tags) {
 		if (has(tags, PICKAXE))        return PICKAXE;
+		if (has(tags, PLAGUE))         return PLAGUE;
 		if (has(tags, HUNGER))         return HUNGER;
 		if (has(tags, FIRE))           return FIRE;
 		if (has(tags, FROST))          return FROST;

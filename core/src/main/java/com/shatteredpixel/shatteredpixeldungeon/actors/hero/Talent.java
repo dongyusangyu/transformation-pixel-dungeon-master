@@ -4670,8 +4670,8 @@ public enum Talent {
 		}
 
 		@Override
-		public void tintIcon(Image icon) {
-			icon.hardlight(0.25f, 1.0f, 0.25f);
+		public int icon() {
+			return BuffIndicator.NATURAL_CHILD;
 		}
 
 		@Override
@@ -4688,7 +4688,7 @@ public enum Talent {
 
 		@Override
 		public void tintIcon(Image icon) {
-			icon.hardlight(0.25f, 1.0f, 0.25f);
+			icon.hardlight(0.0706f, 0.5333f, 0.6314f);
 		}
 
 		@Override
@@ -4720,12 +4720,7 @@ public enum Talent {
 
 		@Override
 		public int icon() {
-			return BuffIndicator.BARKSKIN;
-		}
-
-		@Override
-		public void tintIcon(Image icon) {
-			icon.hardlight(0.25f, 1.0f, 0.25f);
+			return BuffIndicator.NATURAL_CHILD;
 		}
 
 		@Override
@@ -4747,12 +4742,12 @@ public enum Talent {
 
 		@Override
 		public int indicatorColor() {
-			return 0x36B83F;
+			return 0x013055;
 		}
 
 		@Override
 		public int actionIcon() {
-			return HeroIcon.WARDEN;
+			return HeroIcon.NATURAL_CHILD;
 		}
 
 		@Override
@@ -4826,7 +4821,7 @@ public enum Talent {
 			if(target.buff(SmokeCooldown.class)!=null){
 				ActionIndicator.clearAction(this);
 			}else if(hero.hasTalent(SMOKE_MASK)){
-				ActionIndicator.setAction(this);
+				ActionIndicator.ensureAction(this);
 				BuffIndicator.refreshHero();
 			}
 

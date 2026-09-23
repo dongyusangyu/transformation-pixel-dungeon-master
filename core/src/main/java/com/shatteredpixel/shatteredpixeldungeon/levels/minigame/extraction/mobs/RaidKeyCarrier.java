@@ -8,7 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 
 /**
- * Visible marker for the ordinary raid monster which holds a crystal key.
+ * Visible marker for the ordinary raid monster which holds an access card.
  */
 public class RaidKeyCarrier extends Buff {
 
@@ -19,7 +19,7 @@ public class RaidKeyCarrier extends Buff {
 
 	@Override
 	public int icon() {
-		return BuffIndicator.MARK;
+		return BuffIndicator.RAID_KEY_CARRIER;
 	}
 
 	@Override
@@ -30,7 +30,7 @@ public class RaidKeyCarrier extends Buff {
 				&& !target.isAlive()
 				&& Dungeon.level instanceof ExtractionRaidLevel) {
 			ExtractionRaidLevel level = (ExtractionRaidLevel) Dungeon.level;
-			level.drop(level.createCarrierCrystalKey(), target.pos);
+			level.drop(level.createCarrierAccessCard(), target.pos);
 		}
 		super.detach();
 	}

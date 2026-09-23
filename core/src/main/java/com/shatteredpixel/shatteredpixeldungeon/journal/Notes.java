@@ -41,8 +41,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.LostBackpack;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.Key;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.CrystalKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.RaidAccessCard;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.BeaconOfReturning;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.special.WeakFloorRoom;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -640,6 +643,25 @@ public class Notes {
 			if (rec instanceof KeyRecord) {
 				((KeyRecord) rec).key.migrateLegacyLocation(depth, branch);
 			}
+		}
+	}
+
+	public static void migrateRaidCrystalKeys() {
+		ArrayList<KeyRecord> legacy = new ArrayList<>();
+		for (Record rec : records) {
+			if (rec instanceof KeyRecord) {
+				KeyRecord keyRecord = (KeyRecord) rec;
+				if (keyRecord.type() == CrystalKey.class
+						&& ExtractionRaidLevel.isRaidLocation(keyRecord.depth(), keyRecord.branch())) {
+					legacy.add(keyRecord);
+				}
+			}
+		}
+		for (KeyRecord keyRecord : legacy) {
+			records.remove(keyRecord);
+			RaidAccessCard card = new RaidAccessCard();
+			card.quantity(keyRecord.quantity());
+			add(card);
 		}
 	}
 

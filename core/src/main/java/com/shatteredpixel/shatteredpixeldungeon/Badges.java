@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
@@ -120,10 +121,6 @@ public class Badges {
 		RESEARCHER_1                ( copper+28, BadgeType.JOURNAL ),
 		GAMES_PLAYED_1              ( copper+29, BadgeType.GLOBAL ),
 		HIGH_SCORE_1                ( copper+30 ),
-		DEATH_FROM_ALIENATED_PRISMATIC_GUARD ( copper+31 ),
-		CHAIN_MACE_SIX_TARGETS      ( copper+32 ),
-		ENTER_TOWER                 ( copper+33 ),
-		CORPSES_SLAIN_ONE_FLOOR     ( copper+34 ),
 
 		//silver
 		NO_MONSTERS_SLAIN           ( silver ),
@@ -167,15 +164,6 @@ public class Badges {
 		RESEARCHER_2                ( silver+23, BadgeType.JOURNAL ),
 		GAMES_PLAYED_2              ( silver+24, BadgeType.GLOBAL ),
 		HIGH_SCORE_2                ( silver+25 ),
-		DEATH_KNIGHT_BLESSED_ANKH   ( silver+26 ),
-		TOWER_FLOOR_100             ( silver+27 ),
-		HUNGER_KNIGHT_WARRIOR       ( silver+28 ),
-		PESTILENCE_KNIGHT_SLAIN     ( silver+29 ),
-		PESTILENCE_KNIGHT_CLERIC    ( silver+30 ),
-		GENTLEMAN_ELF_SLAIN         ( silver+31 ),
-		GENTLEMAN_ELF_FREEMAN       ( silver+32 ),
-		DEATH_KNIGHT_SLAIN          ( silver+33 ),
-		HUNGER_KNIGHT_SLAIN         ( silver+34 ),
 
 		//gold
 		PIRANHAS                    ( gold ),
@@ -215,6 +203,7 @@ public class Badges {
 		HEROBOSS_COUNTER_2             (gold+29 ),
 		HEROBOSS_COUNTER_3             (gold+30 ),
 		HEROBOSS_COUNTER_4             (gold+31 ),
+		CHAIN_MACE_SIX_TARGETS      ( gold+32 ),
 
 		//platinum
 		ITEM_LEVEL_5                ( platinum ),
@@ -273,6 +262,11 @@ public class Badges {
 		CHAMPION_1                  ( platinum+13 ),
 		MANY_BUFFS                  ( platinum+14 ),
         HEROBOSS_COUNTER_5             (platinum+16 ),
+		ENTER_TOWER                 ( platinum+17 ),
+		TOWER_FLOOR_10              ( platinum+18 ),
+		CORPSES_SLAIN_ONE_FLOOR     ( platinum+19 ),
+		DEATH_FROM_ALIENATED_PRISMATIC_GUARD ( platinum+20 ),
+		DEATH_KNIGHT_BLESSED_ANKH   ( platinum+21 ),
 
 
 		//diamond
@@ -284,6 +278,13 @@ public class Badges {
 		CHAMPION_3                  ( diamonds+5 ),
 		PACIFIST_ASCENT             ( diamonds+6 ),
 		TAKING_THE_MICK             ( diamonds+7 ), //This might be the most obscure game reference I've made;
+		TOWER_FLOOR_25              ( diamonds+8 ),
+		TOWER_FLOOR_50              ( diamonds+9 ),
+		WAR_KNIGHT_SLAIN            ( diamonds+10, BadgeType.HIDDEN ),
+		HUNGER_KNIGHT_SLAIN         ( diamonds+11 ),
+		PESTILENCE_KNIGHT_SLAIN     ( diamonds+12 ),
+		DEATH_KNIGHT_SLAIN          ( diamonds+13 ),
+		GENTLEMAN_ELF_SLAIN         ( diamonds+14 ),
 		//ALLOY
 		BACK1    					( alloys),
 		BACK2    					( alloys+1),
@@ -292,6 +293,12 @@ public class Badges {
         BETTER_TALENT  				( alloys+6),
         TALENT2025  				( alloys+7,BadgeType.SECRET),
         RANDOM_HERO  				( alloys+8),
+		TOWER_FLOOR_100             ( alloys+9 ),
+		WAR_KNIGHT_DUELIST          ( alloys+10, BadgeType.HIDDEN ),
+		HUNGER_KNIGHT_WARRIOR       ( alloys+11 ),
+		PESTILENCE_KNIGHT_CLERIC    ( alloys+12 ),
+		DEATH_KNIGHT_FRIAR          ( alloys+13 ),
+		GENTLEMAN_ELF_FREEMAN       ( alloys+14 ),
 
         ;
 
@@ -338,6 +345,9 @@ public class Badges {
 		}
 		ArrayList<Badge> badges = new ArrayList<>();
 		badges.add(Badge.ENTER_TOWER);
+		if (depth >= 10) badges.add(Badge.TOWER_FLOOR_10);
+		if (depth >= 25) badges.add(Badge.TOWER_FLOOR_25);
+		if (depth >= 50) badges.add(Badge.TOWER_FLOOR_50);
 		if (depth >= 100) badges.add(Badge.TOWER_FLOOR_100);
 		return badges;
 	}
@@ -363,6 +373,7 @@ public class Badges {
 			if (heroClass == HeroClass.FREEMAN) badges.add(Badge.GENTLEMAN_ELF_FREEMAN);
 		} else if (TowerBossGenerator.DEATH_KNIGHT_ID.equals(bossId)) {
 			badges.add(Badge.DEATH_KNIGHT_SLAIN);
+			if (heroClass == HeroClass.FRIAR) badges.add(Badge.DEATH_KNIGHT_FRIAR);
 		}
 		return badges;
 	}
@@ -373,10 +384,15 @@ public class Badges {
 		}
 	}
 
-	public static void validateDeathKnightBlessedAnkh() {
-		if (Dungeon.level instanceof TowerBossLevel
-				&& ((TowerBossLevel) Dungeon.level).isActiveTowerBoss(
-						TowerBossGenerator.DEATH_KNIGHT_ID)) {
+	static boolean qualifiesForDeathKnightBlessedAnkh(Object cause, boolean activeBoss) {
+		return activeBoss && cause instanceof DeathKnight;
+	}
+
+	public static void validateDeathKnightBlessedAnkh(Object cause) {
+		if (qualifiesForDeathKnightBlessedAnkh(cause,
+				Dungeon.level instanceof TowerBossLevel
+						&& ((TowerBossLevel) Dungeon.level).isActiveTowerBoss(
+								TowerBossGenerator.DEATH_KNIGHT_ID))) {
 			award(Badge.DEATH_KNIGHT_BLESSED_ANKH);
 		}
 	}

@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -49,23 +50,18 @@ public class DeathKnightSpriteAssetTest {
     }
 
     @Test
-    public void swordWaveSheetContainsFourHardEdgedFrames() throws IOException {
-        BufferedImage image = ImageIO.read(asset("effects/death_knight_slash.png").toFile());
+    public void swordWaveAtlasFrameHasHardEdges() throws IOException {
+        BufferedImage image = ImageIO.read(asset("sprites/ex_items.png").toFile());
         assertNotNull(image);
-        assertEquals(128, image.getWidth());
-        assertEquals(32, image.getHeight());
-        for (int frame = 0; frame < 4; frame++) {
-            int visible = 0;
-            for (int y = 0; y < 32; y++) {
-                for (int x = frame * 32; x < frame * 32 + 32; x++) {
-                    int argb = image.getRGB(x, y);
-                    int alpha = argb >>> 24;
-                    assertTrue(alpha == 0 || alpha == 255);
-                    if (alpha == 255) visible++;
-                }
+        int visible = 0;
+        for (int y = 96; y < 112; y++) {
+            for (int x = 16; x < 32; x++) {
+                int alpha = image.getRGB(x, y) >>> 24;
+                assertTrue(alpha == 0 || alpha == 255);
+                if (alpha == 255) visible++;
             }
-            assertTrue(visible >= 8);
         }
+        assertTrue(visible >= 8);
     }
 
     @Test
@@ -77,7 +73,7 @@ public class DeathKnightSpriteAssetTest {
         String boss = read(java.resolve("actors/mobs/tboss/DeathKnight.java"));
 
         assertTrue(assets.contains("DEATH_KNIGHT = \"sprites/death_knight.png\""));
-        assertTrue(assets.contains("DEATH_KNIGHT_SLASH = \"effects/death_knight_slash.png\""));
+        assertTrue(assets.contains("EX_ITEMS     = \"sprites/ex_items.png\""));
         assertTrue(sprite.contains("new TextureFilm(texture, 32, 32)"));
         assertTrue(sprite.contains("idle.frames(film, 0, 1, 2, 3)"));
         assertTrue(sprite.contains("run.frames(film, 4, 5, 6, 7, 8, 9)"));
@@ -87,7 +83,10 @@ public class DeathKnightSpriteAssetTest {
         assertTrue(sprite.contains("void phaseTransition()"));
         assertTrue(sprite.contains("ShadowParticle.UP"));
         assertTrue(sprite.contains("die.frames(film, 24, 25, 26, 27, 28, 29)"));
-        assertTrue(slash.contains("new TextureFilm(texture, 32, 32)"));
+        assertTrue(slash.contains("texture(Assets.Sprites.EX_ITEMS)"));
+        assertTrue(slash.contains("new TextureFilm(texture, 16, 16)"));
+        assertTrue(slash.contains("EXItemSpriteSheet.DEATH_KNIGHT_SLASH_FRAME"));
+        assertFalse(slash.contains("        angle ="));
         assertTrue(slash.contains("public static void showVolley"));
         assertTrue(slash.contains("speed.set"));
         assertTrue(slash.contains("travelTime"));
@@ -98,13 +97,7 @@ public class DeathKnightSpriteAssetTest {
     }
 
     @Test
-    public void generatorLocksThreeQuarterFacingThickLegsAndLowBoots() throws IOException {
-        String generator = read(coreDirectory().getParent()
-                .resolve("tools/generate_death_knight_sprites.ps1"));
-        assertTrue(generator.contains("$facing = 'right-three-quarter'"));
-        assertTrue(generator.contains("$legWidth = 6"));
-        assertTrue(generator.contains("$bootHeight = 2"));
-
+    public void bossSpriteFacesThreeQuarterWithThickLegsAndLowBoots() throws IOException {
         BufferedImage image = ImageIO.read(asset("sprites/death_knight.png").toFile());
         int frameOffset = 0;
         int ivoryCount = 0;

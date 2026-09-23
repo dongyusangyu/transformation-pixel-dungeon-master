@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
@@ -123,7 +124,8 @@ public class Gungnir extends MissileWeapon {
 			int lifeCost = lifeCostForCurrentHP(hero.HP);
 			hero.HP -= lifeCost;
 			hero.HP = Math.max(1, hero.HP);
-			hero.sprite.showStatus(CharSprite.NEGATIVE, Integer.toString(lifeCost));
+			hero.sprite.showStatusWithIcon(CharSprite.NEGATIVE, Integer.toString(lifeCost),
+					FloatingText.GUNGNIR_LIFE_COST);
 		}
 		wasBleedingBeforeHit = defender.buff(Bleeding.class) != null;
 		bleedingTargetID = wasBleedingBeforeHit ? defender.id() : 0;

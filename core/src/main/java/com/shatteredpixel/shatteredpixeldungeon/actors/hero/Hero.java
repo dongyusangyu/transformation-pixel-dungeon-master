@@ -3275,7 +3275,7 @@ public class Hero extends Char {
 				Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
 				GLog.w(Messages.get(this, "revive"));
 				Statistics.ankhsUsed++;
-				Badges.validateDeathKnightBlessedAnkh();
+				Badges.validateDeathKnightBlessedAnkh(cause);
 				Catalog.countUse(Ankh.class);
 
 				ankh.detach(belongings.backpack);

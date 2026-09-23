@@ -1,11 +1,17 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.CrystalKey;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.RaidAccessCard;
+import com.watabou.gltextures.SmartTexture;
+import com.watabou.gltextures.TextureCache;
+import sun.misc.Unsafe;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
@@ -22,7 +28,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.Queue;
 
 import static org.junit.Assert.assertEquals;
@@ -36,9 +44,16 @@ public class ExtractionRaidLevelTest {
 	private int previousBranch;
 	private Level previousLevel;
 	private Hero previousHero;
+	private SmartTexture previousItemsTexture;
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
+		HashMap<Object, SmartTexture> textures = textureCache();
+		previousItemsTexture = textures.get(Assets.Sprites.ITEMS);
+		SmartTexture texture = (SmartTexture) unsafe().allocateInstance(SmartTexture.class);
+		texture.width = 256;
+		texture.height = 512;
+		textures.put(Assets.Sprites.ITEMS, texture);
 		previousDepth = Dungeon.depth;
 		previousBranch = Dungeon.branch;
 		previousLevel = Dungeon.level;
@@ -50,12 +65,28 @@ public class ExtractionRaidLevelTest {
 	}
 
 	@After
-	public void tearDown() {
+	public void tearDown() throws Exception {
+		HashMap<Object, SmartTexture> textures = textureCache();
+		if (previousItemsTexture == null) textures.remove(Assets.Sprites.ITEMS);
+		else textures.put(Assets.Sprites.ITEMS, previousItemsTexture);
 		Dungeon.depth = previousDepth;
 		Dungeon.branch = previousBranch;
 		Dungeon.level = previousLevel;
 		Dungeon.hero = previousHero;
 		Notes.reset();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static HashMap<Object, SmartTexture> textureCache() throws Exception {
+		Field field = TextureCache.class.getDeclaredField("all");
+		field.setAccessible(true);
+		return (HashMap<Object, SmartTexture>) field.get(null);
+	}
+
+	private static Unsafe unsafe() throws Exception {
+		Field field = Unsafe.class.getDeclaredField("theUnsafe");
+		field.setAccessible(true);
+		return (Unsafe) field.get(null);
 	}
 
 	@Test
@@ -156,7 +187,7 @@ public class ExtractionRaidLevelTest {
 			int treasures = 0;
 			int missiles = 0;
 			int goldenKeys = 0;
-			int lockedCrystalKeys = 0;
+			int lockedAccessCards = 0;
 
 			for (Heap heap : level.heaps.valueList()) {
 				assertTrue(level.passable[heap.pos]);
@@ -178,8 +209,8 @@ public class ExtractionRaidLevelTest {
 					} else if (item instanceof TestGoldenKey) {
 						goldenKeys++;
 						assertEquals(Heap.Type.HEAP, heap.type);
-					} else if (item instanceof TestCrystalKey) {
-						lockedCrystalKeys++;
+					} else if (item instanceof TestAccessCard) {
+						lockedAccessCards++;
 						assertEquals(Heap.Type.LOCKED_CHEST, heap.type);
 					} else {
 						throw new AssertionError("Unexpected loose raid item: " + item.getClass());
@@ -190,19 +221,19 @@ public class ExtractionRaidLevelTest {
 			assertTrue(treasures >= 3 && treasures <= 4);
 			assertTrue(missiles >= 1 && missiles <= 2);
 			assertEquals(1, goldenKeys);
-			assertEquals(1, lockedCrystalKeys);
+			assertEquals(1, lockedAccessCards);
 		}
 	}
 
 	@Test
-	public void assignsExactlyOneOrdinaryMonsterAsTheVisibleCrystalKeyCarrier() {
+	public void assignsExactlyOneOrdinaryMonsterAsTheVisibleAccessCardCarrier() {
 		ExtractionRaidLevel level = createRaidLevel();
 		int carriers = 0;
 		for (Mob mob : level.mobs) {
 			if (mob.buff(RaidKeyCarrier.class) != null) {
 				carriers++;
 				assertFalse(mob instanceof VaultArmoredStatue);
-				assertEquals(com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator.MARK,
+				assertEquals(com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator.RAID_KEY_CARRIER,
 						mob.buff(RaidKeyCarrier.class).icon());
 			}
 		}
@@ -210,7 +241,7 @@ public class ExtractionRaidLevelTest {
 	}
 
 	@Test
-	public void removingDeadCarrierMarkerDropsExactlyOneCrystalKey() {
+	public void removingDeadCarrierMarkerDropsExactlyOneAccessCard() {
 		ExtractionRaidLevel level = createRaidLevel();
 		Mob carrier = null;
 		for (Mob mob : level.mobs) {
@@ -221,15 +252,15 @@ public class ExtractionRaidLevelTest {
 		}
 		assertTrue(carrier != null);
 
-		int before = countTestCrystalKeys(level);
+		int before = countTestAccessCards(level);
 		carrier.HP = 0;
 		carrier.buff(RaidKeyCarrier.class).detach();
-		assertEquals(before + 1, countTestCrystalKeys(level));
+		assertEquals(before + 1, countTestAccessCards(level));
 		assertTrue(carrier.buff(RaidKeyCarrier.class) == null);
 	}
 
 	@Test
-	public void extractionRequiresHeroAtExtractionCellAndAtLeastOneCrystalKey() {
+	public void extractionRequiresHeroAtExtractionCellAndAtLeastOneAccessCard() {
 		ExtractionRaidLevel level = createRaidLevel();
 		assertFalse(ExtractionRaidLevel.meetsExtractionConditions(
 				level.extractionCell(), level.extractionCell(), 0));
@@ -237,6 +268,53 @@ public class ExtractionRaidLevelTest {
 				level.extractionCell(), level.extractionCell(), 1));
 		assertFalse(ExtractionRaidLevel.meetsExtractionConditions(
 				level.entrance(), level.extractionCell(), 1));
+	}
+
+	@Test
+	public void migratesOnlyRaidCrystalKeysAndMergesExistingCards() {
+		CrystalKey oldRaidKey = new CrystalKey();
+		Bundle legacyKeyBundle = new Bundle();
+		legacyKeyBundle.put("depth", ExtractionRaidLevel.DEPTH);
+		oldRaidKey.restoreFromBundle(legacyKeyBundle);
+		oldRaidKey.quantity(2);
+		Notes.add(oldRaidKey);
+		Notes.add(new RaidAccessCard());
+		CrystalKey ordinaryKey = new CrystalKey(ExtractionRaidLevel.DEPTH - 1);
+		ordinaryKey.branch = 0;
+		Notes.add(ordinaryKey);
+
+		Notes.migrateLegacyKeys(ExtractionRaidLevel.DEPTH, ExtractionRaidLevel.BRANCH);
+		Notes.migrateRaidCrystalKeys();
+
+		assertEquals(3, Notes.keyCount(new RaidAccessCard()));
+		assertEquals(0, Notes.keyCount(new CrystalKey(ExtractionRaidLevel.DEPTH)));
+		assertEquals(1, Notes.keyCount(ordinaryKey));
+	}
+
+	@Test
+	public void restoresLegacyRaidCardFromLockedChest() {
+		ExtractionRaidLevel original = createRaidLevel();
+		for (Heap heap : original.heaps.valueList()) {
+			if (heap.type == Heap.Type.LOCKED_CHEST) {
+				heap.items.set(0, new CrystalKey(ExtractionRaidLevel.DEPTH));
+			}
+		}
+		Bundle bundle = new Bundle();
+		original.storeInBundle(bundle);
+		bundle.put("version", ShatteredPixelDungeon.v2_4_2);
+
+		ExtractionRaidLevel restored = newRaidLevel();
+		Dungeon.level = restored;
+		restored.restoreFromBundle(bundle);
+
+		boolean found = false;
+		for (Heap heap : restored.heaps.valueList()) {
+			if (heap.type == Heap.Type.LOCKED_CHEST) {
+				assertEquals(RaidAccessCard.class, heap.items.getFirst().getClass());
+				found = true;
+			}
+		}
+		assertTrue(found);
 	}
 
 	@Test
@@ -331,8 +409,8 @@ public class ExtractionRaidLevelTest {
 			}
 
 			@Override
-			protected Item createRaidCrystalKey() {
-				return new TestCrystalKey();
+			protected Item createRaidAccessCard() {
+				return new TestAccessCard();
 			}
 		};
 	}
@@ -349,7 +427,7 @@ public class ExtractionRaidLevelTest {
 	private static class TestGoldenKey extends Item {
 	}
 
-	private static class TestCrystalKey extends Item {
+	private static class TestAccessCard extends Item {
 	}
 
 	private static int countTerrain(Level level, int terrain) {
@@ -401,11 +479,11 @@ public class ExtractionRaidLevelTest {
 		return result;
 	}
 
-	private static int countTestCrystalKeys(ExtractionRaidLevel level) {
+	private static int countTestAccessCards(ExtractionRaidLevel level) {
 		int result = 0;
 		for (Heap heap : level.heaps.valueList()) {
 			for (Item item : heap.items) {
-				if (item instanceof TestCrystalKey) result++;
+				if (item instanceof TestAccessCard) result++;
 			}
 		}
 		return result;

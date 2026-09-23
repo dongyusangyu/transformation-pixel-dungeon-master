@@ -14,12 +14,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.bags;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 
 public class HikingBackpack extends Bag {
 
 	{
-		image = ItemSpriteSheet.BACKPACK;
+		image = EXItemSpriteSheet.HIKING_BACKPACK;
 	}
 
 	@Override

@@ -108,16 +108,7 @@ public class Overburden extends Buff {
 
 	@Override
 	public int icon() {
-		float retention = target instanceof Hero
-				? retentionForSlots(countSlots((Hero) target))
-				: 1f;
-		return iconForRetention(retention);
-	}
-
-	public static int iconForRetention(float retention) {
-		if (retention >= 0.5f) return BuffIndicator.HASTE;
-		if (retention >= 0.2f) return BuffIndicator.CRIPPLE;
-		return BuffIndicator.TIME;
+		return BuffIndicator.RAID_OVERBURDEN;
 	}
 
 	@Override

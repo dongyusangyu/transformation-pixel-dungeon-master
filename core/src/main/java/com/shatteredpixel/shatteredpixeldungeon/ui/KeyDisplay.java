@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.keys.CrystalKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.GoldenKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.IronKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.Key;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.RaidAccessCard;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.WornKey;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.watabou.gltextures.SmartTexture;
@@ -59,6 +60,7 @@ public class KeyDisplay extends Visual {
 	static {
 		keyMap.put(WornKey.class, 1);
 		keyMap.put(CrystalKey.class, 2);
+		keyMap.put(RaidAccessCard.class, 2);
 		keyMap.put(GoldenKey.class, 3);
 		keyMap.put(IronKey.class, 4);
 	}
@@ -70,7 +72,7 @@ public class KeyDisplay extends Visual {
 	}
 	
 	public void updateKeys(){
-		keys = new int[keyMap.size()+1];
+		keys = new int[5];
 		
 		for (Notes.KeyRecord rec : Notes.getRecords(Notes.KeyRecord.class)){
 			if (rec.branch() != Dungeon.branch) {

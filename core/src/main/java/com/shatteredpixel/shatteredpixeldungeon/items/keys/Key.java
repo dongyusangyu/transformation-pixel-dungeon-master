@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidLevel;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndJournal;
 import com.watabou.noosa.audio.Sample;
@@ -58,6 +59,11 @@ public abstract class Key extends Item {
 			return false;
 		}
 		legacyLocation = false;
+		if (ExtractionRaidLevel.isRaidLocation(currentDepth, currentBranch)
+				&& depth == currentDepth) {
+			branch = currentBranch;
+			return true;
+		}
 		if (currentBranch == TowerLevel.BRANCH) {
 			int towerContentDepth = 16 + Math.min(9, Math.max(0, currentDepth - 1));
 			if (depth == towerContentDepth) {

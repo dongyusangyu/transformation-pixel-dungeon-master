@@ -24,6 +24,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -262,6 +263,7 @@ public class PrecognitiveEye extends Artifact {
 		public int uses() { return uses; }
 		public boolean consumeDodge() { if (uses <= 0) return false; if (--uses == 0) detach(); return true; }
 		@Override public int icon() { return BuffIndicator.MOMENTARY_FORESIGHT; }
+		@Override public void tintIcon(Image icon) { icon.hardlight(0.3529f, 0.8941f, 0.9020f); }
 		@Override public String iconTextDisplay() { return Integer.toString(uses); }
 		@Override public String desc() { return Messages.get(this, "desc", uses); }
 		@Override public void storeInBundle(Bundle bundle) { super.storeInBundle(bundle); bundle.put(USES, uses); }

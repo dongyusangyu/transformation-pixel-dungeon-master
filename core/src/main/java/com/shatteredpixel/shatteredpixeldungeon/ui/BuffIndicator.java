@@ -204,9 +204,20 @@ public class BuffIndicator extends Component {
 
     public static final int HUXIFA = 144;
     public static final int JIASUWEILAI = 145;
-    public static final int PRECOGNITIVE_EYE = 146;
-    public static final int PRECOGNITIVE_OVERHEAT = 147;
-    public static final int MOMENTARY_FORESIGHT = 148;
+    public static final int PRECOGNITIVE_EYE = 94;
+    public static final int PRECOGNITIVE_OVERHEAT = NONE;
+    public static final int MOMENTARY_FORESIGHT = PRECOGNITIVE_EYE;
+    public static final int RAID_SESSION = 146;
+    public static final int RAID_OVERBURDEN = 147;
+    public static final int RAID_KEY_CARRIER = 148;
+    public static final int MERCURY_SOLIDIFICATION = 151;
+    public static final int SOUL_BLADE_DUSK = 152;
+    public static final int MOUNTAIN_ENERGY = 153;
+    public static final int MOUNTAIN_WALL = 154;
+    public static final int NATURAL_CHILD = 155;
+    public static final int SERPENT_STAFF_SPOON = 156;
+    public static final int CURSE_BURNING = 157;
+    public static final int PRECISE_LOCK = 158;
 
 
 

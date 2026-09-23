@@ -65,7 +65,9 @@ public class HikingBackpackTest {
 		assertEquals(19, bag.capacity());
 		assertEquals(40, bag.value());
 		assertTrue(bag.isFallbackStorage());
-		assertTrue(source.contains("image = ItemSpriteSheet.BACKPACK;"));
+		assertEquals(com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet.HIKING_BACKPACK,
+				new HikingBackpack().image);
+		assertTrue(source.contains("image = EXItemSpriteSheet.HIKING_BACKPACK;"));
 		assertTrue(source.contains("autoGrabOnCollect()"));
 	}
 

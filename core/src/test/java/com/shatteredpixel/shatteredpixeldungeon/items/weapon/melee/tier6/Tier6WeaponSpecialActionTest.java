@@ -83,6 +83,12 @@ public class Tier6WeaponSpecialActionTest {
 	}
 
 	@Test
+	public void chainMaceAndMercuryBladeUseTheirRequestedIndicatorColors() {
+		assertEquals(0x862800, new ChainMace().indicatorColor());
+		assertEquals(0x95F1F5, new MercuryBlade().indicatorColor());
+	}
+
+	@Test
 	public void mountainReleaseAppearsOnlyAtFullEnergyInMainHand() {
 		Hero hero = hero();
 		MountainGuard guard = TestHeroFactory.allocateItem(MountainGuard.class);

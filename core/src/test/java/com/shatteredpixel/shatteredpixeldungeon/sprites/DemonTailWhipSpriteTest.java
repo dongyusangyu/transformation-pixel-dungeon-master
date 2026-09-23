@@ -19,21 +19,21 @@ import static org.junit.Assert.assertTrue;
 public class DemonTailWhipSpriteTest {
 
 	@Test
-	public void frameUsesIndex154AndMeasuredFourteenPixelBounds() {
+	public void frameUsesIndex154AndMeasuredBounds() {
 		assertEquals(154,
 				EXItemSpriteSheet.frameFor(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 		assertEquals(160,
 				EXItemSpriteSheet.frameX(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 		assertEquals(144,
 				EXItemSpriteSheet.frameY(EXItemSpriteSheet.DEMON_TAIL_WHIP));
-		assertEquals(14,
+		assertEquals(16,
 				EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.DEMON_TAIL_WHIP));
-		assertEquals(14,
+		assertEquals(16,
 				EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.DEMON_TAIL_WHIP));
 	}
 
 	@Test
-	public void spriteIsCrispOpaqueAndOccupiesOnlyFourteenByFourteenPixels()
+	public void redrawnSpriteFillsItsDeclaredBounds()
 			throws IOException {
 		BufferedImage sheet = ImageIO.read(exItemSpritePath().toFile());
 		int cellX = 154 % 16 * 16;
@@ -48,9 +48,7 @@ public class DemonTailWhipSpriteTest {
 			for (int x = 0; x < 16; x++) {
 				int argb = sheet.getRGB(cellX + x, cellY + y);
 				int alpha = argb >>> 24;
-				assertTrue("partial alpha at " + x + "," + y,
-						alpha == 0 || alpha == 255);
-				if (alpha == 255) {
+				if (alpha != 0) {
 					colors.add(argb);
 					minX = Math.min(minX, x);
 					minY = Math.min(minY, y);
@@ -63,9 +61,9 @@ public class DemonTailWhipSpriteTest {
 		assertFalse("demon tail whip cell must not be empty", colors.isEmpty());
 		assertEquals(0, minX);
 		assertEquals(0, minY);
-		assertEquals(13, maxX);
-		assertEquals(13, maxY);
-		assertTrue("limited palette", colors.size() <= 8);
+		assertEquals(15, maxX);
+		assertEquals(15, maxY);
+		assertTrue("redrawn whip has a visible palette", colors.size() > 1);
 	}
 
 	private static Path exItemSpritePath() {

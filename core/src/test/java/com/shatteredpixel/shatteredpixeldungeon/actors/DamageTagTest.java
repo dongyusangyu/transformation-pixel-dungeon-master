@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors;
 
+import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
+
 import org.junit.Test;
 
 import java.util.EnumSet;
@@ -31,6 +33,22 @@ public class DamageTagTest {
 				DamageTag.primaryIconTag(DamageTag.of(DamageTag.MAGICAL)));
 		assertEquals(DamageTag.NO_ARMOR,
 				DamageTag.primaryIconTag(DamageTag.of(DamageTag.PHYSICAL, DamageTag.NO_ARMOR)));
+	}
+
+	@Test
+	public void plagueDamageUsesItsIconWithoutChangingPhysicalClassification() {
+		EnumSet<DamageTag> tags = DamageTag.of(DamageTag.PHYSICAL, DamageTag.PLAGUE);
+
+		assertEquals(FloatingText.PLAGUE, DamageIconResolver.resolve(tags));
+		assertTrue(DamageTag.has(tags, DamageTag.PHYSICAL));
+		assertFalse(DamageTag.has(tags, DamageTag.MAGICAL));
+	}
+
+	@Test
+	public void annotatedTextIconFramesHaveDedicatedIds() {
+		assertEquals(4, FloatingText.GUNGNIR_LIFE_COST);
+		assertEquals(32, FloatingText.CURSE_BURNING);
+		assertEquals(33, FloatingText.PLAGUE);
 	}
 
 	@Test

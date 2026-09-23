@@ -125,6 +125,11 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 	}
 
 	@Override
+	public int indicatorColor() {
+		return 0x862800;
+	}
+
+	@Override
 	public String defaultAction() {
 		Hero hero = Dungeon.hero;
 		if (hero != null && hero.belongings.weapon() == this
@@ -323,8 +328,12 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 		return hero ? heroDamageForImpact(impactDamage) : Math.max(0, impactDamage);
 	}
 
-	static boolean qualifiesForBowlingBadge(int enemyTargets) {
-		return enemyTargets >= 6;
+	static boolean qualifiesForBowlingBadge(int enemyKills) {
+		return enemyKills >= 6;
+	}
+
+	static boolean countsForBowlingBadge(boolean enemy, boolean aliveAfter) {
+		return enemy && !aliveAfter;
 	}
 
 	private void dealThrowImpact(Hero hero, BallFollower ball, int cell) {
@@ -334,16 +343,19 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 		Sample.INSTANCE.play(Assets.Sounds.ROCKS);
 		playHitFeedback();
 
-		int enemyTargets = 0;
+		int enemyKills = 0;
 		for (Char ch : new ArrayList<>(Actor.chars())) {
 			if (ch == ball || !ch.isAlive()) continue;
 			if (Dungeon.level.distance(ch.pos, cell) <= 1) {
-				if (ch.alignment == Char.Alignment.ENEMY) enemyTargets++;
+				boolean enemy = ch.alignment == Char.Alignment.ENEMY;
 				int dealt = impactDamageFor(ch == hero, impactDamage);
-				if (dealt > 0) ch.damage(dealt, ball);
+				if (dealt > 0) {
+					ch.damage(dealt, ball);
+					if (countsForBowlingBadge(enemy, ch.isAlive())) enemyKills++;
+				}
 			}
 		}
-		if (qualifiesForBowlingBadge(enemyTargets)) {
+		if (qualifiesForBowlingBadge(enemyKills)) {
 			Badges.validateChainMaceSixTargets();
 		}
 	}

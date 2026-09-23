@@ -208,7 +208,7 @@ public final class ExtractionRaidRun {
 		}
 		GameScene.show(new WndOptions(
 				Messages.get(ExtractionRaidRun.class, "extract_title"),
-				Messages.get(ExtractionRaidRun.class, "extract_body", level.crystalKeyCount()),
+				Messages.get(ExtractionRaidRun.class, "extract_body", level.accessCardCount()),
 				Messages.get(ExtractionRaidRun.class, "extract"),
 				Messages.get(ExtractionRaidRun.class, "continue_raid")) {
 			@Override
@@ -238,7 +238,7 @@ public final class ExtractionRaidRun {
 		RaidSession session = hero == null ? null : hero.buff(RaidSession.class);
 		if (session == null || level == null || !level.canExtract()) return false;
 
-		int keyCount = level.crystalKeyCount();
+		int keyCount = level.accessCardCount();
 		int bonus = bonusForKeyCount(keyCount);
 		clearRaidMarks(hero.belongings.backpack, session.raidId());
 		clearEquippedRaidMarks(hero, session.raidId());
@@ -539,7 +539,7 @@ public final class ExtractionRaidRun {
 
 		@Override
 		public int icon() {
-			return BuffIndicator.LOCKED_FLOOR;
+			return BuffIndicator.RAID_SESSION;
 		}
 
 		@Override
@@ -559,12 +559,12 @@ public final class ExtractionRaidRun {
 
 		@Override
 		public int actionIcon() {
-			return HeroIcon.SMOKE_BOMB;
+			return HeroIcon.RAID_SESSION;
 		}
 
 		@Override
 		public int indicatorColor() {
-			return 0xB48A3C;
+			return 0x009B00;
 		}
 
 		@Override

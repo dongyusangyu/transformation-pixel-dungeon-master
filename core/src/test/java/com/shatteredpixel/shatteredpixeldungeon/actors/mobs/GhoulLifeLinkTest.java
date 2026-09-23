@@ -1,24 +1,32 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
+import com.badlogic.gdx.Preferences;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
+import com.watabou.utils.GameSettings;
 import com.watabou.utils.SparseArray;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class GhoulLifeLinkTest {
@@ -62,6 +70,42 @@ public class GhoulLifeLinkTest {
 		assertTrue("a soul-bound ghoul must not remain detached after its host dies",
 				Actor.chars().contains(downed));
 		assertTrue(Dungeon.level.mobs.contains(downed));
+	}
+
+	@Test
+	public void occupiedRevivalDoesNotLeavePushingActorWhenAnimationsAreDisabled() throws Exception {
+		Field field = GameSettings.class.getDeclaredField("prefs");
+		field.setAccessible(true);
+		Preferences previousPreferences = (Preferences) field.get(null);
+		GameSettings.set((Preferences) Proxy.newProxyInstance(
+				Preferences.class.getClassLoader(), new Class<?>[]{Preferences.class},
+				(proxy, method, args) -> {
+					if (method.getName().equals("getBoolean")
+							&& SPDSettings.KEY_CHAR_ANIMATIONS.equals(args[0])) return false;
+					if (method.getName().startsWith("get") && args != null && args.length == 2) return args[1];
+					if (method.getReturnType() == boolean.class) return false;
+					if (method.getReturnType() == Preferences.class) return proxy;
+					return null;
+				}));
+		try {
+			Ghoul downed = ghoulAt(new DwarfKing.DKGhoul(), 40);
+			Ghoul host = ghoulAt(41);
+			Ghoul blocker = ghoulAt(42);
+			Actor.remove(downed);
+			Dungeon.level.mobs.remove(downed);
+			blocker.pos = 40;
+			Ghoul.GhoulLifeLink link = Buff.affect(host, Ghoul.GhoulLifeLink.class);
+			link.set(1, downed);
+
+			link.act();
+
+			assertTrue(Actor.chars().contains(downed));
+			assertTrue(downed.pos != 40);
+			assertSame(downed, Actor.findChar(downed.pos));
+			assertFalse(Actor.all().stream().anyMatch(actor -> actor instanceof Pushing));
+		} finally {
+			GameSettings.set(previousPreferences);
+		}
 	}
 
 	private static Ghoul ghoulAt(int pos) {

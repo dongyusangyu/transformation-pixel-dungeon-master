@@ -34,7 +34,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
-import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Random;
 
@@ -116,6 +115,11 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 	@Override
 	public String specialActionId() {
 		return AC_SHOOT;
+	}
+
+	@Override
+	public int indicatorColor() {
+		return 0x95F1F5;
 	}
 
 	@Override
@@ -307,12 +311,7 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 
 		@Override
 		public int icon() {
-			return BuffIndicator.IMBUE;
-		}
-
-		@Override
-		public void tintIcon(Image icon) {
-			icon.hardlight(0.55f, 0.9f, 1f);
+			return BuffIndicator.MERCURY_SOLIDIFICATION;
 		}
 
 		@Override

@@ -25,8 +25,11 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag;
+import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.TestBag1;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.HikingBackpack;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.PotionBandolier;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.ScrollHolder;
@@ -406,16 +409,26 @@ public class WndBag extends WndTabbed {
 	}
 	
 	private Image icon( Bag bag ) {
+		return Icons.get( iconType(bag) );
+	}
+
+	static Icons iconType( Bag bag ) {
 		if (bag instanceof VelvetPouch) {
-			return Icons.get( Icons.SEED_POUCH );
+			return Icons.SEED_POUCH;
 		} else if (bag instanceof ScrollHolder) {
-			return Icons.get( Icons.SCROLL_HOLDER );
+			return Icons.SCROLL_HOLDER;
 		} else if (bag instanceof MagicalHolster) {
-			return Icons.get( Icons.WAND_HOLSTER );
+			return Icons.WAND_HOLSTER;
 		} else if (bag instanceof PotionBandolier) {
-			return Icons.get( Icons.POTION_BANDOLIER );
+			return Icons.POTION_BANDOLIER;
+		} else if (bag instanceof HikingBackpack) {
+			return Icons.HIKING_BACKPACK;
+		} else if (bag instanceof TestBag) {
+			return Icons.TEST_BAG_1;
+		} else if (bag instanceof TestBag1) {
+			return Icons.TEST_BAG_2;
 		} else {
-			return Icons.get( Icons.BACKPACK );
+			return Icons.BACKPACK;
 		}
 	}
 	

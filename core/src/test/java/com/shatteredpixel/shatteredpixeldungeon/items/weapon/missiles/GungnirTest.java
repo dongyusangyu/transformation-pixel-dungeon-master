@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles;
 
+import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 
@@ -52,6 +53,18 @@ public class GungnirTest {
 	}
 
 	@Test
+	public void gungnirSelfCostUsesDedicatedTextIcon() throws Exception {
+		String source = readMainSource("items/weapon/missiles/Gungnir.java");
+		int procStart = source.indexOf("public int proc(Char attacker, Char defender, int damage)");
+		int rangedHitStart = source.indexOf("protected void rangedHit", procStart);
+		String proc = source.substring(procStart, rangedHitStart);
+
+		assertEquals(4, FloatingText.GUNGNIR_LIFE_COST);
+		assertTrue(proc.contains("showStatusWithIcon"));
+		assertTrue(proc.contains("FloatingText.GUNGNIR_LIFE_COST"));
+	}
+
+	@Test
 	public void bleedingAndKillHealingRequirePreexistingBleeding() {
 		assertEquals(1, Gungnir.bleedForDamage(1));
 		assertEquals(5, Gungnir.bleedForDamage(10));
@@ -87,6 +100,8 @@ public class GungnirTest {
 		assertFalse(doThrow.contains("hero.HP -="));
 		assertTrue(proc.contains("attacker instanceof Hero"));
 		assertTrue(proc.contains("hero.HP -= lifeCost"));
+		assertTrue(proc.contains("showStatusWithIcon"));
+		assertTrue(proc.contains("FloatingText.GUNGNIR_LIFE_COST"));
 	}
 
 	@Test

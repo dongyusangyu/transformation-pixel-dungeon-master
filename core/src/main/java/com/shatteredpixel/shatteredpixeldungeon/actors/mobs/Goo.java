@@ -49,6 +49,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.WornKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.GooBlob;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -61,6 +62,10 @@ import com.watabou.utils.Bundle;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.PathFinder;
 import com.watabou.utils.Random;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Goo extends Mob implements PhysicalRangedAttack {
 
@@ -309,19 +314,46 @@ public class Goo extends Mob implements PhysicalRangedAttack {
             BossHealthBar.assignBoss( this );
             Dungeon.level.seal();
         }
-		if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
-			for(int i=1;i<5;i++){
-				if(!summon[i] && HP < HT/5*i){
-					summon[i] = true;
+		if (isAlive()
+				&& Dungeon.isChallenged(Challenges.STRONGER_BOSSES)
+				&& Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)) {
+			Set<Integer> reserved = new HashSet<>();
+			for (int i = 1; i < 5; i++) {
+				if (!summon[i] && HP < HT / 5 * i) {
+					ArrayList<Integer> candidates = summonCandidates(Dungeon.level, pos, reserved);
+					if (candidates.isEmpty()) break;
+
+					int cell = Random.element(candidates);
 					CausticSlime mob = new CausticSlime();
 					mob.alignment = alignment;
-                    mob.updateSpriteState();
-					mob.pos = this.pos;
+					mob.updateSpriteState();
+					mob.pos = cell;
 					GameScene.add(mob);
+					summon[i] = true;
+					reserved.add(cell);
 				}
 			}
 		}
 
+	}
+
+	static ArrayList<Integer> summonCandidates(Level level, int pos, Set<Integer> reserved) {
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = pos + offset;
+			if (!level.insideMap(cell)
+					|| !level.passable[cell]
+					|| level.solid[cell]
+					|| level.pit[cell]
+					|| reserved.contains(cell)
+					|| level.findMob(cell) != null
+					|| Actor.findChar(cell) != null
+					|| (Dungeon.hero != null && Dungeon.hero.pos == cell)) {
+				continue;
+			}
+			candidates.add(cell);
+		}
+		return candidates;
 	}
 
 	@Override

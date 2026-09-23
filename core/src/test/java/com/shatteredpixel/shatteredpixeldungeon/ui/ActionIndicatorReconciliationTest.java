@@ -156,6 +156,30 @@ public class ActionIndicatorReconciliationTest {
 	}
 
 	@Test
+	public void smokeMaskIsRegisteredAsASwitchableAction() throws Exception {
+		Hero hero = emptyHero(Talent.SMOKE_MASK);
+		Dungeon.hero = hero;
+		Talent.SmokeMask smokeMask = new Talent.SmokeMask();
+		assertTrue(smokeMask.attachTo(hero));
+
+		assertEquals(1, ActionIndicator.usableActionCount());
+	}
+
+	@Test
+	public void smokeMaskDoesNotReplaceAnotherSelectedActionEachTurn() throws Exception {
+		Hero hero = emptyHero(Talent.SMOKE_MASK);
+		Dungeon.hero = hero;
+		Talent.SmokeMask smokeMask = new Talent.SmokeMask();
+		assertTrue(smokeMask.attachTo(hero));
+		TestAction selectedAction = new TestAction();
+		assertTrue(ActionIndicator.setAction(selectedAction));
+
+		smokeMask.act();
+
+		assertSame(selectedAction, ActionIndicator.action);
+	}
+
+	@Test
 	public void secondaryRegisteredActionSurvivesReconciliation() throws Exception {
 		Dungeon.hero = emptyHero();
 		TestAction action = new TestAction();

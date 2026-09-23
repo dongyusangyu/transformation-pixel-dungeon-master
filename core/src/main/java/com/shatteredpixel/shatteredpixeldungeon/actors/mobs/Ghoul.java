@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.SacrificialFire;
@@ -301,8 +302,15 @@ public class Ghoul extends Mob {
 					}
 					if (candidates.size() > 0) {
 						int newPos = Random.element( candidates );
-						Actor.add( new Pushing( ghoul, ghoul.pos, newPos ) );
+						if (SPDSettings.charAnimations() && ghoul.sprite != null && ghoul.sprite.parent != null) {
+							Actor.add( new Pushing( ghoul, ghoul.pos, newPos ) );
+						} else if (ghoul.sprite != null) {
+							ghoul.sprite.interruptMotion();
+							ghoul.sprite.place(newPos);
+							ghoul.sprite.idle();
+						}
 						ghoul.pos = newPos;
+						GameScene.sortMobSprites();
 
 					} else {
 						spend(TICK);

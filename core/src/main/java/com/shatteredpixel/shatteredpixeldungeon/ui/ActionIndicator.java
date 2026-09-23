@@ -265,7 +265,8 @@ public class ActionIndicator extends Tag {
 			Reason.class,
 			InstructionTool.toolRecharge.class,
 			ExtractionRaidRun.RaidSession.class,
-			Talent.NaturalChildAction.class
+			Talent.NaturalChildAction.class,
+			Talent.SmokeMask.class
 
 	};
 

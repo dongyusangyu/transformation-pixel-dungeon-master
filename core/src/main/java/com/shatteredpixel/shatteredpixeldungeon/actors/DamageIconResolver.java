@@ -22,6 +22,7 @@ public final class DamageIconResolver {
 	public static int resolve(EnumSet<DamageTag> tags) {
 		switch (DamageTag.primaryIconTag(tags)) {
 			case PICKAXE:        return FloatingText.PICK_DMG;
+			case PLAGUE:         return FloatingText.PLAGUE;
 			case HUNGER:         return FloatingText.HUNGER;
 			case FIRE:           return FloatingText.BURNING;
 			case FROST:          return FloatingText.FROST;

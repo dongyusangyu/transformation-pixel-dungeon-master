@@ -237,7 +237,7 @@ public class TestPotion extends TestGenerator {
             case 11: default: return ItemSpriteSheet.CHEST;
             case 12: return ItemSpriteSheet.SEAL_SHARD;
             case 13: return ItemSpriteSheet.TRINKET_CATA;
-            case 14: return ItemSpriteSheet.BACKPACK;
+            case 14: return EXItemSpriteSheet.HIKING_BACKPACK;
             case TREASURE_CATEGORY: return EXItemSpriteSheet.MUISCA_GOLDEN_RAFT;
         }
     }

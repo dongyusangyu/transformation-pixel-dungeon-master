@@ -62,10 +62,8 @@ public class OverburdenTest {
 	}
 
 	@Test
-	public void iconChangesAtLightMediumAndHeavyThresholds() {
-		assertEquals(BuffIndicator.HASTE, Overburden.iconForRetention(0.5f));
-		assertEquals(BuffIndicator.CRIPPLE, Overburden.iconForRetention(0.2f));
-		assertEquals(BuffIndicator.TIME, Overburden.iconForRetention(0.199f));
+	public void iconUsesDedicatedWheelchairFrame() {
+		assertEquals(BuffIndicator.RAID_OVERBURDEN, new Overburden().icon());
 	}
 
 	@Test

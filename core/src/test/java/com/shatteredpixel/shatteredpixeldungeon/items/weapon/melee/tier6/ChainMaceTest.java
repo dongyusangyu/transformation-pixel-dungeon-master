@@ -279,10 +279,13 @@ public class ChainMaceTest {
 	}
 
     @Test
-    public void bowlingBadgeRequiresAtLeastSixEnemyTargets() {
+    public void bowlingBadgeRequiresAtLeastSixEnemyKills() {
         assertFalse(ChainMace.qualifiesForBowlingBadge(5));
         assertTrue(ChainMace.qualifiesForBowlingBadge(6));
         assertTrue(ChainMace.qualifiesForBowlingBadge(12));
+        assertFalse(ChainMace.countsForBowlingBadge(true, true));
+        assertFalse(ChainMace.countsForBowlingBadge(false, false));
+        assertTrue(ChainMace.countsForBowlingBadge(true, false));
     }
 
 	@Test

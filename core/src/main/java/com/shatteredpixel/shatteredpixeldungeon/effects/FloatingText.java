@@ -83,6 +83,7 @@ public class FloatingText extends RenderedTextBlock {
 	public static int PHYS_DMG_NO_BLOCK = 1;
 	public static int MAGIC_DMG         = 2;
 	public static int PICK_DMG          = 3;
+	public static final int GUNGNIR_LIFE_COST = 4;
 
 	//debuff/dot damage icons
 	public static int HUNGER    = 5;
@@ -115,6 +116,9 @@ public class FloatingText extends RenderedTextBlock {
     public static int UP_WHITE = 29;
     public static int DOWN_RED = 30;
     public static int UP_GLOD = 31;
+	// Reserved for a future curse-burning damage mechanic; not resolved yet.
+	public static final int CURSE_BURNING = 32;
+	public static final int PLAGUE = 33;
 
 	//hit reason icons
 	public static int HIT_WEP   = 36;

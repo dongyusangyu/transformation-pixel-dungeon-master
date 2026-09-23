@@ -15,38 +15,35 @@ import static org.junit.Assert.assertTrue;
 
 public class ExtractionScrollSpriteTest {
 
-	private static final int FRAME_SIZE = 16;
-	private static final int EXTRACT_X = 0;
-	private static final int EXTRACT_Y = 32;
 	private static final int META_X = 240;
 	private static final int META_Y = 288;
 
 	@Test
-	public void extractionScrollPreservesMetaScrollOutsideItsCenter() throws IOException {
+	public void redrawnExtractionScrollUsesItsOwnCompleteFrame() throws IOException {
 		BufferedImage items = readSprite("items.png");
 		BufferedImage exItems = readSprite("ex_items.png");
 
 		assertEquals(256, exItems.getWidth());
 		assertEquals(512, exItems.getHeight());
+		assertEquals(32, EXItemSpriteSheet.frameFor(EXItemSpriteSheet.SCROLL_EXTRACTION));
+		assertEquals(13, EXItemSpriteSheet.frameWidth(EXItemSpriteSheet.SCROLL_EXTRACTION));
+		assertEquals(16, EXItemSpriteSheet.frameHeight(EXItemSpriteSheet.SCROLL_EXTRACTION));
 
-		boolean centerChanged = false;
-		for (int y = 0; y < FRAME_SIZE; y++) {
-			for (int x = 0; x < FRAME_SIZE; x++) {
+		boolean changed = false;
+		int visible = 0;
+		for (int y = 0; y < 16; y++) {
+			for (int x = 0; x < 16; x++) {
 				int original = items.getRGB(META_X + x, META_Y + y);
-				int extraction = exItems.getRGB(EXTRACT_X + x, EXTRACT_Y + y);
-				if (insideSymbol(x, y)) {
-					centerChanged |= original != extraction;
-				} else {
-					assertEquals("Unexpected change at " + x + "," + y,
-							original, extraction);
+				int extraction = exItems.getRGB(x, 32 + y);
+				changed |= original != extraction;
+				if ((extraction >>> 24) != 0) {
+					visible++;
+					assertTrue("scroll art must fit its frame", x < 13);
 				}
 			}
 		}
-		assertTrue("The extraction symbol must differ from SCROLL_META", centerChanged);
-	}
-
-	private static boolean insideSymbol(int x, int y) {
-		return x >= 5 && x <= 9 && y >= 4 && y <= 8;
+		assertTrue("redrawn scroll must be visible", visible > 0);
+		assertTrue("extraction scroll must remain distinct from SCROLL_META", changed);
 	}
 
 	private static BufferedImage readSprite(String fileName) throws IOException {

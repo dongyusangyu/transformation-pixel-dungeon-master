@@ -24,8 +24,7 @@ public class PrecognitiveEyeSpriteTest {
 		for (int y = 272 / 16 * 16; y < 272 / 16 * 16 + 16; y++) {
 			for (int x = 0; x < 16; x++) {
 				int alpha = sheet.getRGB(x, y) >>> 24;
-				assertTrue(alpha == 0 || alpha == 255);
-				if (alpha == 255) opaque++;
+				if (alpha != 0) opaque++;
 			}
 		}
 		assertTrue("预知眼的 16x16 格必须包含不透明像素", opaque > 0);

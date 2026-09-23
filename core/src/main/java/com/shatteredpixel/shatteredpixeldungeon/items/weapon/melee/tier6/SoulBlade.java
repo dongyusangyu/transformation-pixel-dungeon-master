@@ -20,7 +20,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
-import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -269,12 +268,7 @@ public class SoulBlade extends MeleeWeapon {
 
 		@Override
 		public int icon() {
-			return BuffIndicator.HASTE;
-		}
-
-		@Override
-		public void tintIcon(Image icon) {
-			icon.hardlight(0.55f, 0.75f, 1f);
+			return BuffIndicator.SOUL_BLADE_DUSK;
 		}
 
 		@Override

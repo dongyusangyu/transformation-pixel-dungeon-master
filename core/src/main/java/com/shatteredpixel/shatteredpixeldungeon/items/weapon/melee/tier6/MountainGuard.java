@@ -328,7 +328,7 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
 
         @Override
         public int icon() {
-            return BuffIndicator.ARMOR;
+            return BuffIndicator.MOUNTAIN_ENERGY;
         }
 
         @Override
@@ -369,12 +369,7 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
 
         @Override
         public int icon() {
-            return BuffIndicator.DUEL_GUARD;
-        }
-
-        @Override
-        public void tintIcon(Image icon) {
-            icon.tint(0x89cbd0, 0.75f);
+            return BuffIndicator.MOUNTAIN_WALL;
         }
 
         public void captureInitialDuration() {
