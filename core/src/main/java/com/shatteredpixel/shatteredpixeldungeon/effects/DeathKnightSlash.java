@@ -2,96 +2,127 @@ package com.shatteredpixel.shatteredpixeldungeon.effects;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnightBombardment.Band;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
-import com.watabou.noosa.Group;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.MovieClip;
+import com.watabou.noosa.Group;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.TextureFilm;
-import com.watabou.utils.PointF;
+import com.watabou.utils.RectF;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 
-/** Non-blocking sword-wave projectile used to visualize committed bombardment lanes. */
-public class DeathKnightSlash extends MovieClip {
+/** A visual-only sword wave drawn on the committed bombardment cells. */
+public class DeathKnightSlash extends Image {
 
-    private final float travelTime;
-    private float elapsedTime;
+    private static final int FRAME_COUNT = 4;
+    private static final int FRAMES_PER_SECOND = 12;
+    private static final float MAX_DELAY = 0.12f;
+    private static final float DURATION = MAX_DELAY + (float) FRAME_COUNT / FRAMES_PER_SECOND;
 
-    private DeathKnightSlash(int from, int to) {
-        texture(Assets.Sprites.EX_ITEMS);
-        TextureFilm film = new TextureFilm(texture, 16, 16);
-        Animation animation = new Animation(1, true);
-        animation.frames(film, EXItemSpriteSheet.DEATH_KNIGHT_SLASH_FRAME);
+    private final Level level;
+    private final Entry[] entries;
+    private final RectF[] frames = new RectF[FRAME_COUNT];
+    private final int originX;
+    private final int originY;
+    private float elapsed;
 
-        PointF start = DungeonTilemap.tileCenterToWorld(from);
-        PointF end = DungeonTilemap.tileCenterToWorld(to);
-        x = start.x - width / 2f;
-        y = start.y - height / 2f;
-        origin.set(width / 2f, height / 2f);
-        scale.set(2f);
-        float distance = PointF.distance(start, end);
-        travelTime = Math.max(0.12f, Math.min(0.42f, distance / 180f));
-        speed.set((end.x - start.x) / travelTime, (end.y - start.y) / travelTime);
-        play(animation);
+    static final class Entry {
+        final int cell;
+        final float delay;
+
+        Entry(int cell, float delay) {
+            this.cell = cell;
+            this.delay = delay;
+        }
     }
 
-    /**
-     * Selects angularly distributed far cells so large zones read as moving sword rays
-     * without creating one visual per affected tile.
-     */
-    public static void showVolley(Group parent, int from, int[] affectedCells, int rayCount) {
-        if (parent == null || Dungeon.level == null || affectedCells == null
-                || from < 0 || from >= Dungeon.level.length() || rayCount <= 0) return;
-        ArrayList<Endpoint> endpoints = new ArrayList<>();
-        int width = Dungeon.level.width();
+    private DeathKnightSlash(Level level, int from, Entry[] entries) {
+        this.level = level;
+        this.entries = entries;
+        originX = from % level.width();
+        originY = from / level.width();
+
+        texture(Assets.Effects.DEATH_KNIGHT_SLASH);
+        TextureFilm film = new TextureFilm(texture, 16, 16);
+        for (int i = 0; i < FRAME_COUNT; i++) frames[i] = film.get(i);
+        frame(frames[0]);
+    }
+
+    public static void show(Group parent, int from, int[] affectedCells, Band[] bands) {
+        Level level = Dungeon.level;
+        if (parent == null || level == null || !SPDSettings.charAnimations()) return;
+        Entry[] entries = plan(level.width(), level.length(), from, affectedCells, bands);
+        if (entries.length > 0) parent.add(new DeathKnightSlash(level, from, entries));
+    }
+
+    static Entry[] plan(int width, int length, int from, int[] affectedCells, Band[] bands) {
+        if (width <= 0 || length <= 0 || from < 0 || from >= length || affectedCells == null) {
+            return new Entry[0];
+        }
+        boolean[] seen = new boolean[length];
+        ArrayList<Entry> result = new ArrayList<>();
         int fromX = from % width;
         int fromY = from / width;
-        for (int cell : affectedCells) {
-            if (cell < 0 || cell >= Dungeon.level.length() || cell == from) continue;
-            int dx = cell % width - fromX;
-            int dy = cell / width - fromY;
-            endpoints.add(new Endpoint(cell, Math.atan2(dy, dx), dx * dx + dy * dy));
+        for (int i = 0; i < affectedCells.length; i++) {
+            int cell = affectedCells[i];
+            if (cell < 0 || cell >= length || cell == from || seen[cell]) continue;
+            seen[cell] = true;
+            Band band = bands != null && i < bands.length ? bands[i] : Band.NONE;
+            float delay;
+            if (band == Band.CORE) delay = 0f;
+            else if (band == Band.INNER) delay = 0.04f;
+            else if (band == Band.OUTER) delay = 0.08f;
+            else {
+                int distance = Math.max(Math.abs(cell % width - fromX),
+                        Math.abs(cell / width - fromY));
+                delay = Math.min(MAX_DELAY, distance * 0.02f);
+            }
+            result.add(new Entry(cell, delay));
         }
-        if (endpoints.isEmpty()) return;
-        endpoints.sort(Comparator.comparingDouble(endpoint -> endpoint.angle));
+        return result.toArray(new Entry[0]);
+    }
 
-        int count = Math.min(rayCount, endpoints.size());
-        int previousCell = -1;
-        for (int i = 0; i < count; i++) {
-            int center = count == 1 ? endpoints.size() / 2
-                    : Math.round(i * (endpoints.size() - 1f) / (count - 1f));
-            int radius = Math.max(1, endpoints.size() / Math.max(2, count * 2));
-            Endpoint selected = endpoints.get(center);
-            for (int index = Math.max(0, center - radius);
-                 index <= Math.min(endpoints.size() - 1, center + radius); index++) {
-                Endpoint candidate = endpoints.get(index);
-                if (candidate.distanceSquared > selected.distanceSquared) selected = candidate;
-            }
-            if (selected.cell != previousCell) {
-                parent.add(new DeathKnightSlash(from, selected.cell));
-                previousCell = selected.cell;
-            }
-        }
+    static int frameIndex(float elapsed, float delay) {
+        float localTime = elapsed - delay;
+        if (localTime < 0 || localTime >= (float) FRAME_COUNT / FRAMES_PER_SECOND) return -1;
+        return (int) (localTime * FRAMES_PER_SECOND);
     }
 
     @Override
     public void update() {
         super.update();
-        elapsedTime += Game.elapsed;
-        if (elapsedTime >= travelTime) killAndErase();
+        elapsed += Game.elapsed;
+        if (Dungeon.level != level || elapsed >= DURATION) killAndErase();
     }
 
-    private static final class Endpoint {
-        final int cell;
-        final double angle;
-        final int distanceSquared;
-
-        Endpoint(int cell, double angle, int distanceSquared) {
-            this.cell = cell;
-            this.angle = angle;
-            this.distanceSquared = distanceSquared;
+    @Override
+    public void draw() {
+        if (Dungeon.level != level || level.heroFOV == null) return;
+        int lastFrame = -1;
+        boolean lastFlipH = false;
+        boolean lastFlipV = false;
+        for (Entry entry : entries) {
+            if (!level.heroFOV[entry.cell]) continue;
+            int index = frameIndex(elapsed, entry.delay);
+            if (index < 0) continue;
+            int cellX = entry.cell % level.width();
+            int cellY = entry.cell / level.width();
+            boolean flipH = cellX < originX;
+            boolean flipV = cellY < originY;
+            if (index != lastFrame || flipH != lastFlipH || flipV != lastFlipV) {
+                flipHorizontal = flipH;
+                flipVertical = flipV;
+                frame(frames[index]);
+                lastFrame = index;
+                lastFlipH = flipH;
+                lastFlipV = flipV;
+            }
+            x = cellX * DungeonTilemap.SIZE;
+            y = cellY * DungeonTilemap.SIZE;
+            super.draw();
         }
     }
 }

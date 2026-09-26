@@ -163,7 +163,7 @@ public class Blowpipe extends MeleeWeapon {
     public static class WeakChargedShot extends Buff{
 
         {
-            announced = true;
+            announced = false;
             type = buffType.POSITIVE;
         }
 

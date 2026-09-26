@@ -73,7 +73,7 @@ public class Scimitar extends MeleeWeapon {
 	public static class SwordDance extends FlavourBuff {
 
 		{
-			announced = true;
+			announced = false;
 			type = buffType.POSITIVE;
 		}
 

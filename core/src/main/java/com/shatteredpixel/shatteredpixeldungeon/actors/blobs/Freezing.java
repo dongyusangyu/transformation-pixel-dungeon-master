@@ -42,14 +42,19 @@ public class Freezing extends Blob {
 		int cell;
 		
 		Fire fire = (Fire)Dungeon.level.blobs.get( Fire.class );
+		CursedFlame cursedFlame = (CursedFlame)Dungeon.level.blobs.get( CursedFlame.class );
 		
 		for (int i = area.left-1; i <= area.right; i++) {
 			for (int j = area.top-1; j <= area.bottom; j++) {
 				cell = i + j*Dungeon.level.width();
 				if (cur[cell] > 0) {
+					boolean hasFire = fire != null && fire.volume > 0 && fire.cur[cell] > 0;
+					boolean hasCursedFlame = cursedFlame != null && cursedFlame.volume > 0
+							&& cursedFlame.cur[cell] > 0;
 					
-					if (fire != null && fire.volume > 0 && fire.cur[cell] > 0){
-						fire.clear(cell);
+					if (hasFire || hasCursedFlame){
+						if (hasFire) fire.clear(cell);
+						if (hasCursedFlame) cursedFlame.clear(cell);
 						off[cell] = cur[cell] = 0;
 						continue;
 					}
@@ -119,6 +124,10 @@ public class Freezing extends Blob {
 		Fire fire = (Fire) Dungeon.level.blobs.get(Fire.class);
 		if (fire != null && fire.volume > 0) {
 			fire.clear( cell );
+		}
+		CursedFlame cursedFlame = (CursedFlame) Dungeon.level.blobs.get(CursedFlame.class);
+		if (cursedFlame != null && cursedFlame.volume > 0) {
+			cursedFlame.clear(cell);
 		}
 
 		MagicalFireRoom.EternalFire eternalFire = (MagicalFireRoom.EternalFire)Dungeon.level.blobs.get(MagicalFireRoom.EternalFire.class);

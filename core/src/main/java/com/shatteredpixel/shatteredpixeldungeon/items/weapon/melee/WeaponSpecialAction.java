@@ -2,8 +2,10 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator1;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Visual;
 
 /** A recurring special action exposed only by the effective main-hand weapon. */
@@ -24,8 +26,11 @@ public interface WeaponSpecialAction extends ActionIndicator1.Action {
 		Hero hero = Dungeon.hero;
 		return hero != null && hero.belongings != null
 				&& hero.belongings.weapon() == this
-				&& hero.STR() >= specialActionWeapon().STRReq()
 				&& specialActionAvailable(hero);
+	}
+
+	default boolean hasEnoughStrength(Hero hero) {
+		return hero != null && hero.STR() >= specialActionWeapon().STRReq();
 	}
 
 	@Override
@@ -48,6 +53,10 @@ public interface WeaponSpecialAction extends ActionIndicator1.Action {
 	default void doAction() {
 		Hero hero = Dungeon.hero;
 		if (usable()) {
+			if (!hasEnoughStrength(hero)) {
+				GLog.w(Messages.get(WeaponSpecialAction.class, "insufficient_strength"));
+				return;
+			}
 			specialActionWeapon().execute(hero, specialActionId());
 		}
 	}

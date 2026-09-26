@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
@@ -11,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfIllusion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.ElfWineCup;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -28,6 +30,8 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 		default Actor actorById(int id) { return Actor.findById(id); }
 		default void onCupDestroyed(Char lastHit) { }
 		default void spawnIllusions() { }
+		default boolean heroIsEncounterDrunk() { return GentlemanElf.isEncounterDrunk(Dungeon.hero); }
+		default boolean spawnIllusion() { return false; }
 		default void showTrueBodyHint() { }
 	}
 	private static final String BANQUET = "gentleman_banquet_turns";
@@ -37,6 +41,7 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 	private static final String CUP_RESPAWN = "gentleman_cup_respawn_turns";
 	private static final String BOSS = "gentleman_boss_id";
 	private static final String ILLUSIONS = "gentleman_illusion_ids";
+	private static final String DRUNK_TICKS = "gentleman_drunk_ticks";
 	private static final int MIN_BANQUET_COOLDOWN = 5;
 	private static final int MAX_BANQUET_COOLDOWN = 20;
 	private static final int BANQUET_DAMAGE = 5;
@@ -47,6 +52,7 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 	private int cupRespawnTurns = -1;
 	private int bossId = -1;
 	private int[] illusionIds = new int[0];
+	private int drunkTicks;
 	private transient Host host;
 	private transient boolean recoverMissingIllusions;
 
@@ -126,6 +132,14 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 		if (!active) { diactivate(); return true; }
 		if (host == null || host.boss() == null) { active = false; diactivate(); return true; }
 		if (!host.boss().isAlive()) { cleanup(); diactivate(); return true; }
+		host.boss().tickEncounterClock(TICK);
+		GentlemanElf.Phase phase = host.boss().phase();
+		if (phase == GentlemanElf.Phase.TOAST_GAME || phase == GentlemanElf.Phase.CUP_CONTEST) {
+			if (host.heroIsEncounterDrunk() && ++drunkTicks >= 20) {
+				drunkTicks = 0;
+				if (livingIllusionCount() < 3) spawnPeriodicIllusion();
+			}
+		} else drunkTicks = 0;
 		if (banquetTurns < banquetCooldown) banquetTurns++;
 		if (host.boss().phase() == GentlemanElf.Phase.MIRROR_TEST) host.showTrueBodyHint();
 		if (cupRespawnTurns > 0) cupRespawnTurns--;
@@ -137,6 +151,24 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 		}
 		spend(TICK);
 		return true;
+	}
+	private void spawnPeriodicIllusion() {
+		if (host.spawnIllusion() || Dungeon.level == null) return;
+		ArrayList<Integer> candidates = new ArrayList<>();
+		for (int cell = 0; cell < Dungeon.level.length(); cell++) {
+			if (!Dungeon.level.passable[cell] || Dungeon.level.solid[cell]
+					|| Actor.findChar(cell) != null) continue;
+			if (Dungeon.level instanceof TowerBossLevel
+					&& !((TowerBossLevel) Dungeon.level).isBossArenaCell(cell)) continue;
+			candidates.add(cell);
+		}
+		if (candidates.isEmpty()) return;
+		GentlemanElfIllusion illusion = new GentlemanElfIllusion(host.boss());
+		illusion.pos = Random.element(candidates);
+		GameScene.add(illusion, 1f);
+		int[] next = java.util.Arrays.copyOf(illusionIds, illusionIds.length + 1);
+		next[next.length - 1] = illusion.id();
+		illusionIds = next;
 	}
 	public boolean actForTest() { return act(); }
 	@Override public void onCupDestroyed(ElfWineCup cup, Char lastHit) {
@@ -160,13 +192,7 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 		illusionIds = new int[0];
 	}
 	public void cleanup() {
-		if (host != null) {
-			for (Char character : host.characters()) {
-				if (character == null) continue;
-				Buff.detach(character, Drunkenness.class);
-				Buff.detach(character, Exhilaration.class);
-			}
-		}
+		if (host != null && host.boss() != null) host.boss().clearEncounterWine();
 		cancelCup(); clearIllusions(); stop();
 	}
 	private void rebindDerivedEntities() {
@@ -210,6 +236,7 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 		bundle.put(CUP_RESPAWN, cupRespawnTurns);
 		bundle.put(BOSS, bossId);
 		bundle.put(ILLUSIONS, illusionIds);
+		bundle.put(DRUNK_TICKS, drunkTicks);
 	}
 	@Override public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
@@ -224,6 +251,7 @@ public class GentlemanElfArena extends Actor implements ElfWineCup.Listener {
 		bossId = bundle.contains(BOSS) ? bundle.getInt(BOSS) : -1;
 		illusionIds = bundle.getIntArray(ILLUSIONS);
 		if (illusionIds == null) illusionIds = new int[0];
+		drunkTicks = Math.max(0, Math.min(19, bundle.getInt(DRUNK_TICKS)));
 	}
 
 	private static int rollBanquetCooldown() {

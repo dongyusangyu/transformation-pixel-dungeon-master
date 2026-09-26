@@ -426,7 +426,7 @@ public class BrokenSeal extends Item {
 
 		@Override
 		public int icon() {
-			return sealEquipped() ? BuffIndicator.COMBO : BuffIndicator.NONE;
+			return sealEquipped() ? BuffIndicator.SEAL_COMBO : BuffIndicator.NONE;
 		}
 
 		@Override

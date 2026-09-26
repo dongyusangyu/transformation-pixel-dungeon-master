@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.WellWater;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.Sewage;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Awareness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -56,6 +57,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.RevealedArea;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Shadows;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Susceptible;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
@@ -89,6 +91,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Stylus;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TwinDemonEyes;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
@@ -119,6 +122,8 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.features.HighGrass;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.ShadowCaster;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
@@ -656,6 +661,7 @@ public abstract class Level implements Bundlable {
 	//returns true if we immediately transition, false otherwise
 	public void onHeroTurnStarted(Hero hero) {
 		if (hero == null || !hasActivePestilenceBoss()) return;
+		if (Blob.volumeAt(hero.pos, Sewage.class) > 0) Susceptible.apply(hero);
 
 		Class<? extends Blob> miasma = activePestilenceMiasmaAt(hero.pos);
 		if (miasma == null || hero.isImmune(miasma)) {
@@ -1179,9 +1185,12 @@ public abstract class Level implements Bundlable {
 	
 	public static void set( int cell, int terrain, Level level ) {
 		if (level == null || cell < 0 || cell >= level.length()) return;
+		if (terrain == Terrain.WATER && level.traps != null
+				&& preserveTrapOnTerrainChange(level, level.traps.get(cell), terrain)) return;
 		Painter.set( level, cell, terrain );
 
-		if (terrain != Terrain.TRAP && terrain != Terrain.SECRET_TRAP && terrain != Terrain.INACTIVE_TRAP){
+		if (terrain != Terrain.TRAP && terrain != Terrain.SECRET_TRAP && terrain != Terrain.INACTIVE_TRAP
+				&& !preserveTrapOnTerrainChange(level, level.traps.get(cell), terrain)){
 			level.traps.remove( cell );
 		}
 
@@ -1219,6 +1228,11 @@ public abstract class Level implements Bundlable {
 				}
 			}
 		}
+	}
+
+	static boolean preserveTrapOnTerrainChange(Level level, Trap trap, int terrain) {
+		return level instanceof TowerBossLevel && trap instanceof PlagueBrazier
+				&& terrain == Terrain.WATER;
 	}
 	
 	public Heap drop( Item item, int cell ) {
@@ -1397,6 +1411,10 @@ public abstract class Level implements Bundlable {
 	}
 
 	public boolean setCellToWater( boolean includeTraps, int cell ){
+		if (cell < 0 || cell >= length()) return false;
+		if (traps != null && preserveTrapOnTerrainChange(this, traps.get(cell), Terrain.WATER)) {
+			return false;
+		}
 		Point p = cellToPoint(cell);
 
 		//if a custom tilemap is over that cell, don't put water there
@@ -1836,7 +1854,12 @@ public abstract class Level implements Bundlable {
 					continue;
 				}
 				int p = ch.pos;
-				markNeighbourhood(heroMindFov, p);
+				if (p < 0 || p >= length()) continue;
+				if (a instanceof TwinDemonEyes.TwinEyeAwareness) {
+					heroMindFov[p] = true;
+				} else {
+					markNeighbourhood(heroMindFov, p);
+				}
 			}
 
 			for (TalismanOfForesight.HeapAwareness h : c.buffs(TalismanOfForesight.HeapAwareness.class)){

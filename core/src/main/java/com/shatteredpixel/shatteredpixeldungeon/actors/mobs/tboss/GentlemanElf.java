@@ -13,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HeavyInjury;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
@@ -41,7 +42,7 @@ import java.util.ArrayList;
 
 /** Three-stage tower boss built around a readable toast, cup and illusion duel. */
 public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
-	public enum Phase { TOAST_GAME, CUP_CONTEST, MIRROR_TEST, BERSERK }
+	public enum Phase { TOAST_GAME, CUP_CONTEST, MIRROR_TEST, BERSERK, FINAL_DUEL }
 	public enum Skill { NONE, NORMAL, TOAST, DEVOUR, CUP_DEVOUR, CUP_DASH, TABLE_SHOCK, BANQUET, ILLUSION }
 	public enum WineState { DRUNKENNESS, EXHILARATION }
 
@@ -66,6 +67,11 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private static final String REWARD = "gentleman_reward", ILLUSIONS = "gentleman_illusions";
 	private static final String BERSERK_BANQUET = "gentleman_berserk_banquet";
 	private static final String PENDING_ADVANCES = "gentleman_pending_advances";
+	private static final String WINE_TARGET = "gentleman_wine_target", WINE_CELLS = "gentleman_wine_cells";
+	private static final String WINE_STATE = "gentleman_wine_state", WINE_TIME = "gentleman_wine_time";
+	private static final String CUP_BOOST = "gentleman_cup_boost";
+	private static final String LAST_POUNCE = "gentleman_last_pounce", POUNCE_COUNT = "gentleman_pounce_count";
+	private static final String OWNED_WINE = "gentleman_owned_wine";
 
 	private Phase phase = Phase.TOAST_GAME;
 	private int phaseLocks, phaseActions;
@@ -78,6 +84,12 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private boolean waitingForNormalAttack, introResolved, rewardDropped, berserkBanquetWindow;
 	private boolean pendingAdvancesRhythm = true;
 	private int activeIllusions;
+	private int wineTargetCell = -1;
+	private int[] wineWarningCells = new int[0];
+	private WineState wineWarningState = WineState.DRUNKENNESS;
+	private float wineWarningTime, cupBoostTime, lastPounceTime;
+	private int successfulPounces;
+	private boolean ownedHeroWine;
 	private transient GentlemanElfArena arena;
 	private transient boolean restoreGrace;
 
@@ -113,8 +125,10 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	@Override public int attackSkill(Char target) { return 50; }
 	@Override public int damageRoll() { return Random.NormalIntRange(20, 40); }
 	@Override public int drRoll() { return Random.NormalIntRange(0, 20); }
-	@Override public float speed() { return phase == Phase.MIRROR_TEST || phase == Phase.BERSERK ? 1.6f : 0.8f; }
-	@Override public float attackDelay() { return phase == Phase.MIRROR_TEST || phase == Phase.BERSERK ? 0.5f : 1f; }
+	@Override public float speed() { return (phase == Phase.MIRROR_TEST || phase == Phase.BERSERK ? 1.6f : 0.8f)
+			* (cupBoostTime > 0 ? 2.5f : 1f); }
+	@Override public float attackDelay() { return (phase == Phase.MIRROR_TEST || phase == Phase.BERSERK ? 0.5f : 1f)
+			/ (cupBoostTime > 0 ? 2.5f : 1f); }
 	@Override public int heal(int amount, boolean visual) {
 		int before = HP;
 		int healed = super.heal(amount, visual);
@@ -141,9 +155,19 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		}
 	}
 
+	@Override protected int damageCap(Object source, DamageTag... tags) {
+		if (phase == Phase.FINAL_DUEL || phase == Phase.CUP_CONTEST && activeCup() != null) return 0;
+		int cap = Dungeon.hero != null && Dungeon.hero.buff(Exhilaration.class) != null ? 80 : FINAL_DAMAGE_CAP;
+		if (cupBoostTime > 0) cap = Math.min(cap, 20);
+		return mirrorsProtectingBody() ? Math.min(cap, 1) : cap;
+	}
+
 	@Override protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
-		int resolved = Math.min(FINAL_DAMAGE_CAP, Math.max(0, super.modifyFinalDamage(damage, source, tags)));
-		if (phase == Phase.MIRROR_TEST && mirrorsProtectingBody() && resolved > 0) return 1;
+		if (phase == Phase.FINAL_DUEL || phase == Phase.CUP_CONTEST && activeCup() != null) return 0;
+		int cap = Dungeon.hero != null && Dungeon.hero.buff(Exhilaration.class) != null ? 80 : FINAL_DAMAGE_CAP;
+		if (cupBoostTime > 0) cap = Math.min(cap, 20);
+		int resolved = Math.min(cap, Math.max(0, super.modifyFinalDamage(damage, source, tags)));
+		if (mirrorsProtectingBody() && resolved > 0) return 1;
 		int lock = phase == Phase.TOAST_GAME ? FIRST_LOCK_HP : phase == Phase.CUP_CONTEST ? SECOND_LOCK_HP : -1;
 		int requiredLocks = phase == Phase.TOAST_GAME ? 1 : 2;
 		if (lock >= 0 && phaseLocks < requiredLocks && HP - resolved <= lock) {
@@ -155,6 +179,8 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 
 	@Override public boolean isInvulnerable(Class effect) {
 		return !introResolved
+				|| phase == Phase.FINAL_DUEL
+				|| phase == Phase.CUP_CONTEST && activeCup() != null
 				|| (phase == Phase.TOAST_GAME && phaseLocks >= 1)
 				|| (phase == Phase.CUP_CONTEST && phaseLocks >= 2)
 				|| super.isInvulnerable(effect);
@@ -166,6 +192,8 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 			return true;
 		}
 		refreshPerception();
+		if (phase == Phase.FINAL_DUEL) ensureFinalDrunkenness();
+		if (arena == null) tickEncounterClock(TICK);
 		ElfWineCup cup = phase == Phase.CUP_CONTEST ? activeCup() : null;
 		if (cup != null) lockCupObjective(cup);
 		refreshEnemySeen();
@@ -190,6 +218,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		if (phase == Phase.TOAST_GAME) return actToastGame();
 		if (phase == Phase.CUP_CONTEST) return actCupContest();
 		if (phase == Phase.MIRROR_TEST) return actWithLowestPriorityBanquet();
+		if (phase == Phase.FINAL_DUEL) return telegraphDevour(false, Skill.DEVOUR);
 		return actBerserk();
 	}
 	private ElfWineCup activeCup() { return arena == null ? null : arena.cup(); }
@@ -212,12 +241,15 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 			phase = Phase.CUP_CONTEST;
 			if (arena != null) arena.spawnCupNow();
 		} else {
-			phase = Phase.MIRROR_TEST;
+			phase = Phase.FINAL_DUEL;
 			if (arena != null) {
 				arena.cancelCup();
-				arena.spawnIllusionsNow();
-				activeIllusions = arena.livingIllusionCount();
+				arena.clearIllusions();
 			}
+			activeIllusions = 0;
+			cancelWineWarning();
+			ensureFinalDrunkenness();
+			if (Dungeon.hero != null && Dungeon.hero.isAlive()) initializeEncounterTarget(Dungeon.hero);
 		}
 		announce("phase");
 		spend(TICK);
@@ -227,13 +259,16 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private boolean actToastGame() {
 		Skill next = firstPhaseSkillAt(phaseActions);
 		if (next == Skill.TOAST) {
-			if (toastTarget() != null) return telegraphToast();
+			if (toastTarget() != null && wineWarningTime <= 0) stageWineWarning(toastTarget());
+			phaseActions = (phaseActions + 1) % 6;
 			return actWithLowestPriorityBanquet(false);
 		}
 		if (next == Skill.DEVOUR && canPerceive(enemy)) return telegraphDevour(false, Skill.DEVOUR);
 		return actWithLowestPriorityBanquet();
 	}
 	private boolean actCupContest() {
+		if (phaseActions == 2 && wineWarningTime <= 0 && toastTarget() != null)
+			stageWineWarning(toastTarget());
 		ElfWineCup cup = activeCup();
 		if (cup == null || Dungeon.level == null) return actCupContestWithoutCup();
 		lockCupObjective(cup);
@@ -300,7 +335,8 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	}
 	private void finishBossAction() { finishBossAction(true); }
 	private void finishBossAction(boolean advanceRhythm) {
-		if (advanceRhythm && phase == Phase.TOAST_GAME) phaseActions = (phaseActions + 1) % 6;
+		if (advanceRhythm && (phase == Phase.TOAST_GAME || phase == Phase.CUP_CONTEST))
+			phaseActions = (phaseActions + 1) % 6;
 		tickCooldowns();
 	}
 	private void tickCooldowns() {
@@ -323,6 +359,36 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		spend(TICK);
 		return true;
 	}
+	private void stageWineWarning(Char target) {
+		if (target == null || Dungeon.level == null || phase == Phase.FINAL_DUEL) return;
+		stageWineWarningForTest(target.pos,
+				GentlemanElfTelegraph.square(currentGrid(), target.pos, 1), nextWineState, TICK);
+		advanceWineSequence();
+		announce("toast");
+		showWineWarning();
+	}
+	public void tickEncounterClock(float elapsed) {
+		if (cupBoostTime > 0) cupBoostTime = Math.max(0, cupBoostTime - elapsed);
+		if (wineWarningTime > 0) {
+			wineWarningTime -= elapsed;
+			if (wineWarningTime <= 0) {
+				if (phase == Phase.TOAST_GAME || phase == Phase.CUP_CONTEST)
+					resolveToastImpact(wineTargetCell, wineWarningCells.clone(), wineWarningState);
+				cancelWineWarning();
+			}
+		}
+	}
+	private void cancelWineWarning() {
+		wineWarningTime = 0;
+		wineTargetCell = -1;
+		wineWarningCells = new int[0];
+	}
+	private void showWineWarning() {
+		if (wineWarningTime <= 0 || sprite == null || sprite.parent == null) return;
+		int color = wineWarningState == WineState.DRUNKENNESS ? TOAST_BLUE : TOAST_YELLOW;
+		for (int cell : wineWarningCells) if (Dungeon.level != null && cell >= 0 && cell < Dungeon.level.length())
+			sprite.parent.addToBack(new TargetedCell(cell, color));
+	}
 	private boolean telegraphDevour(boolean wide, Skill skill) {
 		Char target = canPerceive(enemy) ? enemy : null;
 		if (!validEnemy(target) || Dungeon.level == null) return performNormalAction();
@@ -334,7 +400,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 			pendingCells = GentlemanElfTelegraph.corridor(currentGrid(), pos, endpoint, 3);
 			pendingLandingCell = furthestLegalOnAxis(pos, endpoint, Integer.MAX_VALUE);
 		} else {
-			pendingCells = GentlemanElfTelegraph.line(currentGrid(), pos, pendingTargetCell);
+			pendingCells = GentlemanElfTelegraph.line(dashGrid(), pos, pendingTargetCell);
 			pendingLandingCell = furthestLegalOnAxis(pos, pendingTargetCell, 4);
 		}
 		if (pendingCells.length == 0) { clearPendingSkill(); return performNormalAction(); }
@@ -348,7 +414,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		if (landing < 0 || landing == pos) return waitForCupObjective(cup);
 		pendingSkill = Skill.CUP_DASH;
 		pendingEntityId = cup.id(); pendingTargetCell = cup.pos; pendingLandingCell = landing;
-		pendingCells = GentlemanElfTelegraph.line(currentGrid(), pos, landing);
+		pendingCells = GentlemanElfTelegraph.line(dashGrid(), pos, landing);
 		announce("cup_dash"); showPendingTelegraph();
 		if (sprite instanceof GentlemanElfSprite) ((GentlemanElfSprite) sprite).dash();
 		tickCooldowns();
@@ -429,11 +495,16 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		if (Dungeon.level != null) Splash.at(targetCell,
 				wineState == WineState.DRUNKENNESS ? TOAST_BLUE : TOAST_YELLOW, 8);
 		for (Char target : characterSnapshot()) {
-			if (target == this || !contains(affectedCells, target.pos)) continue;
+			if (target == this || target instanceof GentlemanElfIllusion
+					|| !contains(affectedCells, target.pos)) continue;
 			target.damage(5, this, DamageTag.MAGICAL);
 			if (target.isAlive()) {
-				if (wineState == WineState.DRUNKENNESS) Drunkenness.affect(target);
-				else Exhilaration.affect(target);
+				markSkillHit(target);
+				if (target instanceof Hero) {
+					ownedHeroWine = true;
+					if (wineState == WineState.DRUNKENNESS) Drunkenness.affect(target);
+					else Exhilaration.affect(target);
+				}
 			}
 		}
 	}
@@ -442,14 +513,29 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		Char designated = pendingEntityId < 0 ? null : (Actor.findById(pendingEntityId) instanceof Char
 				? (Char) Actor.findById(pendingEntityId) : null);
 		boolean validStrike = validEnemy(designated) && contains(pendingCells, designated.pos)
-				&& new Ballistica(pos, designated.pos, Ballistica.PROJECTILE).collisionPos == designated.pos;
+				&& (phase == Phase.FINAL_DUEL
+				|| new Ballistica(pos, designated.pos, Ballistica.PROJECTILE).collisionPos == designated.pos);
 		boolean hit = false;
 		for (Char target : characterSnapshot()) {
 			if (!validStrike || !validEnemy(target) || !contains(pendingCells, target.pos)) continue;
-			hit = true;
-			target.damage(Random.NormalIntRange(40, 60), this, DamageTag.PHYSICAL);
-			pushAway(target, pos, 2);
+			if (phase == Phase.FINAL_DUEL) {
+				hit = true;
+				int stacks = target.buff(HeavyInjury.class) == null ? 0 : target.buff(HeavyInjury.class).stacks();
+				int damage = Math.round(Random.NormalIntRange(20, 30) * (1f + stacks * 0.1f));
+				target.damage(damage, this, DamageTag.PHYSICAL);
+				if (target.isAlive()) markSkillHit(target);
+				if (target instanceof Hero) {
+					HeavyInjury.apply(target);
+					if (hasDrunkenness(target)) applyPounceSelfDamage(Actor.now());
+				}
+			} else {
+				hit = true;
+				target.damage(Random.NormalIntRange(40, 60), this, DamageTag.PHYSICAL);
+				if (target.isAlive()) markSkillHit(target);
+				pushAway(target, pos, 2);
+			}
 		}
+		if (!isAlive()) return;
 		destroyFlammableObstaclesBetween(jumpOrigin, pendingTargetCell);
 		int landing = hit ? pendingLandingCell : geometricJumpLanding(pos, pendingTargetCell, 4);
 		if (!isLegalLanding(landing)) {
@@ -461,9 +547,15 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		if (Dungeon.level == null) return;
 		boolean destroyed = false;
 		for (int cell : GentlemanElfTelegraph.intermediateSegment(currentGrid(), from, to)) {
-			if (!isFlammableObstacle(Dungeon.level.map[cell])) continue;
-			Dungeon.level.destroy(cell);
-			GameScene.updateMap(cell);
+			if (!Dungeon.level.solid[cell]) continue;
+			if (Dungeon.level instanceof TowerBossLevel) {
+				if (!((TowerBossLevel) Dungeon.level).isDestructibleBossCover(cell)) break;
+				((TowerBossLevel) Dungeon.level).destroyBossCover(cell);
+			} else {
+				if (!isFlammableObstacle(Dungeon.level.map[cell])) break;
+				Dungeon.level.destroy(cell);
+				GameScene.updateMap(cell);
+			}
 			destroyed = true;
 		}
 		if (destroyed) Dungeon.observe();
@@ -478,8 +570,12 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		for (Char target : characterSnapshot()) {
 			if (target == this || target instanceof ElfWineCup || !contains(pendingCells, target.pos)) continue;
 			target.damage(Random.NormalIntRange(20, 30), this, DamageTag.PHYSICAL);
+			if (target.isAlive()) markSkillHit(target);
 			pushAway(target, pos, 1);
 		}
+		destroyFlammableObstaclesBetween(pos, pendingLandingCell);
+		if (isDestructibleCover(pendingLandingCell))
+			((TowerBossLevel) Dungeon.level).destroyBossCover(pendingLandingCell);
 		int landing = isLegalLanding(pendingLandingCell) ? pendingLandingCell
 				: furthestLegalOnAxis(pos, pendingLandingCell, Integer.MAX_VALUE);
 		moveBossTo(landing, true);
@@ -488,9 +584,11 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		for (Char target : characterSnapshot()) {
 			if (target == this || target instanceof ElfWineCup || !contains(pendingCells, target.pos)) continue;
 			target.damage(Random.NormalIntRange(15, 25), this, DamageTag.MAGICAL);
+			if (target.isAlive()) markSkillHit(target);
 			if (target.isAlive()) { pushAway(target, pendingTargetCell, 2); Buff.affect(target, Slow.class, 3f); }
 		}
 	}
+	public void markBanquetHit(Char target) { markSkillHit(target); }
 	private boolean launchWineProjectile(int target, WineState wineState, Callback callback) {
 		if (Dungeon.level == null || target < 0 || target >= Dungeon.level.length()
 				|| sprite == null || sprite.parent == null) return false;
@@ -520,14 +618,16 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		applyCupReward(lastHit);
 	}
 	public void applyCupReward(Char lastHit) {
-		if (lastHit == null || !lastHit.isAlive()) return;
+		if (lastHit == this) {
+			cupBoostTime = 5f;
+			return;
+		}
+		if (!(lastHit instanceof Hero) || !lastHit.isAlive()) return;
+		ownedHeroWine = true;
 		Exhilaration.affect(lastHit);
 		if (lastHit instanceof Hero) {
-			lastHit.HP = Math.min(lastHit.HT, lastHit.HP + Math.max(1, Math.round(lastHit.HT * 0.05f)));
+			lastHit.heal(Math.max(1, Math.round(lastHit.HT * 0.05f)), true);
 			Buff.affect(lastHit, Haste.class, 5f);
-		} else if (lastHit == this) {
-			HP = Math.min(FIRST_LOCK_HP, HP + 100);
-			Buff.affect(this, Barrier.class).setShield(40);
 		}
 	}
 	int heroCupHealedHpForTest(int hp, int ht) { return Math.min(ht, hp + Math.max(1, Math.round(ht * 0.05f))); }
@@ -546,6 +646,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	@Override public void die(Object cause) {
 		announce("defeated");
 		clearPendingSkill();
+		cancelWineWarning();
 		if (arena != null) arena.cleanup();
 		for (Char ch : characterSnapshot()) if (ch instanceof GentlemanElfIllusion
 				&& ((GentlemanElfIllusion) ch).ownerId() == id()) ((GentlemanElfIllusion) ch).dismiss();
@@ -559,6 +660,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		restoreGrace = false;
 	}
 	private void showPendingTelegraph() {
+		showWineWarning();
 		if (sprite == null || sprite.parent == null) return;
 		if (pendingSkill == Skill.BANQUET) {
 			if (arena != null) arena.warnBanquetNow();
@@ -623,12 +725,30 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	}
 	private int cupDashLanding(ElfWineCup cup) {
 		if (cup == null || Dungeon.level == null || !cupDashEligible(Dungeon.level.distance(pos, cup.pos))) return -1;
-		Ballistica path = new Ballistica(pos, cup.pos, Ballistica.PROJECTILE);
-		if (path.collisionPos == null || path.collisionPos != cup.pos) return -1;
-		int cupIndex = path.path.indexOf(cup.pos);
-		if (cupIndex < 4) return -1;
-		int landing = path.path.get(cupIndex - 3);
-		return isLegalLanding(landing) ? landing : -1;
+		int[] path = GentlemanElfTelegraph.line(dashGrid(), pos, cup.pos);
+		if (path.length == 0 || path[path.length - 1] != cup.pos) return -1;
+		int preferred = Math.max(1, path.length - 4);
+		for (int index = preferred; index > 0; index--) {
+			int cell = path[index];
+			if (isLegalLanding(cell) || isDestructibleCover(cell)) return cell;
+		}
+		return -1;
+	}
+	private GentlemanElfTelegraph.Grid dashGrid() {
+		return new GentlemanElfTelegraph.Grid() {
+			public int width() { return Dungeon.level.width(); }
+			public int height() { return Dungeon.level.height(); }
+			public boolean occupied(int cell) { return Actor.findChar(cell) != null; }
+			public boolean passable(int cell) {
+				return isInsideActiveBossArena(cell)
+						&& (Dungeon.level.passable[cell] && !Dungeon.level.solid[cell]
+						|| isDestructibleCover(cell));
+			}
+		};
+	}
+	private boolean isDestructibleCover(int cell) {
+		return Dungeon.level instanceof TowerBossLevel
+				&& ((TowerBossLevel) Dungeon.level).isDestructibleBossCover(cell);
 	}
 	private int nearestFreeNeighbor(int center) {
 		if (Dungeon.level == null) return -1;
@@ -701,7 +821,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 				&& enemy.invisible <= 0 && fieldOfView[enemy.pos];
 	}
 	private Char toastTarget() { return canPerceive(enemy) ? enemy : null; }
-	static boolean cupDashEligible(int distance) { return distance >= 4 && distance <= 8; }
+	static boolean cupDashEligible(int distance) { return distance >= 2 && distance <= 8; }
 	private static boolean contains(int[] cells, int cell) { if (cells != null) for (int value : cells) if (value == cell) return true; return false; }
 	private void announce(String key) { if (sprite != null) yell(Messages.get(this, key)); }
 	private static Skill firstPhaseSkillAt(int action) {
@@ -711,6 +831,67 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 
 	public WineState nextWineState() { return nextWineState; }
 	public void advanceWineSequence() { nextWineState = nextWineState == WineState.DRUNKENNESS ? WineState.EXHILARATION : WineState.DRUNKENNESS; }
+	public static boolean isEncounterDrunk(Hero hero) {
+		if (hero == null || Dungeon.level == null) return false;
+		for (Char ch : Actor.chars()) if (ch instanceof GentlemanElf && ch.isAlive()) {
+			GentlemanElf boss = (GentlemanElf) ch;
+			if (boss.phase == Phase.FINAL_DUEL || hero.buff(Drunkenness.class) != null) return true;
+		}
+		return false;
+	}
+	static boolean hasDrunkenness(Char target) {
+		return target != null && target.buff(Drunkenness.class) != null;
+	}
+	public static boolean isEncounterActive() {
+		if (Dungeon.level == null) return false;
+		for (Char ch : Actor.chars()) if (ch instanceof GentlemanElf && ch.isAlive()
+				&& ((GentlemanElf) ch).introResolved) return true;
+		return false;
+	}
+	public static boolean isFinalDuelDrunk(Char target) {
+		if (!(target instanceof Hero) || Dungeon.level == null) return false;
+		for (Char ch : Actor.chars()) if (ch instanceof GentlemanElf && ch.isAlive()
+				&& ((GentlemanElf) ch).phase == Phase.FINAL_DUEL) return true;
+		return false;
+	}
+	private void ensureFinalDrunkenness() {
+		if (Dungeon.hero != null && Dungeon.hero.isAlive()) {
+			ownedHeroWine = true;
+			Drunkenness.affect(Dungeon.hero);
+		}
+	}
+	public void clearEncounterWine() {
+		if (!ownedHeroWine || Dungeon.hero == null) return;
+		Buff.detach(Dungeon.hero, Drunkenness.class);
+		Buff.detach(Dungeon.hero, Exhilaration.class);
+		Buff.detach(Dungeon.hero, HeavyInjury.class);
+		ownedHeroWine = false;
+	}
+	int pounceSelfDamageAt(float now) {
+		if (successfulPounces == 0) return 50;
+		int missed = Math.max(0, Math.min(10, (int) Math.floor(now - lastPounceTime) - 1));
+		return 100 - 5 * missed;
+	}
+	void recordPounceHitAt(float now) {
+		successfulPounces++;
+		lastPounceTime = now;
+	}
+	private void applyPounceSelfDamage(float now) {
+		int loss = pounceSelfDamageAt(now);
+		recordPounceHitAt(now);
+		HP = Math.max(0, HP - loss);
+		if (sprite != null) sprite.showStatus(com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite.NEGATIVE, Integer.toString(loss));
+		if (HP <= 0) die(this);
+	}
+	void stageWineWarningForTest(int target, int[] cells, WineState state, float delay) {
+		wineTargetCell = target;
+		wineWarningCells = cells == null ? new int[0] : cells.clone();
+		wineWarningState = state == null ? WineState.DRUNKENNESS : state;
+		wineWarningTime = Math.max(0, delay);
+	}
+	int[] wineWarningCellsForTest() { return wineWarningCells.clone(); }
+	WineState wineWarningStateForTest() { return wineWarningState; }
+	float cupBoostTimeForTest() { return cupBoostTime; }
 	void finishBossActionForTest() { finishBossAction(); }
 	void stagePendingForTest(Skill skill, int[] cells, int landing, WineState wine) {
 		pendingSkill = skill == null ? Skill.NONE : skill;
@@ -762,7 +943,10 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	public void resolveIntro(boolean drink) {
 		if (introResolved) return;
 		introResolved = true;
-		if (Dungeon.hero != null) { if (drink) Drunkenness.affect(Dungeon.hero); else Exhilaration.affect(Dungeon.hero); }
+		if (Dungeon.hero != null) {
+			ownedHeroWine = true;
+			if (drink) Drunkenness.affect(Dungeon.hero); else Exhilaration.affect(Dungeon.hero);
+		}
 	}
 
 	@Override public com.shatteredpixel.shatteredpixeldungeon.items.Item createLoot() { return createLootForRoll(Random.Float()); }
@@ -781,6 +965,11 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		bundle.put(INTRO, introResolved); bundle.put(REWARD, rewardDropped); bundle.put(ILLUSIONS, activeIllusions);
 		bundle.put(BERSERK_BANQUET, berserkBanquetWindow);
 		bundle.put(PENDING_ADVANCES, pendingAdvancesRhythm);
+		bundle.put(WINE_TARGET, wineTargetCell); bundle.put(WINE_CELLS, wineWarningCells);
+		bundle.put(WINE_STATE, wineWarningState.name()); bundle.put(WINE_TIME, wineWarningTime);
+		bundle.put(CUP_BOOST, cupBoostTime);
+		bundle.put(LAST_POUNCE, lastPounceTime); bundle.put(POUNCE_COUNT, successfulPounces);
+		bundle.put(OWNED_WINE, ownedHeroWine);
 	}
 	@Override public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
@@ -802,6 +991,16 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		activeIllusions = Math.max(0, Math.min(2, bundle.getInt(ILLUSIONS)));
 		berserkBanquetWindow = bundle.getBoolean(BERSERK_BANQUET);
 		pendingAdvancesRhythm = !bundle.contains(PENDING_ADVANCES) || bundle.getBoolean(PENDING_ADVANCES);
+		wineTargetCell = bundle.contains(WINE_TARGET) ? bundle.getInt(WINE_TARGET) : -1;
+		wineWarningCells = bundle.getIntArray(WINE_CELLS);
+		if (wineWarningCells == null) wineWarningCells = new int[0];
+		wineWarningState = enumValue(WineState.class, bundle.getString(WINE_STATE), WineState.DRUNKENNESS);
+		wineWarningTime = Math.max(0, bundle.getFloat(WINE_TIME));
+		cupBoostTime = Math.max(0, bundle.getFloat(CUP_BOOST));
+		lastPounceTime = bundle.getFloat(LAST_POUNCE);
+		successfulPounces = Math.max(0, bundle.getInt(POUNCE_COUNT));
+		ownedHeroWine = bundle.getBoolean(OWNED_WINE);
+		if (phase == Phase.FINAL_DUEL) { cancelWineWarning(); activeIllusions = 0; }
 		if (pendingSkill != Skill.NONE && pendingSkill != Skill.BANQUET && pendingCells.length == 0) clearPendingSkill();
 		restoreGrace = pendingSkill != Skill.NONE;
 	}

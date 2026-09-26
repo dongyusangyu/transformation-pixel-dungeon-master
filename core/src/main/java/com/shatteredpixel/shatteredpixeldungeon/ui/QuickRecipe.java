@@ -72,6 +72,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCursedFlame;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
+import com.shatteredpixel.shatteredpixeldungeon.items.quest.MetalShard;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
@@ -216,6 +220,8 @@ public class QuickRecipe extends Component {
 		recipes.add(new GuideRecipe(new Necronomicon.Recipe(), Necronomicon.class,
 				CorpseDust.class, RubbingsTome.class,
 				Necronomicon.AlchemyWandPlaceholder.class));
+		recipes.add(new GuideRecipe(new WandOfCursedFlame.Recipe(), WandOfCursedFlame.class,
+				WandOfMagicMissile.class, WandOfFireblast.class, MetalShard.class));
 		return recipes;
 	}
 	

@@ -49,6 +49,7 @@ public final class EXItemSpriteSheet {
 	public static final int ELF_WINE                     = encodeAt(20, 2, 12, 15);
 	public static final int GREEN_GLOW_FRUIT              = encode(21, 14, 16);
 	public static final int SOUR_WINE_AROMA               = encode(22, 14, 13);
+	public static final int SOUL_ROAST_MEAT                 = encode(23, 15, 11);
 
 	public static final int SCROLL_EXTRACTION = encode(32, 13, 16);
 	public static final int RAID_ACCESS_CARD = encode(33, 16, 11);
@@ -88,8 +89,12 @@ public final class EXItemSpriteSheet {
 	// Row 18 (indices 272-287): artifacts added to the extension sheet.
 	public static final int PRECOGNITIVE_EYE = encode(272, 11, 16);
 	public static final int NECRONOMICON = encode(273, 13, 16);
+	public static final int TWIN_DEMON_EYES = encode(274, 15, 15);
 	// Row 19: recovery component for the Lake Sword.
 	public static final int LAKE_SWORD_SCABBARD = encode(288, 13, 13);
+
+	// Alchemy-only wands; kept outside the ordinary wand appearance slots.
+	public static final int WAND_CURSED_FLAME = encode(336, 14, 14);
 
 	// Penultimate row: the purple parcel used by the hiking backpack.
 	public static final int HIKING_BACKPACK = encode(480, 13, 15);

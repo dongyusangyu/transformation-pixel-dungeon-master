@@ -14,13 +14,15 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 
 public class SkilledParry extends FlavourBuff {
 
 	{
 		type = buffType.POSITIVE;
-		announced = true;
+		announced = false;
 	}
 
 	public static float duration(int points) {
@@ -41,7 +43,10 @@ public class SkilledParry extends FlavourBuff {
 
 		SkilledParry active = hero.buff(SkilledParry.class);
 		if (active != null) active.detach();
-		Buff.affect(hero, SkilledParry.class, duration(points));
+		SkilledParry parry = Buff.affect(hero, SkilledParry.class, duration(points));
+		if (hero.sprite != null && hero.sprite.visible) {
+			hero.sprite.showStatus(CharSprite.NEUTRAL, Messages.titleCase(parry.name()));
+		}
 
 		cooldown = Buff.affect(hero, SkilledParryCooldown.class, SkilledParryCooldown.DURATION);
 		cooldown.ability = abilityType;

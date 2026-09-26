@@ -259,20 +259,15 @@ public class RitualDagger extends MeleeWeapon {
 				float delay = hero.attackDelay();
 
 				boolean hadBloodGift = target.buff(BloodGift.class) != null;
-				int preHP = target.HP + target.shielding();
+				int preHP = target.HP;
 				if (special) {
 					boolean attacked = hero.attack(target, 1, 0, Char.INFINITE_ACCURACY);
 					if(attacked){
-						int damage = Math.max(0, preHP - (target.HP + target.shielding()));
+						int damage = Math.max(0, preHP - Math.max(0, target.HP));
 						if (hero.subClass.is(HeroSubClass.PIOUS)) {
 							BloodGift.applyTo(target);
 							if (!hadBloodGift) {
-                                if(target.isAlive()){
-                                    BloodGift.restoreReason(hero, target, damage);
-                                }else{
-                                    BloodGift.restoreReason(hero, target, preHP);
-                                }
-
+								BloodGift.restoreReason(hero, target, damage);
 							}
 						}
 						Reason.gainReason(hero, 50);
@@ -283,14 +278,10 @@ public class RitualDagger extends MeleeWeapon {
 				} else {
 					boolean attacked = hero.attack(target);
 					if (attacked && hero.subClass.is(HeroSubClass.PIOUS)) {
-						int damage = Math.max(0, preHP - (target.HP + target.shielding()));
+						int damage = Math.max(0, preHP - Math.max(0, target.HP));
 						BloodGift.applyTo(target);
 						if (!hadBloodGift) {
-                            if(target.isAlive()){
-                                BloodGift.restoreReason(hero, target, damage);
-                            }else{
-                                BloodGift.restoreReason(hero, target, preHP);
-                            }
+							BloodGift.restoreReason(hero, target, damage);
 						}
 					}
                     if (hero.buff(Talent.LethalMomentumTracker.class) != null){
@@ -471,7 +462,7 @@ public class RitualDagger extends MeleeWeapon {
 					&& ((Hero) attacker).subClass.is(HeroSubClass.PIOUS)
 					&& target != null
 					&& target.buff(BloodGift.class) != null) {
-				restoreReason((Hero) attacker, target, Math.max(1, damage));
+				restoreReason((Hero) attacker, target, damage);
 			}
 		}
 
@@ -479,7 +470,12 @@ public class RitualDagger extends MeleeWeapon {
 			if (hero == null || target == null || damage <= 0 || target.buff(BloodGift.class) == null) {
 				return;
 			}
-			Reason.gainReason(hero, Math.max(1, damage / 5));
+			int gain = Math.max(1, damage / 5);
+			if (Char.hasProp(target, Char.Property.BOSS)
+					|| Char.hasProp(target, Char.Property.MINIBOSS)) {
+				gain = Math.min(5, gain);
+			}
+			Reason.gainReason(hero, gain);
 		}
 
 		@Override

@@ -3785,19 +3785,23 @@ public enum Talent {
 		return cell != heroPos && adjacent && passable && !pit && !occupied;
 	}
 
-	private static int findLarvaSpawnCell(Hero hero) {
+	static int findLarvaSpawnCell(int centerPos) {
 		if (Dungeon.level == null) return -1;
 		ArrayList<Integer> spawnCells = new ArrayList<>();
 		for (int offset : PathFinder.NEIGHBOURS8) {
-			int cell = hero.pos + offset;
+			int cell = centerPos + offset;
 			if (Dungeon.level.insideMap(cell)
-					&& isValidLarvaSpawnCell(hero.pos, cell,
-					Dungeon.level.distance(hero.pos, cell) == 1, Dungeon.level.passable[cell],
+					&& isValidLarvaSpawnCell(centerPos, cell,
+					Dungeon.level.distance(centerPos, cell) == 1, Dungeon.level.passable[cell],
 					Dungeon.level.pit[cell], Actor.findChar(cell) != null)) {
 				spawnCells.add(cell);
 			}
 		}
 		return spawnCells.isEmpty() ? -1 : Random.element(spawnCells);
+	}
+
+	private static int findLarvaSpawnCell(Hero hero) {
+		return hero == null ? -1 : findLarvaSpawnCell(hero.pos);
 	}
 
 	public static int onDamage(int dmg, Object src, DamageTag... damageTags) {
@@ -4451,9 +4455,12 @@ public enum Talent {
 			ScrollOfTeleportation.appear( m, mob.pos );
 		}
 		if(hero.pointsNegative(Talent.PARASITISM)>Random.Int(10) && !(mob instanceof NPC)){
-			YogDzewa.Larva m = new YogDzewa.Larva();
-			GameScene.add( m );
-			ScrollOfTeleportation.appear( m, mob.pos );
+			int spawnCell = findLarvaSpawnCell(mob.pos);
+			if (spawnCell != -1) {
+				YogDzewa.Larva m = new YogDzewa.Larva();
+				GameScene.add(m);
+				ScrollOfTeleportation.appear(m, spawnCell);
+			}
 		}
         if(hero.hasTalent(Talent.MANA_WREATH) && mob.buff(ManaWreath.class)!=null){
             Buff.affect(hero, ArcaneArmor.class).set(10, 5*hero.pointsInTalent(Talent.MANA_WREATH));

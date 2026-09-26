@@ -40,7 +40,7 @@ public class PortableBlackHole extends MissileWeapon {
 
 	@Override
 	public int min(int lvl) {
-		return 10 + Math.max(0, lvl);
+		return 10 + 2 * Math.max(0, lvl);
 	}
 
 	@Override

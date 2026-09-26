@@ -60,6 +60,35 @@ public class NewBadgeAchievementsTest {
 	}
 
 	@Test
+	public void backpackAndTowerDeathsAreIncludedInAggregateBadgeConditions() throws IOException {
+		String source = source("Badges.java");
+		assertTrue(source.contains("HikingBackpack.class"));
+		assertTrue(source.contains("DEATH_FROM_ALIENATED_PRISMATIC_GUARD"));
+		assertTrue(source.contains("DEATH_KNIGHT_BLESSED_ANKH"));
+	}
+
+	@Test
+	public void aggregateBadgesRequireTheNewBackpackAndTowerDeaths() {
+		List<Badges.Badge> bags = Arrays.asList(Badges.Badge.BAG_BOUGHT_VELVET_POUCH,
+				Badges.Badge.BAG_BOUGHT_SCROLL_HOLDER,
+				Badges.Badge.BAG_BOUGHT_POTION_BANDOLIER,
+				Badges.Badge.BAG_BOUGHT_MAGICAL_HOLSTER);
+		assertFalse(Badges.qualifiesForAllBags(bags, false));
+		assertTrue(Badges.qualifiesForAllBags(bags, true));
+
+		List<Badges.Badge> deaths = Arrays.asList(Badges.Badge.DEATH_FROM_FIRE,
+				Badges.Badge.DEATH_FROM_POISON, Badges.Badge.DEATH_FROM_GAS,
+				Badges.Badge.DEATH_FROM_HUNGER, Badges.Badge.DEATH_FROM_FALLING,
+				Badges.Badge.DEATH_FROM_ENEMY_MAGIC, Badges.Badge.DEATH_FROM_FRIENDLY_MAGIC,
+				Badges.Badge.DEATH_FROM_SACRIFICE, Badges.Badge.DEATH_FROM_GRIM_TRAP,
+				Badges.Badge.DEATH_FROM_ALIENATED_PRISMATIC_GUARD);
+		assertFalse(Badges.qualifiesForDeathFromAll(deaths));
+		deaths = new java.util.ArrayList<>(deaths);
+		deaths.add(Badges.Badge.DEATH_KNIGHT_BLESSED_ANKH);
+		assertTrue(Badges.qualifiesForDeathFromAll(deaths));
+	}
+
+	@Test
 	public void towerProgressBadgesOnlyComeFromTowerFloors() {
 		assertEquals(Collections.emptyList(), Badges.towerProgressBadges(1, 0));
 		assertEquals(Collections.emptyList(), Badges.towerProgressBadges(0, TowerLevel.BRANCH));
@@ -201,6 +230,7 @@ public class NewBadgeAchievementsTest {
 				"Badges.validateChainMaceSixTargets()");
 		assertSourceContains("levels/towers/TowerBossLevel.java",
 				"public boolean isActiveTowerBoss(String bossId)");
+		assertSourceContains("Badges.java", "validateBossSlain();");
 	}
 
 	@Test
@@ -209,6 +239,69 @@ public class NewBadgeAchievementsTest {
 		assertTrue(Badges.shouldDisplayAward(true, false));
 		assertTrue(Badges.shouldDisplayAward(false, false));
 		assertFalse(Badges.shouldDisplayAward(false, true));
+	}
+
+	@Test
+	public void transformedBossesMapToTheirFloorBossBadges() {
+		assertEquals(Badges.Badge.BOSS_SLAIN_1, Badges.bossSlainBadge(5));
+		assertEquals(Badges.Badge.BOSS_SLAIN_2, Badges.bossSlainBadge(10));
+		assertEquals(Badges.Badge.BOSS_SLAIN_3, Badges.bossSlainBadge(15));
+		assertEquals(Badges.Badge.BOSS_SLAIN_4, Badges.bossSlainBadge(20));
+		assertEquals(Badges.Badge.HEROBOSS_SLAIN_1, Badges.heroBossBadge(5));
+		assertEquals(Badges.Badge.HEROBOSS_SLAIN_2, Badges.heroBossBadge(10));
+		assertEquals(Badges.Badge.HEROBOSS_SLAIN_3, Badges.heroBossBadge(15));
+		assertEquals(null, Badges.heroBossBadge(20));
+	}
+
+	@Test
+	public void hiddenPrerequisitesDoNotBlockAchievementProgress() {
+		assertPrerequisiteHidden(Badges.Badge.BOSS_SLAIN_1, Badges.Badge.HEROBOSS_SLAIN_1);
+		assertPrerequisiteHidden(Badges.Badge.BOSS_SLAIN_1, Badges.Badge.HEROBOSS_COUNTER_1);
+		assertPrerequisiteHidden(Badges.Badge.BOSS_SLAIN_2, Badges.Badge.HEROBOSS_COUNTER_2);
+		assertPrerequisiteHidden(Badges.Badge.BOSS_SLAIN_3, Badges.Badge.HEROBOSS_COUNTER_3);
+		assertPrerequisiteHidden(Badges.Badge.BOSS_SLAIN_4, Badges.Badge.HEROBOSS_COUNTER_4);
+		assertPrerequisiteHidden(Badges.Badge.VICTORY, Badges.Badge.BACK1);
+		assertPrerequisiteHidden(Badges.Badge.VICTORY, Badges.Badge.BACK2);
+		assertPrerequisiteHidden(Badges.Badge.CHAMPION_3, Badges.Badge.CHAMPION_4);
+		assertPrerequisiteHidden(Badges.Badge.ENTER_TOWER, Badges.Badge.GENTLEMAN_ELF_SLAIN);
+		assertPrerequisiteHidden(Badges.Badge.HUNGER_KNIGHT_SLAIN,
+				Badges.Badge.HUNGER_KNIGHT_WARRIOR);
+		assertPrerequisiteHidden(Badges.Badge.BETTER_TALENT, Badges.Badge.TALENT2025);
+		assertPrerequisiteHidden(Badges.Badge.BOSS_CHALLENGE_1,
+				Badges.Badge.BOSS_CHALLENGE_2);
+
+		List<Badges.Badge> alreadyUnlockedPrerequisite = new java.util.ArrayList<>(Collections.singletonList(
+				Badges.Badge.HEROBOSS_SLAIN_1));
+		Badges.filterBadgesWithoutPrerequisites(alreadyUnlockedPrerequisite);
+		assertEquals(Collections.singletonList(Badges.Badge.HEROBOSS_SLAIN_1),
+				alreadyUnlockedPrerequisite);
+	}
+
+	private static void assertPrerequisiteHidden(Badges.Badge prerequisite,
+			Badges.Badge dependent) {
+		List<Badges.Badge> locked = new java.util.ArrayList<>(Arrays.asList(prerequisite, dependent));
+		Badges.filterBadgesWithoutPrerequisites(locked);
+		assertEquals(Collections.singletonList(prerequisite), locked);
+	}
+
+	@Test
+	public void towerProgressReplacesThroughFloor50ButKeepsFloor100AlongsideIt() {
+		List<Badges.Badge> unlocked = new java.util.ArrayList<>(Arrays.asList(
+				Badges.Badge.TOWER_FLOOR_10,
+				Badges.Badge.TOWER_FLOOR_25,
+				Badges.Badge.TOWER_FLOOR_50,
+				Badges.Badge.TOWER_FLOOR_100));
+		Badges.filterReplacedBadges(unlocked);
+		assertEquals(Arrays.asList(Badges.Badge.TOWER_FLOOR_50,
+				Badges.Badge.TOWER_FLOOR_100), unlocked);
+
+		List<Badges.Badge> locked = new java.util.ArrayList<>(Arrays.asList(
+				Badges.Badge.TOWER_FLOOR_10,
+				Badges.Badge.TOWER_FLOOR_25,
+				Badges.Badge.TOWER_FLOOR_50,
+				Badges.Badge.TOWER_FLOOR_100));
+		Badges.filterBadgesWithoutPrerequisites(locked);
+		assertEquals(Collections.singletonList(Badges.Badge.TOWER_FLOOR_10), locked);
 	}
 
 	private static void assertBadge(Badges.Badge badge, int image) {

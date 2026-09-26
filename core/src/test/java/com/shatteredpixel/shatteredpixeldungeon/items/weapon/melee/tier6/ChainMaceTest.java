@@ -136,13 +136,14 @@ public class ChainMaceTest {
 	@Test
 	public void launchSoundAndHitShakeAreSeparated() throws IOException {
 		String source = source();
-		assertTrue(source.contains("playLaunchFeedback();\n\t\tdispatchAbilityStep"));
-		assertTrue(source.contains("playLaunchFeedback();\n\t\tfinal int from = ball.pos"));
+		assertTrue(source.contains("playHeroAttackAnimation(hero, facing, new Callback()"));
+		assertTrue(source.contains("playHeroAttackAnimation(hero, destination, new Callback()"));
+		assertTrue(source.contains("playLaunchFeedback();"));
 		assertTrue(source.contains("private void playLaunchFeedback() {\n\t\tSample.INSTANCE.play(Assets.Sounds.CHAINS)"));
 		assertTrue(source.contains("private void playHitFeedback() {\n\t\tPixelScene.shake(2, 0.33f)"));
 		assertTrue(source.contains("dealThrowImpact(hero, ball, destination)"));
 		assertTrue(source.contains("WandOfBlastWave.BlastWave.blast(cell)"));
-		assertTrue(source.contains("if (hero.attack(target, 1f, 0f, Char.INFINITE_ACCURACY)) {\n\t\t\t\t\t\tSample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.9f);\n\t\t\t\t\t\tplayHitFeedback();"));
+		assertTrue(source.contains("if (hero.attack(target, 1f, sweepDamageBoost(buffedLvl()), Char.INFINITE_ACCURACY)) {"));
 		assertTrue(source.contains("public int proc(Char attacker, Char defender, int damage)"));
 		assertTrue(source.contains("Dungeon.hero.belongings.thrownWeapon != this"));
 		assertTrue(source.contains("Dungeon.hero.belongings.abilityWeapon != this"));
@@ -154,9 +155,9 @@ public class ChainMaceTest {
 		ChainMace weapon = new ChainMace();
 
 		assertEquals(6, weapon.min(0));
-		assertEquals(20, weapon.max(0));
+		assertEquals(23, weapon.max(0));
 		assertEquals(9, weapon.min(3));
-		assertEquals(41, weapon.max(3));
+		assertEquals(47, weapon.max(3));
 		assertEquals(3, ChainMace.heroDamageForImpact(12));
 		assertEquals(20, ChainMace.heroDamageForImpact(82));
 		assertEquals(22, weapon.STRReq(0));
@@ -321,8 +322,8 @@ public class ChainMaceTest {
 		String source = source();
 
 		assertTrue(source.contains("private void commandThrow(Hero user, int dst)"));
-		assertTrue(source.contains("if (!isEquipped(user))"));
-		assertTrue(source.contains("super.cast(user, dst)"));
+		assertTrue(source.contains("if (hero == null || hero.belongings.weapon() != this) return;"));
+		assertTrue(source.contains("if (cell != null) commandThrow(hero, cell)"));
 		assertTrue(source.contains("dispatchThrow(user, ball, dst)"));
 		assertTrue(source.contains("private void dispatchThrow"));
 		assertTrue(source.contains("dealThrowImpact(hero, ball, destination)"));

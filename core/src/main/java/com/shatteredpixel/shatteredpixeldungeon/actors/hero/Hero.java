@@ -100,6 +100,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Virtue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PlagueFrailty;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightMagicLease;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.DeathKnightExecutionMark;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.ArmorAbility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.cleric.AscendedForm;
@@ -168,6 +172,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.HornOfPlenty;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.LloydsBeacon;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.PrecognitiveEye;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Shuriken_Box;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.SkeletonKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
@@ -219,11 +225,15 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Scimitar;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.HungerKnight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.CityLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretChestChasmRoom;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.MiningLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
@@ -268,6 +278,19 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 
 public class Hero extends Char {
+	private boolean directAttackDamageInProgress;
+
+	public void beginDirectAttackDamage() {
+		directAttackDamageInProgress = true;
+	}
+
+	public void endDirectAttackDamage() {
+		directAttackDamageInProgress = false;
+	}
+
+	public boolean directAttackDamageInProgress() {
+		return directAttackDamageInProgress;
+	}
 
 	{
 		actPriority = HERO_PRIO;
@@ -407,6 +430,9 @@ public class Hero extends Char {
 		}
 		if(pointsInTalent(Talent.STRENGTH_TRAIN)==2){
 			strBonus +=1;
+		}
+		if (TowerBoss.towerRulesActive() && buff(PlagueFrailty.class) != null) {
+			strBonus -= 1;
 		}
 		if(hasTalent(Talent.FALSEHOOD_POWER)){
 			strBonus -=1;
@@ -711,6 +737,7 @@ public class Hero extends Char {
 		for (Buff b : buffs()){
 			if (!b.revivePersists) b.detach();
 		}
+		DeathKnightExecutionMark.clearAll(this);
 		Buff.affect( this, Regeneration.class );
 		Buff.affect( this, Hunger.class );
 		ensureSubclassBuffs();
@@ -815,7 +842,12 @@ public class Hero extends Char {
 		//temporarily set the hero's weapon to the missile weapon being used
 		//TODO improve this!
 		belongings.thrownWeapon = wep;
+		int bossHpBefore = enemy instanceof HungerKnight ? enemy.HP : 0;
+		int bossShieldBefore = enemy instanceof HungerKnight ? enemy.shielding() : 0;
 		boolean hit = attack( enemy );
+		if (enemy instanceof HungerKnight) {
+			((HungerKnight) enemy).onThrownWeaponResolved(hit, bossHpBefore, bossShieldBefore);
+		}
 		Invisibility.dispel();
 		belongings.thrownWeapon = null;
 
@@ -1387,6 +1419,11 @@ public class Hero extends Char {
 		if (belongings.armor() != null) {
 			speed = belongings.armor().speedFactor(this, speed);
 		}
+		if (com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal.hasEquippedOracle(this)
+				&& com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal.hasForm(
+				this, com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.OracleTerminal.Form.THRUST)) {
+			speed *= 1.2f;
+		}
 
 		
 		Momentum momentum = buff(Momentum.class);
@@ -1458,6 +1495,8 @@ public class Hero extends Char {
 		if (buff(PostPlagueFatigue.class) != null) {
 			speed /= PostPlagueFatigue.MOVE_DELAY_MULTIPLIER;
 		}
+		speed *= Exhilaration.encounterMovementMultiplier(this);
+		speed = HungerKnightMagicLease.capMovementSpeed(this, speed);
 		return speed;
 		
 	}
@@ -2020,7 +2059,7 @@ public class Hero extends Char {
 			Heap heap = Dungeon.level.heaps.get( dst );
 			if (heap != null && (heap.type != Type.HEAP && heap.type != Type.FOR_SALE)) {
 				
-				if ((heap.type == Type.LOCKED_CHEST && Notes.keyCount(new GoldenKey(Dungeon.depth)) < 1)
+				if ((heap.type == Type.LOCKED_CHEST && !hasGoldenKeyForChest(heap, dst))
 					|| (heap.type == Type.CRYSTAL_CHEST && Notes.keyCount(new CrystalKey(Dungeon.depth)) < 1)){
 
 						AgentMinRewardTracker.onLockedChestInteraction(false, dst);
@@ -2058,6 +2097,21 @@ public class Hero extends Char {
 			ready();
 			return false;
 		}
+	}
+
+	private boolean hasGoldenKeyForChest(Heap heap, int cell) {
+		if (Notes.keyCount(new GoldenKey(Dungeon.depth)) > 0) return true;
+		if (!isLegacyTowerSecretChest(heap, cell)) return false;
+		int legacyDepth = TowerLevel.legacyContentDepthForFloor(Dungeon.depth);
+		return legacyDepth != Dungeon.depth
+				&& Notes.keyCount(new GoldenKey(legacyDepth)) > 0;
+	}
+
+	private boolean isLegacyTowerSecretChest(Heap heap, int cell) {
+		return heap != null && heap.type == Type.LOCKED_CHEST
+				&& Dungeon.level instanceof TowerLevel
+				&& Dungeon.branch == TowerLevel.BRANCH
+				&& SecretChestChasmRoom.containsCell(Dungeon.level, cell);
 	}
 	
 	private boolean actUnlock( HeroAction.Unlock action ) {
@@ -3088,6 +3142,12 @@ public class Hero extends Char {
 					buff(HallowedGround.HallowedFurrowTracker.class).detach();
 				}
 			}
+		} else {
+			for (Item i : belongings) {
+				if (i instanceof PrecognitiveEye || i instanceof Necronomicon) {
+					i.onHeroGainExp(percent, this);
+				}
+			}
 		}
 		
 		boolean levelUp = false;
@@ -3244,6 +3304,7 @@ public class Hero extends Char {
 		if(!this.buffs(Resurrection.REsurrection.class).isEmpty()){
 			Buff b=this.buff(Resurrection.REsurrection.class);
 			b.detach();
+			DeathKnightExecutionMark.clearAll(this);
 			this.HP=1;
 			if(this.pointsInTalent(Talent.RESURRECTION)==3){
 				Buff.affect(this, Bless.class,20);
@@ -3264,6 +3325,7 @@ public class Hero extends Char {
 			interrupt();
 
 			if (ankh.isBlessed()) {
+				DeathKnightExecutionMark.clearAll(this);
 
 				this.HP = HT / 4;
 
@@ -3448,6 +3510,8 @@ public class Hero extends Char {
 		int oldPos = pos;
 
 		super.move( step, travelling);
+		com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard
+				.onHeroMoved(this, oldPos, pos);
 		AgentMinRewardTracker.onHeroMove(oldPos, pos, travelling);
 		
 		if (!flying && travelling) {
@@ -3628,6 +3692,12 @@ public class Hero extends Char {
 					Sample.INSTANCE.play( Assets.Sounds.BONES );
 				} else if (heap.type == Type.LOCKED_CHEST){
 					hasKey = Notes.remove(new GoldenKey(Dungeon.depth));
+					if (!hasKey && isLegacyTowerSecretChest(heap, heap.pos)) {
+						int legacyDepth = TowerLevel.legacyContentDepthForFloor(Dungeon.depth);
+						if (legacyDepth != Dungeon.depth) {
+							hasKey = Notes.remove(new GoldenKey(legacyDepth));
+						}
+					}
 					if (hasKey && keyUseTrack != null){
 						keyUseTrack.processGoldLockOpened();
 					}

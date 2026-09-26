@@ -30,6 +30,23 @@ public class InfectionTest {
     }
 
     @Test
+    public void susceptibilityDoublesPlagueEffectsAndLengthensDecayInterval() {
+        TestChar target = freshTarget();
+        Susceptible.apply(target);
+        Infection.set(target, 4);
+
+        Infection infection = target.buff(Infection.class);
+        assertEquals(0.64f, infection.incomingHealingReduction(), 0.001f);
+        assertEquals(20f, infection.cooldown(), 0.001f);
+        assertEquals(50, Infection.burstDamageForTest(target));
+        assertEquals(10f, Infection.plagueDebuffDurationForTest(target, 5f), 0.001f);
+
+        Infection.set(target, 2);
+        Infection.addStacks(target, 1);
+        assertEquals(10f, target.buff(Hex.class).cooldown(), 0.001f);
+    }
+
+    @Test
     public void infectionExposesItsStackCountInTheBuffIndicator() {
         TestChar target = freshTarget();
         Infection.set(target, 2);

@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightEquipmentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightMagicLease;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightOverburden;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightPressure;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightTalentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
@@ -96,6 +97,9 @@ public class HungerKnight extends TowerBoss {
     private static final String TALENT_ANNOUNCEMENT_PENDING = "talent_announcement_pending";
     private static final String PENDING_ORDINARY_TALENT = "pending_ordinary_talent";
     private static final String PENDING_BOSS_TALENT = "pending_boss_talent";
+    private static final String THROWN_RESISTANCE_HITS = "thrown_resistance_hits";
+    private static final String RED_HUNGER_REMAINDER = "red_hunger_remainder";
+    private static final String SKILL_MARKED_TARGETS = "skill_marked_targets";
 
     private Weapon weapon;
     private Armor armor;
@@ -130,6 +134,9 @@ public class HungerKnight extends TowerBoss {
     private boolean talentAnnouncementPending;
     private String pendingOrdinaryTalent = "";
     private String pendingBossTalent = "";
+    private int thrownResistanceHits;
+    private float redHungerRemainder;
+    private final ArrayList<Integer> skillMarkedTargets = new ArrayList<>();
     private transient boolean restoreGrace;
     private transient boolean waitingForAttackCompletion;
     private transient boolean thrustResolving;
@@ -176,6 +183,7 @@ public class HungerKnight extends TowerBoss {
     private void enterPhase(Phase entered) {
         Hero hero = Dungeon.hero;
         if (hero == null) return;
+        HungerKnightPressure.acquire(hero, id());
         if (entered == Phase.AWAKENING) {
             HungerKnightEquipmentSeal.attach(hero, id());
         } else {
@@ -191,6 +199,7 @@ public class HungerKnight extends TowerBoss {
     private void reconcileEncounterEffects() {
         Hero hero = Dungeon.hero;
         if (hero == null) return;
+        HungerKnightPressure.acquire(hero, id());
         HungerKnightTalentSeal seal = ownedTalentSeal(hero, true);
         if (seal == null) return;
         for (String name : sealedTalentNames) {
@@ -415,6 +424,11 @@ public class HungerKnight extends TowerBoss {
     }
 
     @Override
+    protected boolean isSkillAttack() {
+        return resolvingSkill != Skill.NONE;
+    }
+
+    @Override
     public int attackProc(Char enemy, int damage, DamageTag... damageTags) {
         ensureEquipment();
         damage = super.attackProc(enemy, damage, damageTags);
@@ -429,29 +443,45 @@ public class HungerKnight extends TowerBoss {
     protected void onAttackResolved(Char target, boolean hit, int damageDealt,
                                     DamageTag... damageTags) {
         super.onAttackResolved(target, hit, damageDealt, damageTags);
+        if (hit && target != null && resolvingSkill != Skill.NONE
+                && !skillMarkedTargets.contains(target.id())) {
+            skillMarkedTargets.add(target.id());
+            markSkillHit(target);
+        }
         if (hit && resolvingSkill == Skill.HEAVY) {
             Buff.prolong(target, Cripple.class, 3f);
             Buff.prolong(target, Degrade.class, 6f);
         }
-        if (hit && target == Dungeon.hero && containsTag(damageTags, DamageTag.MELEE)) {
-            addHeroHunger(meleeHungerFor(resolvingSkill));
+        if (hit && phase == Phase.EXHAUSTION && TowerBoss.towerRulesActive()
+                && resolvingSkill == Skill.NONE) {
+            Buff.prolong(target, Degrade.class, 6f);
+        }
+        if (hit && target == Dungeon.hero && target.isAlive()
+                && containsTag(damageTags, DamageTag.MELEE)) {
+            addHeroHunger(meleeHungerFor(resolvingSkill), resolvingSkill);
         }
     }
 
     private int meleeHungerFor(Skill skill) {
         int hunger = 0;
         if (skill == Skill.THRUST) hunger = 30;
-        else if (skill == Skill.HEAVY) hunger = 55;
+        else if (skill == Skill.HEAVY) hunger = 40;
         else if (skill == Skill.NONE) hunger = 15;
-        if (adaptation == Adaptation.RESOURCE) hunger += 20;
         return hunger;
     }
 
-    private void addHeroHunger(int amount) {
+    private void addHeroHunger(int amount, Skill skill) {
         if (Dungeon.hero == null || amount <= 0) return;
         Hunger hunger = Dungeon.hero.buff(Hunger.class);
         if (hunger == null) hunger = Buff.affect(Dungeon.hero, Hunger.class);
-        if (hunger != null) hunger.affectHunger(-amount);
+        if (hunger == null) return;
+        float redFraction = hunger.drainForHungerKnight(amount);
+        float damageRate = skill == Skill.THRUST ? 0.02f
+                : skill == Skill.HEAVY ? 0.05f : 0.01f;
+        redHungerRemainder += Dungeon.hero.HT * damageRate * redFraction;
+        int redDamage = (int) redHungerRemainder;
+        redHungerRemainder -= redDamage;
+        if (redDamage > 0) Dungeon.hero.damage(redDamage, Hunger.class, DamageTag.HUNGER);
     }
 
     @Override
@@ -505,13 +535,45 @@ public class HungerKnight extends TowerBoss {
     }
 
     @Override
+    protected int damageCap(Object source, DamageTag... tags) {
+        int cap = Math.max(0, FINAL_DAMAGE_CAP - (adaptation == Adaptation.OTHER ? 30 : 0));
+        if (Dungeon.hero != null && Dungeon.hero.belongings != null
+                && Dungeon.hero.belongings.thrownWeapon != null) {
+            return thrownDamageCap(cap, thrownResistanceHits);
+        }
+        return cap;
+    }
+
+    static int thrownDamageCap(int baseCap, int hits) {
+        return Math.max(0, baseCap) >> Math.min(30, Math.max(0, hits));
+    }
+
+    public void onThrownWeaponResolved(boolean hit, int hpBefore, int shieldBefore) {
+        if (hit && (HP < hpBefore || shielding() < shieldBefore)) {
+            thrownResistanceHits = Math.min(30, thrownResistanceHits + 1);
+        }
+    }
+
+    @Override
+    public void damage(int damage, Object source, DamageTag... tags) {
+        int hpBefore = HP;
+        int shieldBefore = shielding();
+        super.damage(damage, source, tags);
+        if (source instanceof Char && containsTag(tags, DamageTag.MELEE)
+                && containsTag(tags, DamageTag.PHYSICAL)
+                && (HP < hpBefore || shielding() < shieldBefore)) {
+            thrownResistanceHits = 0;
+        }
+    }
+
+    @Override
     protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
         if (transition != Transition.NONE) return 0;
         int result = Math.max(0, super.modifyFinalDamage(damage, source, tags));
         if (adaptation == Adaptation.MAGIC && containsTag(tags, DamageTag.MAGICAL)) {
             result = Math.round(result * 0.8f);
         }
-        int capped = Math.min(FINAL_DAMAGE_CAP, result);
+        int capped = Math.min(damageCap(source, tags), result);
         int lock = nextUnfinishedLockHP();
         if (lock < 0) return capped;
         int untilLock = Math.max(0, HP - lock);
@@ -622,6 +684,7 @@ public class HungerKnight extends TowerBoss {
         if (skill == null || skill == Skill.NONE || !validTarget(target)
                 || cells == null || cells.length == 0) return false;
         pendingSkill = skill;
+        skillMarkedTargets.clear();
         pendingCells = cells.clone();
         pendingTargetId = target.id();
         pendingTargetCell = target.pos;
@@ -696,15 +759,19 @@ public class HungerKnight extends TowerBoss {
     private boolean beginThrustResolution() {
         if (Dungeon.level == null || pendingCells.length == 0) return false;
         Char mainTarget = Actor.findCharById(pendingTargetId);
+        boolean mainTargetOnPath = false;
         ArrayList<Char> victims = new ArrayList<>();
         int destination = pos;
         int steps = 0;
         for (int cell : pendingCells) {
-            if (steps >= 3 || cell < 0 || cell >= Dungeon.level.length()
+            if (steps >= 5 || cell < 0 || cell >= Dungeon.level.length()
                     || Dungeon.level.solid[cell] || !Dungeon.level.passable[cell]) break;
             Char occupant = Actor.findChar(cell);
             if (occupant != null) {
-                if (validTarget(occupant) && !victims.contains(occupant)) victims.add(occupant);
+                if (validTarget(occupant) && !victims.contains(occupant)) {
+                    victims.add(occupant);
+                    if (occupant == mainTarget) mainTargetOnPath = true;
+                }
                 break;
             }
             destination = cell;
@@ -724,7 +791,8 @@ public class HungerKnight extends TowerBoss {
         if (sprite instanceof HungerKnightSprite) ((HungerKnightSprite) sprite).thrust();
         if (validTarget(mainTarget) && mainTarget.pos == pendingTargetCell
                 && Dungeon.level.adjacent(pos, pendingTargetCell)) {
-            skillAttack(mainTarget, 0.5f, Skill.THRUST);
+            if (!mainTargetOnPath) skillAttack(mainTarget, 1f, Skill.THRUST);
+            if (validTarget(mainTarget)) skillAttack(mainTarget, 0.5f, Skill.THRUST);
         }
         if (moving) {
             thrustResolving = true;
@@ -743,6 +811,7 @@ public class HungerKnight extends TowerBoss {
     }
 
     private boolean performQuake() {
+        skillMarkedTargets.clear();
         ArrayList<Char> victims = new ArrayList<>();
         for (Char target : Actor.chars()) {
             if (validQuakeTarget(target) && Dungeon.level.distance(pos, target.pos) <= 1) {
@@ -928,6 +997,7 @@ public class HungerKnight extends TowerBoss {
     }
 
     private void clearPendingSkill() {
+        skillMarkedTargets.clear();
         pendingSkill = Skill.NONE;
         pendingCells = new int[0];
         pendingTargetId = -1;
@@ -1042,6 +1112,7 @@ public class HungerKnight extends TowerBoss {
             HungerKnightMagicLease.cleanupLegacyOrphanedImmunity(hero);
         }
         HungerKnightTalentSeal.release(hero, id());
+        HungerKnightPressure.release(hero, id());
         refreshHeroDerivedState(hero);
     }
 
@@ -1067,10 +1138,14 @@ public class HungerKnight extends TowerBoss {
         for (HungerKnightMagicLease buff : hero.buffs(HungerKnightMagicLease.class)) {
             owners.add(buff.ownerId());
         }
+        for (HungerKnightPressure buff : hero.buffs(HungerKnightPressure.class)) {
+            owners.add(buff.ownerId());
+        }
         for (int owner : owners) {
             HungerKnightEquipmentSeal.release(hero, owner);
             HungerKnightOverburden.release(hero, owner);
             HungerKnightMagicLease.release(hero, owner);
+            HungerKnightPressure.release(hero, owner);
             HungerKnightTalentSeal.release(hero, owner);
         }
         HungerKnightMagicLease.cleanupLegacyOrphanedImmunity(hero);
@@ -1155,6 +1230,7 @@ public class HungerKnight extends TowerBoss {
     void finishBossActionForTest() { finishBossAction(); }
     int[] cooldownsForTest() { return new int[]{heavyCooldown, thrustCooldown, quakeCooldown}; }
     void forceAdaptationForTest(Adaptation value) { adaptation = value; }
+    void setResolvingSkillForTest(Skill value) { resolvingSkill = value; skillMarkedTargets.clear(); }
     int meleeHungerForTest(Skill skill) { return meleeHungerFor(skill); }
     void setComboStrikeIndexForTest(int value) { comboStrikeIndex = value; }
     int comboStrikeIndexForTest() { return comboStrikeIndex; }
@@ -1215,6 +1291,11 @@ public class HungerKnight extends TowerBoss {
         bundle.put(TALENT_ANNOUNCEMENT_PENDING, talentAnnouncementPending);
         bundle.put(PENDING_ORDINARY_TALENT, pendingOrdinaryTalent);
         bundle.put(PENDING_BOSS_TALENT, pendingBossTalent);
+        bundle.put(THROWN_RESISTANCE_HITS, thrownResistanceHits);
+        bundle.put(RED_HUNGER_REMAINDER, redHungerRemainder);
+        int[] marked = new int[skillMarkedTargets.size()];
+        for (int i = 0; i < marked.length; i++) marked[i] = skillMarkedTargets.get(i);
+        bundle.put(SKILL_MARKED_TARGETS, marked);
     }
 
     @Override
@@ -1248,6 +1329,11 @@ public class HungerKnight extends TowerBoss {
             }
         }
         adaptation = enumAt(Adaptation.values(), bundle.getInt(ADAPTATION), Adaptation.NONE);
+        thrownResistanceHits = Math.max(0, Math.min(30, bundle.getInt(THROWN_RESISTANCE_HITS)));
+        redHungerRemainder = Math.max(0f, Math.min(0.999f, bundle.getFloat(RED_HUNGER_REMAINDER)));
+        skillMarkedTargets.clear();
+        int[] marked = bundle.getIntArray(SKILL_MARKED_TARGETS);
+        if (marked != null) for (int id : marked) skillMarkedTargets.add(id);
         bossActions = Math.max(0, bundle.getInt(BOSS_ACTIONS));
         adaptationActions = Math.max(0, bundle.getInt(ADAPTATION_ACTIONS));
         rewardDropped = bundle.getBoolean(REWARD_DROPPED);

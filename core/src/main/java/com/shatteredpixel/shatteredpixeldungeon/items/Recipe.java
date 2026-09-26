@@ -66,10 +66,12 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.TelekineticGrab;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.Trinket;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Glaive;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greataxe;
@@ -425,8 +427,8 @@ public abstract class Recipe {
 					SoulBlade.class,
 					0),
 			new WeaponRecipe(
-					new Class[]{ScrollOfMysticalEnergy.class, ArcaneResin.class, MetamorphosisPrism.class},
-					new int[]{1, 8, 1},
+					new Class[]{ScrollOfMysticalEnergy.class, ArcaneResin.class, StoneOfAugmentation.class},
+					new int[]{1, 8, 6},
 					5,
 					AuxiliaryCore.class,
 					0),
@@ -502,7 +504,8 @@ public abstract class Recipe {
 		new StewedMeat.threeMeat(),
 		new MeatPie.Recipe(),
 		new RubbingsTome.Recipe(),
-		new Necronomicon.Recipe()
+		new Necronomicon.Recipe(),
+		new WandOfCursedFlame.Recipe()
 	};
 	
 	public static ArrayList<Recipe> findRecipes(ArrayList<Item> ingredients){

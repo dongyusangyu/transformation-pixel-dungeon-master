@@ -44,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.TextureFilm;
+import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
@@ -74,6 +75,7 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 		hitSound = Assets.Sounds.HIT_CRUSH;
 		hitSoundPitch = 0.9f;
 		tier = 6;
+		ACC = 0.8f;
 		RCH = 1;
 		usesTargeting = true;
 	}
@@ -91,20 +93,28 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 
 	@Override
 	public int max(int lvl) {
-		return 20 + 7 * lvl;
+		return 23 + 8 * lvl;
 	}
 
 	public int throwDamageForRoll(int meleeRoll) {
-		return damageRoll(curUser) * 2;
+		return meleeRoll * 2;
 	}
 
 	static int heroDamageForImpact(int impactDamage) {
 		return Math.max(0, impactDamage) / 4;
 	}
 
-	private int rollThrowDamage() {
-		int meleeRoll = augment.damageFactor(Hero.heroDamageIntRange(min(), max()));
-		return throwDamageForRoll(meleeRoll);
+	private int rollThrowDamage(Hero hero) {
+		return throwDamageForRoll(damageRoll(hero));
+	}
+
+	static int sweepDamageBoost(int level) {
+		return 16 + 4 * Math.max(0, level);
+	}
+
+	public String upgradeThrowDamageStat(int level) {
+		return 2 * augment.damageFactor(min(level)) + "-"
+				+ 2 * augment.damageFactor(max(level));
 	}
 
 	@Override
@@ -116,7 +126,10 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 
 	@Override
 	public String statsInfo() {
-		return Messages.get(this, "stats_desc");
+		int level = levelKnown ? buffedLvl() : 0;
+		return Messages.get(this, levelKnown ? "stats_desc" : "typical_stats_desc",
+				2 * augment.damageFactor(min(level)),
+				2 * augment.damageFactor(max(level)));
 	}
 
 	@Override
@@ -176,16 +189,19 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 
 	@Override
 	public String abilityInfo() {
+		int bonus = sweepDamageBoost(levelKnown ? buffedLvl() : 0);
 		if (levelKnown) {
 			return Messages.get(this, "ability_desc",
-					augment.damageFactor(min()), augment.damageFactor(max()));
+					augment.damageFactor(min()) + bonus, augment.damageFactor(max()) + bonus);
 		}
-		return Messages.get(this, "typical_ability_desc", min(0), max(0));
+		return Messages.get(this, "typical_ability_desc", min(0) + bonus, max(0) + bonus);
 	}
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level));
+		int bonus = sweepDamageBoost(level);
+		return augment.damageFactor(min(level)) + bonus + "-"
+				+ (augment.damageFactor(max(level)) + bonus);
 	}
 
 	@Override
@@ -287,8 +303,19 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 		commandLevel = Dungeon.level;
 		int commandToken = beginCommand();
 		hero.busy();
-		playLaunchFeedback();
-		dispatchAbilityStep(hero, ball, targets, 0, ball.pos, commandToken);
+		Actor firstTarget = Actor.findById(targets[0]);
+		int facing = firstTarget instanceof Char ? ((Char) firstTarget).pos : hero.pos;
+		playHeroAttackAnimation(hero, facing, new Callback() {
+			@Override
+			public void call() {
+				if (!isCommandValid(hero, ball, commandToken)) {
+					abortCommand(hero, ball, true, commandToken);
+					return;
+				}
+				playLaunchFeedback();
+				dispatchAbilityStep(hero, ball, targets, 0, ball.pos, commandToken);
+			}
+		});
 	}
 
     @Override
@@ -302,24 +329,33 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 		commandLevel = Dungeon.level;
 		final int commandToken = beginCommand();
 		hero.busy();
-		playLaunchFeedback();
 		final int from = ball.pos;
-		jumpRapidly(ball, from, destination, new Callback() {
+		playHeroAttackAnimation(hero, destination, new Callback() {
 			@Override
 			public void call() {
 				if (!isCommandValid(hero, ball, commandToken)) {
 					abortCommand(hero, ball, false, commandToken);
 					return;
 				}
-				landFollower(ball, destination);
-				dealThrowImpact(hero, ball, destination);
-				Invisibility.dispel();
-				commandState.beginReturn();
-				ball.returning = true;
-				ball.followHero();
-				commandLevel = null;
-				activeCommandToken = 0;
-				hero.spendAndNext(hero.attackDelay());
+				playLaunchFeedback();
+				jumpRapidly(ball, from, destination, new Callback() {
+					@Override
+					public void call() {
+						if (!isCommandValid(hero, ball, commandToken)) {
+							abortCommand(hero, ball, false, commandToken);
+							return;
+						}
+						landFollower(ball, destination);
+						dealThrowImpact(hero, ball, destination);
+						Invisibility.dispel();
+						commandState.beginReturn();
+						ball.returning = true;
+						ball.followHero();
+						commandLevel = null;
+						activeCommandToken = 0;
+						hero.spendAndNext(hero.attackDelay());
+					}
+				});
 			}
 		});
 	}
@@ -337,9 +373,9 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 	}
 
 	private void dealThrowImpact(Hero hero, BallFollower ball, int cell) {
-		int impactDamage = rollThrowDamage();
+		int impactDamage = rollThrowDamage(hero);
 		WandOfBlastWave.BlastWave.blast(cell);
-		CellEmitter.get(cell).burst(Speck.factory(Speck.DUST), 8);
+		CellEmitter.get(cell).burst(impactDustFactory(dustColorForDepth(Dungeon.depth)), 8);
 		Sample.INSTANCE.play(Assets.Sounds.ROCKS);
 		playHitFeedback();
 
@@ -388,7 +424,7 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 				}
 				landFollower(ball, target.pos);
 				if (isVisibleEnemy(hero, target)) {
-					if (hero.attack(target, 1f, 0f, Char.INFINITE_ACCURACY)) {
+					if (hero.attack(target, 1f, sweepDamageBoost(buffedLvl()), Char.INFINITE_ACCURACY)) {
 						Sample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.9f);
 						playHitFeedback();
 					}
@@ -497,6 +533,33 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 
 	private void playLaunchFeedback() {
 		Sample.INSTANCE.play(Assets.Sounds.CHAINS);
+	}
+
+	private void playHeroAttackAnimation(Hero hero, int target, Callback callback) {
+		if (hero.sprite == null) callback.call();
+		else hero.sprite.attack(target, callback);
+	}
+
+	static int dustColorForDepth(int depth) {
+		if (depth <= 0) return 0xFFFFFF;
+		switch (Math.min(5, 1 + depth / 5)) {
+			case 1: return 0xD4D4D4;
+			case 2: return 0xC4BE9C;
+			case 3: return 0xB7B0A5;
+			case 4: return 0xD0BCA3;
+			default: return 0xA2947D;
+		}
+	}
+
+	private static Emitter.Factory impactDustFactory(final int color) {
+		return new Emitter.Factory() {
+			@Override
+			public void emit(Emitter emitter, int index, float x, float y) {
+				Speck dust = (Speck) emitter.recycle(Speck.class);
+				dust.reset(index, x, y, Speck.DUST);
+				dust.hardlight(color);
+			}
+		};
 	}
 
 	private void playHitFeedback() {

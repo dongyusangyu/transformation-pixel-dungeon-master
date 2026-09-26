@@ -454,11 +454,14 @@ public class PrisonBossLevel extends Level {
 				tengu.notice();
 				if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
 					Tengu.TGuard mob = new Tengu.TGuard();
-					mob.state = mob.HUNTING;
-					mob.pos = tenguPos;
-                    mob.alignment = tengu.alignment;
-                    mob.updateSpriteState();
-					GameScene.add( mob,1 );
+					int guardPos = findTenguGuardCell(tenguPos, tenguCell);
+					if (guardPos != -1) {
+						mob.state = mob.HUNTING;
+						mob.pos = guardPos;
+						mob.alignment = tengu.alignment;
+						mob.updateSpriteState();
+						GameScene.add(mob, 1);
+					}
 				}
 
 				CellEmitter.get( tengu.pos ).burst( Speck.factory( Speck.WOOL ), 6 );
@@ -512,9 +515,14 @@ public class PrisonBossLevel extends Level {
 				tengu.notice();
 				if(Dungeon.isChallenged(Challenges.STRONGER_BOSSES) && Dungeon.isChallenged(Challenges.EXTREME_ENVIRONMENT)){
 					Tengu.TGuard mob = new Tengu.TGuard();
-					mob.state = mob.HUNTING;
-					mob.pos = (arena.left + arena.width()/2) + width()*(arena.top+2);
-					GameScene.add( mob,1 );
+					int guardPos = findTenguGuardCell(tengu.pos, arena);
+					if (guardPos != -1) {
+						mob.state = mob.HUNTING;
+						mob.pos = guardPos;
+						mob.alignment = tengu.alignment;
+						mob.updateSpriteState();
+						GameScene.add(mob, 1);
+					}
 				}
 
 				CellEmitter.get( tengu.pos ).burst( Speck.factory( Speck.WOOL ), 6 );
@@ -678,6 +686,41 @@ public class PrisonBossLevel extends Level {
 
 		removeFadingTraps();
 
+	}
+
+	int findTenguGuardCell(int tenguPos, Rect allowedArea) {
+		Point tenguPoint = cellToPoint(tenguPos);
+		int left = tenguPos - 1;
+		int right = tenguPos + 1;
+		ArrayList<Integer> sideCells = new ArrayList<>(2);
+		if (cellToPoint(left).y == tenguPoint.y && isTenguGuardCellAvailable(left, allowedArea)) {
+			sideCells.add(left);
+		}
+		if (cellToPoint(right).y == tenguPoint.y && isTenguGuardCellAvailable(right, allowedArea)) {
+			sideCells.add(right);
+		}
+		if (!sideCells.isEmpty()) {
+			return Random.element(sideCells);
+		}
+
+		ArrayList<Integer> fallbackCells = new ArrayList<>(PathFinder.NEIGHBOURS8.length);
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int cell = tenguPos + offset;
+			if (isTenguGuardCellAvailable(cell, allowedArea)) {
+				fallbackCells.add(cell);
+			}
+		}
+		return fallbackCells.isEmpty() ? -1 : Random.element(fallbackCells);
+	}
+
+	private boolean isTenguGuardCellAvailable(int cell, Rect allowedArea) {
+		return insideMap(cell)
+				&& passable[cell]
+				&& !solid[cell]
+				&& !pit[cell]
+				&& allowedArea.inside(cellToPoint(cell))
+				&& Actor.findChar(cell) == null
+				&& findMob(cell) == null;
 	}
 
 	private void removeFadingTraps() {

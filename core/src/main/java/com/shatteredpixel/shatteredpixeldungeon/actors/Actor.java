@@ -156,13 +156,22 @@ public abstract class Actor implements Bundlable {
 	private static int nextID = 1;
 
 	private static float now = 0;
+	// Unlike Statistics.duration, this also advances through VaultLevel time rebases.
+	private static float rebasedTime = 0;
 	
 	public static float now(){
 		return now;
 	}
+
+	/** A save-persistent game clock independent of the displayed run duration. */
+	public static float absoluteTime() {
+		return rebasedTime + now;
+	}
 	
 	public static synchronized void clear() {
-		
+		// Floor changes reset the local actor clock. Carry its remaining time forward
+		// so absoluteTime never jumps backwards between floors.
+		rebasedTime += now;
 		now = 0;
 
 		all.clear();
@@ -188,6 +197,7 @@ public abstract class Actor implements Bundlable {
 		for (Actor a : all) {
 			a.time -= min;
 		}
+		rebasedTime += min;
 
 		if (Dungeon.hero != null && all.contains( Dungeon.hero ) && !(Dungeon.level instanceof VaultLevel)) {
 			Statistics.duration += min;
@@ -217,17 +227,21 @@ public abstract class Actor implements Bundlable {
 	}
 
 	private static final String NEXTID = "nextid";
+	private static final String REBASED_TIME = "rebased_time";
 
 	public static void storeNextID( Bundle bundle){
 		bundle.put( NEXTID, nextID );
+		bundle.put( REBASED_TIME, rebasedTime );
 	}
 
 	public static void restoreNextID( Bundle bundle){
 		nextID = bundle.getInt( NEXTID );
+		rebasedTime = bundle.contains(REBASED_TIME) ? bundle.getFloat(REBASED_TIME) : 0f;
 	}
 
 	public static void resetNextID(){
 		nextID = 1;
+		rebasedTime = 0;
 	}
 
 	/*protected*/public void next() {
@@ -391,8 +405,20 @@ public abstract class Actor implements Bundlable {
 	}
 	
 	public static synchronized void remove( Actor actor ) {
+		remove(actor, true);
+	}
+
+	/** Removes an actor without waking its scheduler action before its callback resolves. */
+	public static synchronized void removeButKeepCurrent( Actor actor ) {
+		remove(actor, false);
+	}
+
+	private static void remove( Actor actor, boolean releaseCurrent ) {
 		
 		if (actor != null) {
+			// An actor can be removed asynchronously while its action is waiting on
+			// an animation callback. Do not leave the scheduler pointing at it.
+			if (releaseCurrent && current == actor) current = null;
 			all.remove( actor );
 			chars.remove( actor );
 			actor.onRemove();

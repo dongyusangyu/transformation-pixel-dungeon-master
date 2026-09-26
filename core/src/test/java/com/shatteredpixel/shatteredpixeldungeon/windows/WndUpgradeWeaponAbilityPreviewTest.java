@@ -50,7 +50,9 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 		String greatsword = sourceFile(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/TwoHandedGreatsword.java");
 
-		assertTrue(chainMace.contains("augment.damageFactor(min(level)) + \"-\" + augment.damageFactor(max(level))"));
+		assertTrue(chainMace.contains("int bonus = sweepDamageBoost(level);"));
+		assertTrue(chainMace.contains("augment.damageFactor(min(level)) + bonus + \"-\""));
+		assertTrue(chainMace.contains("upgradeThrowDamageStat(int level)"));
 		assertTrue(greatsword.contains("augment.damageFactor(min(level)) + \"-\" + augment.damageFactor(max(level))"));
 		assertFalse(chainMace.contains("Messages.get(this, \"upgrade_ability_stat\")"));
 		assertFalse(greatsword.contains("Messages.get(this, \"upgrade_ability_stat\")"));
@@ -110,7 +112,7 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 
 		assertTrue(hundredTonHammer.contains("KNOCKBACK_DISTANCE"));
 		assertTrue(mercuryBlade.contains("UpgradeAbilityStatType.DURATION"));
-		assertTrue(lakeSword.contains("EFFECT_RANGE"));
+		assertTrue(lakeSword.contains("DRAW_RANGE"));
 		assertTrue(mountainGuard.contains("UpgradeAbilityStatType.DURATION"));
 		assertTrue(soulBlade.contains("upgradeBlockingStat(int level)"));
 	}
@@ -120,16 +122,16 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 		MeleeWeapon.UpgradeAbilityStat hammerDistance = new HundredTonHammer()
 				.upgradeAbilityStats(3).get(0);
 		assertEquals(MeleeWeapon.UpgradeAbilityStatType.KNOCKBACK_DISTANCE, hammerDistance.type);
-		assertEquals("4", hammerDistance.value);
+		assertEquals("2", hammerDistance.value);
 
 		MeleeWeapon.UpgradeAbilityStat mercuryDuration = new MercuryBlade()
 				.upgradeAbilityStats(3).get(0);
 		assertEquals(MeleeWeapon.UpgradeAbilityStatType.DURATION, mercuryDuration.type);
-		assertEquals("4", mercuryDuration.value);
+		assertEquals("5", mercuryDuration.value);
 
 		MeleeWeapon.UpgradeAbilityStat lakeRange = new LakeSword()
-				.upgradeAbilityStats(3).get(1);
-		assertEquals(MeleeWeapon.UpgradeAbilityStatType.EFFECT_RANGE, lakeRange.type);
+				.upgradeFeatureStats(3).get(1);
+		assertEquals(MeleeWeapon.UpgradeAbilityStatType.DRAW_RANGE, lakeRange.type);
 		assertEquals("8", lakeRange.value);
 
 		assertEquals(16, MountainGuard.maxBlockForLevel(3));

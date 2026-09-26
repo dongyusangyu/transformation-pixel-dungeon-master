@@ -999,6 +999,7 @@ public class ItemSpriteSheet {
 		public static final int WAND_TRANSFUSION    = WANDS+10;
 		public static final int WAND_CORRUPTION     = WANDS+11;
 		public static final int WAND_REGROWTH       = WANDS+12;
+		public static final int WAND_CURSED_FLAME   = WANDS+13;
 		static {
 			assignIconRect( WAND_MAGIC_MISSILE,  7, 5 );
 			assignIconRect( WAND_LIGHTNING,      4, 6 );
@@ -1013,6 +1014,7 @@ public class ItemSpriteSheet {
 			assignIconRect( WAND_TRANSFUSION,    7, 6 );
 			assignIconRect( WAND_CORRUPTION,     5, 6 );
 			assignIconRect( WAND_REGROWTH,       5, 6 );
+			assignIconRect( WAND_CURSED_FLAME,   5, 7 );
 		}
 
 		private static final int SCROLLS        =                            xy(1, 3);  //16 slots

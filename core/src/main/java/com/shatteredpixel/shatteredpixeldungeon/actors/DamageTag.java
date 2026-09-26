@@ -29,7 +29,10 @@ public enum DamageTag {
 	// Identifies infection-specific damage for display; nature is still PHYSICAL or MAGICAL.
 	PLAGUE,
 	HUNGER,
+	CURSED_FIRE,
 	FIRE,
+	// Cursed fire's own service has already applied source-independent resistance.
+	CURSED_FIRE_RESOLVED,
 	FROST,
 	WATER,
 	ELECTRIC,
@@ -84,6 +87,7 @@ public enum DamageTag {
 		if (has(tags, PICKAXE))        return PICKAXE;
 		if (has(tags, PLAGUE))         return PLAGUE;
 		if (has(tags, HUNGER))         return HUNGER;
+		if (has(tags, CURSED_FIRE))    return CURSED_FIRE;
 		if (has(tags, FIRE))           return FIRE;
 		if (has(tags, FROST))          return FROST;
 		if (has(tags, WATER))          return WATER;

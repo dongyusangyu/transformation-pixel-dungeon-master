@@ -153,6 +153,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.BurningTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ChillingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.ConfusionTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CorrosionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CursedFlameTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DigestionTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CursingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DisarmingTrap;
@@ -172,6 +173,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.InfernalTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RedCrossTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RimeTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RoastSheepTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.SoulScorchTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.OozeTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PitfallTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PoisonDartTrap;
@@ -304,7 +306,8 @@ public enum Bestiary {
 				FlockTrap.class, SummoningTrap.class, WeakeningTrap.class, CursingTrap.class,
 				GeyserTrap.class, ExplosiveTrap.class, AbyssExplosiveTrap.class, RockfallTrap.class, PitfallTrap.class,
 				DistortionTrap.class, DisarmingTrap.class, GrimTrap.class, MaliceTrap.class, InfernalTrap.class, RimeTrap.class,
-				RedCrossTrap.class, DigestionTrap.class, TransformationTrap.class, RoastSheepTrap.class);
+				RedCrossTrap.class, DigestionTrap.class, TransformationTrap.class, RoastSheepTrap.class,
+				CursedFlameTrap.class, SoulScorchTrap.class);
 
 		PLANT.addEntities(Rotberry.class, Sungrass.class, Fadeleaf.class, Icecap.class,
 				Firebloom.class, Sorrowmoss.class, Swiftthistle.class, Blindweed.class,

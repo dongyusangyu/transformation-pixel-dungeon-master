@@ -46,7 +46,7 @@ public class PotionOfToxicGas extends Potion {
 			Sample.INSTANCE.play( Assets.Sounds.GAS );
 		}
 
-		GameScene.add( Blob.seed( cell, 1000, ToxicGas.class ) );
+		GameScene.add( Blob.seed( cell, PotionPotency.amount(PotionPotency.drunk(curUser), 1000), ToxicGas.class ) );
 	}
 	
 	@Override

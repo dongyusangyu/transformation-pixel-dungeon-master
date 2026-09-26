@@ -67,7 +67,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.InstructionTool;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TalismanOfForesight;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TwinDemonEyes;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.TowerPotionRules;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.Scroll;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
@@ -256,6 +258,9 @@ public class Dungeon {
 	//first variable is only assigned when game is started, second is updated every time game is saved
 	public static int initialVersion;
 	public static int version;
+	public static final int LEGACY_RULES_VERSION = 0;
+	public static final int CURRENT_RULES_VERSION = 1;
+	public static int rulesVersion = LEGACY_RULES_VERSION;
 
 	public static boolean daily;
 	public static boolean dailyReplay;
@@ -286,6 +291,7 @@ public class Dungeon {
 	public static void init() {
 
 		initialVersion = version = Game.versionCode;
+		rulesVersion = CURRENT_RULES_VERSION;
 		newCycle = false;
 		newCycleSourceGameID = null;
 		challenges = SPDSettings.challenges();
@@ -351,6 +357,7 @@ public class Dungeon {
 	public static void reinit() {
 
 		initialVersion = version = Game.versionCode;
+		rulesVersion = CURRENT_RULES_VERSION;
 		newCycle = false;
 		newCycleSourceGameID = null;
 		challenges = SPDSettings.challenges();
@@ -880,6 +887,7 @@ public class Dungeon {
 		
 		Dungeon.level = level;
 		hero.pos = pos;
+		Wandmaker.Quest.checkBookQuestCompletion(depth, branch, hero.belongings);
 		Badges.validateTowerProgress(depth, branch);
 		NewCycleHungerProtection.updateForCurrentFloor(hero);
 
@@ -890,6 +898,7 @@ public class Dungeon {
 		Mob.restoreAllies( level, pos );
 
 		Actor.init();
+		TowerPotionRules.moveExcessToGround(hero);
 		ActionIndicator.reconcileActionState();
 		ActionIndicator1.reconcileActionState();
 
@@ -1087,6 +1096,7 @@ public class Dungeon {
 
 	private static final String INIT_VER	= "init_ver";
 	public  static final String VERSION		= "version";
+	private static final String RULES_VERSION = "rules_version";
 	private static final String SEED		= "seed";
 	private static final String CUSTOM_SEED	= "custom_seed";
 	private static final String DAILY	    = "daily";
@@ -1130,11 +1140,21 @@ public class Dungeon {
 		SaveManager.saveGame(save, gameBundle());
 	}
 
+	static void storeRulesVersion(Bundle bundle) {
+		bundle.put(RULES_VERSION, rulesVersion);
+	}
+
+	static void restoreRulesVersion(Bundle bundle) {
+		rulesVersion = bundle.contains(RULES_VERSION)
+				? bundle.getInt(RULES_VERSION) : LEGACY_RULES_VERSION;
+	}
+
 	private static Bundle gameBundle() {
 			Bundle bundle = new Bundle();
 
 			bundle.put( INIT_VER, initialVersion );
 			bundle.put( VERSION, version = Game.versionCode );
+			storeRulesVersion(bundle);
 			bundle.put( SEED, seed );
 			bundle.put( CUSTOM_SEED, customSeedText );
 			bundle.put( DAILY, daily );
@@ -1275,6 +1295,7 @@ public class Dungeon {
 		}
 
 		version = bundle.getInt( VERSION );
+		restoreRulesVersion(bundle);
 
 		seed = bundle.contains( SEED ) ? bundle.getLong( SEED ) : DungeonSeed.randomSeed();
 		boolean restoredTowerStyles = towerStyleSchedule.restoreFromBundle(
@@ -1684,8 +1705,17 @@ public class Dungeon {
 		for (TalismanOfForesight.CharAwareness c : hero.buffs(TalismanOfForesight.CharAwareness.class)){
 			Char ch = (Char) Actor.findById(c.charID);
 			if (ch == null || !ch.isAlive()) continue;
-			markVisitedNeighbourhood(ch.pos);
-			GameScene.updateFog(ch.pos, 2);
+			if (c instanceof TwinDemonEyes.TwinEyeAwareness) {
+				if (ch.pos >= 0 && ch.pos < level.length() && level.visited != null
+						&& level.visited.length == level.length() && level.heroFOV != null
+						&& level.heroFOV.length == level.length()) {
+					level.visited[ch.pos] |= level.heroFOV[ch.pos];
+				}
+				GameScene.updateFog(ch.pos, 0);
+			} else {
+				markVisitedNeighbourhood(ch.pos);
+				GameScene.updateFog(ch.pos, 2);
+			}
 		}
 
 		for (TalismanOfForesight.HeapAwareness h : hero.buffs(TalismanOfForesight.HeapAwareness.class)){

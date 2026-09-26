@@ -46,6 +46,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndHeroInfo;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndRandomModeConfirm;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndSkins;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTextInput;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
@@ -786,9 +787,17 @@ public class HeroSelectScene extends PixelScene {
                 StyledButton randomModeButton = new StyledButton(Chrome.Type.BLANK, Messages.get(HeroSelectScene.class, "random_mode"), 6){
                     @Override
                     protected void onClick() {
-                        SPDSettings.randomMode(!SPDSettings.randomMode());
-                        updateIcon();
-                        updateOptionsColor();
+                        if (SPDSettings.randomMode()) {
+                            SPDSettings.randomMode(false);
+                            updateIcon();
+                            updateOptionsColor();
+                        } else {
+                            ShatteredPixelDungeon.scene().addToFront(new WndRandomModeConfirm(() -> {
+                                SPDSettings.randomMode(true);
+                                updateIcon();
+                                updateOptionsColor();
+                            }));
+                        }
                     }
 
                     private void updateIcon() {

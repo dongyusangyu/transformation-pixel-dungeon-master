@@ -39,6 +39,11 @@ public class LakeSword extends MeleeWeapon implements WeaponSpecialAction {
 	public static final String AC_DRAW = "DRAW";
 	public enum State { SHEATHED, CHARGED, SPENT }
 
+	@Override
+	public int indicatorColor() {
+		return 0xFFDA6B;
+	}
+
 	private static final String STATE = "lake_sword_state";
 	private static final String MAGIC_TURNS = "lake_sword_magic_turns";
 
@@ -342,12 +347,18 @@ public class LakeSword extends MeleeWeapon implements WeaponSpecialAction {
 	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
-		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE,
-				augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level))));
-		result.add(abilityStat(UpgradeAbilityStatType.EFFECT_RANGE,
-				Integer.toString(drawRangeForLevel(level))));
 		result.add(abilityStat(UpgradeAbilityStatType.DURATION,
 				Integer.toString(windProtectionDurationForLevel(level))));
+		return result;
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.DRAW_DAMAGE,
+				augment.damageFactor(min(level)) + "-" + augment.damageFactor(max(level))));
+		result.add(abilityStat(UpgradeAbilityStatType.DRAW_RANGE,
+				Integer.toString(drawRangeForLevel(level))));
 		return result;
 	}
 

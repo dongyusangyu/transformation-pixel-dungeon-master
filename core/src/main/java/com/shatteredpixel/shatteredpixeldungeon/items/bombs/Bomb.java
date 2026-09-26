@@ -107,6 +107,10 @@ public class Bomb extends Item {
 		return 1;
 	}
 
+	/** Called after this bomb has finished resolving its direct character hits. */
+	protected void onExplosionComplete(ArrayList<Char> affectedChars) {
+	}
+
 	/**
 	 * Returns whether the bomb participates in the bomb-related talent rules.
 	 * Regrowth Bomb is intentionally excluded because it does not deal damage.
@@ -258,6 +262,8 @@ public class Bomb extends Item {
 				}
 			}
 			
+
+			onExplosionComplete(affectedChars);
 
 			for (int p = 0; p < PathFinder.NEIGHBOURS9.length; p++) {
 				int i = cell + PathFinder.NEIGHBOURS9[p];

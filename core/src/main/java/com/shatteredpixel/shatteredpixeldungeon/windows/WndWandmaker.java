@@ -24,7 +24,6 @@ package com.shatteredpixel.shatteredpixeldungeon.windows;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
-import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Necronomicon;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.CorpseDust;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.Embers;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -64,8 +63,6 @@ public class WndWandmaker extends Window {
 		String msg = "";
 		if (item instanceof CorpseDust){
 			msg = Messages.get(this, "dust");
-		} else if (Wandmaker.Quest.isDustQuestAlternative(Wandmaker.Quest.type(), item.getClass())) {
-			msg = Messages.get(this, "book");
 		} else if (item instanceof Embers){
 			msg = Messages.get(this, "ember");
 		} else if (item instanceof Rotberry.Seed){

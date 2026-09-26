@@ -29,135 +29,66 @@ public class HundredTonHammerTest {
 		assertEquals(6, HundredTonHammer.TIER);
 		assertEquals(20, HundredTonHammer.strengthRequirementForLevel(0));
 		assertEquals(6, HundredTonHammer.minForLevel(0));
-		assertEquals(28, HundredTonHammer.maxForLevel(0));
+		assertEquals(21, HundredTonHammer.maxForLevel(0));
 		assertEquals(13, HundredTonHammer.minForLevel(7));
 		assertEquals(70, HundredTonHammer.maxForLevel(7));
-		assertEquals(1.16f, HundredTonHammer.ACCURACY, 0f);
+		assertEquals(1.18f, HundredTonHammer.ACCURACY, 0f);
 		assertEquals(1, HundredTonHammer.RANGE);
 		assertEquals(1f, HundredTonHammer.DELAY, 0f);
 		assertEquals(EXItemSpriteSheet.HUNDRED_TON_HAMMER, weapon.image);
 		assertEquals(6, weapon.min(0));
-		assertEquals(28, weapon.max(0));
+		assertEquals(21, weapon.max(0));
 		assertEquals(13, weapon.min(7));
 		assertEquals(70, weapon.max(7));
 		assertEquals(20, weapon.STRReq(0));
-		assertEquals(1.16f, weapon.actualAccuracy(), 0f);
+		assertEquals(1.18f, weapon.actualAccuracy(), 0f);
 		assertEquals(1, weapon.actualRange());
 		assertEquals(1f, weapon.actualDelay(), 0f);
 	}
 
 	@Test
-	public void normalKnockbackIncreasesEverySevenLevels() {
-		assertEquals(1, HundredTonHammer.normalKnockbackDistance(-3));
-		assertEquals(1, HundredTonHammer.normalKnockbackDistance(6));
-		assertEquals(2, HundredTonHammer.normalKnockbackDistance(7));
-		assertEquals(2, HundredTonHammer.normalKnockbackDistance(13));
-		assertEquals(3, HundredTonHammer.normalKnockbackDistance(14));
+	public void normalKnockbackStartsAtTwoAndIncreasesEveryFourLevels() {
+		assertEquals(2, HundredTonHammer.normalKnockbackDistance(-3));
+		assertEquals(2, HundredTonHammer.normalKnockbackDistance(3));
+		assertEquals(3, HundredTonHammer.normalKnockbackDistance(4));
+		assertEquals(3, HundredTonHammer.normalKnockbackDistance(7));
+		assertEquals(4, HundredTonHammer.normalKnockbackDistance(8));
 	}
 
 	@Test
-	public void bounceDamageUsesActualDistanceAndIntegerDivision() {
-		assertEquals(0, HundredTonHammer.bounceDamage(0, 8));
-		assertEquals(7, HundredTonHammer.bounceDamage(5, 3));
-		assertEquals(28, HundredTonHammer.bounceDamage(7, 8));
-		assertEquals(8, HundredTonHammer.bouncePower(7));
+	public void ambushDamageAndSplashUseDocumentedFormulas() {
+		assertEquals(7, HundredTonHammer.ambushDamageBonus(0));
+		assertEquals(12, HundredTonHammer.ambushDamageBonus(3));
+		assertEquals(13, HundredTonHammer.ambushDamageBonus(4));
+		assertEquals(3, HundredTonHammer.bounceDamage(0, 10));
+		assertEquals(3, HundredTonHammer.bouncePower(4));
 	}
 
 	@Test
-	public void abilityWaitsForImmediateKnockbackBeforeResolvingBounceDamage()
-			throws IOException {
+	public void abilityAttacksFirstThenKnocksBackAndAppliesLandingSplash() throws IOException {
 		String compactSource = compactSource();
-		String abilityBody = blockStartingAt(
-				compactSource, "protectedvoidduelistAbility(");
-		assertTrue("ability entry point must delegate bounce resolution",
-				abilityBody.contains("pushAndResolve(hero,target)")
-						|| abilityBody.contains("this.pushAndResolve(hero,target)"));
+		String abilityBody = blockStartingAt(compactSource, "protectedvoidduelistAbility(");
+		int strike = abilityBody.indexOf("hero.attack(target,1f,bonus,Float.POSITIVE_INFINITY");
+		int push = abilityBody.indexOf("pushAndResolve(hero,target,directDamage)");
+		assertTrue("the ability's guaranteed primary strike must occur before displacement",
+				strike >= 0 && push > strike);
 
 		String pushBody = blockStartingAt(compactSource, "privatevoidpushAndResolve(");
-		int immediateThrow = pushBody.indexOf(
-				"WandOfBlastWave.throwCharImmediatelyWithResult(");
-		assertTrue("bounce helper must use immediate knockback", immediateThrow >= 0);
+		assertTrue("terrain collisions must use the wand collision-damage behavior",
+				pushBody.contains("bouncePower(buffedLvl()),true,true,this"));
+		assertTrue("the callback must defer splash until the push has resolved",
+				pushBody.contains("resolveBounceDamage(hero,target,directDamage/3)"));
 
-		String callbackMarker =
-				"publicvoidcall(booleanresolvedByThisPush,intreportedDistance)";
-		String argumentPrefix = argumentPrefixBeforeMarker(pushBody,
-				"WandOfBlastWave.throwCharImmediatelyWithResult(", callbackMarker);
-		List<String> arguments = splitTopLevelArguments(argumentPrefix);
-		assertEquals("callback must be the seventh immediate-knockback argument",
-				6, arguments.size());
-		assertEquals("collideDmg must be false", "false", arguments.get(4));
-
-		String afterImmediateThrow = pushBody.substring(immediateThrow);
-		int callback = afterImmediateThrow.indexOf(callbackMarker);
-		assertTrue("immediate knockback must provide a callback", callback >= 0);
-		String callbackBody = blockStartingAt(afterImmediateThrow, callbackMarker);
-
-		Pattern distanceAssignment = Pattern.compile(
-				"(?:final)?int([A-Za-z_$][A-Za-z0-9_$]*)="
-						+ "resolvedByThisPush\\?"
-						+ "Dungeon\\.level\\.distance\\(startPos,target\\.pos\\):0;");
-		Matcher distanceMatcher = distanceAssignment.matcher(callbackBody);
-		assertTrue("external cancellation must force actual distance to zero",
-				distanceMatcher.find());
-		String distanceVariable = distanceMatcher.group(1);
-
-		String quotedDistance = Pattern.quote(distanceVariable);
-		Pattern reportedDistanceGuard = Pattern.compile(
-				"if\\((?:" + quotedDistance + "!=reportedDistance|reportedDistance!="
-						+ quotedDistance + ")\\)\\{?" + quotedDistance + "=0;");
-		Matcher reportedDistanceMatcher = reportedDistanceGuard.matcher(callbackBody);
-		assertTrue("a mismatched reported distance must force damage distance to zero",
-				reportedDistanceMatcher.find(distanceMatcher.end()));
-
-		Pattern directDamageFlow = Pattern.compile(
-				"resolveBounceDamage\\(hero,target,"
-						+ "bounceDamage\\(buffedLvl\\(\\),"
-						+ quotedDistance + "\\)\\)");
-		boolean directFlow = directDamageFlow.matcher(callbackBody)
-				.find(reportedDistanceMatcher.end());
-
-		Pattern damageAssignment = Pattern.compile(
-				"(?:final)?int([A-Za-z_$][A-Za-z0-9_$]*)="
-						+ "bounceDamage\\(buffedLvl\\(\\),"
-						+ quotedDistance + "\\);");
-		Matcher assignmentMatcher = damageAssignment.matcher(callbackBody);
-		boolean localFlow = false;
-		if (assignmentMatcher.find(reportedDistanceMatcher.end())) {
-			String damageVariable = assignmentMatcher.group(1);
-			Pattern localResolution = Pattern.compile(
-					"resolveBounceDamage\\(hero,target,"
-							+ Pattern.quote(damageVariable) + "\\)");
-			localFlow = localResolution.matcher(callbackBody).find(assignmentMatcher.end());
-		}
-		assertTrue("bounce damage result must be passed to damage resolution",
-				directFlow || localFlow);
-
-		String resolutionBody = blockStartingAt(
-				compactSource, "privatevoidresolveBounceDamage(");
-		assertTrue("bounce splash must inspect all eight neighbours",
-				resolutionBody.contains("PathFinder.NEIGHBOURS8"));
-		assertTrue("bounce damage must be tagged physical",
-				resolutionBody.contains("DamageTag.PHYSICAL"));
-		int firstDamage = resolutionBody.indexOf(".damage(");
-		int firstSnapshotAdd = resolutionBody.indexOf("splashTargets.add(");
-		int lastSnapshotAdd = resolutionBody.lastIndexOf("splashTargets.add(");
-		assertTrue("all splash targets must be snapshotted before damage begins",
-				firstSnapshotAdd >= 0 && lastSnapshotAdd < firstDamage);
-		assertTrue("the splash snapshot must deduplicate character identities",
-				resolutionBody.contains("!splashTargets.contains("));
-		String splashLoopMarker = "for(CharsplashTarget:splashTargets)";
-		int splashLoop = resolutionBody.indexOf(splashLoopMarker);
-		assertTrue("each snapshotted identity must be processed by one later loop",
-				splashLoop > firstDamage
-						&& splashLoop == resolutionBody.lastIndexOf(splashLoopMarker));
-		assertFalse("bounce damage must not recursively perform a hero attack",
-				resolutionBody.contains("hero.attack("));
-		assertFalse("bounce damage must not recursively invoke weapon procs",
-				resolutionBody.contains(".proc("));
+		String resolutionBody = blockStartingAt(compactSource, "privatevoidresolveBounceDamage(");
+		assertTrue("landing damage must be physical", resolutionBody.contains("DamageTag.PHYSICAL"));
+		assertTrue("the landing target receives the five-turn daze", resolutionBody.contains("Daze.class,5f"));
+		assertTrue("other landing-area targets are snapshotted before damage",
+				resolutionBody.contains("PathFinder.NEIGHBOURS8")
+						&& resolutionBody.indexOf("splashTargets.add(") < resolutionBody.indexOf(".damage("));
 	}
 
 	@Test
-	public void normalProcUsesLevelScaledKnockbackWithoutCollisionDamage()
+	public void normalProcUsesLevelScaledKnockbackWithCollisionDamage()
 			throws IOException {
 		String compactSource = compactSource();
 		String procBody = blockStartingAt(compactSource, "publicintproc(");
@@ -174,8 +105,8 @@ public class HundredTonHammerTest {
 		assertTrue("proc must use its buffed level for knockback power",
 				arguments.get(2).contains("normalKnockbackDistance(buffedLvl())"));
 		assertEquals("normal knockback must close doors", "true", arguments.get(3));
-		assertEquals("normal knockback must disable collision damage",
-				"false", arguments.get(4));
+		assertEquals("normal knockback must apply collision damage",
+				"true", arguments.get(4));
 		assertEquals("normal knockback cause", "this", arguments.get(5));
 		String callbackArgument = arguments.get(6).replace("(Callback)", "");
 		assertEquals("normal knockback must not schedule a callback",
@@ -280,10 +211,15 @@ public class HundredTonHammerTest {
 				Generator.Category.WEP_T6.defaultProbs.length);
 
 		float expectedWeight = Generator.Category.WEP_T6.defaultProbs[0];
-		for (float weight : Generator.Category.WEP_T6.defaultProbs) {
-			assertTrue("tier-six generator weights must be positive", weight > 0f);
-			assertEquals("tier-six generator weights must be equal",
-					expectedWeight, weight, 0f);
+		for (int i = 0; i < Generator.Category.WEP_T6.defaultProbs.length; i++) {
+			float weight = Generator.Category.WEP_T6.defaultProbs[i];
+			if (Generator.Category.WEP_T6.classes[i] == LakeSword.class) {
+				assertEquals("the Lake Sword remains unavailable through normal drops", 0f, weight, 0f);
+			} else {
+				assertTrue("available tier-six weapon weights must be positive", weight > 0f);
+				assertEquals("available tier-six generator weights must be equal",
+						expectedWeight, weight, 0f);
+			}
 		}
 		assertEquals(expectedWeight,
 				Generator.Category.WEP_T6.defaultProbs[hammerIndex], 0f);

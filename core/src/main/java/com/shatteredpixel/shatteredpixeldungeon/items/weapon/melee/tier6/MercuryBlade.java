@@ -45,7 +45,7 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 	public static final int TIER = 6;
 	public static final float DELAY = 0.8f;
 	public static final int RANGE = 1;
-	private static final float SOLIDIFICATION_DURATION = 4f;
+	private static final int SOLIDIFICATION_DISPLAY_BASE = 2;
 
 	{
 		image = EXItemSpriteSheet.MERCURY_BLADE;
@@ -81,11 +81,19 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 	}
 
 	public static int throwMinForLevel(int lvl) {
-		return 10 + 2 * Math.max(0, lvl);
+		return 8 + 2 * Math.max(0, lvl);
 	}
 
 	public static int throwMaxForLevel(int lvl) {
-		return 25 + 5 * Math.max(0, lvl);
+		return 20 + 4 * Math.max(0, lvl);
+	}
+
+	public static int solidificationDurationForLevel(int lvl) {
+		return SOLIDIFICATION_DISPLAY_BASE + Math.max(0, lvl);
+	}
+
+	private static float solidificationBuffDurationForLevel(int lvl) {
+		return Math.max(1f, solidificationDurationForLevel(lvl) - 1f);
 	}
 
 	public static int liquidMetalCost(boolean solidified) {
@@ -97,7 +105,7 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 	}
 
 	public static float solidificationDuration() {
-		return SOLIDIFICATION_DURATION;
+		return solidificationDurationForLevel(0);
 	}
 
 	public static int abilityChargeCost() {
@@ -176,7 +184,9 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 
 		MercurySolidification existing = hero.buff(MercurySolidification.class);
 		if (existing != null) existing.detach();
-		Buff.affect(hero, MercurySolidification.class, SOLIDIFICATION_DURATION);
+		Buff.affect(hero, MercurySolidification.class,
+				solidificationBuffDurationForLevel(buffedLvl()));
+		hero.buff(MercurySolidification.class).captureInitialDuration();
 
 		hero.sprite.operate(hero.pos);
 		hero.next();
@@ -190,23 +200,38 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 
 	@Override
 	public String statsInfo() {
-		return Messages.get(this, "stats_desc");
+		int level = levelKnown ? buffedLvl() : 0;
+		String key = levelKnown ? "stats_desc" : "typical_stats_desc";
+		return Messages.get(this, key,
+				augment.damageFactor(throwMinForLevel(level)),
+				augment.damageFactor(throwMaxForLevel(level)));
 	}
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, "ability_desc", (int) SOLIDIFICATION_DURATION);
+		int level = levelKnown ? buffedLvl() : 0;
+		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
+				solidificationDurationForLevel(level));
 	}
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return Integer.toString((int) SOLIDIFICATION_DURATION);
+		return Integer.toString(solidificationDurationForLevel(level));
 	}
 
 	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
 		result.add(abilityStat(UpgradeAbilityStatType.DURATION, upgradeAbilityStat(level)));
+		return result;
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.BLADE_SHADOW_DAMAGE,
+				augment.damageFactor(throwMinForLevel(level)) + "-"
+						+ augment.damageFactor(throwMaxForLevel(level))));
 		return result;
 	}
 
@@ -303,9 +328,11 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 	}
 
 	public static class MercurySolidification extends FlavourBuff {
+		private static final String INITIAL_DURATION = "initial_duration";
+		private float initialDuration;
 
 		{
-			announced = true;
+			announced = false;
 			type = buffType.POSITIVE;
 		}
 
@@ -314,10 +341,27 @@ public class MercuryBlade extends MeleeWeapon implements WeaponSpecialAction {
 			return BuffIndicator.MERCURY_SOLIDIFICATION;
 		}
 
+		public void captureInitialDuration() {
+			initialDuration = Math.max(1f, visualcooldown());
+		}
+
 		@Override
 		public float iconFadePercent() {
-			return Math.max(0f,
-					(SOLIDIFICATION_DURATION - visualcooldown()) / SOLIDIFICATION_DURATION);
+		return initialDuration <= 0f ? 0f : Math.max(0f, Math.min(1f,
+				(initialDuration - visualcooldown()) / initialDuration));
+		}
+
+		@Override
+		public void storeInBundle(com.watabou.utils.Bundle bundle) {
+			super.storeInBundle(bundle);
+			bundle.put(INITIAL_DURATION, initialDuration);
+		}
+
+		@Override
+		public void restoreFromBundle(com.watabou.utils.Bundle bundle) {
+			super.restoreFromBundle(bundle);
+			initialDuration = bundle.getFloat(INITIAL_DURATION);
+			if (initialDuration <= 0f) captureInitialDuration();
 		}
 	}
 }

@@ -31,6 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
@@ -128,6 +129,9 @@ public class Wandmaker extends NPC {
 			Dungeon.level.drop(genLowValueConsumable(), Dungeon.hero.pos).sprite.drop();
 			Dungeon.level.drop(genLowValueConsumable(), Dungeon.hero.pos).sprite.drop();
 			Buff.affect(this,Talent.SuckerPunchTracker.class);
+		}
+		if (Quest.given && !Quest.active()) {
+			return true;
 		}
 
 		if (Quest.given) {
@@ -263,13 +267,19 @@ public class Wandmaker extends NPC {
 		public static Wand wand1;
 		public static Wand wand2;
 
-		static Item selectDustQuestItem(CorpseDust dust, Necronomicon book) {
-			return dust != null ? dust : book;
+		public static boolean shouldAwardBookQuestScore(int depth, int branch, boolean carriesBook) {
+			return depth >= 10 && branch == 0 && carriesBook;
 		}
 
-		public static boolean isDustQuestAlternative(int questType, Class<?> itemClass) {
-			return questType == 1 && itemClass != null
-					&& Necronomicon.class.isAssignableFrom(itemClass);
+		public static boolean hasNecronomicon(Belongings belongings) {
+			return belongings != null && (belongings.getItem(Necronomicon.class) != null
+					|| findInBag(belongings.backpack, Necronomicon.class) != null);
+		}
+
+		public static void checkBookQuestCompletion(int depth, int branch, Belongings belongings) {
+			if (shouldAwardBookQuestScore(depth, branch, hasNecronomicon(belongings))) {
+				completeWithoutReward();
+			}
 		}
 
 		public static boolean isQuestItemConsumed(Class<?> itemClass) {
@@ -283,8 +293,7 @@ public class Wandmaker extends NPC {
 			switch (questType) {
 				case 1:
 				default:
-					return selectDustQuestItem(findInBag(backpack, CorpseDust.class),
-							findInBag(backpack, Necronomicon.class));
+					return findInBag(backpack, CorpseDust.class);
 				case 2:
 					return findInBag(backpack, Embers.class);
 				case 3:
@@ -524,6 +533,12 @@ public class Wandmaker extends NPC {
 		}
 		
 		public static void complete() {
+			completeWithoutReward();
+		}
+
+		public static void completeWithoutReward() {
+			spawned = true;
+			given = true;
 			wand1 = null;
 			wand2 = null;
 			

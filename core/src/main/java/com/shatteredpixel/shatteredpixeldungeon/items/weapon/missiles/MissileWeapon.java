@@ -53,6 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bags.MagicalHolster;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfSharpshooting;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ParchmentScrap;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TwinDemonEyes;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
@@ -677,6 +678,8 @@ abstract public class MissileWeapon extends Weapon {
 				|| enemy == null || !enemy.isAlive()) {
 			return;
 		}
+
+		TwinDemonEyes.onSuccessfulRangedHit(user, enemy);
 
 		int talentPoints = user.pointsInTalent(Talent.PHANTOM_SHOOTER);
 		if (talentPoints <= 0

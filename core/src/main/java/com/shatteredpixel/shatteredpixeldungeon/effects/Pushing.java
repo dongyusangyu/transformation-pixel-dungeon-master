@@ -40,6 +40,7 @@ public class Pushing extends Actor {
 	
 	private Effect effect;
 	private Char ch;
+	private volatile boolean started;
 
 	private Callback callback;
 
@@ -66,20 +67,26 @@ public class Pushing extends Actor {
 	
 	@Override
 	protected boolean act() {
-		Actor.remove( Pushing.this );
+		startDuePushes();
+		return !started || !Actor.all().contains(this);
 
+	}
+
+	private static void startDuePushes() {
+		// Start every simultaneous displacement before waiting on the first one.
+		for (Actor actor : Actor.all()) {
+			if (actor instanceof Pushing && actor.cooldown() <= 0) {
+				((Pushing) actor).beginEffect();
+			}
+		}
+	}
+
+	private void beginEffect() {
+		if (started) return;
+		started = true;
 		if (!startEffect()) {
-			completeCallback();
-			return true;
+			finish(false);
 		}
-
-		//so that all pushing effects at the same time go simultaneously
-		for ( Actor actor : Actor.all() ){
-			if (actor instanceof Pushing && actor.cooldown() == 0)
-				return true;
-		}
-		return false;
-
 	}
 
 	/**
@@ -91,13 +98,10 @@ public class Pushing extends Actor {
 		// Keep this registered so pushingExistsForChar and the normal scheduler
 		// can still observe it; only the visual startup bypasses the Actor turn.
 		Actor.add( Pushing.this );
-		if (!startEffect()) {
-			Actor.remove( Pushing.this );
-			completeCallback();
-		}
+		beginEffect();
 	}
 
-	private boolean startEffect() {
+	protected boolean startEffect() {
 		if (sprite == null || sprite.parent == null) return false;
 		if (Dungeon.level.heroFOV[from] || Dungeon.level.heroFOV[to]){
 			sprite.visible = true;
@@ -112,6 +116,30 @@ public class Pushing extends Actor {
 		Callback executing = callback;
 		callback = null;
 		if (executing != null) executing.call();
+	}
+
+	void completeEffect() {
+		finish(true);
+	}
+
+	private void finish(boolean sortSprites) {
+		Actor.removeButKeepCurrent(this);
+		try {
+			completeCallback();
+		} finally {
+			try {
+				if (sortSprites) GameScene.sortMobSprites();
+			} finally {
+				next();
+			}
+		}
+	}
+
+	public static boolean hasPendingPushes() {
+		for (Actor actor : Actor.all()) {
+			if (actor instanceof Pushing && actor.cooldown() <= 0) return true;
+		}
+		return false;
 	}
 
 	public static boolean pushingExistsForChar(Char ch) {
@@ -160,11 +188,7 @@ public class Pushing extends Actor {
 				sprite.point(end);
 				
 				killAndErase();
-				Actor.remove(Pushing.this);
-				completeCallback();
-				GameScene.sortMobSprites();
-
-				next();
+				completeEffect();
 			}
 		}
 	}

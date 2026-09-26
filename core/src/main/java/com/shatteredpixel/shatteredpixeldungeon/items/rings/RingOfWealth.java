@@ -35,6 +35,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Gold;
 import com.shatteredpixel.shatteredpixeldungeon.items.Honeypot;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.Artifact;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
@@ -299,9 +301,7 @@ public class RingOfWealth extends Ring {
 				break;
 		}
 		//minimum level is 1/2/3/4/5/6 when ring level is 1/3/5/7/9/11
-		if (result.isUpgradable()){
-			result.level(EquipmentDropLevelPolicy.level(result.level(), level));
-		}
+		EquipmentDropLevelPolicy.apply(result, level);
 		result.cursed = false;
 		result.cursedKnown = true;
 		if (result.level() >= 2) {
@@ -313,11 +313,17 @@ public class RingOfWealth extends Ring {
 	}
 
 	static final class EquipmentDropLevelPolicy {
-		private static final int MAX_LEVEL = 10;
+		static void apply(Item result, int wealthLevel) {
+			if (result.isUpgradable() && !(result instanceof Artifact)) {
+				result.level(level(result.level(), wealthLevel));
+			}
+		}
 
 		static int level(int generatedLevel, int wealthLevel) {
 			int minimumLevel = (wealthLevel + 1) / 2;
-			return Math.min(MAX_LEVEL, Math.max(generatedLevel, minimumLevel));
+			int maximumLevel = Dungeon.rulesVersion >= Dungeon.CURRENT_RULES_VERSION
+					&& Dungeon.branch == TowerLevel.BRANCH && Dungeon.depth >= 1 ? 3 : 10;
+			return Math.min(maximumLevel, Math.max(generatedLevel, minimumLevel));
 		}
 	}
 

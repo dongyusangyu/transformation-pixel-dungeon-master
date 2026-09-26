@@ -44,7 +44,7 @@ public class HeroRandomizer {
 		if (selectedClass == null) {
 			selectedClass = HeroClass.WARRIOR;
 		}
-		hero.randomMode = SPDSettings.randomMode() && selectedClass != HeroClass.RATKING;
+		hero.randomMode = randomModeForRun(SPDSettings.randomMode(), Dungeon.daily, selectedClass);
 		hero.randomTalentClass = null;
 		hero.randomClassTalents = null;
 		hero.randomSubClasses = null;
@@ -70,6 +70,10 @@ public class HeroRandomizer {
 		for (int i = 0; i < count; i++) {
 			hero.randomArmorAbilities[i] = abilities.get(i).getClass().getName();
 		}
+	}
+
+	static boolean randomModeForRun(boolean randomModeSetting, boolean daily, HeroClass selectedClass) {
+		return randomModeSetting && !daily && selectedClass != HeroClass.RATKING;
 	}
 
 	public static boolean active(Hero hero) {

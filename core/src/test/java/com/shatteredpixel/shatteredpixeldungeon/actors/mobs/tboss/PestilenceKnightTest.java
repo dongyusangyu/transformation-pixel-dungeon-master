@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
@@ -8,21 +9,53 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Susceptible;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.RangedAttack;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.Sewage;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.SparseArray;
+import com.watabou.noosa.Game;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class PestilenceKnightTest {
+
+    private static HeadlessItemSprites sprites;
+
+    @BeforeClass
+    public static void installHeadlessSprites() {
+        sprites = new HeadlessItemSprites();
+    }
+
+    @AfterClass
+    public static void restoreHeadlessSprites() {
+        sprites.close();
+    }
 
     @Test
     public void baseAndGrowingPanelsUseEncounterDepthAndCapAtSix() {
@@ -58,6 +91,89 @@ public class PestilenceKnightTest {
         assertTrue(boss.properties().contains(Char.Property.BOSS));
         assertFalse(boss.properties().contains(Char.Property.IMMOVABLE));
         assertTrue(boss.properties().contains(Char.Property.UNSLEEP));
+    }
+
+    @Test
+    public void onePlagueGuardIsAddedForEachUnlockedPhase() {
+        assertEquals(1, PestilenceKnight.guardsForPhaseForTest(PestilenceKnight.Phase.INCUBATION));
+        assertEquals(2, PestilenceKnight.guardsForPhaseForTest(PestilenceKnight.Phase.OUTBREAK));
+        assertEquals(3, PestilenceKnight.guardsForPhaseForTest(PestilenceKnight.Phase.TERMINAL));
+    }
+
+    @Test
+    public void creatingGuardBeforeSceneSpriteInitializationDoesNotCrash() throws Exception {
+        com.shatteredpixel.shatteredpixeldungeon.levels.Level previousLevel = Dungeon.level;
+        Hero previousHero = Dungeon.hero;
+        int previousDepth = Dungeon.depth;
+        String previousVersion = Game.version;
+        try {
+            Game.version = "test";
+            TowerBossLevel level = new TowerBossLevel();
+            level.setSize(29, 35);
+            level.blobs = new HashMap<>();
+            for (int y = 5; y < 30; y++) {
+                for (int x = 2; x < 27; x++) {
+                    level.map[x + y * level.width()] = Terrain.EMPTY;
+                }
+            }
+            level.buildFlagMaps();
+            level.mobs = new HashSet<>();
+            level.heaps = new SparseArray<>();
+            level.blobs = new HashMap<>();
+            level.plants = new SparseArray<>();
+            level.traps = new SparseArray<>();
+            level.transitions = new ArrayList<>();
+            level.customTiles = new ArrayList<>();
+            level.customWalls = new ArrayList<>();
+            Dungeon.level = level;
+            Dungeon.depth = 30;
+            Hero hero = TestHeroFactory.create();
+            hero.pos = 14 + 14 * level.width();
+            Dungeon.hero = hero;
+
+            PestilenceKnight boss = new PestilenceKnight(30);
+            boss.pos = 14 + 16 * level.width();
+            Method createGuard = PestilenceKnight.class.getDeclaredMethod("createPlagueGuard");
+            createGuard.setAccessible(true);
+
+            PlagueGuard guard = (PlagueGuard) createGuard.invoke(boss);
+
+            assertNotNull(guard);
+            assertNull(guard.sprite);
+            assertSame(guard.HUNTING, guard.state);
+            assertSame(hero, guard.enemy());
+        } finally {
+            Dungeon.level = previousLevel;
+            Dungeon.hero = previousHero;
+            Dungeon.depth = previousDepth;
+            Game.version = previousVersion;
+        }
+    }
+
+    @Test
+    public void pestilenceKnightCannotReceiveItsOwnPlagueEffects() {
+        PestilenceKnight boss = new PestilenceKnight(5);
+
+        Infection.addStacks(boss, 1);
+        Susceptible.apply(boss);
+
+        assertEquals(0, Infection.stacks(boss));
+        assertEquals(null, boss.buff(Susceptible.class));
+    }
+
+    @Test
+    public void susceptibleDoublesPlagueTriggeredDebuffDurationsToTenTurns() {
+        Char target = freshTarget();
+        Susceptible.apply(target);
+
+        Infection.addStacks(target, 3);
+        assertEquals(10f, target.buff(Weakness.class).cooldown(), 0.001f);
+        assertEquals(10f, target.buff(com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Hex.class)
+                .cooldown(), 0.001f);
+
+        Infection.set(target, 4);
+        Infection.addStacks(target, 1);
+        assertEquals(10f, target.buff(Vulnerable.class).cooldown(), 0.001f);
     }
 
     @Test
@@ -225,6 +341,11 @@ public class PestilenceKnightTest {
         assertEquals(80, PestilenceKnight.miasmaAmountForSkill("quarantine"));
         assertEquals(80, PestilenceKnight.miasmaAmountForSkill("pale_charge"));
         assertEquals(70, PestilenceKnight.miasmaAmountForSkill("doom_procession"));
+        assertEquals(Sewage.INITIAL_VOLUME, PestilenceKnight.miasmaAmountForSkill("dirty_water"));
+        assertEquals(ItemSpriteSheet.POTION_JADE,
+                PestilenceKnight.miasmaProjectileImageForTest("dirty_water"));
+        assertEquals(0x385B24,
+                PestilenceKnight.miasmaProjectileColorForTest("dirty_water"));
     }
 
     @Test
@@ -367,7 +488,7 @@ public class PestilenceKnightTest {
     public void outbreakAndTerminalPanelsMatchPhaseRules() {
         PestilenceKnight boss = new PestilenceKnight(40);
         boss.setPhaseForTest(PestilenceKnight.Phase.OUTBREAK);
-        assertEquals(120, boss.outbreakReductionForTest(150));
+        assertEquals(20, PestilenceKnight.capForGas(PestilenceKnight.Phase.OUTBREAK, true));
 
         boss.setPhaseForTest(PestilenceKnight.Phase.TERMINAL);
         assertEquals(2f, boss.speed(), 0.001f);
@@ -377,13 +498,12 @@ public class PestilenceKnightTest {
     }
 
     @Test
-    public void purifierDamageBypassesOutbreakMiasmaReduction() {
-        PestilenceKnight boss = new PestilenceKnight(5);
-        boss.setPhaseForTest(PestilenceKnight.Phase.OUTBREAK);
-
-        assertEquals(80, boss.applyOutbreakReductionForTest(100, new Object(), true));
-        assertEquals(100, boss.applyOutbreakReductionForTest(
-                100, new PestilenceArenaController(), true));
+    public void miasmaCapsAllThreePhasesButNotOpenGround() {
+        assertEquals(20, PestilenceKnight.capForGas(PestilenceKnight.Phase.INCUBATION, true));
+        assertEquals(20, PestilenceKnight.capForGas(PestilenceKnight.Phase.OUTBREAK, true));
+        assertEquals(16, PestilenceKnight.capForGas(PestilenceKnight.Phase.TERMINAL, true));
+        assertEquals(PestilenceKnight.FINAL_DAMAGE_CAP,
+                PestilenceKnight.capForGas(PestilenceKnight.Phase.TERMINAL, false));
     }
 
     @Test

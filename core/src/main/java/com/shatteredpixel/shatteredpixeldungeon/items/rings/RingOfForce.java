@@ -242,6 +242,7 @@ public class RingOfForce extends Ring {
 			if (hero.buff(BrawlersStance.class) != null){
 				if (!hero.buff(BrawlersStance.class).active){
 					hero.buff(BrawlersStance.class).reset();
+					showBrawlerAbilityStatus(hero);
 				} else {
 					hero.buff(BrawlersStance.class).active = false;
 				}
@@ -253,6 +254,7 @@ public class RingOfForce extends Ring {
 
 			} else {
 				Buff.affect(hero, BrawlersStance.class).reset();
+				showBrawlerAbilityStatus(hero);
 				if (hero.hasTalent(Talent.AGGRESSIVE_BARRIER)
 						&& (hero.HP / (float)hero.HT) <= 0.5f){
 					int shieldAmt = 1 + 2*hero.pointsInTalent(Talent.AGGRESSIVE_BARRIER);
@@ -264,6 +266,12 @@ public class RingOfForce extends Ring {
 			}
 		} else {
 			super.execute(hero, action);
+		}
+	}
+
+	private void showBrawlerAbilityStatus(Hero hero) {
+		if (hero.sprite != null && hero.sprite.visible) {
+			hero.sprite.showStatus(CharSprite.NEUTRAL, Messages.get(this, "ability_name"));
 		}
 	}
 
@@ -338,7 +346,7 @@ public class RingOfForce extends Ring {
 	public static class BrawlersStance extends Buff {
 
 		{
-			announced = true;
+			announced = false;
 			type = buffType.POSITIVE;
 		}
 
@@ -347,10 +355,6 @@ public class RingOfForce extends Ring {
 		private int minTurnsLeft;
 
 		public void reset(){
-			if (!active){
-				//announce the buff
-				target.sprite.showStatus(CharSprite.POSITIVE, Messages.titleCase(name()));
-			}
 			active = true;
 			minTurnsLeft = 50;
 		}

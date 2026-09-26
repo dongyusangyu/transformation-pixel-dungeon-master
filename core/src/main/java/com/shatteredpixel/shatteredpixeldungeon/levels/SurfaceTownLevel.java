@@ -45,6 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.SmallRation;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.TowerPotionRules;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfIdentify;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMapping;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
@@ -58,6 +59,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.ImpShopRoo
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTileSheet;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
@@ -65,6 +67,7 @@ import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Tilemap;
+import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
@@ -138,6 +141,11 @@ public class SurfaceTownLevel extends Level {
 	@Override
 	public String waterTex() {
 		return SurfaceSeason.waterTexture();
+	}
+
+	@Override
+	public void playLevelMusic() {
+		Music.INSTANCE.play(Assets.Music.SURFACE_TOWN, true);
 	}
 
 	@Override
@@ -583,6 +591,12 @@ public class SurfaceTownLevel extends Level {
 						@Override
 						protected void onSelect(int index) {
 							if (index == 0) {
+								if (TowerPotionRules.countHealing(hero.belongings.backpack)
+										> TowerPotionRules.HEALING_LIMIT) {
+									GLog.w(Messages.get(SurfaceTownLevel.class, "tower_healing_limit",
+											TowerPotionRules.HEALING_LIMIT));
+									return;
+								}
 								SurfaceTownLevel.super.activateTransition(hero, transition);
 							}
 						}

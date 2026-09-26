@@ -24,6 +24,7 @@ public final class DamageIconResolver {
 			case PICKAXE:        return FloatingText.PICK_DMG;
 			case PLAGUE:         return FloatingText.PLAGUE;
 			case HUNGER:         return FloatingText.HUNGER;
+			case CURSED_FIRE:    return FloatingText.CURSE_BURNING;
 			case FIRE:           return FloatingText.BURNING;
 			case FROST:          return FloatingText.FROST;
 			case WATER:          return FloatingText.WATER;

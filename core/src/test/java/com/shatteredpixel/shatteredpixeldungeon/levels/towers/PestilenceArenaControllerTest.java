@@ -1,9 +1,16 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
+import com.watabou.utils.SparseArray;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
+import com.watabou.noosa.Game;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -21,6 +28,80 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class PestilenceArenaControllerTest {
+
+    private static HeadlessItemSprites sprites;
+    private static String oldVersion;
+
+    @BeforeClass
+    public static void installHeadlessSprites() {
+        sprites = new HeadlessItemSprites();
+        oldVersion = Game.version;
+        Game.version = "test";
+    }
+
+    @AfterClass
+    public static void restoreHeadlessSprites() {
+        sprites.close();
+        Game.version = oldVersion;
+    }
+
+    @Test
+    public void purifierUsesCenteredThirteenByThirteenAreaClippedAtMapEdge() {
+        int width = 30;
+        int height = 30;
+        int[] middle = PestilenceArenaController.purifierArea(15 + 15 * width,
+                width, width * height);
+        assertEquals(169, middle.length);
+        assertEquals(9 + 9 * width, middle[0]);
+        assertEquals(21 + 21 * width, middle[middle.length - 1]);
+
+        int[] corner = PestilenceArenaController.purifierArea(0, width, width * height);
+        assertEquals(49, corner.length);
+        assertEquals(0, corner[0]);
+        assertEquals(6 + 6 * width, corner[corner.length - 1]);
+    }
+
+    @Test
+    public void firstPurifierActivationClearsTheArenaAndLaterUsesThirteenByThirteen() {
+        int width = 30;
+        int length = width * width;
+        int center = 15 + 15 * width;
+
+        assertEquals(length, PestilenceArenaController.purifierClearCells(
+                true, center, width, length).length);
+        assertArrayEquals(PestilenceArenaController.purifierArea(center, width, length),
+                PestilenceArenaController.purifierClearCells(
+                        false, center, width, length));
+    }
+
+    @Test
+    public void purifierRequiresAllPlagueGuardsToBeInactive() {
+        assertFalse(PestilenceArenaController.canActivatePurifier(1));
+        assertFalse(PestilenceArenaController.canActivatePurifier(3));
+        assertTrue(PestilenceArenaController.canActivatePurifier(0));
+    }
+
+    @Test
+    public void restoreRepairsPurifierHiddenByPreviouslySavedWaterTerrain() {
+        TowerBossLevel level = new TowerBossLevel();
+        level.setSize(7, 7);
+        level.traps = new SparseArray<>();
+        level.blobs = new HashMap<>();
+        Level.set(24, Terrain.WATER, level);
+
+        Bundle saved = new Bundle();
+        saved.put("prepared", true);
+        saved.put("prelude_started", true);
+        saved.put("purifier_cell", 24);
+        PestilenceArenaController controller = new PestilenceArenaController();
+        controller.restoreFromBundle(saved);
+
+        controller.syncPurifierVisual(level);
+
+        assertEquals(Terrain.TRAP, level.map[24]);
+        assertFalse(level.water[24]);
+        assertTrue(level.traps.get(24) instanceof PlagueBrazier);
+    }
 
     @Test
     public void generatedArenasReceiveOneLeftReachablePurifierAndSafeRoute() {

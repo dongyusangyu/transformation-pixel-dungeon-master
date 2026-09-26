@@ -5,19 +5,35 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Adrenaline;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barkskin;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bless;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Charm;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Cripple;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Haste;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Light;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSleep;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicalSight;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MindVision;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Recharging;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Sleep;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Terror;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.DeathKnightExecutionMark;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.effects.DeathKnightSlash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.BlastParticle;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.exotic.PotionOfCleansing;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
@@ -62,6 +78,8 @@ public class DeathKnight extends TowerBoss {
     private static final String NOTICE_ANNOUNCED = "notice_announced";
     private static final String LANDED_MELEE_ATTACKS = "landed_melee_attacks";
     private static final String COVER_BREAK_NOTICE = "cover_break_notice";
+    private static final String SLASHES_REMAINING = "slashes_remaining";
+    private static final String NEXT_SLASH_DELAY = "next_slash_delay";
 
     private Phase phase = Phase.QUESTION;
     private int phaseLocks;
@@ -83,9 +101,12 @@ public class DeathKnight extends TowerBoss {
     private transient boolean waitingForLeapPush;
     private transient boolean leapCompletionHandled;
     private int landedMeleeAttacks;
+    private transient int deferredNormalMeleePushes;
     private boolean rewardDropped;
     private boolean noticeAnnounced;
     private boolean coverBreakNoticeAnnounced;
+    private int slashesRemaining;
+    private float nextSlashDelay;
 
     private static final Skill[] QUESTION_SEQUENCE = {
             Skill.LINE, Skill.CONE
@@ -178,6 +199,11 @@ public class DeathKnight extends TowerBoss {
     }
 
     @Override
+    protected int damageCap(Object source, DamageTag... tags) {
+        return FINAL_DAMAGE_CAP;
+    }
+
+    @Override
     protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
         if (transition != PhaseTransition.NONE) return 0;
         int capped = Math.min(FINAL_DAMAGE_CAP,
@@ -194,12 +220,15 @@ public class DeathKnight extends TowerBoss {
 
     @Override
     public boolean isInvulnerable(Class effect) {
-        return transition != PhaseTransition.NONE || super.isInvulnerable(effect);
+        return transition != PhaseTransition.NONE || slashesRemaining > 0
+                || super.isInvulnerable(effect);
     }
 
     @Override
     protected boolean act() {
+        refreshHeroVision();
         if (waitingForLeapPush) return false;
+        if (slashesRemaining > 0) return advanceSlashes();
         if (pendingSkill != Skill.NONE && (paralysed > 0 || state == SLEEPING)) {
             pendingPaused = true;
             showPendingTelegraph();
@@ -242,8 +271,25 @@ public class DeathKnight extends TowerBoss {
         super.onAttackResolved(enemy, hit, damageDealt, damageTags);
         if (!hit || enemy == null || !containsTag(damageTags, DamageTag.MELEE)
                 || containsTag(damageTags, DamageTag.RANGED)) return;
+        dispelTemporaryBenefits(enemy);
         landedMeleeAttacks++;
-        if (landedMeleeAttacks % 2 == 0) pushNormalMeleeTarget(enemy);
+        if (Dungeon.level != null) {
+            if (Random.Float() < 0.33f) Buff.prolong(enemy, Cripple.class, 5f);
+            if (Random.Float() < 0.10f) Buff.prolong(enemy, Degrade.class, 10f);
+        }
+        if (landedMeleeAttacks % 2 == 0) {
+            if (isResolvingMarkedAttackSequence()) deferredNormalMeleePushes++;
+            else pushNormalMeleeTarget(enemy);
+        }
+    }
+
+    @Override
+    protected void onMarkedAttackSequenceComplete(Char target) {
+        int pushes = deferredNormalMeleePushes;
+        deferredNormalMeleePushes = 0;
+        for (int i = 0; i < pushes && target != null && target.isAlive(); i++) {
+            pushNormalMeleeTarget(target);
+        }
     }
 
     private int nextUnfinishedLockHP() {
@@ -268,6 +314,8 @@ public class DeathKnight extends TowerBoss {
         normalActions = 0;
         normalActionsRequired = phase == Phase.BREAK_FORMATION ? 2 : 1;
         transition = PhaseTransition.NONE;
+        slashesRemaining = 5;
+        nextSlashDelay = 0f;
         if (sprite instanceof DeathKnightSprite) {
             ((DeathKnightSprite) sprite).phaseTransition();
         }
@@ -275,8 +323,52 @@ public class DeathKnight extends TowerBoss {
             yell(Messages.get(this, phase == Phase.BREAK_FORMATION
                     ? "phase_break" : "phase_duel"));
         }
-        spend(TICK);
+        advanceSlashes();
         return true;
+    }
+
+    private boolean advanceSlashes() {
+        if (slashesRemaining <= 0) return false;
+        Char target = Dungeon.hero != null && Dungeon.hero.isAlive() ? Dungeon.hero : null;
+        if (target != null && Dungeon.level != null && target.pos >= 0
+                && target.pos < Dungeon.level.length()) {
+            int landing = slashLanding(target.pos);
+            if (landing >= 0) {
+                moveBossTo(landing);
+                int raw = Random.NormalIntRange(10, 20);
+                int defended = target.defenseProc(this, raw, DamageTag.PHYSICAL, DamageTag.MELEE);
+                if (defended >= 0) {
+                    dispelTemporaryBenefits(target);
+                    int damage = phase == Phase.DEATH_DUEL ? defended
+                            : Math.max(0, defended - target.drRoll());
+                    target.damage(damage, this, DamageTag.PHYSICAL, DamageTag.MELEE);
+                    if (target.isAlive()) {
+                        markSkillHit(target);
+                        Buff.prolong(target, Blindness.class, 5f);
+                        Buff.prolong(target, Slow.class, 5f);
+                    }
+                }
+            }
+        }
+        slashesRemaining--;
+        nextSlashDelay = slashesRemaining > 0 ? 3f : 0f;
+        spend(slashesRemaining > 0 ? 3f : TICK);
+        return true;
+    }
+
+    private int slashLanding(int targetCell) {
+        if (Dungeon.level == null) return -1;
+        for (int offset : PathFinder.NEIGHBOURS8) {
+            int cell = targetCell + offset;
+            if (cell < 0 || cell >= Dungeon.level.length()
+                    || !Dungeon.level.adjacent(targetCell, cell)
+                    || !Dungeon.level.passable[cell] || Dungeon.level.solid[cell]
+                    || (charAt(cell) != null && cell != pos)) continue;
+            if (Dungeon.level instanceof TowerBossLevel
+                    && !((TowerBossLevel) Dungeon.level).isBossArenaCell(cell)) continue;
+            return cell;
+        }
+        return -1;
     }
 
     private void clearPendingSkill() {
@@ -440,8 +532,18 @@ public class DeathKnight extends TowerBoss {
             int raw = Random.NormalIntRange(range[0], range[1]);
             DeathKnightBombardment.Band band = bandAt(target.pos);
             if (skill == Skill.EXECUTION) raw = DeathKnightBombardment.scaledDamage(raw, band);
+            if (!target.isAlive()) continue;
+            dispelTemporaryBenefits(target);
+            refreshHeroVision();
+            DeathKnightExecutionMark.addHit(target, id());
+            if (!target.isAlive()) continue;
             damageWithBombardment(target, raw);
-            applySkillAftermath(skill, target, band);
+            DeathKnightExecutionMark mark = target.buff(DeathKnightExecutionMark.class);
+            if (mark != null) mark.checkExecution();
+            if (target.isAlive()) {
+                markSkillHit(target);
+                applySkillAftermath(skill, target, band);
+            }
         }
         breakNearbyCoverAfterResolution(pendingTargetCell);
         finishBombardment(skill);
@@ -479,25 +581,7 @@ public class DeathKnight extends TowerBoss {
 
     private void showBombardmentFx() {
         if (sprite == null || sprite.parent == null || pendingCells.length == 0) return;
-        DeathKnightSlash.showVolley(sprite.parent, pos, pendingCells,
-                volleyRayCount(pendingSkill));
-    }
-
-    private static int volleyRayCount(Skill skill) {
-        switch (skill) {
-            case LINE:
-            case SOUL_LINE:
-                return 3;
-            case CONE:
-                return 5;
-            case CROSS:
-                return 4;
-            case RING:
-            case EXECUTION:
-                return 8;
-            default:
-                return 1;
-        }
+        DeathKnightSlash.show(sprite.parent, pos, pendingCells, pendingBands);
     }
 
     private boolean beginLeapResolution(int whiteCell) {
@@ -658,6 +742,7 @@ public class DeathKnight extends TowerBoss {
 
     @Override
     public void die(Object cause) {
+        cleanupEncounterEffects();
         if (!rewardDropped) {
             if (sprite != null) yell(Messages.get(this, "defeated"));
             rewardDropped = true;
@@ -666,6 +751,51 @@ public class DeathKnight extends TowerBoss {
         clearPendingSkill();
         waitingForLeapPush = false;
         super.die(cause);
+    }
+
+    /** The arena calls this for either resurrection path or encounter cancellation. */
+    public void cleanupEncounterEffects() {
+        slashesRemaining = 0;
+        nextSlashDelay = 0f;
+        deferredNormalMeleePushes = 0;
+        clearPendingSkill();
+        waitingForLeapPush = false;
+        for (Char target : new ArrayList<>(Actor.chars())) {
+            DeathKnightExecutionMark.clear(target, id());
+        }
+        refreshHeroVision(true);
+    }
+
+    static void dispelTemporaryBenefits(Char target) {
+        for (Buff buff : new ArrayList<>(target.buffs())) {
+            if (buff instanceof Light || buff instanceof Bless || buff instanceof Haste
+                    || buff instanceof Invisibility || buff instanceof Barkskin
+                    || buff instanceof Adrenaline || buff instanceof Levitation
+                    || buff instanceof MagicalSight || buff instanceof MindVision
+                    || buff instanceof Recharging || buff instanceof PotionOfCleansing.Cleanse) buff.detach();
+        }
+    }
+
+    static int visionDistance(int natural, int lostHP, boolean torch) {
+        int steps = Math.max(0, lostHP) / 200;
+        int reduced = Math.max(2, (int) Math.floor(natural * Math.max(0d, 1d - steps * 0.1d)));
+        return torch ? Math.max(reduced, Light.DISTANCE) : reduced;
+    }
+
+    private void refreshHeroVision() {
+        refreshHeroVision(false);
+    }
+
+    private void refreshHeroVision(boolean clear) {
+        if (Dungeon.hero == null || Dungeon.level == null) return;
+        boolean torch = Dungeon.hero.buff(Light.class) != null;
+        int natural = Dungeon.level.viewDistance;
+        int desired = clear ? (torch ? Math.max(natural, Light.DISTANCE) : natural)
+                : visionDistance(natural, Math.max(0, HT - HP), torch);
+        if (Dungeon.hero.viewDistance != desired) {
+            Dungeon.hero.viewDistance = desired;
+            Dungeon.observe();
+        }
     }
 
     private void dropBossRewards() {
@@ -841,6 +971,10 @@ public class DeathKnight extends TowerBoss {
     void armTransitionForTest() {
         transition = PhaseTransition.ARMED;
     }
+
+    int slashesRemainingForTest() { return slashesRemaining; }
+    float nextSlashDelayForTest() { return nextSlashDelay; }
+    boolean advanceSlashesForTest() { return advanceSlashes(); }
 
     boolean advanceTransitionForTest() {
         return advanceTransition();
@@ -1046,6 +1180,8 @@ public class DeathKnight extends TowerBoss {
         bundle.put(NOTICE_ANNOUNCED, noticeAnnounced);
         bundle.put(LANDED_MELEE_ATTACKS, landedMeleeAttacks);
         bundle.put(COVER_BREAK_NOTICE, coverBreakNoticeAnnounced);
+        bundle.put(SLASHES_REMAINING, slashesRemaining);
+        bundle.put(NEXT_SLASH_DELAY, nextSlashDelay);
     }
 
     @Override
@@ -1097,6 +1233,8 @@ public class DeathKnight extends TowerBoss {
         noticeAnnounced = bundle.getBoolean(NOTICE_ANNOUNCED);
         coverBreakNoticeAnnounced = bundle.getBoolean(COVER_BREAK_NOTICE);
         landedMeleeAttacks = Math.floorMod(bundle.getInt(LANDED_MELEE_ATTACKS), 2);
+        slashesRemaining = Math.max(0, Math.min(5, bundle.getInt(SLASHES_REMAINING)));
+        nextSlashDelay = Math.max(0f, bundle.getFloat(NEXT_SLASH_DELAY));
         if (pendingSkill == Skill.NONE || pendingCells.length == 0) clearPendingSkill();
         else restoreGrace = true;
     }

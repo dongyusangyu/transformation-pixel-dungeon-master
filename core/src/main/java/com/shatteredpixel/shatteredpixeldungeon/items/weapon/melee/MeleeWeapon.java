@@ -592,9 +592,19 @@ public class MeleeWeapon extends Weapon {
 		LEGACY(null),
 		DAMAGE("ability_damage"),
 		DURATION("ability_duration"),
+		MIRROR_HEALTH("ability_mirror_health"),
 		KNOCKBACK_DISTANCE("ability_knockback_distance"),
 		EFFECT_RANGE("ability_effect_range"),
-		BONUS_MAGIC_DAMAGE("ability_bonus_magic_damage");
+		BONUS_MAGIC_DAMAGE("ability_bonus_magic_damage"),
+		EXTRA_ATTACK_RANGE("ability_extra_range"),
+		COUNTER_DAMAGE("ability_counter_damage"),
+		THROW_DAMAGE("feature_throw_damage"),
+		BLADE_SHADOW_DAMAGE("feature_blade_shadow_damage"),
+		PROC_CHANCE("feature_proc_chance"),
+		DRAW_DAMAGE("feature_draw_damage"),
+		DRAW_RANGE("feature_draw_range"),
+		SOUL_TEAR_CHANCE("feature_soul_tear_chance"),
+		RELEASE_DURATION("feature_release_duration");
 
 		private final String messageKey;
 
@@ -632,6 +642,10 @@ public class MeleeWeapon extends Weapon {
 			result.add(new UpgradeAbilityStat(UpgradeAbilityStatType.LEGACY, value));
 		}
 		return result;
+	}
+
+	public ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		return new ArrayList<>();
 	}
 
 	public Integer upgradeBlockingStat(int level) {

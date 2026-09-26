@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -111,7 +112,7 @@ public class PestilenceKnightSpriteAssetTest {
     }
 
     @Test
-    public void outbreakPrescriptionsUseZapPotionProjectilesAndRangedHitResolution()
+    public void outbreakPrescriptionsUseZapPotionProjectilesAndGuaranteedResolution()
             throws IOException {
         Path root = coreDirectory().resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon");
         String boss = read(root.resolve("actors/mobs/tboss/PestilenceKnight.java"));
@@ -119,7 +120,8 @@ public class PestilenceKnightSpriteAssetTest {
 
         assertTrue(boss.contains("return doRangedAttack(Dungeon.hero)"));
         assertTrue(boss.contains("Dungeon.level.distance(pos, target.pos) <= viewDistance"));
-        assertTrue(boss.contains("if (rangedHit(target))"));
+        assertTrue(boss.contains("onRangedAttackHit(target);"));
+        assertFalse(boss.contains("if (rangedHit(target))"));
         assertTrue(boss.contains("DamageTag.MAGICAL, DamageTag.RANGED"));
         assertTrue(boss.contains("prescriptionPotionImage(Random.Int(12))"));
         assertTrue(sprite.contains("void throwPrescription"));
@@ -151,16 +153,18 @@ public class PestilenceKnightSpriteAssetTest {
         String customZh = read(messages.resolve("custom/custom_zh.properties"));
 
         assertTrue(levels.contains("plague purifier"));
-        assertTrue(levels.contains("instantly clears all plague miasma"));
+        assertTrue(levels.contains("clears plague miasma and sewage from a 13-by-13 area"));
+        assertTrue(levels.contains("no plague guard is active"));
         assertTrue(levels.contains("100 damage"));
         assertTrue(levels.contains("relocates"));
-        assertTrue(levelsZh.contains("净疫触发器"));
-        assertTrue(levelsZh.contains("立即清除全图所有瘟疫瘴气"));
+        assertTrue(levelsZh.contains("levels.traps.plaguebrazier.desc="));
+        assertTrue(levelsZh.contains("清除13×13范围内的瘴气和污水"));
+        assertTrue(levelsZh.contains("没有活动中的瘟疫守卫时才能启动"));
         assertTrue(levelsZh.contains("100点伤害"));
         assertTrue(levelsZh.contains("转移"));
         assertTrue(custom.contains("custom.dict.dict.tower_pestilence_knight_d"));
         assertTrue(custom.contains("mobile purifier"));
-        assertTrue(custom.contains("instantly clears all plague miasma"));
+        assertTrue(custom.contains("instantly clears plague miasma and infection within a _13-by-13_ area"));
         assertTrue(custom.contains("_100_ damage"));
         assertTrue(custom.contains("relocates"));
         assertTrue(customZh.contains("custom.dict.dict.tower_pestilence_knight_d"));

@@ -22,12 +22,16 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.HolyWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.MirrorImage;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.AssassinsBlade;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.SakuraMirrorSprite;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
@@ -95,23 +99,52 @@ public class SakuraBlossomBlade extends AssassinsBlade {
 
 	@Override
 	protected void duelistAbility(Hero hero, Integer target) {
-		Dagger.sneakAbility(hero, target, 3, 2, this);
+		int origin = hero.pos;
+		Dagger.sneakAbility(hero, target, sneakRange(),
+				invisibilityTurnsForLevel(buffedLvl()), this);
+		if (hero.pos != origin && Dungeon.level != null && Actor.findChar(origin) == null) {
+			SakuraMirrorImage mirror = new SakuraMirrorImage();
+			mirror.duplicate(hero);
+			mirror.HP = mirror.HT = mirrorHealthForLevel(buffedLvl());
+			GameScene.add(mirror);
+			ScrollOfTeleportation.appear(mirror, origin);
+		}
+	}
+
+	static int sneakRange() {
+		return 2;
+	}
+
+	static int invisibilityTurnsForLevel(int level) {
+		return 2 + Math.max(0, level);
+	}
+
+	static int mirrorHealthForLevel(int level) {
+		return 6 + 6 * Math.max(0, level);
 	}
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc", 2);
+		String key;
+		if (state.isEvolved()) {
+			key = levelKnown ? "evolved_ability_desc" : "evolved_typical_ability_desc";
+		} else {
+			key = levelKnown ? "ability_desc" : "typical_ability_desc";
+		}
+		return Messages.get(this, key, levelKnown ? invisibilityTurnsForLevel(buffedLvl()) : 2);
 	}
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return "2";
+		return Integer.toString(invisibilityTurnsForLevel(level));
 	}
 
 	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
 		result.add(abilityStat(UpgradeAbilityStatType.DURATION, upgradeAbilityStat(level)));
+		result.add(abilityStat(UpgradeAbilityStatType.MIRROR_HEALTH,
+				Integer.toString(mirrorHealthForLevel(level))));
 		return result;
 	}
 
@@ -154,7 +187,7 @@ public class SakuraBlossomBlade extends AssassinsBlade {
 			int healing = Math.min(healingForDamage(damage), attacker.HT - attacker.HP);
 			if (healing > 0 && attacker.isAlive()) attacker.heal(healing);
 		} else if (recordSuccessfulHit()) {
-			Buff.prolong(defender, Vulnerable.class, 2f);
+			Buff.prolong(defender, Vulnerable.class, 5f);
 			Ballistica trajectory = new Ballistica(attacker.pos, defender.pos, Ballistica.STOP_TARGET);
 			trajectory = new Ballistica(trajectory.collisionPos,
 					trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
@@ -273,6 +306,22 @@ public class SakuraBlossomBlade extends AssassinsBlade {
 			killCount = Math.max(0, bundle.getInt(KILL_COUNT));
 			evolved = bundle.getBoolean(EVOLVED);
 			if (evolved) hitCount = 0;
+		}
+	}
+
+	public static class SakuraMirrorImage extends MirrorImage {
+		{
+			spriteClass = SakuraMirrorSprite.class;
+		}
+
+		@Override
+		public String name() {
+			return Messages.get(MirrorImage.class, "name");
+		}
+
+		@Override
+		public String description() {
+			return Messages.get(MirrorImage.class, "desc");
 		}
 	}
 }

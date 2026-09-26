@@ -2,7 +2,9 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Barrier;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.GentlemanElfArena;
 import com.watabou.utils.Bundle;
@@ -19,6 +21,13 @@ import java.util.Properties;
 import static org.junit.Assert.*;
 
 public class GentlemanElfTest {
+    @Test public void pounceSelfDamageRequiresActualDrunkennessBuff() {
+        Gnoll target = new Gnoll();
+        assertFalse(GentlemanElf.hasDrunkenness(target));
+        Drunkenness.affect(target);
+        assertTrue(GentlemanElf.hasDrunkenness(target));
+    }
+
     @Test public void basePanelAndBossRegistrationMatchSpec() {
         GentlemanElf boss = new GentlemanElf();
         assertEquals(1500, boss.HT); assertEquals(1500, boss.HP);
@@ -50,8 +59,9 @@ public class GentlemanElfTest {
 		assertNull(boss.toastTargetForTest(target));
 		assertNull(boss.devourTargetForTest(target, null));
 	}
-    @Test public void cupDashOnlyCoversFourThroughEightTilesAndStopsThreeAway() {
-        assertFalse(GentlemanElf.cupDashEligibleForTest(3));
+    @Test public void cupDashCanCloseFromNearbyCellsAndStillStopsThreeAwayAtRange() {
+        assertFalse(GentlemanElf.cupDashEligibleForTest(1));
+        assertTrue(GentlemanElf.cupDashEligibleForTest(3));
         assertTrue(GentlemanElf.cupDashEligibleForTest(4));
         assertTrue(GentlemanElf.cupDashEligibleForTest(8));
         assertFalse(GentlemanElf.cupDashEligibleForTest(9));
@@ -254,18 +264,19 @@ public class GentlemanElfTest {
 		boss.resolveIntro(false);
 		assertFalse(boss.isInvulnerable(Object.class));
 	}
-    @Test public void cupRewardsMatchKillerAndRespectBossPhaseCap() {
+    @Test public void cupRewardsOnlyApplyToHeroOrBoss() {
         GentlemanElf boss = new GentlemanElf();
         DeathKnight other = new DeathKnight();
         boss.applyCupReward(other);
-        assertNotNull(other.buff(Exhilaration.class));
+        assertNull(other.buff(Exhilaration.class));
         assertEquals(55, boss.heroCupHealedHpForTest(50, 100));
         assertEquals(5f, boss.heroCupHasteDurationForTest(), 0f);
         boss.HP = 1170;
         boss.applyCupReward(boss);
-        assertEquals(1200, boss.HP);
-        assertNotNull(boss.buff(Exhilaration.class));
-        assertEquals(40, boss.buff(Barrier.class).shielding());
+        assertEquals(1170, boss.HP);
+        assertNull(boss.buff(Exhilaration.class));
+        assertNull(boss.buff(Barrier.class));
+        assertEquals(5f, boss.cupBoostTimeForTest(), 0f);
     }
 	@Test public void allHealingRespectsTheCurrentPhaseCeiling() {
 		GentlemanElf boss = new GentlemanElf();

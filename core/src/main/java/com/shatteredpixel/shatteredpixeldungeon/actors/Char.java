@@ -78,6 +78,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Poison;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Reason;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.EtherealBody;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SkilledParry;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Sleep;
@@ -225,6 +227,10 @@ public abstract class Char extends Actor {
 	public interface HealingModifier {
 		float incomingHealingReduction();
 		default void afterIncomingHealing(int requested, int actual) {}
+	}
+
+	public interface HealingBlocker {
+		boolean blocksIncomingHealing();
 	}
 	
 	public int pos = 0;
@@ -446,6 +452,11 @@ public abstract class Char extends Actor {
 		return attack(enemy, dmgMulti, dmgBonus, accMulti, DamageTag.PHYSICAL);
 	}
 
+	/** Allows specialized attacks to bypass the accuracy/evasion roll without bypassing defenses. */
+	protected boolean attackAlwaysHits(Char enemy, DamageTag... damageTags) {
+		return false;
+	}
+
 	public boolean attack(Char enemy, float dmgMulti, float dmgBonus, float accMulti,
 			DamageTag... damageTags) {
 
@@ -474,7 +485,8 @@ public abstract class Char extends Actor {
 
 			return false;
 
-		} else if (hit(this, enemy, accMulti, attackTags.toArray(new DamageTag[0]))) {
+		} else if (attackAlwaysHits(enemy, attackTags.toArray(new DamageTag[0]))
+				|| hit(this, enemy, accMulti, attackTags.toArray(new DamageTag[0]))) {
 			
 			int dr = Math.round(enemy.drRoll() * AscensionChallenge.statModifier(enemy));
 			dr = modifyEnemyArmor(enemy, dr);
@@ -598,6 +610,17 @@ public abstract class Char extends Actor {
 			int attackHealthBefore = enemy.HP + enemy.shielding();
 			//do not trigger on-hit logic if defenseProc returned a negative value
 			if (effectiveDamage >= 0) {
+				if (enemy instanceof Hero && alignment == Alignment.ENEMY
+						&& com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard
+						.interceptDirectAttack((Hero) enemy, this, effectiveDamage, resolvedAttackTags)) {
+					finishAttackResolution(enemy, attackHealthBefore, resolvedAttackTags);
+					return true;
+				}
+				if (enemy instanceof Hero && alignment == Alignment.ENEMY) {
+					com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.MountainGuard
+						.onHeroPreArmorAttack((Hero) enemy, this, effectiveDamage);
+					((Hero) enemy).beginDirectAttackDamage();
+				}
 				effectiveDamage = Math.max(effectiveDamage - dr, 0);
 
 				if (enemy.buff(Viscosity.ViscosityTracker.class) != null) {
@@ -645,7 +668,13 @@ public abstract class Char extends Actor {
 
 			boolean hostilePhysicalAttack = this instanceof Hero && enemy.alignment == Alignment.ENEMY;
 			int primaryHealthBefore = enemy.HP + enemy.shielding();
-			enemy.damage(effectiveDamage, this, resolvedAttackTags);
+			try {
+				enemy.damage(effectiveDamage, this, resolvedAttackTags);
+			} finally {
+				if (enemy instanceof Hero && alignment == Alignment.ENEMY) {
+					((Hero) enemy).endDirectAttackDamage();
+				}
+			}
 			int damageDealt = resolvedAttackDamage(enemy, primaryHealthBefore);
 			if (hostilePhysicalAttack) {
 				Berserk attackBerserk = buff(Berserk.class);
@@ -800,6 +829,12 @@ public abstract class Char extends Actor {
         return heal(h,true);
     }
     public int heal(int h,boolean visual){
+        for (Buff buff : buffs()) {
+            if (buff instanceof HealingBlocker
+                    && ((HealingBlocker) buff).blocksIncomingHealing()) {
+                return 0;
+            }
+        }
         float reduction = 0f;
         for (Buff buff : buffs()) {
             if (buff instanceof HealingModifier) {
@@ -845,6 +880,8 @@ public abstract class Char extends Actor {
 			DamageTag... damageTags) {
 		float acuStat = attacker.attackSkill( defender );
 		float defStat = defender.defenseSkill( attacker );
+		if (attacker.buff(EtherealBody.class) != null) acuStat *= 0.5f;
+		if (defender.buff(EtherealBody.class) != null) defStat *= 2f;
 		if (!(attacker instanceof Hero) && attacker.buff(HolyPrayer.HolyPrayerBlessing.class) != null) {
 			acuStat *= attacker.buff(HolyPrayer.HolyPrayerBlessing.class).accuracyAndEvasionFactor();
 		}
@@ -878,23 +915,35 @@ public abstract class Char extends Actor {
 			defStat = INFINITE_EVASION;
 		}
 
-		// The cursed eye scrambles its owner's vision before any other avoidance effect.
-		if (PrecognitiveEye.forcesEnemyHit(attacker, defender)) {
-			hitMissIcon = FloatingText.getHitReasonIcon(attacker, acuStat, defender, defStat);
+		// The cursed eye overrides a miss, while retaining whether this attack would dodge.
+		boolean cursedEyeForcesHit = PrecognitiveEye.forcesEnemyHit(attacker, defender);
+
+		// Resolve other guaranteed evasions before spending the eye's stored dodge.
+		if (defStat >= INFINITE_EVASION){
+			if (cursedEyeForcesHit) {
+				hitMissIcon = cursedEyeHitIcon(attacker, defender, true, damageTags);
+				return true;
+			}
+			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuStat, defender, INFINITE_EVASION);
+			PrecognitiveEye.onEnemyAttackDodged(attacker, defender);
+			return false;
+		}
+
+		if (cursedEyeForcesHit
+				&& defender.buff(PrecognitiveEye.MomentaryForesight.class) != null
+				&& defender.buff(PrecognitiveEye.MomentaryForesight.class).uses() > 0) {
+			hitMissIcon = cursedEyeHitIcon(attacker, defender, true, damageTags);
 			return true;
 		}
-		if (PrecognitiveEye.consumeMomentaryForesight(attacker, defender)) {
-			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuStat, defender, defStat);
+
+		if (!cursedEyeForcesHit && PrecognitiveEye.consumeMomentaryForesight(attacker, defender)) {
+			hitMissIcon = FloatingText.MISS_PRECOGNITIVE_EYE;
 			return false;
 		}
 
 		//if accuracy or evasion are large enough, treat them as infinite.
 		//note that infinite evasion beats infinite accuracy
-		if (defStat >= INFINITE_EVASION){
-			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuStat, defender, INFINITE_EVASION);
-			PrecognitiveEye.onEnemyAttackDodged(attacker, defender);
-			return false;
-		} else if (acuStat >= INFINITE_ACCURACY){
+		if (acuStat >= INFINITE_ACCURACY){
 			hitMissIcon = FloatingText.getHitReasonIcon(attacker, INFINITE_ACCURACY, defender, defStat);
 			return true;
 		}
@@ -934,6 +983,10 @@ public abstract class Char extends Actor {
 			hitMissIcon = FloatingText.getHitReasonIcon(attacker, acuRoll, defender, defRoll);
 			return true;
 		} else {
+			if (cursedEyeForcesHit) {
+				hitMissIcon = cursedEyeHitIcon(attacker, defender, true, damageTags);
+				return true;
+			}
 			hitMissIcon = FloatingText.getMissReasonIcon(attacker, acuRoll, defender, defRoll);
 			PrecognitiveEye.onEnemyAttackDodged(attacker, defender);
 			return false;
@@ -941,6 +994,14 @@ public abstract class Char extends Actor {
 	}
 
 	private static int hitMissIcon = -1;
+
+	static int cursedEyeHitIcon(Char attacker, Char defender, boolean baselineMiss,
+			DamageTag... damageTags) {
+		if (!baselineMiss || !PrecognitiveEye.forcesEnemyHit(attacker, defender)) return -1;
+		java.util.EnumSet<DamageTag> tags = DamageTag.of(damageTags);
+		return tags.contains(DamageTag.PHYSICAL) && !tags.contains(DamageTag.MAGICAL)
+				? FloatingText.HIT_CURSED_EYE : -1;
+	}
 
 	public int attackSkill( Char target ) {
 		return 0;
@@ -1173,6 +1234,9 @@ public abstract class Char extends Actor {
 		if(this.buff(Suffering.Fear.class)!=null && Random.Int(10)<3){
 			Reason.sufferingReason(hero,5);
 		}
+		if (src instanceof TowerBoss && TowerBoss.towerRulesActive()) {
+			Reason.loseReason(hero, 5);
+		}
 	}
 
 	private static Class<?> sourceClass(Object source) {
@@ -1357,18 +1421,11 @@ public abstract class Char extends Actor {
 			}
 		}
 
-		if (!unavoidable && isImmune( srcClass )) {
+		if (!unavoidable && !tags.contains(DamageTag.CURSED_FIRE_RESOLVED) && isImmune( srcClass )) {
 			damage = 0;
-		} else if (!unavoidable) {
+		} else if (!unavoidable && !tags.contains(DamageTag.CURSED_FIRE_RESOLVED)) {
 			damage *= resist( srcClass );
 		}
-        if(isAlive()){
-            RitualDagger.BloodGift.onPiousAttackDamage(hero, this, (int)damage);
-        }else{
-            RitualDagger.BloodGift.onPiousAttackDamage(hero, this, (int)damage);
-        }
-
-
 		dmg = Math.round(damage);
 
 		//we ceil these specifically to favor the player vs. champ dmg reduction
@@ -1413,6 +1470,7 @@ public abstract class Char extends Actor {
 			buff( Paralysis.class ).processDamage(dmg);
 		}
 
+		dmg = Math.max(0, modifyPreShieldDamage(dmg, src, damageTags));
 		int shielded = dmg;
 		BrokenSeal.WarriorShield warriorShield = buff(BrokenSeal.WarriorShield.class);
 		int warriorShieldBefore = warriorShield == null ? 0 : warriorShield.shielding();
@@ -1451,7 +1509,14 @@ public abstract class Char extends Actor {
 		}
 		dmg = Math.max(0, modifyFinalDamage(dmg, src, damageTags));
 		shielded = absorbed;
+		int hpBeforeDamage = Math.max(0, HP);
 		HP -= dmg;
+		if (src == hero && src instanceof Hero && alignment == Alignment.ENEMY
+				&& tags.contains(DamageTag.PHYSICAL)
+				&& (tags.contains(DamageTag.MELEE) || tags.contains(DamageTag.RANGED))) {
+			RitualDagger.BloodGift.onPiousAttackDamage((Hero) src, this,
+					hpBeforeDamage - Math.max(0, HP));
+		}
 
 		if (HP > 0 && shielded > 0 && shielding() == 0){
 			if (this instanceof Hero && ((Hero) this).hasTalent(Talent.PROVOKED_ANGER)){
@@ -1492,8 +1557,12 @@ public abstract class Char extends Actor {
 			int icon = DamageIconResolver.resolve(tags);
 
 			if ((icon == FloatingText.PHYS_DMG || icon == FloatingText.PHYS_DMG_NO_BLOCK) && hitMissIcon != -1){
-				if (icon == FloatingText.PHYS_DMG_NO_BLOCK) hitMissIcon += 18; //extra row
-				icon = hitMissIcon;
+				if (icon == FloatingText.PHYS_DMG_NO_BLOCK) {
+					icon = hitMissIcon == FloatingText.HIT_CURSED_EYE
+							? FloatingText.HIT_CURSED_EYE_NO_ARMOR : hitMissIcon + 18; //extra row
+				} else {
+					icon = hitMissIcon;
+				}
 			}
 			hitMissIcon = -1;
 			if(dmg+shielded>=0){
@@ -1513,6 +1582,10 @@ public abstract class Char extends Actor {
 
 	public void damage(int dmg, Object src) {
 		damage(dmg, src, legacyDamageTags(src));
+	}
+
+	protected int modifyPreShieldDamage(int damage, Object source, DamageTag... damageTags) {
+		return damage;
 	}
 
 	/** Last damage hook after mitigation and shield absorption, before HP is changed. */

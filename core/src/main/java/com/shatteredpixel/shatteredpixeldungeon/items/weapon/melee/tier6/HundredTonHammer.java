@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
@@ -37,9 +38,10 @@ import java.util.ArrayList;
 public class HundredTonHammer extends MeleeWeapon {
 
 	public static final int TIER = 6;
-	public static final float ACCURACY = 1.16f;
+	public static final float ACCURACY = 1.18f;
 	public static final int RANGE = 1;
 	public static final float DELAY = 1f;
+	private transient boolean abilityKnockback;
 
 	{
 		image = EXItemSpriteSheet.HUNDRED_TON_HAMMER;
@@ -68,7 +70,7 @@ public class HundredTonHammer extends MeleeWeapon {
 	}
 
 	public static int maxForLevel(int level) {
-		return 28 + 6 * Math.max(0, level);
+		return 21 + 7 * Math.max(0, level);
 	}
 
 	public static int strengthRequirementForLevel(int level) {
@@ -76,15 +78,31 @@ public class HundredTonHammer extends MeleeWeapon {
 	}
 
 	public static int normalKnockbackDistance(int level) {
-		return 1 + Math.max(0, level) / 7;
+		return 2 + Math.max(0, level) / 4;
+	}
+
+	public static int ambushDamageBonus(int level) {
+		return (int) Math.ceil(7 + 1.5f * Math.max(0, level));
+	}
+
+	static boolean shouldKnockback(boolean abilityForced, boolean surprised, float roll) {
+		return abilityForced || surprised || roll < 1f / 3f;
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.KNOCKBACK_DISTANCE,
+				Integer.toString(normalKnockbackDistance(level))));
+		return result;
 	}
 
 	public static int bouncePower(int level) {
-		return 1 + Math.max(0, level);
+		return normalKnockbackDistance(level);
 	}
 
 	public static int bounceDamage(int level, int actualDistance) {
-		return Math.max(0, level) * Math.max(0, actualDistance) / 2;
+		return Math.max(0, actualDistance) / 3;
 	}
 
 	@Override
@@ -95,24 +113,20 @@ public class HundredTonHammer extends MeleeWeapon {
 	@Override
 	public String abilityInfo() {
 		int level = levelKnown ? buffedLvl() : 0;
-		int power = bouncePower(level);
-		int maxDamage = bounceDamage(level, power);
 		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
-				power, maxDamage);
+				augment.damageFactor(min(level)) + augment.damageFactor(ambushDamageBonus(level)),
+				augment.damageFactor(max(level)) + augment.damageFactor(ambushDamageBonus(level)));
 	}
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return Integer.toString(bounceDamage(level, bouncePower(level)));
+		return Integer.toString(normalKnockbackDistance(level));
 	}
 
 	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
-		result.add(abilityStat(UpgradeAbilityStatType.KNOCKBACK_DISTANCE,
-				Integer.toString(bouncePower(level))));
-		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE,
-				"0-" + upgradeAbilityStat(level)));
+		result.add(abilityStat(UpgradeAbilityStatType.KNOCKBACK_DISTANCE, upgradeAbilityStat(level)));
 		return result;
 	}
 
@@ -152,7 +166,20 @@ public class HundredTonHammer extends MeleeWeapon {
 				AttackIndicator.target(target);
 				Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG);
 				Invisibility.dispel();
-				pushAndResolve(hero, target);
+				boolean surprised = target instanceof Mob && ((Mob) target).surprisedBy(hero);
+				int bonus = surprised ? augment.damageFactor(ambushDamageBonus(buffedLvl())) : 0;
+				int beforeDamage = target.HP + target.shielding();
+				abilityKnockback = true;
+				boolean hit;
+				try {
+					hit = hero.attack(target, 1f, bonus, Float.POSITIVE_INFINITY,
+						DamageTag.PHYSICAL, DamageTag.MELEE);
+				} finally {
+					abilityKnockback = false;
+				}
+				int directDamage = Math.max(0, beforeDamage - target.HP - target.shielding());
+				if (!hit || !target.isAlive()) finishAbility(hero);
+				else pushAndResolve(hero, target, directDamage);
 			}
 		};
 		if (hero.sprite == null) {
@@ -172,21 +199,15 @@ public class HundredTonHammer extends MeleeWeapon {
 				&& hero.canAttack(target);
 	}
 
-	private void pushAndResolve(final Hero hero, final Char target) {
-		final int startPos = target.pos;
+	private void pushAndResolve(final Hero hero, final Char target, final int directDamage) {
 		Ballistica trajectory = new Ballistica(hero.pos, target.pos, Ballistica.STOP_TARGET);
 		trajectory = new Ballistica(trajectory.collisionPos,
 				trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
 		WandOfBlastWave.throwCharImmediatelyWithResult(target, trajectory, bouncePower(buffedLvl()),
-				true, false, this, new WandOfBlastWave.KnockbackCallback() {
+				true, true, this, new WandOfBlastWave.KnockbackCallback() {
 			@Override
 			public void call(boolean resolvedByThisPush, int reportedDistance) {
-				int actualDistance = resolvedByThisPush
-						? Dungeon.level.distance(startPos, target.pos) : 0;
-				if (actualDistance != reportedDistance) actualDistance = 0;
-				int bounceResult = bounceDamage(buffedLvl(), actualDistance);
-				if (!isBounceDamageTarget(hero, target)) bounceResult = 0;
-				resolveBounceDamage(hero, target, bounceResult);
+				resolveBounceDamage(hero, target, directDamage / 3);
 			}
 		});
 	}
@@ -194,6 +215,10 @@ public class HundredTonHammer extends MeleeWeapon {
 	private void resolveBounceDamage(Hero hero, Char target, int damage) {
 		final int finalPos = target.pos;
 		ArrayList<Char> splashTargets = new ArrayList<>();
+		if (isBounceDamageTarget(hero, target)) {
+			com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff.prolong(target,
+					com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Daze.class, 5f);
+		}
 		if (damage > 0) {
 			for (int offset : PathFinder.NEIGHBOURS8) {
 				int cell = finalPos + offset;
@@ -206,11 +231,6 @@ public class HundredTonHammer extends MeleeWeapon {
 						&& !splashTargets.contains(splashTarget)) {
 					splashTargets.add(splashTarget);
 				}
-			}
-
-			if (isBounceDamageTarget(hero, target)) {
-				target.damage(damage, hero, DamageTag.PHYSICAL);
-				if (!target.isAlive()) onAbilityKill(hero, target);
 			}
 
 			for (Char splashTarget : splashTargets) {
@@ -236,14 +256,16 @@ public class HundredTonHammer extends MeleeWeapon {
 	public int proc(Char attacker, Char defender, int damage) {
 		int result = super.proc(attacker, defender, damage);
 		if (!defender.isAlive() || defender.alignment != Char.Alignment.ENEMY) return result;
-        if(Random.Int(3)==0){
+		boolean surprised = attacker instanceof Hero && defender instanceof Mob
+				&& ((Mob) defender).surprisedBy(attacker);
+		if (!abilityKnockback && shouldKnockback(false, surprised, Random.Float())) {
             Ballistica trajectory = new Ballistica(attacker.pos, defender.pos,
                     Ballistica.STOP_TARGET);
             trajectory = new Ballistica(trajectory.collisionPos,
                     trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
             // Start innate knockback before any Elastic pushes queued by super.proc.
             WandOfBlastWave.throwCharImmediately(defender, trajectory,
-                    normalKnockbackDistance(buffedLvl()), true, false, this, null);
+                    normalKnockbackDistance(buffedLvl()), true, true, this, null);
         }
 
 		return result;

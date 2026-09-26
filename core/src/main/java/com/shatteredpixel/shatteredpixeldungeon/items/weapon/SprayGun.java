@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Freezing;
@@ -514,6 +515,10 @@ public class SprayGun extends Weapon {
 					if (ch != null) Buff.detach(ch, Burning.class);
 
 				}
+			}
+			CursedFlame cursedFlame = (CursedFlame) Dungeon.level.blobs.get(CursedFlame.class);
+			if (cursedFlame != null) {
+				for (int cell : cells) cursedFlame.clear(cell);
 			}
 
 		}

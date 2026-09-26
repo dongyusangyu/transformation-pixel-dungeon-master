@@ -19,6 +19,14 @@ public class TestArtifactWindowLifecycleTest {
 		assertTrue(source.contains("SettingsWindow.this.hide()"));
 	}
 
+	@Test
+	public void bagTabsUseOffsetAwareLayoutWhenReopenedAfterGeneration() throws IOException {
+		String source = readCoreSource("windows/WndTabbed.java");
+		assertTrue(source.contains("centeredCameraOrigin(insets.left"));
+		assertTrue(source.contains("centeredCameraOrigin(insets.top"));
+		assertTrue(source.contains("xOffset, camera.zoom"));
+	}
+
 	private static String readCoreSource(String relativePath) throws IOException {
 		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
 		Path coreDirectory = workingDirectory.resolve("core");

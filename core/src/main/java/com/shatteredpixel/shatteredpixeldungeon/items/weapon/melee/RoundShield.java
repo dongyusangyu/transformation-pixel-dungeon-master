@@ -106,7 +106,7 @@ public class RoundShield extends MeleeWeapon {
 	public static class GuardTracker extends FlavourBuff {
 
 		{
-			announced = true;
+			announced = false;
 			type = buffType.POSITIVE;
 		}
 

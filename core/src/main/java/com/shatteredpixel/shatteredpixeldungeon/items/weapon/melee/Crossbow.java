@@ -170,7 +170,7 @@ public class Crossbow extends MeleeWeapon {
 	public static class ChargedShot extends Buff{
 
 		{
-			announced = true;
+			announced = false;
 			type = buffType.POSITIVE;
 		}
 

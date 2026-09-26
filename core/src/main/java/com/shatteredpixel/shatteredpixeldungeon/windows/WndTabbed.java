@@ -35,6 +35,7 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.RectF;
+import com.watabou.utils.PlatformSupport;
 import com.watabou.utils.Signal;
 
 import java.util.ArrayList;
@@ -106,24 +107,24 @@ public class WndTabbed extends Window {
 	
 	@Override
 	public void resize( int w, int h ) {
-		// -> super.resize(...)
 		this.width = w;
 		this.height = h;
-		
-		chrome.size(
-			width + chrome.marginHor(),
-			height + chrome.marginVer() );
-		
+
+		chrome.size(width + chrome.marginHor(), height + chrome.marginVer());
 		camera.resize( (int)chrome.width, chrome.marginTop() + height + tabHeight() );
-		camera.x = (int)(Game.width - camera.screenWidth()) / 2;
-		camera.y = (int)(Game.height - camera.screenHeight()) / 2;
-		camera.y += yOffset * camera.zoom;
+
+		RectF insets = Game.platform.getSafeInsets(PlatformSupport.INSET_BLK);
+		int screenW = (int)(Game.width - insets.left - insets.right);
+		int screenH = (int)(Game.height - insets.top - insets.bottom);
+		camera.x = centeredCameraOrigin(insets.left, screenW,
+				(int)camera.screenWidth(), xOffset, camera.zoom);
+		camera.y = centeredCameraOrigin(insets.top, screenH,
+				(int)camera.screenHeight(), yOffset, camera.zoom);
 
 		shadow.boxRect(
 				camera.x / camera.zoom,
 				camera.y / camera.zoom,
 				chrome.width(), chrome.height );
-		// <- super.resize(...)
 		
 		for (Tab tab : tabs) {
 			remove( tab );
@@ -135,6 +136,11 @@ public class WndTabbed extends Window {
 		for (Tab tab : tabs) {
 			add( tab );
 		}
+	}
+
+	static int centeredCameraOrigin(float safeInset, int availableSize, int cameraScreenSize,
+			int offset, float zoom) {
+		return (int)(safeInset + (availableSize - cameraScreenSize) / 2f + offset * zoom);
 	}
 
 	public void layoutTabs(){

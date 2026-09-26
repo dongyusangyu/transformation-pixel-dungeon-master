@@ -78,13 +78,13 @@ public class RadiantGoldHalberdTest {
 	@Test
 	public void abilityFormulaUsesTheApprovedRange() {
 		assertEquals(7, RadiantGoldHalberd.abilityMin(-3));
-		assertEquals(7, RadiantGoldHalberd.abilityMax(-3));
+		assertEquals(28, RadiantGoldHalberd.abilityMax(-3));
 		assertEquals(7, RadiantGoldHalberd.abilityMin(0));
-		assertEquals(7, RadiantGoldHalberd.abilityMax(0));
-		assertEquals(10, RadiantGoldHalberd.abilityMin(3));
-		assertEquals(40, RadiantGoldHalberd.abilityMax(3));
-		assertEquals(19, RadiantGoldHalberd.abilityMin(12));
-		assertEquals(139, RadiantGoldHalberd.abilityMax(12));
+		assertEquals(28, RadiantGoldHalberd.abilityMax(0));
+		assertEquals(15, RadiantGoldHalberd.abilityMin(3));
+		assertEquals(49, RadiantGoldHalberd.abilityMax(3));
+		assertEquals(40, RadiantGoldHalberd.abilityMin(12));
+		assertEquals(112, RadiantGoldHalberd.abilityMax(12));
 	}
 
 	@Test

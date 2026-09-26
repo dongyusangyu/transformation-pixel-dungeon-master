@@ -19,6 +19,7 @@ public class ElfWineCup extends Mob {
 		HT = HP = 30; defenseSkill = 0; EXP = 0; maxLvl = 0;
 		loot = null; lootChance = 0f; spriteClass = ElfWineCupSprite.class;
 		alignment = Alignment.NEUTRAL;
+		state = HUNTING;
 		properties.add(Property.IMMOVABLE);
 		properties.add(Property.UNSLEEP);
         properties.add(Property.BOSS);

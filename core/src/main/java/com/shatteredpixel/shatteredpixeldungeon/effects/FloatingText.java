@@ -136,6 +136,9 @@ public class FloatingText extends RenderedTextBlock {
     public static int HIT_SUFFER = 48;
     public static int HIT_VIRTUE = 49;
 
+	public static final int HIT_CURSED_EYE = 50;
+	public static final int HIT_CURSED_EYE_NO_ARMOR = 68;
+
 	//extra row for hit icons that are armor-piercing
 
 	//miss reason icons
@@ -152,6 +155,7 @@ public class FloatingText extends RenderedTextBlock {
 	public static int MISS_RUN  = 82;
     public static int MISS_SUFFER  = 84;
     public static int MISS_VIRTUE  = 85;
+    public static final int MISS_PRECOGNITIVE_EYE = 86;
 
 	private Image icon;
 	private boolean iconLeft;

@@ -48,6 +48,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.NPC;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TwinDemonEyes;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -389,6 +390,7 @@ public class WandOfWarding extends Wand {
             dmg = Talent.onWandDamage(null,enemy, dmg);
 			enemy.damage( dmg, this , DamageTag.MAGICAL);
 			if (enemy.isAlive()){
+				TwinDemonEyes.onSuccessfulRangedHit(Dungeon.hero, enemy);
 				Wand.wandProc(enemy, wandLevel, 1);
                 Talent.onWandProc(enemy, wandLevel, 1,dmg);
                 if(enemy.buff(RuneMark.class)!=null){

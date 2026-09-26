@@ -7,12 +7,14 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Blindness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Slow;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Greatshield;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecialAction;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.noosa.Image;
@@ -77,7 +79,7 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
     }
 
     public static int maxForLevel(int level) {
-        return 25 + 5 * level;
+        return 21 + 5 * level;
     }
 
     public static int maxBlockForLevel(int level) {
@@ -85,15 +87,46 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
     }
 
     public static int slowDurationForLevel(int level) {
-        return Math.max(1, 3 + level);
+        return Math.max(1, 5 + level);
     }
 
     public static float wallDurationForLevel(int level) {
-        return Math.max(1f, 1f + 0.5f * level);
+        return Math.max(1f, 2f + level);
     }
 
     public static int reflectedDamageFor(int damage) {
         return (int) Math.floor(Math.max(0, damage) * 0.5f);
+    }
+
+    public int counterDamageMinForLevel(int level) {
+        return Math.max(0, augment.damageFactor(min(level)) / 2);
+    }
+
+    public int counterDamageMaxForLevel(int level) {
+        return Math.max(0, augment.damageFactor(max(level)) / 2);
+    }
+
+    private static boolean directAttackDamage(DamageTag... tags) {
+        boolean hasDamageType = false;
+        if (tags != null) {
+            for (DamageTag tag : tags) {
+                if (tag == DamageTag.PHYSICAL || tag == DamageTag.MAGICAL) hasDamageType = true;
+                if (tag == DamageTag.BLEEDING || tag == DamageTag.TOXIC || tag == DamageTag.CORROSION
+                        || tag == DamageTag.POISON || tag == DamageTag.OOZE || tag == DamageTag.DEFERRED
+                        || tag == DamageTag.HUNGER || tag == DamageTag.PLAGUE || tag == DamageTag.CURSED_FIRE) {
+                    return false;
+                }
+            }
+        }
+        return hasDamageType;
+    }
+
+    public static boolean canReleaseAffect(boolean alive, boolean enemy, boolean inHeroFov) {
+        return alive && enemy && inHeroFov;
+    }
+
+    public static void onHeroMoved(Hero hero, int from, int to) {
+        if (hero != null && from != to) Buff.detach(hero, MountainWallCounter.class);
     }
 
     public static float wallFadePercent(float initialDuration, float remainingDuration) {
@@ -138,10 +171,34 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
 
     public static void onHeroEffectiveDamage(Hero hero, Object source, int effectiveDamage) {
         if (effectiveDamage <= 0 || !isEnemyDamageSource(source)) return;
+        if (hero.directAttackDamageInProgress()) return;
         MountainGuard guard = primaryGuard(hero);
         if (guard == null) return;
         guard.addEnergy(effectiveDamage);
         syncEnergyTracker(hero);
+    }
+
+    public static void onHeroPreArmorAttack(Hero hero, Char attacker, int incomingDamage) {
+        if (!isLivingEnemyDamageSource(attacker)) return;
+        MountainGuard guard = primaryGuard(hero);
+        if (guard == null) return;
+        guard.addEnergy(Math.max(0, incomingDamage));
+        syncEnergyTracker(hero);
+    }
+
+    public static boolean interceptDirectAttack(Hero hero, Char attacker, int incomingDamage,
+                                                DamageTag... tags) {
+        if (hero == null || hero.buff(MountainWallCounter.class) == null
+                || !isLivingEnemyDamageSource(attacker) || !directAttackDamage(tags)) return false;
+        com.watabou.noosa.audio.Sample.INSTANCE.play(Assets.Sounds.HIT_PARRY, 1f,
+                com.watabou.utils.Random.Float(0.96f, 1.05f));
+        MountainGuard guard = primaryGuard(hero);
+        int reflected = guard == null ? 0 : com.watabou.utils.Random.IntRange(
+                guard.counterDamageMinForLevel(guard.buffedLvl()),
+                guard.counterDamageMaxForLevel(guard.buffedLvl()));
+        if (reflected > 0) attacker.damage(reflected, hero.buff(MountainWallCounter.class),
+                DamageTag.PHYSICAL, DamageTag.NO_ARMOR);
+        return true;
     }
 
     public static void syncEnergyTracker(Hero hero) {
@@ -211,12 +268,14 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
 
     private void releaseMountainPower(Hero hero) {
         if (!canRelease(hero)) return;
-        int width = Dungeon.level == null ? 0 : Dungeon.level.width();
-        if (width > 0) {
+        if (Dungeon.level != null && Dungeon.level.heroFOV != null) {
+            GameScene.flash(0x80FFFFFF);
             for (Char ch : Actor.chars()) {
-                if (ch != null && ch.isAlive() && ch.alignment == Char.Alignment.ENEMY
-                        && isInsideReleaseSquare(hero.pos, ch.pos, width)) {
+                if (ch != null && ch.pos >= 0 && ch.pos < Dungeon.level.heroFOV.length
+                        && canReleaseAffect(ch.isAlive(), ch.alignment == Char.Alignment.ENEMY,
+                        Dungeon.level.heroFOV[ch.pos])) {
                     Buff.prolong(ch, Slow.class, slowDurationForLevel(buffedLvl()));
+                    Buff.prolong(ch, Blindness.class, slowDurationForLevel(buffedLvl()));
                 }
             }
         }
@@ -226,6 +285,10 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
         Sample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.75f);
         if (hero.sprite != null) hero.sprite.operate(hero.pos);
         hero.spendAndNext(Actor.TICK);
+    }
+
+    public String releaseInfo() {
+        return Messages.get(this, "release_desc", slowDurationForLevel(buffedLvl()));
     }
 
     @Override
@@ -255,15 +318,20 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
     @Override
     public String statsInfo() {
         if (isIdentified()) {
-            return Messages.get(this, "stats_desc", maxBlockForLevel(buffedLvl()));
+            return Messages.get(this, "stats_desc", maxBlockForLevel(buffedLvl()),
+                    slowDurationForLevel(buffedLvl()));
         } else {
-            return Messages.get(this, "typical_stats_desc", maxBlockForLevel(0));
+            return Messages.get(this, "typical_stats_desc", maxBlockForLevel(0),
+                    slowDurationForLevel(0));
         }
     }
 
     @Override
     public String abilityInfo() {
-        return Messages.get(this, "ability_desc");
+        int level = levelKnown ? buffedLvl() : 0;
+        return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
+                formatDuration(wallDurationForLevel(level)),
+                counterDamageMinForLevel(level), counterDamageMaxForLevel(level));
     }
 
     @Override
@@ -271,6 +339,16 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
         java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
         result.add(abilityStat(UpgradeAbilityStatType.DURATION,
                 formatDuration(wallDurationForLevel(level))));
+        result.add(abilityStat(UpgradeAbilityStatType.COUNTER_DAMAGE,
+                counterDamageMinForLevel(level) + "-" + counterDamageMaxForLevel(level)));
+        return result;
+    }
+
+    @Override
+    public java.util.ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+        java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+        result.add(abilityStat(UpgradeAbilityStatType.RELEASE_DURATION,
+                Integer.toString(slowDurationForLevel(level))));
         return result;
     }
 
@@ -296,10 +374,13 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
     public static int interceptEnemyDamage(Hero hero, int damage, Object source,
                                            DamageTag... tags) {
         if (hero == null || hero.buff(MountainWallCounter.class) == null
-                || !isLivingEnemyDamageSource(source)) {
+                || !isLivingEnemyDamageSource(source) || !directAttackDamage(tags)) {
             return damage;
         }
-        int reflected = reflectedDamageFor(damage);
+        MountainGuard guard = primaryGuard(hero);
+        int reflected = guard == null ? 0 : com.watabou.utils.Random.IntRange(
+                guard.counterDamageMinForLevel(guard.buffedLvl()),
+                guard.counterDamageMaxForLevel(guard.buffedLvl()));
         Char attacker = (Char) source;
         if (reflected > 0 && attacker.isAlive()) {
             attacker.damage(reflected, hero.buff(MountainWallCounter.class),
@@ -363,7 +444,7 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
         private float initialDuration;
 
         {
-            announced = true;
+            announced = false;
             type = buffType.POSITIVE;
         }
 

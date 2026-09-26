@@ -37,6 +37,7 @@ public class Inferno extends Blob {
 		boolean observe = false;
 		
 		Fire fire = (Fire)Dungeon.level.blobs.get( Fire.class );
+		CursedFlame cursedFlame = (CursedFlame)Dungeon.level.blobs.get( CursedFlame.class );
 		Freezing freeze = (Freezing)Dungeon.level.blobs.get( Freezing.class );
 		
 		Blizzard bliz = (Blizzard)Dungeon.level.blobs.get( Blizzard.class );
@@ -47,6 +48,7 @@ public class Inferno extends Blob {
 				if (cur[cell] > 0) {
 					
 					if (fire != null)   fire.clear(cell);
+					if (cursedFlame != null) cursedFlame.clear(cell);
 					if (freeze != null) freeze.clear(cell);
 					
 					if (bliz != null && bliz.volume > 0 && bliz.cur[cell] > 0){

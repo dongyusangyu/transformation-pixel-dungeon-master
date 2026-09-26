@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -59,6 +60,7 @@ public class GeyserTrap extends Trap {
 		Sample.INSTANCE.play(Assets.Sounds.GAS, 1f, 0.75f);
 
 		Fire fire = (Fire) Dungeon.level.blobs.get(Fire.class);
+		CursedFlame cursedFlame = (CursedFlame) Dungeon.level.blobs.get(CursedFlame.class);
 		PathFinder.buildDistanceMap( pos, BArray.not( Dungeon.level.solid, null ), 2 );
 		for (int i = 0; i < PathFinder.distance.length; i++) {
 			if (PathFinder.distance[i] == 2 && Random.Int(3) > 0){
@@ -66,11 +68,13 @@ public class GeyserTrap extends Trap {
 				if (fire != null){
 					fire.clear(i);
 				}
+				if (cursedFlame != null) cursedFlame.clear(i);
 			} else if (PathFinder.distance[i] < 2){
 				Dungeon.level.setCellToWater(true, i);
 				if (fire != null){
 					fire.clear(i);
 				}
+				if (cursedFlame != null) cursedFlame.clear(i);
 			}
 		}
 

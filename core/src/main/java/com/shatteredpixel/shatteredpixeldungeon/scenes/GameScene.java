@@ -55,6 +55,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.EmoIcon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Pushing;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Ripple;
 import com.shatteredpixel.shatteredpixeldungeon.effects.SpellSprite;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
@@ -900,7 +901,8 @@ public class GameScene extends PixelScene {
 	}
 
 	private static boolean actorThreadIdle() {
-		return actorThread == null || !actorThread.isAlive() || Actor.threadIdle();
+		return (actorThread == null || !actorThread.isAlive() || Actor.threadIdle())
+				&& !Pushing.hasPendingPushes();
 	}
 
 	@Override
@@ -1598,13 +1600,14 @@ public class GameScene extends PixelScene {
 	}
 
 	private static boolean queueCheckpointWhileActorIdle() {
+		if (Pushing.hasPendingPushes()) return false;
 		Thread thread = actorThread;
 		if (thread == null || !thread.isAlive()) {
 			Dungeon.queueCheckpoint();
 			return true;
 		}
 		synchronized (thread) {
-			if (!Actor.threadIdle()) return false;
+			if (!Actor.threadIdle() || Pushing.hasPendingPushes()) return false;
 			Dungeon.queueCheckpoint();
 			return true;
 		}
@@ -2102,7 +2105,7 @@ public class GameScene extends PixelScene {
 
 		synchronized (thread) {
 			if (!canCommitCheckpoint(saveAndReturnToTitleRequested, Actor.threadIdle(),
-					hero.ready || !hero.isAlive())) {
+					hero.ready || !hero.isAlive()) || Pushing.hasPendingPushes()) {
 				return false;
 			}
 			return saveAndReturnToTitle();

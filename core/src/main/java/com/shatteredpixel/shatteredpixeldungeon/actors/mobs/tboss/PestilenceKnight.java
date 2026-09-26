@@ -8,6 +8,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.Sewage;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PestilenceAnomaly;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PlagueFrailty;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PurifyingIncense;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -17,10 +20,12 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vertigo;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Vulnerable;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Weakness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Susceptible;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.PostPlagueFatigue;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.TerminalHealingPenalty;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.MagicalRangedAttack;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TargetedCell;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
@@ -62,11 +67,14 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     static final String QUARANTINE = "quarantine";
     static final String PALE_CHARGE = "pale_charge";
     static final String DOOM_PROCESSION = "doom_procession";
+    static final String DIRTY_WATER = "dirty_water";
 
     private static final int FLASK_CD = 0;
     private static final int QUARANTINE_CD = 1;
     private static final int PRESCRIPTION_CD = 2;
     private static final int PALE_CHARGE_CD = 3;
+    private static final int DIRTY_WATER_CD = 4;
+    private static final int DIRTY_WATER_COOLDOWN = 8;
     private static final int BRAZIER_TUTORIAL_FLAG = 1 << 8;
 
     private static final String GROWTH = "growth";
@@ -83,6 +91,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     private static final String LAST_HERO_POS = "last_hero_pos";
     private static final String REWARD_DROPPED = "reward_dropped";
     private static final String PROCESSION_STEPS = "procession_steps";
+    private static final String GUARDS_SPAWNED = "guards_spawned";
     private static final String TERMINAL_ENTERED = "terminal_entered";
 
     private int growth;
@@ -92,13 +101,14 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     private String pendingSkill = "";
     private int pendingTurns;
     private int pendingProjectileTarget = -1;
-    private int[] cooldowns = new int[4];
+    private int[] cooldowns = new int[5];
     private int[] pendingCells = new int[0];
     private int prescriptionIndex;
     private int diagnosis;
     private int lastHeroPos = -1;
     private boolean rewardDropped;
     private int processionSteps;
+    private int guardsSpawned;
     private boolean terminalEntered;
     private transient boolean waitingForAttackCompletion;
     private transient boolean restoringFromBundle;
@@ -209,8 +219,19 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     }
 
     @Override
+    public boolean isImmune(Class effect) {
+        return effect == Infection.class || effect == Infection.Contagion.class
+                || effect == Susceptible.class
+                || effect == IncubatingMiasma.class || effect == OutbreakMiasma.class
+                || effect == PaleMiasma.class || effect == Sewage.class
+                || super.isImmune(effect);
+    }
+
+    @Override
     public int attackProc(Char target, int damage, DamageTag... damageTags) {
         damage = super.attackProc(target, damage, damageTags);
+        if (target != null && Dungeon.level != null
+                && Dungeon.level.adjacent(pos, target.pos)) Infection.addStacks(target, 1);
         if (target != null && Dungeon.level != null && Dungeon.level.adjacent(pos, target.pos)) {
             Ballistica trajectory = new Ballistica(target.pos,
                     target.pos + (target.pos - pos), Ballistica.MAGIC_BOLT);
@@ -222,13 +243,49 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     }
 
     @Override
+    public void damage(int damage, Object source, DamageTag... damageTags) {
+        int hpBefore = HP;
+        super.damage(damage, source, damageTags);
+        if (HP >= hpBefore || HP <= 0 || !TowerBoss.towerRulesActive()
+                || !(Dungeon.level instanceof TowerBossLevel)
+                || isMechanismDamage() || isPeriodicDamageSource(source)) return;
+
+        Class<? extends Blob> miasma = miasmaForPhase(phase);
+        if (miasma != null) seedCells(new int[]{pos}, 20, miasma, false);
+    }
+
+    static Class<? extends Blob> miasmaForPhase(Phase phase) {
+        if (phase == Phase.INCUBATION) return IncubatingMiasma.class;
+        if (phase == Phase.OUTBREAK) return OutbreakMiasma.class;
+        if (phase == Phase.TERMINAL) return PaleMiasma.class;
+        return null;
+    }
+
+    private boolean standingInMiasma() {
+        return Dungeon.level != null && pos >= 0 && pos < Dungeon.level.length()
+                && (Blob.volumeAt(pos, IncubatingMiasma.class) > 0
+                || Blob.volumeAt(pos, OutbreakMiasma.class) > 0
+                || Blob.volumeAt(pos, PaleMiasma.class) > 0);
+    }
+
+    @Override
+    protected int damageCap(Object source, DamageTag... tags) {
+        return capForGas(phase, standingInMiasma());
+    }
+
+    static int capForGas(Phase phase, boolean standingInMiasma) {
+        return standingInMiasma ? (phase == Phase.TERMINAL ? 16 : 20) : FINAL_DAMAGE_CAP;
+    }
+
+    public void purifierDamage(int amount, Object source) {
+        mechanismDamage(amount, source);
+    }
+
+    @Override
     protected int modifyFinalDamage(int damage, Object source, DamageTag... tags) {
         if (harvest != HarvestState.NONE) return 0;
         int adjusted = super.modifyFinalDamage(damage, source, tags);
-        boolean standingInOutbreak = Dungeon.level != null && pos >= 0
-                && Blob.volumeAt(pos, OutbreakMiasma.class) > 0;
-        adjusted = applyOutbreakReduction(adjusted, source, standingInOutbreak);
-        int capped = Math.min(FINAL_DAMAGE_CAP, adjusted);
+        int capped = isMechanismDamage() ? adjusted : Math.min(damageCap(source, tags), adjusted);
         int lock = nextUnfinishedLockHP();
         if (lock < 0) return capped;
         int untilLock = Math.max(0, HP - lock);
@@ -239,14 +296,6 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         return capped;
     }
 
-    private int applyOutbreakReduction(int damage, Object source, boolean standingInOutbreak) {
-        if (phase == Phase.OUTBREAK && standingInOutbreak
-                && !(source instanceof PestilenceArenaController)) {
-            return Math.round(damage * 0.8f);
-        }
-        return damage;
-    }
-
     @Override
     public boolean isInvulnerable(Class effect) {
         return harvest != HarvestState.NONE || super.isInvulnerable(effect);
@@ -254,6 +303,8 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
 
     @Override
     protected boolean act() {
+        if (TowerBoss.towerRulesActive()) PestilenceAnomaly.acquire(Dungeon.hero, id());
+        ensurePhaseGuards();
         if (state == FLEEING && !pendingSkill.isEmpty()) cancelPendingSkillForFleeing();
         if (harvest != HarvestState.NONE && paralysed <= 0 && state != SLEEPING) {
             advanceHarvest(currentHarvestBlobCells());
@@ -330,10 +381,12 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
                     int[] band = quarantineBand(Dungeon.hero.pos, arena.readyBrazier(Dungeon.hero.pos));
                     if (band.length > 0) return telegraphSkill(QUARANTINE, band);
                 }
+                if (cooldowns[DIRTY_WATER_CD] == 0) return throwDirtyWater();
                 if (canCastPrescription(Dungeon.hero)) return doRangedAttack(Dungeon.hero);
                 return maintainRangeOrMelee(3, 5);
             case TERMINAL:
                 ensureTerminalEntered();
+                if (cooldowns[DIRTY_WATER_CD] == 0) return throwDirtyWater();
                 if (cooldowns[PALE_CHARGE_CD] == 0) {
                     return telegraphSkill(PALE_CHARGE, chargeBand(Dungeon.hero.pos));
                 }
@@ -446,6 +499,19 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         return completed;
     }
 
+    private boolean throwDirtyWater() {
+        if (Dungeon.level == null || Dungeon.hero == null) return completeBaseAction();
+        int target = predictedHeroCell();
+        int[] cells = squareAround(target);
+        announceSkill(DIRTY_WATER);
+        launchMiasmaProjectile(DIRTY_WATER, target);
+        seedCells(cells, Sewage.INITIAL_VOLUME, Sewage.class, false);
+        cooldowns[DIRTY_WATER_CD] = DIRTY_WATER_COOLDOWN;
+        spend(TICK);
+        finishBossAction();
+        return true;
+    }
+
     private boolean telegraphSkill(String skill, int[] cells) {
         return telegraphSkill(skill, cells, miasmaProjectileTarget(cells));
     }
@@ -512,6 +578,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     }
 
     private static int miasmaProjectileImage(String skill) {
+        if (DIRTY_WATER.equals(skill)) return ItemSpriteSheet.POTION_JADE;
         if (QUARANTINE.equals(skill)) return ItemSpriteSheet.POTION_JADE;
         if (PALE_CHARGE.equals(skill) || DOOM_PROCESSION.equals(skill)) {
             return ItemSpriteSheet.POTION_SILVER;
@@ -520,6 +587,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     }
 
     private static int miasmaProjectileImpactColor(String skill) {
+        if (DIRTY_WATER.equals(skill)) return 0x385B24;
         if (PLAGUE_FLASK.equals(skill)) return PLAGUE_FLASK_IMPACT_COLOR;
         if (QUARANTINE.equals(skill)) return OUTBREAK_MIASMA_IMPACT_COLOR;
         if (PALE_CHARGE.equals(skill) || DOOM_PROCESSION.equals(skill)) {
@@ -588,6 +656,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     }
 
     static int miasmaAmountForSkill(String skill) {
+        if (DIRTY_WATER.equals(skill)) return Sewage.INITIAL_VOLUME;
         if (PLAGUE_FLASK.equals(skill)) return 60;
         if (QUARANTINE.equals(skill) || PALE_CHARGE.equals(skill)) return 80;
         if (DOOM_PROCESSION.equals(skill)) return 70;
@@ -624,11 +693,9 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         spend(TICK);
         Invisibility.dispel(this);
         if (target != null && target.isAlive()) {
-            if (rangedHit(target)) {
-                applyPrescription(target, prescription);
-            } else {
-                showRangedMiss(target);
-            }
+            onRangedAttackHit(target);
+            applyPrescription(target, prescription);
+            if (target.isAlive()) markSkillHit(target);
         }
         cooldowns[PRESCRIPTION_CD] = 5;
         finishBossAction();
@@ -638,7 +705,8 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         switch (index % 3) {
             case 0:
                 dealPrescriptionDamage(target, 10, 16);
-                Buff.prolong(target, Weakness.class, 4f);
+                Buff.prolong(target, Weakness.class,
+                        Susceptible.plagueDuration(target, 5f));
                 Infection.addStacks(target, 1);
                 break;
             case 1:
@@ -672,6 +740,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         int stacks = Infection.stacks(Dungeon.hero);
         announceSkill(diagnosisAnnouncementKey(stacks));
         applyTerminalDiagnosis(Dungeon.hero, stacks);
+        if (Dungeon.hero.isAlive()) markSkillHit(Dungeon.hero);
         cooldowns[PRESCRIPTION_CD] = 6;
         spend(TICK);
         finishBossAction();
@@ -682,8 +751,10 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         if (stacks <= 1) {
             Buff.affect(target, Poison.class).set(4f);
         } else if (stacks <= 3) {
-            Buff.prolong(target, Weakness.class, 4f);
-            Buff.prolong(target, Vulnerable.class, 4f);
+            Buff.prolong(target, Weakness.class,
+                    Susceptible.plagueDuration(target, 5f));
+            Buff.prolong(target, Vulnerable.class,
+                    Susceptible.plagueDuration(target, 5f));
         } else {
             dealSkillDamage(target, 25, 40);
             TerminalHealingPenalty.set(target, 0.25f, 3f);
@@ -701,6 +772,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         Dungeon.hero.damage(Random.NormalIntRange(
                 Math.round(min * activeDamageMultiplier()),
                 Math.round(max * activeDamageMultiplier())), this);
+        if (Dungeon.hero.isAlive()) markSkillHit(Dungeon.hero);
         Infection.addStacks(Dungeon.hero, extraInfection ? 2 : 1);
     }
 
@@ -911,10 +983,12 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         if ((phaseLocks & 1) == 0) {
             phaseLocks |= 1;
             phase = Phase.OUTBREAK;
+            ensurePhaseGuards();
             announceSkill("phase_outbreak", restored);
         } else {
             phaseLocks |= 2;
             phase = Phase.TERMINAL;
+            ensurePhaseGuards();
             announceSkill("phase_terminal", restored);
             ensureTerminalEntered();
         }
@@ -954,8 +1028,13 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
             rewardDropped = true;
             dropBossRewards();
         }
-        cleanupPestilenceEncounter();
+        cleanupPestilenceEncounter(true);
         super.die(cause);
+    }
+
+    @Override
+    public void cleanupArena(TowerBossLevel level) {
+        cleanupPestilenceEncounter(false);
     }
 
     private void dropBossRewards() {
@@ -967,7 +1046,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
                 Dungeon.seed, Dungeon.depth, towerBossId()), pos).sprite.drop(pos);
     }
 
-    private void cleanupPestilenceEncounter() {
+    private void cleanupPestilenceEncounter(boolean defeated) {
         harvest = HarvestState.NONE;
         pendingSkill = "";
         pendingCells = new int[0];
@@ -977,11 +1056,20 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
             clearBlob(OutbreakMiasma.class);
             clearBlob(PaleMiasma.class);
             clearBlob(PurifyingIncense.class);
+            clearBlob(Sewage.class);
+            for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
+                if (mob instanceof PlagueGuard) {
+                    mob.alignment = Alignment.NEUTRAL;
+                    mob.destroy();
+                }
+            }
         }
         if (Dungeon.hero != null) {
+            PestilenceAnomaly.release(Dungeon.hero, id());
+            Buff.detach(Dungeon.hero, PlagueFrailty.class);
             int stacks = Infection.stacks(Dungeon.hero);
             if (stacks > 0) {
-                Buff.prolong(Dungeon.hero, PostPlagueFatigue.class, stacks * 10f);
+                if (defeated) Buff.prolong(Dungeon.hero, PostPlagueFatigue.class, stacks * 10f);
                 Infection.clear(Dungeon.hero);
             }
         }
@@ -995,6 +1083,73 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     private static void clearBlob(Class<? extends Blob> type) {
         Blob blob = Dungeon.level.blobs.get(type);
         if (blob != null) blob.fullyClear();
+    }
+
+    static int guardsForPhase(Phase phase) {
+        return phase == null ? 0 : phase.ordinal() + 1;
+    }
+
+    static int guardsForPhaseForTest(Phase phase) {
+        return guardsForPhase(phase);
+    }
+
+    private void ensurePhaseGuards() {
+        if (!(Dungeon.level instanceof TowerBossLevel)) return;
+        int existing = 0;
+        for (Mob mob : Dungeon.level.mobs) if (mob instanceof PlagueGuard) existing++;
+        guardsSpawned = Math.max(guardsSpawned, existing);
+        int required = guardsForPhase(phase);
+        while (guardsSpawned < required) {
+            PlagueGuard guard = createPlagueGuard();
+            if (guard == null) return;
+            guardsSpawned++;
+            GameScene.add(guard);
+        }
+    }
+
+    private PlagueGuard createPlagueGuard() {
+        if (!(Dungeon.level instanceof TowerBossLevel)
+                || !((TowerBossLevel) Dungeon.level).isBossArenaCell(pos)) return null;
+        int width = Dungeon.level.width();
+        int bossX = pos % width;
+        int bossY = pos / width;
+        for (int radius = 1; radius <= 5; radius++) {
+            for (int y = Math.max(1, bossY - radius);
+                 y <= Math.min(Dungeon.level.height() - 2, bossY + radius); y++) {
+                for (int x = Math.max(1, bossX - radius);
+                     x <= Math.min(width - 2, bossX + radius); x++) {
+                    if (Math.max(Math.abs(x - bossX), Math.abs(y - bossY)) != radius) continue;
+                    int cell = x + y * width;
+                    if (!((TowerBossLevel) Dungeon.level).isBossArenaCell(cell) || Dungeon.level.solid[cell]
+                            || !Dungeon.level.passable[cell] || Dungeon.level.getTransition(cell) != null
+                            || Actor.findChar(cell) != null || arenaRef().isBrazier(cell)) continue;
+                    PlagueGuard guard = new PlagueGuard();
+                    guard.pos = cell;
+                    guard.state = HUNTING;
+                    if (Dungeon.hero != null) {
+                        guard.aggro(Dungeon.hero);
+                    }
+                    return guard;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static int activePlagueGuardCount(Level level) {
+        if (level == null) return 0;
+        int count = 0;
+        for (Mob mob : level.mobs) {
+            if (mob instanceof PlagueGuard && ((PlagueGuard) mob).isActiveGuard()) count++;
+        }
+        return count;
+    }
+
+    public static void reviveRecoveringGuards(Level level) {
+        if (level == null) return;
+        for (Mob mob : level.mobs) {
+            if (mob instanceof PlagueGuard) ((PlagueGuard) mob).reviveAfterPurifier();
+        }
     }
 
     float activeDamageMultiplier() { return 1f + 0.03f * growth; }
@@ -1046,10 +1201,6 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     void setSkillCooldownForTest(int index, int value) { cooldowns[index] = value; }
     void finishBossActionForTest() { finishBossAction(); }
     void setPhaseForTest(Phase value) { phase = value; if (value == Phase.TERMINAL) ensureTerminalEntered(); }
-    int outbreakReductionForTest(int value) { return Math.round(value * 0.8f); }
-    int applyOutbreakReductionForTest(int value, Object source, boolean standingInOutbreak) {
-        return applyOutbreakReduction(value, source, standingInOutbreak);
-    }
     void forceTenacityRollForTest(boolean value) { forcedTenacityRoll = value; }
     boolean acceptNegativeForTest() { return !rollTenacity(); }
     boolean rewardDroppedForTest() { return rewardDropped; }
@@ -1087,6 +1238,9 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     static int plagueFlaskImpactColorForTest() { return PLAGUE_FLASK_IMPACT_COLOR; }
     static int miasmaProjectileColorForTest(String skill) {
         return miasmaProjectileImpactColor(skill);
+    }
+    static int miasmaProjectileImageForTest(String skill) {
+        return miasmaProjectileImage(skill);
     }
     static int miasmaProjectileTargetForTest(int[] cells) { return miasmaProjectileTarget(cells); }
     static int choosePlagueFlaskTargetForTest(int heroTarget, boolean heroBallistic,
@@ -1152,6 +1306,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         bundle.put(LAST_HERO_POS, lastHeroPos);
         bundle.put(REWARD_DROPPED, rewardDropped);
         bundle.put(PROCESSION_STEPS, processionSteps);
+        bundle.put(GUARDS_SPAWNED, guardsSpawned);
         bundle.put(TERMINAL_ENTERED, terminalEntered);
     }
 
@@ -1176,7 +1331,11 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
                 : bundle.contains(PENDING_PROJECTILE_TARGET)
                 ? bundle.getInt(PENDING_PROJECTILE_TARGET) : miasmaProjectileTarget(pendingCells);
         int[] savedCooldowns = bundle.getIntArray(COOLDOWNS);
-        cooldowns = savedCooldowns.length == 4 ? savedCooldowns : new int[4];
+        cooldowns = new int[5];
+        if (savedCooldowns != null) {
+            System.arraycopy(savedCooldowns, 0, cooldowns, 0,
+                    Math.min(savedCooldowns.length, cooldowns.length));
+        }
         for (int i = 0; i < cooldowns.length; i++) cooldowns[i] = Math.max(0, cooldowns[i]);
         prescriptionIndex = Math.max(0, bundle.getInt(PRESCRIPTION_INDEX));
         int savedDiagnosis = Math.max(0, bundle.getInt(DIAGNOSIS));
@@ -1185,6 +1344,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
         lastHeroPos = bundle.contains(LAST_HERO_POS) ? bundle.getInt(LAST_HERO_POS) : -1;
         rewardDropped = bundle.getBoolean(REWARD_DROPPED);
         processionSteps = Math.max(0, Math.min(3, bundle.getInt(PROCESSION_STEPS)));
+        guardsSpawned = Math.max(0, Math.min(3, bundle.getInt(GUARDS_SPAWNED)));
         terminalEntered = bundle.getBoolean(TERMINAL_ENTERED) || phase == Phase.TERMINAL;
         applyGrowthStats(false);
     }

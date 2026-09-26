@@ -10,6 +10,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
@@ -83,6 +84,14 @@ public class SoulBlade extends MeleeWeapon {
 
 	public static float soulProcChance(int level) {
 		return Math.max(0f, Math.min(1f, (level + 5) / 25f));
+	}
+
+	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.SOUL_TEAR_CHANCE,
+				Math.round(soulProcChance(level) * 100) + "%"));
+		return result;
 	}
 
 	public static int shieldAmountForMaxHealth(int maxHealth, int level) {
@@ -206,10 +215,13 @@ public class SoulBlade extends MeleeWeapon {
 		String cooldown = shieldCooldownRemaining() > 0
 				? Messages.get(this, "shield_cooldown", shieldCooldownRemaining())
 				: Messages.get(this, "shield_ready");
+		int maxHealth = Dungeon.hero == null ? 100 : Dungeon.hero.HT;
 		if (isIdentified()) {
-			return Messages.get(this, "stats_desc", maxBlockForLevel(buffedLvl()), cooldown);
+			return Messages.get(this, "stats_desc", maxBlockForLevel(buffedLvl()),
+					shieldAmountForMaxHealth(maxHealth, buffedLvl()), cooldown);
 		} else {
-			return Messages.get(this, "typical_stats_desc", maxBlockForLevel(0));
+			return Messages.get(this, "typical_stats_desc", maxBlockForLevel(0),
+					shieldAmountForMaxHealth(maxHealth, 0), cooldown);
 		}
 	}
 
@@ -244,7 +256,7 @@ public class SoulBlade extends MeleeWeapon {
 
 		{
 			type = buffType.POSITIVE;
-			announced = true;
+			announced = false;
 		}
 
 		private int remainingAttacks;

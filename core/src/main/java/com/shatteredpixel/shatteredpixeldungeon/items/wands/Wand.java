@@ -82,11 +82,13 @@ import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRecharging;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.MagicFeather;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ShardOfOblivion;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TwinDemonEyes;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.TwoHandedGreatsword;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinDatasetRecorder;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CursedFlameTrapConversion;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -132,6 +134,8 @@ public abstract class Wand extends Item {
 	private float usesLeftToID = USES_TO_ID;
 	private float availableUsesToID = USES_TO_ID/2f;
 	private boolean randomModeNonCursedZapped = false;
+	private transient LinkedHashSet<Char> zapHitTargets;
+	private static transient Wand activeZapCollector;
 	private static final long RANDOM_MODE_WAND_VISUAL_SEED = 0x6A4F9D35B3A12C7EL;
 	private static final String PFX_KNOWN_TYPE = "_known_wand_type";
 
@@ -298,6 +302,9 @@ public abstract class Wand extends Item {
 	}
 
 	protected void wandProc(Char target, int chargesUsed){
+		if (zapHitTargets != null && target != null) {
+			zapHitTargets.add(target);
+		}
         if(target.buff(RuneMark.class)!=null){
             target.buff(RuneMark.class).explore(this);
         }
@@ -312,6 +319,9 @@ public abstract class Wand extends Item {
 
 	//TODO Consider externalizing char awareness buff
 	protected static void wandProc(Char target, int wandLevel, int chargesUsed){
+		if (activeZapCollector != null && activeZapCollector.zapHitTargets != null && target != null) {
+			activeZapCollector.zapHitTargets.add(target);
+		}
 
 		if (Dungeon.hero.subClass.is(HeroSubClass.PRIEST) && target.buff(GuidingLight.Illuminated.class) != null) {
 			target.buff(GuidingLight.Illuminated.class).detach();
@@ -340,6 +350,31 @@ public abstract class Wand extends Item {
 		if (charger != null) {
 			charger.detach();
 			charger = null;
+		}
+	}
+
+	private void beginZapHitCollection() {
+		zapHitTargets = new LinkedHashSet<>();
+		activeZapCollector = this;
+	}
+
+	private void completeZapHitCollection(Hero owner) {
+		Char target = TwinDemonEyes.nearestZapTarget(zapHitTargets, owner);
+		zapHitTargets = null;
+		if (activeZapCollector == this) activeZapCollector = null;
+		if (target != null && owner == Dungeon.hero) {
+			TwinDemonEyes.onSuccessfulRangedHit(owner, target);
+		}
+	}
+
+
+	@Override
+	protected void onThrow(int cell) {
+		WandOfCursedFlame converted = CursedFlameTrapConversion.transformThrownWand(this, cell);
+		if (converted != null) {
+			super.onThrow(converted, cell);
+		} else {
+			super.onThrow(cell);
 		}
 	}
 	
@@ -958,6 +993,7 @@ public abstract class Wand extends Item {
 	}
 
 	public static int randomModeIconForClass(Class<?> cl) {
+		if (cl == WandOfCursedFlame.class) return ItemSpriteSheet.Icons.WAND_CURSED_FLAME;
 		int index = randomModeWandIndex(cl);
 		return index >= 0 ? RANDOM_MODE_WAND_ICONS[index] : -1;
 	}
@@ -1046,7 +1082,6 @@ public abstract class Wand extends Item {
 
 				final Ballistica shot = new Ballistica( curUser.pos, target, curWand.collisionProperties(target));
 				int cell = shot.collisionPos;
-				
 				if (target == curUser.pos || cell == curUser.pos) {
 					if (target == curUser.pos && curUser.hasTalent(Talent.SHIELD_BATTERY)){
 
@@ -1126,6 +1161,7 @@ public abstract class Wand extends Item {
 					}
 					
 					if (curWand.cursed){
+						curWand.beginZapHitCollection();
 						if (!curWand.cursedKnown){
 							GLog.n(Messages.get(Wand.class, "curse_discover", curWand.name()));
 						}
@@ -1135,26 +1171,31 @@ public abstract class Wand extends Item {
 								new Callback() {
 									@Override
 									public void call() {
+										curWand.completeZapHitCollection(curUser);
 										curWand.wandUsed();
 									}
 								});
 					} else {
 						curWand.fx(shot, new Callback() {
 							public void call() {
+								curWand.beginZapHitCollection();
 								curWand.onZap(shot);
 								if (Random.Float() < WondrousResin.extraCurseEffectChance()){
 									WondrousResin.forcePositive = true;
 									CursedWand.cursedZap(curWand,
 											curUser,
-											new Ballistica(curUser.pos, target, Ballistica.MAGIC_BOLT), new Callback() {
+											new Ballistica(curUser.pos, target, Ballistica.MAGIC_BOLT),
+											new Callback() {
 												@Override
 												public void call() {
 													WondrousResin.forcePositive = false;
+													curWand.completeZapHitCollection(curUser);
 													curWand.wandUsed();
 												}
 											});
-								} else {
-									curWand.wandUsed();
+									} else {
+										curWand.completeZapHitCollection(curUser);
+										curWand.wandUsed();
 								}
 							}
 						});

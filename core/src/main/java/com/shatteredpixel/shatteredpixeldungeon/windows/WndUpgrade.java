@@ -34,6 +34,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Blowpipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Crossbow;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MagesStaff;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.ChainMace;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.Tomahawk;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
@@ -216,6 +217,21 @@ public class WndUpgrade extends Window {
 		}
 
 
+		if (toUpgrade instanceof MeleeWeapon) {
+			MeleeWeapon weapon = (MeleeWeapon) toUpgrade;
+			java.util.ArrayList<MeleeWeapon.UpgradeAbilityStat> currentStats =
+					weapon.upgradeFeatureStats(levelFrom);
+			java.util.ArrayList<MeleeWeapon.UpgradeAbilityStat> nextStats =
+					weapon.upgradeFeatureStats(levelTo);
+			for (MeleeWeapon.UpgradeAbilityStat current : currentStats) {
+				MeleeWeapon.UpgradeAbilityStat next = matchingAbilityStat(nextStats, current.type);
+				String titleKey = current.type.messageKey();
+				String statTitle = Messages.get(this, titleKey);
+				bottom = fillFields(statTitle, current.value,
+						next == null ? current.value : next.value, bottom);
+			}
+		}
+
 		if (canViewWeaponAbilityUpgrade(toUpgrade, levelFrom)){
 			MeleeWeapon weapon = (MeleeWeapon) toUpgrade;
 			java.util.ArrayList<MeleeWeapon.UpgradeAbilityStat> currentStats =
@@ -232,6 +248,12 @@ public class WndUpgrade extends Window {
 				bottom = fillFields(statTitle, current.value,
 						next == null ? current.value : next.value, bottom);
 			}
+		}
+		if (toUpgrade instanceof ChainMace) {
+			ChainMace mace = (ChainMace) toUpgrade;
+			bottom = fillFields(Messages.get(this, "iron_ball_damage"),
+					mace.upgradeThrowDamageStat(levelFrom),
+					mace.upgradeThrowDamageStat(levelTo), bottom);
 		}
 
 		//blocking (armor and shields)

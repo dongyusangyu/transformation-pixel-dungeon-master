@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.ToxicGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Chill;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Corrosion;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CursedFlameDamage;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Frost;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Ooze;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Paralysis;
@@ -30,6 +31,7 @@ final class ElementalResistance {
 
 	static {
 		RESISTS.add(Burning.class);
+		RESISTS.add(CursedFlameDamage.class);
 		RESISTS.add(Chill.class);
 		RESISTS.add(Frost.class);
 		RESISTS.add(Ooze.class);

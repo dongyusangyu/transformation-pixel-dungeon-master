@@ -94,7 +94,7 @@ public class PotionOfPurity extends Potion {
 	public void apply( Hero hero ) {
 		Infection.clear(hero);
 		GLog.w( Messages.get(this, "protected") );
-		Buff.prolong( hero, BlobImmunity.class, BlobImmunity.DURATION );
+		Buff.prolong( hero, BlobImmunity.class, PotionPotency.duration(PotionPotency.drunk(hero), BlobImmunity.DURATION) );
 		SpellSprite.show(hero, SpellSprite.PURITY);
 		identify();
 	}

@@ -325,8 +325,7 @@ public class Goo extends Mob implements PhysicalRangedAttack {
 
 					int cell = Random.element(candidates);
 					CausticSlime mob = new CausticSlime();
-					mob.alignment = alignment;
-					mob.updateSpriteState();
+					prepareSummonedSlime(mob);
 					mob.pos = cell;
 					GameScene.add(mob);
 					summon[i] = true;
@@ -335,6 +334,15 @@ public class Goo extends Mob implements PhysicalRangedAttack {
 			}
 		}
 
+	}
+
+	void prepareSummonedSlime(CausticSlime mob) {
+		mob.alignment = alignment;
+		mob.state = mob.HUNTING;
+		if (Dungeon.hero != null && Actor.isHostile(mob, Dungeon.hero)) {
+			mob.aggro(Dungeon.hero);
+		}
+		mob.updateSpriteState();
 	}
 
 	static ArrayList<Integer> summonCandidates(Level level, int pos, Set<Integer> reserved) {

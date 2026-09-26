@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.ElfWineCup;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElfIllusion;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.HungerKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBossSlashMarks;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Drunkenness;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Exhilaration;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
@@ -151,6 +152,7 @@ public class TowerBossLevel extends TowerLevel {
 	public void onBeforeSealedResurrectionReset() {
 		gentlemanIntroWindowOpen = false;
 		if (gentlemanElfPrelude != null) gentlemanElfPrelude.reset();
+		TowerBossSlashMarks.clearAllFromAll();
 		for (Mob mob : new ArrayList<>(mobs)) {
 			if (mob instanceof TowerBoss) {
 				((TowerBoss) mob).cleanupArena(this);
@@ -338,7 +340,8 @@ public class TowerBossLevel extends TowerLevel {
 		} else if (result == PestilenceArenaController.ActivationResult.DAMAGE_BOSS) {
 			for (Mob mob : mobs) {
 				if (mob instanceof PestilenceKnight && mob.isAlive()) {
-					mob.damage(PestilenceArenaController.PURIFIER_BOSS_DAMAGE, pestilenceArena);
+					((PestilenceKnight) mob).purifierDamage(
+							PestilenceArenaController.PURIFIER_BOSS_DAMAGE, pestilenceArena);
 					break;
 				}
 			}
@@ -418,6 +421,9 @@ public class TowerBossLevel extends TowerLevel {
 						}
 					}
 				}
+			}
+			@Override public void resolveBanquet(Iterable<Char> targets) {
+				for (Char target : targets) boss.markBanquetHit(target);
 			}
 			@Override public boolean respawnCup() {
 				if (gentlemanElfArena == null || gentlemanElfArena.cupId() >= 0) return false;
@@ -533,6 +539,7 @@ public class TowerBossLevel extends TowerLevel {
 	}
 
 	public void onTowerBossDefeated(TowerBoss boss) {
+		if (boss != null) TowerBossSlashMarks.clearOwnerFromAll(boss.id());
 		encounter.onBossDefeated(boss, encounterHost());
 	}
 

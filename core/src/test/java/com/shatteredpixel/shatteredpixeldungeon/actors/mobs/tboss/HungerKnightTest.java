@@ -2,19 +2,26 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightEquipmentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightMagicLease;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightOverburden;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.HungerKnightTalentSeal;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +41,105 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HungerKnightTest {
+
+    private static HeadlessItemSprites sprites;
+
+    @BeforeClass
+    public static void installHeadlessSprites() {
+        sprites = new HeadlessItemSprites();
+    }
+
+    @AfterClass
+    public static void restoreHeadlessSprites() {
+        sprites.close();
+    }
+
+    @Test
+    public void thrownResistanceHalvesEachNewThrowAndCanReachZero() {
+        int[] expected = {150, 75, 37, 18, 9, 4, 2, 1, 0};
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals(expected[i], HungerKnight.thrownDamageCap(150, i));
+        }
+        assertEquals(120, HungerKnight.thrownDamageCap(120, 0));
+        assertEquals(0, HungerKnight.thrownDamageCap(120, 7));
+    }
+
+    @Test
+    public void oneSkillMarksEachTargetOnlyOnce() {
+        int oldBranch = Dungeon.branch;
+        int oldDepth = Dungeon.depth;
+        try {
+            Dungeon.branch = TowerLevel.BRANCH;
+            Dungeon.depth = 5;
+            HungerKnight boss = new HungerKnight();
+            TestTarget target = new TestTarget();
+            boss.setResolvingSkillForTest(HungerKnight.Skill.THRUST);
+            boss.onAttackResolved(target, true, 1, DamageTag.MELEE, DamageTag.PHYSICAL);
+            boss.onAttackResolved(target, true, 1, DamageTag.MELEE, DamageTag.PHYSICAL);
+            assertEquals(1, TowerBossSlashMarks.consume(target, boss.id()));
+        } finally {
+            Dungeon.branch = oldBranch;
+            Dungeon.depth = oldDepth;
+        }
+    }
+
+    @Test
+    public void towerBossSpecialMeleeSkillsHitThroughGuaranteedEvasionButBasicAttacksDoNot() {
+        Level previousLevel = Dungeon.level;
+        Hero previousHero = Dungeon.hero;
+        int previousBranch = Dungeon.branch;
+        try {
+            Dungeon.level = openLevel(7, 7);
+            Dungeon.hero = TestHeroFactory.create();
+            Dungeon.hero.subClass = HeroSubClass.BERSERKER;
+            Dungeon.hero.pos = 8;
+            Dungeon.branch = TowerLevel.BRANCH;
+            Dungeon.depth = 5;
+
+            HungerKnight boss = new HungerKnight();
+            boss.pos = 16;
+            TestTarget target = new TestTarget();
+            target.pos = 17;
+            target.HT = target.HP = 100;
+
+            boss.setResolvingSkillForTest(HungerKnight.Skill.HEAVY);
+            assertTrue(boss.attack(target, 1f, 0f, 1f,
+                    DamageTag.PHYSICAL, DamageTag.MELEE));
+            assertTrue(target.HP < 100);
+
+            target.HP = 100;
+            boss.setResolvingSkillForTest(HungerKnight.Skill.NONE);
+            assertFalse(boss.attack(target, 1f, 0f, 1f,
+                    DamageTag.PHYSICAL, DamageTag.MELEE));
+            assertEquals(100, target.HP);
+        } finally {
+            Dungeon.level = previousLevel;
+            Dungeon.hero = previousHero;
+            Dungeon.branch = previousBranch;
+        }
+    }
+
+    private static Level openLevel(int width, int height) {
+        Level level = new Level() {
+            @Override protected boolean build() { return true; }
+            @Override protected void createMobs() { }
+            @Override protected void createItems() { }
+        };
+        level.setSize(width, height);
+        java.util.Arrays.fill(level.passable, true);
+        java.util.Arrays.fill(level.openSpace, true);
+        return level;
+    }
+
+    private static class TestTarget extends Char {
+        TestTarget() {
+            HT = HP = 1;
+        }
+
+        @Override public int attackSkill(Char target) { return 0; }
+        @Override public int defenseSkill(Char enemy) { return 100000; }
+        @Override public int drRoll() { return 0; }
+    }
 
     private long oldSeed;
     private int oldDepth;
@@ -345,21 +451,21 @@ public class HungerKnightTest {
     }
 
     @Test
-    public void resourceAdaptationAddsHungerToEveryKindOfMeleeHit() {
+    public void resourceAdaptationDoesNotChangeBaseHungerCosts() {
         HungerKnight boss = new HungerKnight();
 
         assertEquals(15, boss.meleeHungerForTest(HungerKnight.Skill.NONE));
-        assertEquals(55, boss.meleeHungerForTest(HungerKnight.Skill.HEAVY));
+        assertEquals(40, boss.meleeHungerForTest(HungerKnight.Skill.HEAVY));
         assertEquals(30, boss.meleeHungerForTest(HungerKnight.Skill.THRUST));
         assertEquals(0, boss.meleeHungerForTest(HungerKnight.Skill.QUAKE));
         assertEquals(0, boss.meleeHungerForTest(HungerKnight.Skill.COMBO));
 
         boss.forceAdaptationForTest(HungerKnight.Adaptation.RESOURCE);
-        assertEquals(35, boss.meleeHungerForTest(HungerKnight.Skill.NONE));
-        assertEquals(75, boss.meleeHungerForTest(HungerKnight.Skill.HEAVY));
-        assertEquals(50, boss.meleeHungerForTest(HungerKnight.Skill.THRUST));
-        assertEquals(20, boss.meleeHungerForTest(HungerKnight.Skill.QUAKE));
-        assertEquals(20, boss.meleeHungerForTest(HungerKnight.Skill.COMBO));
+        assertEquals(15, boss.meleeHungerForTest(HungerKnight.Skill.NONE));
+        assertEquals(40, boss.meleeHungerForTest(HungerKnight.Skill.HEAVY));
+        assertEquals(30, boss.meleeHungerForTest(HungerKnight.Skill.THRUST));
+        assertEquals(0, boss.meleeHungerForTest(HungerKnight.Skill.QUAKE));
+        assertEquals(0, boss.meleeHungerForTest(HungerKnight.Skill.COMBO));
     }
 
     @Test

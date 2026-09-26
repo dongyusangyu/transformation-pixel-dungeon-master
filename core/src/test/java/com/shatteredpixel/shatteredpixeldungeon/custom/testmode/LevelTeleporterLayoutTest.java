@@ -16,6 +16,7 @@ public class LevelTeleporterLayoutTest {
     public void levelSelectionRefreshesNestedScrollPaneAfterWindowOffset() throws IOException {
         String source = readSource();
         assertTrue(source.contains("void offset(int xOffset, int yOffset)"));
+        assertTrue(source.contains("refreshNestedPane()"));
         assertTrue(source.contains("pane.setPos(pane.left(), pane.top())"));
     }
 

@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.AssassinsBlad
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Dagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -43,10 +44,13 @@ public class SakuraBlossomBladeTest {
 	}
 
 	@Test
-	public void sneakAlwaysGrantsTwoTurnsInsteadOfScalingWithLevel() throws IOException {
-		assertTrue(source().contains("Dagger.sneakAbility(hero, target, 3, 2, this);"));
-		assertTrue(source().contains("public String upgradeAbilityStat(int level)"));
-		assertTrue(source().contains("return \"2\";"));
+	public void shadowShiftScalesDurationAndMirrorHealth() {
+		assertEquals(2, SakuraBlossomBlade.sneakRange());
+		assertEquals(2, SakuraBlossomBlade.invisibilityTurnsForLevel(0));
+		assertEquals(5, SakuraBlossomBlade.invisibilityTurnsForLevel(3));
+		assertEquals(6, SakuraBlossomBlade.mirrorHealthForLevel(0));
+		assertEquals(24, SakuraBlossomBlade.mirrorHealthForLevel(3));
+		assertEquals("5", TestHeroFactory.allocateItem(SakuraBlossomBlade.class).upgradeAbilityStat(3));
 	}
 
 	@Test

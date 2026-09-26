@@ -125,33 +125,25 @@ public class RenderedTextBlock extends Component {
 		
 		clear();
 		words = new ArrayList<>();
-		boolean highlighting = false;
-		boolean redhighlighting = false;
-		boolean orangehighlighting = false;
-		boolean greenhighlighting = false;
-		for (String str : tokens){
-			
-			if (str.equals("_") && highlightingEnabled){
-				highlighting = !highlighting;
-			}else if (str.equals("￥") && redhighlightingEnabled){
-				redhighlighting = !redhighlighting;
-			}else if (str.equals("￡") && orangehighlightingEnabled){
-				orangehighlighting = !orangehighlighting;
-			}else if (str.equals("€") && greenhighlightingEnabled){
-				greenhighlighting = !greenhighlighting;
-			} else if (str.equals("\n")){
+		for (HighlightMarkup.Part part : HighlightMarkup.parse(tokens, highlightingEnabled,
+				redhighlightingEnabled, orangehighlightingEnabled, greenhighlightingEnabled)) {
+			String str = part.text;
+			if (str.equals("\n")){
 				words.add(NEWLINE);
 			} else if (str.equals(" ")){
 				words.add(SPACE);
 			} else {
 				RenderedText word = new RenderedText(str, size);
 				
-				if (highlighting) word.hardlight(hightlightColor);
-				else if (redhighlighting) word.hardlight(redHightlightColor);
-				else if (orangehighlighting) word.hardlight(orangeHightlightColor);
-				else if (greenhighlighting) word.hardlight(greenHightlightColor);
-				else if (color != -1) word.hardlight(color);
-				else word.resetColor();
+				switch (part.tone) {
+					case TITLE: word.hardlight(hightlightColor); break;
+					case RED: word.hardlight(redHightlightColor); break;
+					case ORANGE: word.hardlight(orangeHightlightColor); break;
+					case GREEN: word.hardlight(greenHightlightColor); break;
+					default:
+						if (color != -1) word.hardlight(color);
+						else word.resetColor();
+				}
 				word.scale.set(zoom);
 				
 				words.add(word);

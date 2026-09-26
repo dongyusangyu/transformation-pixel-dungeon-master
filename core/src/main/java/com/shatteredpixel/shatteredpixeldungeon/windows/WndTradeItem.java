@@ -37,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.MasterThievesArmband;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.TowerPotionRules;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.ThrowingStone;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
@@ -160,7 +161,8 @@ public class WndTradeItem extends WndInfoItem {
 		};
 		btnBuy.setRect( 0, pos + GAP, width, BTN_HEIGHT );
 		btnBuy.icon(new ItemSprite(ItemSpriteSheet.GOLD));
-		btnBuy.enable( price <= Dungeon.gold && !duplicateBag );
+		btnBuy.enable( price <= Dungeon.gold && !duplicateBag
+				&& TowerPotionRules.canCollect(item, heroBackpack()) );
 		add( btnBuy );
 
 		pos = btnBuy.bottom();
@@ -301,7 +303,8 @@ public class WndTradeItem extends WndInfoItem {
 	}
 	
 	private void buy( Heap heap ) {
-		if (ownsSameBag(heroBackpack(), heap.peek())) return;
+		if (ownsSameBag(heroBackpack(), heap.peek())
+				|| !TowerPotionRules.canCollect(heap.peek(), heroBackpack())) return;
 
 		int price = heap.salePrice();
 		Item item = heap.pickUp();

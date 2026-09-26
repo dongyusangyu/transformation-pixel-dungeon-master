@@ -6,8 +6,10 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.IncubatingMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.OutbreakMiasma;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.PaleMiasma;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.tboss.Sewage;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss.Infection;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnight;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.PlagueBrazier;
@@ -46,6 +48,10 @@ public class PestilenceArenaController implements Bundlable {
     private static final int MIN_ANCHOR_DISTANCE = 4;
     private static final long PLACEMENT_SALT = 0x4252415A49455253L;
     private static final long RELOCATION_SALT = 0x5055524946494552L;
+
+    static boolean canActivatePurifier(int activeGuardCount) {
+        return activeGuardCount <= 0;
+    }
 
     public interface Arena {
         int length();
@@ -174,16 +180,21 @@ public class PestilenceArenaController implements Bundlable {
                     "recharging", purifierCooldown));
             return ActivationResult.NONE;
         }
+        if (!canActivatePurifier(PestilenceKnight.activePlagueGuardCount(level))) {
+            GLog.w(Messages.get(PestilenceArenaController.class, "guard_blocked"));
+            return ActivationResult.NONE;
+        }
         ActivationResult result = activateForEncounter(new LevelArena(level), hero.pos, bossStarted);
         if (result == ActivationResult.NONE) return result;
 
         level.beginPurifierMiasmaClear();
         try {
-            clearAllMiasma(level);
+            clearNearbyMiasma(level, hero.pos, result == ActivationResult.START_BOSS);
         } finally {
             level.endPurifierMiasmaClear();
         }
         Infection.clear(hero);
+        PestilenceKnight.reviveRecoveringGuards(level);
         Dungeon.observe();
         if (result == ActivationResult.START_BOSS) {
             GLog.p(Messages.get(PestilenceArenaController.class, "purifier_start"));
@@ -194,15 +205,42 @@ public class PestilenceArenaController implements Bundlable {
         return result;
     }
 
-    private static void clearAllMiasma(TowerBossLevel level) {
-        clearBlob(level, IncubatingMiasma.class);
-        clearBlob(level, OutbreakMiasma.class);
-        clearBlob(level, PaleMiasma.class);
+    static int[] purifierArea(int center, int width, int length) {
+        ArrayList<Integer> cells = new ArrayList<>();
+        int cx = center % width;
+        int cy = center / width;
+        int height = length / width;
+        for (int y = Math.max(0, cy - 6); y <= Math.min(height - 1, cy + 6); y++) {
+            for (int x = Math.max(0, cx - 6); x <= Math.min(width - 1, cx + 6); x++) {
+                cells.add(y * width + x);
+            }
+        }
+        int[] result = new int[cells.size()];
+        for (int i = 0; i < result.length; i++) result[i] = cells.get(i);
+        return result;
     }
 
-    private static void clearBlob(TowerBossLevel level, Class<? extends Blob> type) {
+    static int[] purifierClearCells(boolean firstActivation, int center, int width, int length) {
+        if (!firstActivation) return purifierArea(center, width, length);
+        int[] cells = new int[length];
+        for (int i = 0; i < length; i++) cells[i] = i;
+        return cells;
+    }
+
+    private static void clearNearbyMiasma(TowerBossLevel level, int center, boolean firstActivation) {
+        int[] cells = purifierClearCells(firstActivation, center, level.width(), level.length());
+        clearBlob(level, IncubatingMiasma.class, cells);
+        clearBlob(level, OutbreakMiasma.class, cells);
+        clearBlob(level, PaleMiasma.class, cells);
+        clearBlob(level, Sewage.class, cells);
+    }
+
+    private static void clearBlob(TowerBossLevel level, Class<? extends Blob> type, int[] cells) {
         Blob blob = level.blobs.get(type);
-        if (blob != null) blob.fullyClear();
+        if (blob == null) return;
+        for (int cell : cells) {
+            if (TowerBossLayout.isArenaCell(cell)) blob.clear(cell);
+        }
     }
 
     int[] preludeMiasmaCells(Arena arena) {
@@ -406,9 +444,20 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     void syncPurifierVisual(TowerBossLevel level) {
-        if (prepared && purifierCell >= 0) {
-            new LevelArena(level).setPurifierReady(purifierCell, purifierCooldown == 0);
+        if (!prepared || purifierCell < 0 || purifierCell >= level.length()) return;
+
+        if (level.traps == null) level.traps = new com.watabou.utils.SparseArray<>();
+        Trap trap = level.traps.get(purifierCell);
+        if (!(trap instanceof PlagueBrazier)) {
+            PlagueBrazier purifier = new PlagueBrazier();
+            purifier.set(purifierCell);
+            level.traps.put(purifierCell, purifier);
         }
+        level.set(purifierCell, Terrain.TRAP, level);
+
+        Blob sewage = level.blobs == null ? null : level.blobs.get(Sewage.class);
+        if (sewage != null) sewage.clear(purifierCell);
+        new LevelArena(level).setPurifierReady(purifierCell, purifierCooldown == 0);
     }
 
     public void finishEncounter() {
@@ -496,7 +545,7 @@ public class PestilenceArenaController implements Bundlable {
         @Override
         public void relocatePurifier(int from, int to) {
             Trap purifier = level.traps.remove(from);
-            level.set(from, Terrain.EMPTY, level);
+            level.set(from, level.water[from] ? Terrain.WATER : Terrain.EMPTY, level);
             if (!(purifier instanceof PlagueBrazier)) purifier = new PlagueBrazier();
             purifier.set(to);
             level.traps.put(to, purifier);

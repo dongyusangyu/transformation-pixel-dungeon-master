@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
 import com.watabou.utils.Bundle;
 
 /**
@@ -32,6 +33,12 @@ public class HungerKnightMagicLease extends Buff {
     }
 
     public int ownerId() { return ownerId; }
+
+    public static float capMovementSpeed(Hero hero, float speed) {
+        return TowerBoss.towerRulesActive() && hero != null
+                && !hero.buffs(HungerKnightMagicLease.class).isEmpty()
+                ? Math.min(speed, 1f) : speed;
+    }
 
     public static HungerKnightMagicLease acquire(Hero hero, int ownerId) {
         if (hero == null) return null;

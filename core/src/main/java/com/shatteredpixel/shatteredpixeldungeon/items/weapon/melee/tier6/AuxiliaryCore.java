@@ -40,9 +40,8 @@ public class AuxiliaryCore extends MeleeWeapon {
 	public static final int RANGE = 1;
 	public static final float DELAY = 1f;
 	private static final int BASE_MAGIC_DAMAGE = 10;
-	private static final int BOOSTED_MAGIC_DAMAGE = 20;
 	private static final int ABILITY_CHARGE_COST = 1;
-	private static final float BOOST_DURATION = 2f;
+	private static final int BOOST_DISPLAY_BASE = 2;
 
 	public static final String AC_INFUSE = "INFUSE";
 
@@ -80,7 +79,13 @@ public class AuxiliaryCore extends MeleeWeapon {
 	}
 
 	public static int magicDamage(boolean boosted) {
-		return boosted ? BOOSTED_MAGIC_DAMAGE : BASE_MAGIC_DAMAGE;
+		return magicDamage(Weapon.Augment.NONE, boosted);
+	}
+
+	public static int magicDamage(Weapon.Augment augment, boolean boosted) {
+		int damage = (augment == null ? Weapon.Augment.NONE : augment)
+				.damageFactor(BASE_MAGIC_DAMAGE);
+		return boosted ? damage * 2 : damage;
 	}
 
 	public static int abilityChargeCost() {
@@ -88,7 +93,15 @@ public class AuxiliaryCore extends MeleeWeapon {
 	}
 
 	public static float boostDuration() {
-		return BOOST_DURATION;
+		return boostDurationForLevel(0);
+	}
+
+	public static int boostDurationForLevel(int level) {
+		return BOOST_DISPLAY_BASE + Math.max(0, level);
+	}
+
+	private static float boostBuffDurationForLevel(int level) {
+		return Math.max(1f, boostDurationForLevel(level) - 1f);
 	}
 
 	/** Source marker for the core's magical proc, distinct from its melee hit. */
@@ -101,7 +114,8 @@ public class AuxiliaryCore extends MeleeWeapon {
 	public int proc(Char attacker, Char defender, int damage) {
 		int result = super.proc(attacker, defender, damage);
 		if (defender.isAlive() && defender.alignment != Char.Alignment.ALLY) {
-			defender.damage(magicDamage(attacker.buff(MagicPowerBoost.class) != null),
+			defender.damage(magicDamage(augment,
+					attacker.buff(MagicPowerBoost.class) != null),
 					MagicProc.class, DamageTag.MAGICAL);
 		}
 		return result;
@@ -186,7 +200,8 @@ public class AuxiliaryCore extends MeleeWeapon {
 		beforeAbilityUsed(hero, null);
 		MagicPowerBoost existing = hero.buff(MagicPowerBoost.class);
 		if (existing != null) existing.detach();
-		Buff.affect(hero, MagicPowerBoost.class, BOOST_DURATION);
+		Buff.affect(hero, MagicPowerBoost.class,
+				boostBuffDurationForLevel(buffedLvl()));
 		if (hero.sprite != null) hero.sprite.operate(hero.pos);
 		hero.next();
 		afterAbilityUsed(hero);
@@ -199,37 +214,39 @@ public class AuxiliaryCore extends MeleeWeapon {
 
 	@Override
 	public String statsInfo() {
-		return Messages.get(this, "stats_desc");
+		int damage = magicDamage(augment, false);
+		return Messages.get(this, levelKnown ? "stats_desc" : "typical_stats_desc", damage);
 	}
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, "ability_desc", (int) BOOST_DURATION+1,
-				BASE_MAGIC_DAMAGE, BOOSTED_MAGIC_DAMAGE);
+		int level = levelKnown ? buffedLvl() : 0;
+		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
+				boostDurationForLevel(level));
 	}
 
 	@Override
 	public String upgradeAbilityStat(int level) {
-		return Integer.toString(BOOSTED_MAGIC_DAMAGE);
+		return Integer.toString(magicDamage(augment, true));
 	}
 
 	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
-		result.add(abilityStat(UpgradeAbilityStatType.BONUS_MAGIC_DAMAGE,
-				upgradeAbilityStat(level)));
+		result.add(abilityStat(UpgradeAbilityStatType.DURATION,
+				Integer.toString(boostDurationForLevel(level))));
 		return result;
 	}
 
 	public static class MagicPowerBoost extends FlavourBuff {
 		{
-			announced = true;
+			announced = false;
 			type = buffType.POSITIVE;
 		}
 
 		@Override
 		public int icon() {
-			return BuffIndicator.UPGRADE;
+			return BuffIndicator.AUXILIARY_CORE_BOOST;
 		}
 	}
 }

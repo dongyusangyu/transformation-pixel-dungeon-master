@@ -4,9 +4,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.AntiMagic;
-import com.shatteredpixel.shatteredpixeldungeon.items.spells.MetamorphosisPrism;
+import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfMysticalEnergy;
-import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.WondrousResin;
+import com.shatteredpixel.shatteredpixeldungeon.items.ArcaneResin;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
@@ -46,8 +46,8 @@ public class AuxiliaryCoreTest {
 		assertEquals(10, AuxiliaryCore.magicDamage(false));
 		assertEquals(20, AuxiliaryCore.magicDamage(true));
 		assertEquals(1, AuxiliaryCore.abilityChargeCost());
-		assertEquals(3f, AuxiliaryCore.boostDuration(), 0f);
-		assertEquals(BuffIndicator.UPGRADE,
+		assertEquals(2f, AuxiliaryCore.boostDuration(), 0f);
+		assertEquals(BuffIndicator.AUXILIARY_CORE_BOOST,
 				new AuxiliaryCore.MagicPowerBoost().icon());
 	}
 
@@ -95,7 +95,7 @@ public class AuxiliaryCoreTest {
 	}
 
 	@Test
-	public void recipeUsesMysticalEnergyResinAndMetamorphosisPrism() throws Exception {
+	public void recipeUsesMysticalEnergyResinAndAugmentationStones() throws Exception {
 		Recipe.WeaponRecipe found = null;
 		Field recipesField = Recipe.class.getDeclaredField("weaponRecipes");
 		recipesField.setAccessible(true);
@@ -118,9 +118,9 @@ public class AuxiliaryCoreTest {
 		}
 
 		assertTrue("Auxiliary Core recipe must be registered", found != null);
-		assertEquals(Arrays.asList(ScrollOfMysticalEnergy.class, WondrousResin.class,
-				MetamorphosisPrism.class), Arrays.asList((Class<?>[]) inputsField.get(found)));
-		assertTrue(Arrays.equals(new int[]{1, 1, 1}, (int[]) quantitiesField.get(found)));
+		assertEquals(Arrays.asList(ScrollOfMysticalEnergy.class, ArcaneResin.class,
+				StoneOfAugmentation.class), Arrays.asList((Class<?>[]) inputsField.get(found)));
+		assertTrue(Arrays.equals(new int[]{1, 8, 6}, (int[]) quantitiesField.get(found)));
 		assertEquals(5, costField.getInt(found));
 		assertEquals(0, baseLevelField.getInt(found));
 	}

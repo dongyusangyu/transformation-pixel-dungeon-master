@@ -264,16 +264,18 @@ public class LevelTeleporter extends TestItem {
             icb.setRect(0, pane.bottom() + GAP * 2, WIDTH, BTN_SIZE);
             setSelectedLevel(0);
 
-            pane.scrollTo(0, 0);
-
             resize(WIDTH, (int) (icb.bottom()));
-
-            pane.setPos(0, ttl.bottom() + GAP * 2);
+            pane.scrollTo(0, 0);
+            refreshNestedPane();
         }
 
         @Override
         public void offset(int xOffset, int yOffset) {
             super.offset(xOffset, yOffset);
+            refreshNestedPane();
+        }
+
+        private void refreshNestedPane() {
             if (pane != null) {
                 pane.setPos(pane.left(), pane.top());
             }

@@ -102,6 +102,14 @@ public class VenomousSickle extends MeleeWeapon {
 		return Math.min(1f, 0.20f + 0.05f * Math.max(0, level));
 	}
 
+	@Override
+	public ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		ArrayList<UpgradeAbilityStat> result = new ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.PROC_CHANCE,
+				Math.round(procChanceForLevel(level) * 100) + "%"));
+		return result;
+	}
+
 	static int poisonDuration(int level) {
 		return 10 + Math.max(0, level);
 	}

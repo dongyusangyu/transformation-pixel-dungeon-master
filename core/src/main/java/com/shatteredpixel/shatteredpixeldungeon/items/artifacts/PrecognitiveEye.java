@@ -11,20 +11,25 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.PalermoSword;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Catalog;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -90,6 +95,12 @@ public class PrecognitiveEye extends Artifact {
 			} else if (!storeMomentaryForesight(hero)) {
 				GLog.w(Messages.get(this, "cannot_activate"));
 			} else {
+				if (hero.sprite != null) {
+					CellEmitter.get(hero.pos).burst(Speck.factory(Speck.LIGHT), 4);
+					hero.sprite.showStatus(CharSprite.POSITIVE,
+							Messages.get(MomentaryForesight.class, "name"));
+				}
+				Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
 				Talent.onArtifactUsed(hero);
 				hero.next();
 			}
@@ -205,6 +216,7 @@ public class PrecognitiveEye extends Artifact {
 		if (levelPercent > 0 && isEquipped(hero) && !cursed
 				&& hero.buff(MagicImmune.class) == null) {
 			gainExperience(Math.round(100 * levelPercent));
+			charge(hero, levelPercent);
 		}
 	}
 
@@ -213,9 +225,9 @@ public class PrecognitiveEye extends Artifact {
 		exp += amount;
 		while (level() < levelCap && exp >= expToNextLevel(level())) {
 			exp -= expToNextLevel(level());
-			upgrade();
-			Catalog.countUses(PrecognitiveEye.class, 2);
-			GLog.p(Messages.get(this, "levelup"));
+				upgrade();
+				Catalog.countUses(PrecognitiveEye.class, 2);
+				GLog.p(Messages.get(this, level() >= levelCap ? "max_level" : "levelup"));
 		}
 		updateQuickslot();
 	}

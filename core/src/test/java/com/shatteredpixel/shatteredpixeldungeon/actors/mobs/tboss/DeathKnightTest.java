@@ -93,8 +93,8 @@ public class DeathKnightTest {
         assertEquals(DeathKnight.Phase.BREAK_FORMATION, boss.phase());
         assertEquals(DeathKnight.PhaseTransition.NONE, boss.transitionForTest());
         assertEquals(DeathKnight.Skill.NONE, boss.pendingSkillForTest());
-        assertEquals(1f, boss.cooldownForTest(), 0.001f);
-        assertFalse(boss.isInvulnerable(Object.class));
+        assertEquals(3f, boss.cooldownForTest(), 0.001f);
+        assertTrue(boss.isInvulnerable(Object.class));
     }
 
     @Test

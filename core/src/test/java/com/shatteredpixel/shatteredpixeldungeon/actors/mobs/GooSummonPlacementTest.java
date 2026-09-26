@@ -25,10 +25,12 @@ import static org.junit.Assert.assertTrue;
 public class GooSummonPlacementTest {
 
     private Level previousLevel;
+    private Hero previousHero;
 
     @Before
     public void setUp() {
         previousLevel = Dungeon.level;
+        previousHero = Dungeon.hero;
         Actor.clear();
         Actor.resetNextID();
         Dungeon.level = openLevel(9, 9);
@@ -39,6 +41,7 @@ public class GooSummonPlacementTest {
         Actor.clear();
         Actor.resetNextID();
         Dungeon.level = previousLevel;
+        Dungeon.hero = previousHero;
     }
 
     @Test
@@ -74,6 +77,30 @@ public class GooSummonPlacementTest {
 
         assertEquals(Arrays.asList(11, 19, 20), candidates);
         assertTrue(candidates.stream().noneMatch(cell -> cell < 0 || cell >= Dungeon.level.length()));
+    }
+
+    @Test
+    public void summonedSlimeStartsHuntingAndTargetsHeroOnlyWhenHostile() {
+        Hero hero = TestHeroFactory.create();
+        hero.alignment = Char.Alignment.ALLY;
+        Dungeon.hero = hero;
+        Actor.add(hero);
+
+        Goo enemyGoo = new Goo();
+        CausticSlime enemySlime = new CausticSlime();
+        enemyGoo.alignment = Char.Alignment.ENEMY;
+        enemyGoo.prepareSummonedSlime(enemySlime);
+
+        assertEquals(enemySlime.HUNTING, enemySlime.state);
+        assertEquals(hero, enemySlime.enemy());
+
+        Goo alliedGoo = new Goo();
+        CausticSlime alliedSlime = new CausticSlime();
+        alliedGoo.alignment = Char.Alignment.ALLY;
+        alliedGoo.prepareSummonedSlime(alliedSlime);
+
+        assertEquals(alliedSlime.HUNTING, alliedSlime.state);
+        assertTrue(alliedSlime.enemy() == null);
     }
 
     private static Mob mobAt(int pos) {

@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.ChargrilledMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.FrozenCarpaccio;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.MysteryMeat;
+import com.shatteredpixel.shatteredpixeldungeon.items.food.SoulRoastMeat;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.DocumentPage;
 import com.shatteredpixel.shatteredpixeldungeon.items.journal.Guidebook;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.Potion;
@@ -230,6 +231,15 @@ public class Heap implements Bundlable {
 	}
 	
 	public void burn() {
+		burn(false);
+	}
+
+	/** Uses ordinary fire rules except that raw meat becomes soul roast meat. */
+	public void burnWithCursedFlame() {
+		burn(true);
+	}
+
+	private void burn(boolean cursedFlame) {
 		hidden = false;
 
 		if (type != Type.HEAP) {
@@ -247,7 +257,9 @@ public class Heap implements Bundlable {
 				items.remove( item );
 				evaporated = true;
 			} else if (item instanceof MysteryMeat || item instanceof FrozenCarpaccio) {
-				replace( item, ChargrilledMeat.cook( item.quantity ) );
+				replace( item, cursedFlame
+					? SoulRoastMeat.cook(item, item.quantity())
+					: ChargrilledMeat.cook(item.quantity) );
 				burnt = true;
 			} else if (item instanceof Bomb) {
 				items.remove( item );

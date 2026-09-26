@@ -73,10 +73,12 @@ public class Tier6WeaponSpecialActionTest {
 		int requirement = mace.STRReq();
 
 		hero.STR = requirement - 1;
-		assertFalse(mace.usable());
+		assertTrue(mace.usable());
+		assertFalse(mace.hasEnoughStrength(hero));
 
 		hero.STR = requirement;
 		assertTrue(mace.usable());
+		assertTrue(mace.hasEnoughStrength(hero));
 
 		hero.STR = requirement + 1;
 		assertTrue(mace.usable());

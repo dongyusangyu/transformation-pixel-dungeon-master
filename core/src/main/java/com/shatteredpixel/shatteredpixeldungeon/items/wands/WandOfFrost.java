@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Freezing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -73,6 +74,10 @@ public class WandOfFrost extends DamageWand {
 		Fire fire = (Fire) Dungeon.level.blobs.get(Fire.class);
 		if (fire != null && fire.volume > 0) {
 			fire.clear( bolt.collisionPos );
+		}
+		CursedFlame cursedFlame = (CursedFlame) Dungeon.level.blobs.get(CursedFlame.class);
+		if (cursedFlame != null && cursedFlame.volume > 0) {
+			cursedFlame.clear(bolt.collisionPos);
 		}
 
 		MagicalFireRoom.EternalFire eternalFire = (MagicalFireRoom.EternalFire)Dungeon.level.blobs.get(MagicalFireRoom.EternalFire.class);

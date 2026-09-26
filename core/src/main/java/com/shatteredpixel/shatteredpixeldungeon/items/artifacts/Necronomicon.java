@@ -115,6 +115,43 @@ public class Necronomicon extends Artifact {
 				&& !target.isImmune(Corruption.class);
 	}
 
+	enum CastFailure {
+		NONE,
+		NO_CHARGE,
+		INVALID_TARGET,
+		NEEDS_TWO_CHARGE,
+		NO_SPACE
+	}
+
+	static CastFailure castFailure(boolean occupied, boolean validSoulBoundTarget,
+			int charge, boolean hasSummonCandidates) {
+		if (occupied) {
+			if (!validSoulBoundTarget) return CastFailure.INVALID_TARGET;
+			return charge < 1 ? CastFailure.NO_CHARGE : CastFailure.NONE;
+		}
+		if (charge < 2) return CastFailure.NEEDS_TWO_CHARGE;
+		return hasSummonCandidates ? CastFailure.NONE : CastFailure.NO_SPACE;
+	}
+
+	private static void reportCastFailure(CastFailure failure) {
+		switch (failure) {
+			case NO_CHARGE:
+				GLog.i(Messages.get(Necronomicon.class, "no_charge"));
+				break;
+			case INVALID_TARGET:
+				GLog.i(Messages.get(Necronomicon.class, "invalid_target"));
+				break;
+			case NEEDS_TWO_CHARGE:
+				GLog.i(Messages.get(Necronomicon.class, "no_charge_summon"));
+				break;
+			case NO_SPACE:
+				GLog.i(Messages.get(Necronomicon.class, "no_space"));
+				break;
+			default:
+				break;
+		}
+	}
+
 	public enum SoulBoundDeathResult {
 		CONTINUE_DEATH,
 		INTERCEPTED_DEATH
@@ -333,6 +370,16 @@ public class Necronomicon extends Artifact {
 
 			final Ballistica shot = new Ballistica(curUser.pos, target, Ballistica.PROJECTILE);
 			final int cell = shot.collisionPos;
+			Char occupant = cell == curUser.pos ? null : Actor.findChar(cell);
+			boolean validSoulTarget = occupant instanceof Mob
+					&& isValidSoulBoundTarget((Mob) occupant);
+			boolean hasSummonCandidates = !summonCandidates(Dungeon.level, cell).isEmpty();
+			CastFailure failure = castFailure(occupant != null, validSoulTarget,
+					charge, hasSummonCandidates);
+			if (failure != CastFailure.NONE) {
+				reportCastFailure(failure);
+				return;
+			}
 			curUser.sprite.zap(cell);
 			MagicMissile.boltFromChar(curUser.sprite.parent, MagicMissile.SHADOW,
 					curUser.sprite, cell, () -> resolveCast((Hero) curUser, cell, true));
@@ -353,33 +400,28 @@ public class Necronomicon extends Artifact {
 			return false;
 		}
 
-		if (cell != hero.pos) {
-			Char target = Actor.findChar(cell);
-			if (target instanceof Mob && isValidSoulBoundTarget((Mob) target)) {
-				if (charge < 1) {
-					if (projectileCallback) hero.next();
-					return false;
-				}
-				Buff.affect(target, SoulBound.class);
-				charge -= 1;
-				Invisibility.dispel(hero);
-				Talent.onArtifactUsed(hero);
-				updateQuickslot();
-				hero.spendAndNext(Actor.TICK);
-				return true;
-			}
-
-			if (target != null) {
-				if (projectileCallback) hero.next();
-				return false;
-			}
-		}
-
+		Char target = cell == hero.pos ? null : Actor.findChar(cell);
+		boolean validSoulTarget = target instanceof Mob
+				&& isValidSoulBoundTarget((Mob) target);
 		ArrayList<Integer> candidates = summonCandidates(Dungeon.level, cell);
-		if (candidates.isEmpty() || charge < 2) {
+		CastFailure failure = castFailure(target != null, validSoulTarget,
+				charge, !candidates.isEmpty());
+		if (failure != CastFailure.NONE) {
+			reportCastFailure(failure);
 			if (projectileCallback) hero.next();
 			return false;
 		}
+
+		if (validSoulTarget) {
+			Buff.affect(target, SoulBound.class);
+			charge -= 1;
+			Invisibility.dispel(hero);
+			Talent.onArtifactUsed(hero);
+			updateQuickslot();
+			hero.spendAndNext(Actor.TICK);
+			return true;
+		}
+
 		Random.shuffle(candidates);
 		int amount = Math.min(summonLimit(level()), candidates.size());
 		for (int i = 0; i < amount; i++) {

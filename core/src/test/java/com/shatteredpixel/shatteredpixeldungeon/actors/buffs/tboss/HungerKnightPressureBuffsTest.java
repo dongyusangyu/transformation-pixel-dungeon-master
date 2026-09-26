@@ -1,10 +1,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.Overburden;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.watabou.utils.Bundle;
 
@@ -19,6 +21,26 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HungerKnightPressureBuffsTest {
+
+    @Test
+    public void magicLeaseCapsTowerMovementWithoutRaisingSlowerHeroesOrAffectingNormalFloors() {
+        int branch = Dungeon.branch;
+        int depth = Dungeon.depth;
+        Hero hero = TestHeroFactory.create();
+        try {
+            HungerKnightMagicLease.acquire(hero, 23);
+            Dungeon.branch = TowerLevel.BRANCH;
+            Dungeon.depth = 1;
+            assertEquals(1f, HungerKnightMagicLease.capMovementSpeed(hero, 2f), 0.001f);
+            assertEquals(0.7f, HungerKnightMagicLease.capMovementSpeed(hero, 0.7f), 0.001f);
+            Dungeon.branch = 0;
+            assertEquals(2f, HungerKnightMagicLease.capMovementSpeed(hero, 2f), 0.001f);
+        } finally {
+            HungerKnightMagicLease.release(hero, 23);
+            Dungeon.branch = branch;
+            Dungeon.depth = depth;
+        }
+    }
 
     @Test
     public void hungerOverburdenAttenuatesHasteButNotArmorSpeedGlyphs() {

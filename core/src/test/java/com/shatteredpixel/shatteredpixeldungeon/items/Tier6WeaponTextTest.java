@@ -57,7 +57,7 @@ public class Tier6WeaponTextTest {
 			assertTrue(key, detail.contains("_6_阶"));
 			assertTrue(key, detail.contains("力量需求"));
 			assertTrue(key, detail.contains("基础伤害"));
-			assertTrue(key, detail.contains("伤害成长"));
+			assertTrue(key + ": " + detail, detail.contains("伤害成长"));
 			assertTrue(key, detail.contains("精准修正"));
 			assertTrue(key, detail.contains("延迟"));
 			assertTrue(key, detail.contains("距离"));
@@ -122,11 +122,11 @@ public class Tier6WeaponTextTest {
 		}
 		String zhDetail = zhCustom.get("custom.dict.dict.melee_mountainguard_d");
 		String enDetail = enCustom.get("custom.dict.dict.melee_mountainguard_d");
-		assertTrue(zhDetail.contains("9×9"));
-		assertTrue(zhDetail.contains("UNAVOIDABLE"));
+		assertTrue(zhDetail.contains("视野内所有敌人"));
+		assertTrue(zhDetail.contains("武器伤害下限/2"));
 		assertTrue(zhDetail.contains("_2_点充能"));
-		assertTrue(enDetail.contains("9×9"));
-		assertTrue(enDetail.contains("UNAVOIDABLE"));
+		assertTrue(enDetail.contains("field of view"));
+		assertTrue(enDetail.contains("half the weapon's minimum damage"));
 	}
 
 	@Test

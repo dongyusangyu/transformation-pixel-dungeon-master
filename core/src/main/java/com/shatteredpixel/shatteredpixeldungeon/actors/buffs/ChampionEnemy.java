@@ -95,7 +95,10 @@ public abstract class ChampionEnemy extends Buff {
 			detach();
 			return true;
 		}
-		if(hero!=null && target instanceof  Mob && target.isAlive() && !(target instanceof GnollExile)){
+		if (Dungeon.isChallenged(Challenges.HARSH_ENVIRONMENT)
+				&& hero != null && hero.isAlive() && target instanceof Mob && target.isAlive()
+				&& target.alignment == Char.Alignment.ENEMY
+				&& !(target instanceof GnollExile)) {
 			((Mob)target).beckon(hero.pos);
 		}
 		if(!target.isAlive()){

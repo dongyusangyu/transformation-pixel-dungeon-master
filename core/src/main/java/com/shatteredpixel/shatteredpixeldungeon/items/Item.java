@@ -48,6 +48,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
 import com.shatteredpixel.shatteredpixeldungeon.custom.agentMin.AgentMinRewardTracker;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.TowerPotionRules;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
@@ -154,6 +155,20 @@ public class Item implements Bundlable {
 	}
 
 	public boolean doPickUp(Hero hero, int pos) {
+		if (hero != null && hero.belongings != null) {
+			int accepted = TowerPotionRules.pickupAmount(this, hero.belongings.backpack);
+			if (accepted > 0 && accepted < quantity()) {
+				Item part = split(accepted);
+				if (part != null) {
+					if (part.doPickUp(hero, pos)) {
+						Dungeon.level.drop(this, pos);
+						return true;
+					}
+					quantity(quantity() + accepted);
+					return false;
+				}
+			}
+		}
 		if (hero!=null && hero.belongings!=null && collect( hero.belongings.backpack )) {
 			
 			GameScene.pickUp( this, pos );
@@ -237,7 +252,12 @@ public class Item implements Bundlable {
 	}
 	
 	protected void onThrow( int cell ) {
-		Heap heap = Dungeon.level.drop( this, cell );
+		onThrow( this, cell );
+	}
+
+	/** Runs the ordinary landing animation and throw-related effects for a replacement item. */
+	protected void onThrow( Item thrownItem, int cell ) {
+		Heap heap = Dungeon.level.drop( thrownItem, cell );
 		if (!heap.isEmpty() && heap.sprite != null) {
 			heap.sprite.drop( cell );
 		}
@@ -277,6 +297,9 @@ public class Item implements Bundlable {
 
 		if (items.contains( this )) {
 			return true;
+		}
+		if (!TowerPotionRules.canCollect(this, container)) {
+			return false;
 		}
 
 		Bag fallback = null;

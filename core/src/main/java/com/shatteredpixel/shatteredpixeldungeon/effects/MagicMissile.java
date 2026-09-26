@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.effects;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.BloodParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.CorrosionParticle;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.CursedFlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.LeafParticle;
@@ -83,6 +84,7 @@ public class MagicMissile extends Emitter {
 	public static final int SPRAY_EXP       = 24;
 	public static final int SPRAY_MIND      = 25;
 	public static final int SPRAY_INVIS     = 26;
+	public static final int CURSED_FLAME    = 27;
 
 	public static final int MAGIC_MISS_CONE = 100;
 	public static final int FROST_CONE      = 101;
@@ -107,6 +109,7 @@ public class MagicMissile extends Emitter {
 	public static final int SPRAY_EXP_CONE = 121;
 	public static final int SPRAY_MIND_CONE = 122;
 	public static final int SPRAY_INVIS_CONE = 123;
+	public static final int CURSED_FLAME_CONE = 124;
 
 	//use SPECK + the constant of the Speck you want. e.g. MagicMissile.SPECK + Speck.TOXIC
 	public static final int SPECK           = 1000;
@@ -167,6 +170,10 @@ public class MagicMissile extends Emitter {
 			case FIRE:
 				size( 4 );
 				pour( FlameParticle.FACTORY, 0.01f );
+				break;
+			case CURSED_FLAME:
+				size( 4 );
+				pour( CursedFlameParticle.FACTORY, 0.01f );
 				break;
 			case CORROSION:
 				size( 3 );
@@ -274,6 +281,10 @@ public class MagicMissile extends Emitter {
 			case FIRE_CONE:
 				size( 10 );
 				pour( FlameParticle.FACTORY, 0.03f );
+				break;
+			case CURSED_FLAME_CONE:
+				size( 10 );
+				pour( CursedFlameParticle.FACTORY, 0.03f );
 				break;
 			case CORROSION_CONE:
 				size( 10 );

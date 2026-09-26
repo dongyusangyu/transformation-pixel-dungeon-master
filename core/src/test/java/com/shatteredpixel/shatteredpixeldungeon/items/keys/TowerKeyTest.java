@@ -3,6 +3,8 @@ package com.shatteredpixel.shatteredpixeldungeon.items.keys;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerKeyDepth;
+import com.watabou.noosa.Game;
 import com.watabou.utils.Bundle;
 
 import org.junit.After;
@@ -22,11 +24,14 @@ public class TowerKeyTest {
 
 	private int previousDepth;
 	private int previousBranch;
+	private String previousVersion;
 
 	@Before
 	public void setUp() {
 		previousDepth = Dungeon.depth;
 		previousBranch = Dungeon.branch;
+		previousVersion = Game.version;
+		Game.version = "test";
 		Notes.reset();
 	}
 
@@ -35,6 +40,7 @@ public class TowerKeyTest {
 		Notes.reset();
 		Dungeon.depth = previousDepth;
 		Dungeon.branch = previousBranch;
+		Game.version = previousVersion;
 	}
 
 	@Test
@@ -118,6 +124,45 @@ public class TowerKeyTest {
 		assertEquals(1, Notes.keyCount(new TestIronKey(Dungeon.depth)));
 		assertEquals(1, Notes.keyCount(new TestGoldenKey(Dungeon.depth)));
 		assertEquals(1, Notes.keyCount(new TestCrystalKey(Dungeon.depth)));
+	}
+
+	@Test
+	public void secretChestKeysUseTheTowerFloorInsteadOfItsContentDepth() {
+		assertEquals(3, TowerKeyDepth.forGeneration(3, 18));
+		assertEquals(10, TowerKeyDepth.forGeneration(10, 25));
+		assertEquals(25, TowerKeyDepth.forGeneration(0, 25));
+		assertEquals(18, TowerKeyDepth.legacyContentDepth(3));
+		assertEquals(25, TowerKeyDepth.legacyContentDepth(10));
+		assertEquals(25, TowerKeyDepth.legacyContentDepth(70));
+	}
+
+	@Test
+	public void secretChestRoomUsesTowerDepthAndScopesLegacyKeyFallback() throws Exception {
+		String room = readLevelSource("rooms/secret/SecretChestChasmRoom.java");
+		String hero = readLevelSource("../actors/hero/Hero.java");
+		assertTrue(room.contains("((TowerLevel) level).secretRoomKeyDepth()"));
+		assertEquals(4, occurrences(room, "new GoldenKey(keyDepth(level))"));
+		assertTrue(hero.contains("private boolean isLegacyTowerSecretChest"));
+		assertTrue(hero.contains("SecretChestChasmRoom.containsCell(Dungeon.level, cell)"));
+		assertTrue(hero.contains("TowerLevel.legacyContentDepthForFloor(Dungeon.depth)"));
+	}
+
+	private static String readLevelSource(String relativePath) throws Exception {
+		Path root = Paths.get(System.getProperty("user.dir"));
+		if (!root.endsWith("core")) root = root.resolve("core");
+		return new String(Files.readAllBytes(root.resolve(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/" + relativePath)),
+				StandardCharsets.UTF_8);
+	}
+
+	private static int occurrences(String text, String token) {
+		int count = 0;
+		int offset = 0;
+		while ((offset = text.indexOf(token, offset)) >= 0) {
+			count++;
+			offset += token.length();
+		}
+		return count;
 	}
 
 	@Test

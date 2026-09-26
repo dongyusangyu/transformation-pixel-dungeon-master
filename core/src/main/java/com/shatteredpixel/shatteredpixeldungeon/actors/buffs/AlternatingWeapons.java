@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.watabou.utils.Bundle;
 
@@ -28,7 +29,7 @@ public class AlternatingWeapons extends FlavourBuff {
 
 	{
 		type = buffType.POSITIVE;
-		announced = true;
+		announced = false;
 	}
 
 	public static float initialBonus() {
@@ -81,6 +82,9 @@ public class AlternatingWeapons extends FlavourBuff {
 
 		AlternatingWeapons refreshed = Buff.affect(hero, AlternatingWeapons.class, DURATION);
 		refreshed.bonus = next;
+		if (hero.sprite != null && hero.sprite.visible) {
+			hero.sprite.showStatus(CharSprite.POSITIVE, Messages.titleCase(refreshed.name()));
+		}
 		BuffIndicator.refreshHero();
 	}
 

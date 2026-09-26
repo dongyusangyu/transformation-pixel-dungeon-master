@@ -22,10 +22,10 @@ public class PalermoSwordTest {
 		assertEquals(6, PalermoSword.TIER);
 		assertEquals(6, PalermoSword.minForLevel(0));
 		assertEquals(18, PalermoSword.maxForLevel(0));
-		assertEquals(8, PalermoSword.minForLevel(1));
+		assertEquals(7, PalermoSword.minForLevel(1));
 		assertEquals(22, PalermoSword.maxForLevel(1));
 		assertEquals(20, PalermoSword.strengthRequirementForLevel(0));
-		assertEquals(1.2f, PalermoSword.ACCURACY, 0f);
+		assertEquals(1f, PalermoSword.ACCURACY, 0f);
 		assertEquals(0.5f, PalermoSword.DELAY, 0f);
 		assertEquals(1, PalermoSword.RANGE);
 	}
@@ -66,11 +66,10 @@ public class PalermoSwordTest {
 	}
 
 	@Test
-	public void xiexiangExtendsTheCurrentAttackReachWithoutExtendingItsLunge() {
+	public void xiexiangExtendsTheCurrentAttackReachByOneTile() {
 		assertEquals(2, PalermoSword.xiexiangTargetRange(1));
 		assertEquals(3, PalermoSword.xiexiangTargetRange(2));
 		assertEquals(5, PalermoSword.xiexiangTargetRange(4));
-		assertEquals(1, PalermoSword.xiexiangMovementRange());
 
 		assertTrue(PalermoSword.xiexiangTargetAllowed(true, 1, 1));
 		assertTrue(PalermoSword.xiexiangTargetAllowed(true, 2, 1));
@@ -81,8 +80,8 @@ public class PalermoSwordTest {
 
 		assertEquals(4, PalermoSword.maxXiexiangStrikes());
 		assertEquals(2, PalermoSword.xiexiangChargeCost());
-		assertEquals(4, PalermoSword.xiexiangDamageBoost(0));
-		assertEquals(7, PalermoSword.xiexiangDamageBoost(3));
+		assertEquals(6, PalermoSword.xiexiangDamageBoost(0));
+		assertEquals(9, PalermoSword.xiexiangDamageBoost(3));
 	}
 
 	@Test
@@ -95,10 +94,23 @@ public class PalermoSwordTest {
 	}
 
 	@Test
-	public void repeatedXiexiangStrikesMayAttackInPlaceWhenKnockbackFails() {
-		assertTrue(PalermoSword.xiexiangMayStrikeAtStep(0, false));
-		assertTrue(PalermoSword.xiexiangMayStrikeAtStep(1, true));
-		assertTrue(PalermoSword.xiexiangMayStrikeAtStep(1, false));
+	public void xiexiangUsesTheSpecifiedFallbackCellsWhenNoFollowupTileExists() {
+		assertEquals(12, PalermoSword.chooseXiexiangFollowupCell(1, 12, 8, 10, new int[0]));
+		assertEquals(8, PalermoSword.chooseXiexiangFollowupCell(2, 12, 8, 10, new int[0]));
+		assertEquals(10, PalermoSword.chooseXiexiangFollowupCell(3, 12, 8, 10, new int[0]));
+	}
+
+	@Test
+	public void xiexiangFollowupsAvoidThePreviousRequiredStrikeCell() {
+		assertEquals(14, PalermoSword.chooseXiexiangFollowupCell(2, 12, 8, 10,
+				new int[]{8, 14, 16}));
+		assertEquals(16, PalermoSword.chooseXiexiangFollowupCell(3, 12, 8, 10,
+				new int[]{10, 16, 18}));
+	}
+
+	@Test
+	public void xiexiangAlwaysHasFourTotalStrikeSlots() {
+		assertEquals(4, PalermoSword.maxXiexiangStrikes());
 	}
 
 	@Test
@@ -126,7 +138,7 @@ public class PalermoSwordTest {
 	}
 
 	@Test
-	public void xiexiangUsesRenderDrivenKnockbackWhileTheHeroIsBusy() throws Exception {
+	public void xiexiangUsesOneAttackAnimationAndNeverKnocksBack() throws Exception {
 		Path workingDirectory = Paths.get(System.getProperty("user.dir"));
 		Path coreDirectory = workingDirectory.resolve("core");
 		if (!Files.isDirectory(coreDirectory)) coreDirectory = workingDirectory;
@@ -134,19 +146,33 @@ public class PalermoSwordTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/melee/tier6/PalermoSword.java");
 		String source = new String(Files.readAllBytes(sourcePath), StandardCharsets.UTF_8);
 
-		assertTrue(source.contains("knockBack(target, hero.pos, new Callback()"));
-		assertTrue(source.contains(
-				"WandOfBlastWave.throwCharImmediately(target, trajectory, 1, true, false, this, callback);"));
-		assertFalse(source.contains(
-				"WandOfBlastWave.throwChar(target, trajectory, 1, true, false, this, callback);"));
+		assertTrue(source.contains("if (context.strikes == 0 && hero.sprite != null)"));
+		assertFalse(source.contains("knockBack(target, hero.pos"));
+		assertFalse(source.contains("WandOfBlastWave.throwCharImmediately(target, trajectory"));
+		assertTrue(source.contains("hero.sprite.attack(target.pos"));
+		assertTrue(source.contains("hero.attack(target, 1f, xiexiangDamageBoost"));
+		assertTrue(source.contains("beforeAbilityUsed(hero, target)"));
+		assertTrue(source.contains("afterAbilityUsed(context.hero)"));
 	}
 
 	@Test
 	public void xiexiangCanReplaceTheInitialTargetAfterTheFirstStrike() throws Exception {
 		String source = new String(Files.readAllBytes(sourcePath()), StandardCharsets.UTF_8);
 
-		assertTrue(source.contains("findXiexiangTarget(hero, target)"));
-		assertTrue(source.contains("strikeIndex + 1 < maxXiexiangStrikes()"));
+		assertTrue(source.contains("findXiexiangTarget(hero, context.target)"));
+		assertTrue(source.contains("context.strikes < maxXiexiangStrikes()"));
+	}
+
+	@Test
+	public void xiexiangFollowupMoveStrikesDirectlyInsteadOfSelectingAnotherMove() throws Exception {
+		String source = new String(Files.readAllBytes(sourcePath()), StandardCharsets.UTF_8);
+		int movementStart = source.indexOf("private void moveForXiexiang");
+		int movementEnd = source.indexOf("private Char findXiexiangTarget", movementStart);
+		String movement = source.substring(movementStart, movementEnd);
+
+		assertTrue(movement.contains("if (firstStrike) strikeXiexiangTarget(context, context.target);\n"
+				+ "\t\t\t\telse strikeXiexiangTarget(context, context.target);"));
+		assertFalse(movement.contains("else resolveXiexiangStrike(context);"));
 	}
 
 	private static Path sourcePath() {

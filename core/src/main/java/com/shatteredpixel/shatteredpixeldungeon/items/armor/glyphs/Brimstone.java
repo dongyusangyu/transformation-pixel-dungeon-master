@@ -35,6 +35,19 @@ public class Brimstone extends Armor.Glyph {
 		return damage;
 	}
 
+	/** A boosted glyph can completely protect against cursed fire. */
+	public static float cursedProtectionFactor(Char target) {
+		int glyphLevel = target.glyphLevel(Brimstone.class);
+		return cursedProtectionFactor(glyphLevel,
+				glyphLevel < 0 ? 1f : Armor.Glyph.genericProcChanceMultiplier(target));
+	}
+
+	public static float cursedProtectionFactor(int glyphLevel, float amplification) {
+		if (glyphLevel < 0) return 1f;
+		float protection = Math.min(1f, 0.5f * amplification);
+		return 1f - protection;
+	}
+
 	@Override
 	public ItemSprite.Glowing glowing() {
 		return ORANGE;

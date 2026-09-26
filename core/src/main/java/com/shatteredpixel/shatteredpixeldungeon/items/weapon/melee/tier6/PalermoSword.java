@@ -22,18 +22,18 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
-import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Door;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.AttackIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
-import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
@@ -43,23 +43,28 @@ import java.util.ArrayList;
 
 /**
  * A swift tier-six sword whose successful hits build two single-use benefits.
- * Its duelist ability safely lunges into a three-strike sequence without
- * treating movement as a normal step, matching the Rapier's lunge behaviour.
+ * Its duelist ability safely repositions through a four-strike sequence
+ * without treating movement as a normal step.
  */
 public class PalermoSword extends MeleeWeapon {
 
 	public static final int TIER = 6;
-	public static final float ACCURACY = 1.2f;
+	public static final float ACCURACY = 1f;
 	public static final float DELAY = 0.5f;
 	public static final int RANGE = 1;
 	private static final int HITS_PER_REWARD = 4;
 	private static final int XIEXIANG_STRIKES = 4;
 	private static final int XIEXIANG_CHARGE_COST = 2;
 	private static final int XIEXIANG_EXTRA_TARGET_RANGE = 1;
-	private static final int XIEXIANG_MOVEMENT_RANGE = 1;
 	private static final String HIT_COUNT = "palermo_hit_count";
+	private static final String PRECISION_TARGET = "palermo_precision_target";
+	private static final String PRECISION_COUNT = "palermo_precision_count";
+	private static final String PRECISION_TIME = "palermo_precision_time";
+	private static final String NEXT_STAB = "palermo_next_stab";
 
 	private final HitState hitState = new HitState();
+	private final PrecisionState precisionState = new PrecisionState();
+	private boolean nextStab;
 	// Set during a confirmed hit, then consumed by that attack's time settlement.
 	private transient boolean skipNextAttackDelay;
 
@@ -88,7 +93,7 @@ public class PalermoSword extends MeleeWeapon {
 
 
 	public static int minForLevel(int level) {
-		return 6 + Math.max(0, level) * 2;
+		return 6 + Math.max(0, level);
 	}
 
 	public static int maxForLevel(int level) {
@@ -101,7 +106,45 @@ public class PalermoSword extends MeleeWeapon {
 
 	@Override
 	protected int baseChargeUse(Hero hero, Char target) {
-		return XIEXIANG_CHARGE_COST;
+		return chargeCostForFuture(hero.buff(FutureAcceleration.class) != null);
+	}
+
+	static int chargeCostForFuture(boolean hasFuture) {
+		return hasFuture ? 1 : XIEXIANG_CHARGE_COST;
+	}
+
+	private static float gameTime() {
+		return Statistics.duration;
+	}
+
+	@Override
+	public float accuracyFactor(Char owner, Char target) {
+		float factor = super.accuracyFactor(owner, target);
+		if (owner instanceof Hero && target != null
+				&& ((Hero) owner).belongings.attackingWeapon() == this) {
+			factor *= precisionState.factorFor(target.id(), gameTime());
+		}
+		return factor;
+	}
+
+	@Override
+	public void afterHeroAttack(Hero hero, Char target, boolean hit) {
+		if (target != null && target.alignment == Char.Alignment.ENEMY
+				&& hero.belongings.attackingWeapon() == this) {
+			precisionState.recordAttack(target.id(), gameTime());
+			if (hitState.recordEnemyHit()) {
+				Buff.affect(hero, FutureAcceleration.class).refreshForNextAttack();
+				Buff.affect(hero, Breathing.class);
+				BuffIndicator.refreshHero();
+			}
+		}
+	}
+
+	@Override
+	public void hitSound(float pitch) {
+		Sample.INSTANCE.play(nextStab ? Assets.Sounds.HIT_STAB : Assets.Sounds.HIT_SLASH,
+				1f, pitch * hitSoundPitch);
+		nextStab = !nextStab;
 	}
 
 	@Override
@@ -122,48 +165,103 @@ public class PalermoSword extends MeleeWeapon {
 			PixelScene.shake(1, 1f);
 			return;
 		}
-		if (safeLungeCell(hero, target) == -1) {
+		int landingCell = safeXiexiangLandingCell(hero, target);
+		if (landingCell == -1) {
 			GLog.w(Messages.get(this, "ability_target_range"));
 			return;
 		}
 
 		hero.busy();
-		xiexiangStep(hero, target, 0);
+		beforeAbilityUsed(hero, target);
+		armFutureAccelerationForAbility(hero.buff(FutureAcceleration.class));
+		XiexiangContext context = new XiexiangContext(hero, target);
+		moveForXiexiang(context, landingCell, true);
 	}
 
-	private void xiexiangStep(final Hero hero, final Char target, final int strikeIndex) {
-		if (!xiexiangCanContinue(hero.isAlive(), hero.paralysed, hero.rooted)) {
-			finishXiexiang(hero, strikeIndex > 0);
-			return;
-		}
-		final Char strikeTarget = findXiexiangTarget(hero, target);
-		if (strikeTarget == null) {
-			finishXiexiang(hero, strikeIndex > 0);
-			return;
-		}
-		final int destination = safeLungeCell(hero, strikeTarget);
-		if (destination == -1 || !xiexiangMayStrikeAtStep(strikeIndex, destination != hero.pos)) {
-			finishXiexiang(hero, strikeIndex > 0);
+	private void resolveXiexiangStrike(final XiexiangContext context) {
+		if (context.finished) return;
+		Hero hero = context.hero;
+		if (!xiexiangCanContinue(hero.isAlive(), hero.paralysed, hero.rooted)
+				|| context.strikes >= maxXiexiangStrikes()) {
+			finishXiexiang(context);
 			return;
 		}
 
-		Callback strike = new Callback() {
-			@Override
-			public void call() {
-				strikeXiexiangTarget(hero, strikeTarget, strikeIndex);
+		Char target = findXiexiangTarget(hero, context.target);
+		if (target == null) {
+			target = findXiexiangTarget(hero, null);
+			if (target == null) {
+				finishXiexiang(context);
+				return;
 			}
-		};
+			context.target = target;
+			context.targetStrikes = 0;
+			context.firstStrikeCell = -1;
+			context.secondStrikeCell = -1;
+			context.lockedInPlace = false;
+			int landingCell = safeXiexiangLandingCell(hero, target);
+			if (landingCell == -1) {
+				finishXiexiang(context);
+				return;
+			}
+			moveForXiexiang(context, landingCell, true);
+			return;
+		}
+		context.target = target;
+
+		if (context.targetStrikes > 0 && !context.lockedInPlace) {
+			int[] candidates = xiexiangFollowupCells(hero, target);
+			int destination = chooseXiexiangFollowupCell(context.targetStrikes, hero.pos,
+					context.firstStrikeCell, context.secondStrikeCell, candidates);
+			if (destination != hero.pos && !isXiexiangLegalCell(hero, destination)) {
+				destination = hero.pos;
+			}
+			if (context.targetStrikes == 1 && candidates.length == 0) context.lockedInPlace = true;
+			if (destination != hero.pos) {
+				moveForXiexiang(context, destination, false);
+				return;
+			}
+		}
+		strikeXiexiangTarget(context, target);
+	}
+
+	private int[] xiexiangFollowupCells(Hero hero, Char target) {
+		ArrayList<Integer> cells = new ArrayList<>();
+		for (int offset : PathFinder.NEIGHBOURS8) {
+			int candidate = hero.pos + offset;
+			if (isXiexiangLegalCell(hero, candidate)
+					&& xiexiangCanAttackFrom(hero, target, candidate)) cells.add(candidate);
+		}
+		int[] result = new int[cells.size()];
+		for (int i = 0; i < cells.size(); i++) result[i] = cells.get(i);
+		return result;
+	}
+
+	private void moveForXiexiang(final XiexiangContext context, final int destination,
+			final boolean firstStrike) {
+		Hero hero = context.hero;
+		if (context.finished || context.movementPending) return;
 		if (destination == hero.pos || hero.sprite == null) {
-			strike.call();
+			if (destination != hero.pos) moveHeroWithoutTriggeringTerrain(hero, destination);
+			if (firstStrike) strikeXiexiangTarget(context, context.target);
+			else strikeXiexiangTarget(context, context.target);
 			return;
 		}
 
+		context.movementPending = true;
 		Sample.INSTANCE.play(Assets.Sounds.MISS);
-		hero.sprite.jump(hero.pos, destination, 0, 0.1f, new Callback() {
+			hero.sprite.jump(hero.pos, destination, 0, 0.1f, new Callback() {
 			@Override
 			public void call() {
-				moveHeroWithoutTriggeringTerrain(hero, destination);
-				strike.call();
+				context.movementPending = false;
+				if (context.finished) return;
+				if (!isXiexiangLegalCell(context.hero, destination)) {
+					resolveXiexiangStrike(context);
+					return;
+				}
+				moveHeroWithoutTriggeringTerrain(context.hero, destination);
+				if (firstStrike) strikeXiexiangTarget(context, context.target);
+				else strikeXiexiangTarget(context, context.target);
 			}
 		});
 	}
@@ -185,54 +283,55 @@ public class PalermoSword extends MeleeWeapon {
 		return replacement;
 	}
 
-	private void strikeXiexiangTarget(final Hero hero, final Char target, final int strikeIndex) {
+	private void strikeXiexiangTarget(final XiexiangContext context, final Char target) {
+		final Hero hero = context.hero;
+		if (context.finished) return;
 		hero.belongings.abilityWeapon = this;
-		if (!xiexiangCanContinue(hero.isAlive(), hero.paralysed, hero.rooted)
-				|| !isXiexiangTarget(hero, target) || !hero.canAttack(target)) {
-			finishXiexiang(hero, strikeIndex > 0);
+		if (!xiexiangCanContinue(hero.isAlive(), hero.paralysed, hero.rooted)) {
+			finishXiexiang(context);
+			return;
+		}
+		if (!isXiexiangTarget(hero, target)) {
+			context.target = null;
+			resolveXiexiangStrike(context);
+			return;
+		}
+		if (!hero.canAttack(target)) {
+			finishXiexiang(context);
 			return;
 		}
 
 		hero.chooseEnemy(target);
-		hero.sprite.attack(target.pos, new Callback() {
+		final int strikeCell = hero.pos;
+		Callback attack = new Callback() {
 			@Override
 			public void call() {
-				if (strikeIndex == 0) {
-					beforeAbilityUsed(hero, target);
-					armFutureAccelerationForAbility(hero.buff(FutureAcceleration.class));
-				}
+				context.strikes++;
+				context.targetStrikes++;
+				if (context.targetStrikes == 1) context.firstStrikeCell = strikeCell;
+				else if (context.targetStrikes == 2) context.secondStrikeCell = strikeCell;
 				AttackIndicator.target(target);
 				boolean hit = hero.attack(target, 1f, xiexiangDamageBoost(buffedLvl()), Char.INFINITE_ACCURACY);
 				if (hit) {
 					Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG);
 					if (!target.isAlive()) onAbilityKill(hero, target);
 					Invisibility.dispel();
-					knockBack(target, hero.pos, new Callback() {
-						@Override
-						public void call() {
-							if (strikeIndex + 1 < maxXiexiangStrikes() && target.isAlive()) {
-								xiexiangStep(hero, target, strikeIndex + 1);
-							} else {
-								finishXiexiang(hero, true);
-							}
-						}
-					});
 				} else {
 					Invisibility.dispel();
-					finishXiexiang(hero, true);
 				}
+				if (context.strikes < maxXiexiangStrikes()) resolveXiexiangStrike(context);
+				else finishXiexiang(context);
 			}
-		});
+		};
+		if (context.strikes == 0 && hero.sprite != null) hero.sprite.attack(target.pos, attack);
+		else attack.call();
 	}
 
-	private void finishXiexiang(Hero hero, boolean abilityWasUsed) {
-		if (abilityWasUsed) {
-			hero.spendAndNext(hero.attackDelay());
-			afterAbilityUsed(hero);
-		} else {
-			hero.belongings.abilityWeapon = null;
-			hero.next();
-		}
+	private void finishXiexiang(XiexiangContext context) {
+		if (context.finished) return;
+		context.finished = true;
+		context.hero.spendAndNext(context.hero.attackDelay());
+		afterAbilityUsed(context.hero);
 	}
 
 	private void moveHeroWithoutTriggeringTerrain(Hero hero, int destination) {
@@ -240,28 +339,35 @@ public class PalermoSword extends MeleeWeapon {
 		hero.pos = destination;
 		Dungeon.level.occupyCell(hero);
 		Dungeon.observe();
+		GameScene.updateFog();
 	}
 
-	private int safeLungeCell(Hero hero, Char target) {
-		if (Dungeon.level.distance(hero.pos, target.pos) <= 1) return hero.pos;
-		int attackReach = xiexiangAttackReach(hero);
-		int lungeCell = -1;
+	private int safeXiexiangLandingCell(Hero hero, Char target) {
+		if (Dungeon.level.distance(hero.pos, target.pos) <= 1
+				&& isXiexiangLegalCell(hero, hero.pos)) return hero.pos;
+		int landingCell = -1;
 		for (int offset : PathFinder.NEIGHBOURS8) {
-			int candidate = hero.pos + offset;
-			if (candidate < 0 || candidate >= Dungeon.level.length()
-					|| Dungeon.level.distance(hero.pos, candidate) > XIEXIANG_MOVEMENT_RANGE
-					|| Actor.findChar(candidate) != null
-					|| !(Dungeon.level.passable[candidate]
-							|| (Dungeon.level.avoid[candidate] && hero.flying))
-					|| Dungeon.level.distance(candidate, target.pos) > attackReach) {
-				continue;
-			}
-			if (lungeCell == -1 || Dungeon.level.trueDistance(candidate, target.pos)
-					< Dungeon.level.trueDistance(lungeCell, target.pos)) {
-				lungeCell = candidate;
-			}
+			int candidate = target.pos + offset;
+			if (!isXiexiangLegalCell(hero, candidate) || !clearXiexiangPath(hero.pos, candidate)
+					|| !xiexiangCanAttackFrom(hero, target, candidate)) continue;
+			if (landingCell == -1 || Dungeon.level.trueDistance(hero.pos, candidate)
+					< Dungeon.level.trueDistance(hero.pos, landingCell)) landingCell = candidate;
 		}
-		return lungeCell;
+		return landingCell;
+	}
+
+	private boolean isXiexiangLegalCell(Hero hero, int cell) {
+		return Dungeon.level.insideMap(cell) && Dungeon.level.map[cell] != Terrain.CHASM
+				&& !Dungeon.level.solid[cell] && (cell == hero.pos || Actor.findChar(cell) == null);
+	}
+
+	private boolean xiexiangCanAttackFrom(Hero hero, Char target, int cell) {
+		return Dungeon.level.distance(cell, target.pos) <= xiexiangAttackReach(hero)
+				&& new Ballistica(cell, target.pos, Ballistica.PROJECTILE).collisionPos == target.pos;
+	}
+
+	private boolean clearXiexiangPath(int from, int to) {
+		return from == to || new Ballistica(from, to, Ballistica.PROJECTILE).collisionPos == to;
 	}
 
 	private boolean isXiexiangTarget(Hero hero, Char target) {
@@ -283,11 +389,21 @@ public class PalermoSword extends MeleeWeapon {
 		return reach;
 	}
 
-	private void knockBack(Char target, int source, Callback callback) {
-		Ballistica trajectory = new Ballistica(source, target.pos, Ballistica.STOP_TARGET);
-		trajectory = new Ballistica(trajectory.collisionPos,
-				trajectory.path.get(trajectory.path.size() - 1), Ballistica.PROJECTILE);
-		WandOfBlastWave.throwCharImmediately(target, trajectory, 1, true, false, this, callback);
+	private static final class XiexiangContext {
+		final Hero hero;
+		Char target;
+		int strikes;
+		int targetStrikes;
+		int firstStrikeCell = -1;
+		int secondStrikeCell = -1;
+		boolean lockedInPlace;
+		boolean movementPending;
+		boolean finished;
+
+		XiexiangContext(Hero hero, Char target) {
+			this.hero = hero;
+			this.target = target;
+		}
 	}
 
 	@Override
@@ -326,11 +442,6 @@ public class PalermoSword extends MeleeWeapon {
 			breathing.detach();
 			BuffIndicator.refreshHero();
 		}
-		if (hitState.recordEnemyHit()) {
-			Buff.affect(attacker, FutureAcceleration.class).refreshForNextAttack();
-			Buff.affect(attacker, Breathing.class);
-			BuffIndicator.refreshHero();
-		}
 		return damage;
 	}
 
@@ -364,10 +475,6 @@ public class PalermoSword extends MeleeWeapon {
 		return Math.max(1, attackReach) + XIEXIANG_EXTRA_TARGET_RANGE;
 	}
 
-	public static int xiexiangMovementRange() {
-		return XIEXIANG_MOVEMENT_RANGE;
-	}
-
 	public static boolean xiexiangTargetAllowed(boolean enemyVisible, int distance, int attackReach) {
 		return enemyVisible && distance >= 1 && distance <= xiexiangTargetRange(attackReach);
 	}
@@ -387,13 +494,25 @@ public class PalermoSword extends MeleeWeapon {
 	}
 
 	public static int xiexiangDamageBoost(int weaponLevel) {
-		return 4 + Math.max(0, weaponLevel);
+		return 6 + Math.max(0, weaponLevel);
 	}
 
-	public static boolean xiexiangMayStrikeAtStep(int strikeIndex, boolean lungeChangesPosition) {
-		// A blocked/immune knockback leaves the target adjacent. Follow-up strikes
-		// are still valid and simply play in place instead of ending the chain.
-		return strikeIndex >= 0;
+	static int chooseXiexiangFollowupCell(int strikesCompleted, int currentCell,
+			int firstStrikeCell, int secondStrikeCell, int[] legalCandidates) {
+		int excludedCell = strikesCompleted == 2 ? firstStrikeCell
+				: strikesCompleted == 3 ? secondStrikeCell : -1;
+		for (int candidate : legalCandidates) {
+			if (candidate != excludedCell) return candidate;
+		}
+		return xiexiangFallbackCell(strikesCompleted, currentCell,
+				firstStrikeCell, secondStrikeCell);
+	}
+
+	static int xiexiangFallbackCell(int strikesCompleted, int currentCell,
+			int firstStrikeCell, int secondStrikeCell) {
+		if (strikesCompleted == 2 && firstStrikeCell >= 0) return firstStrikeCell;
+		if (strikesCompleted == 3 && secondStrikeCell >= 0) return secondStrikeCell;
+		return currentCell;
 	}
 
 	public static boolean xiexiangCanContinue(boolean heroAlive, int paralysis, boolean rooted) {
@@ -436,12 +555,43 @@ public class PalermoSword extends MeleeWeapon {
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(HIT_COUNT, hitState.hitsSinceReward());
+		bundle.put(PRECISION_TARGET, precisionState.targetId);
+		bundle.put(PRECISION_COUNT, precisionState.attackCount);
+		bundle.put(PRECISION_TIME, precisionState.lastAttackAt);
+		bundle.put(NEXT_STAB, nextStab);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		hitState.restore(bundle.getInt(HIT_COUNT));
+		precisionState.restore(bundle.getInt(PRECISION_TARGET),
+				bundle.getInt(PRECISION_COUNT), bundle.getFloat(PRECISION_TIME));
+		nextStab = bundle.getBoolean(NEXT_STAB);
+	}
+
+	static class PrecisionState {
+		private int targetId = -1;
+		private int attackCount;
+		private float lastAttackAt;
+
+		float factorFor(int target, float now) {
+			if (attackCount == 0 || target != targetId
+					|| now < lastAttackAt || now - lastAttackAt > 3f) return 1f;
+			return 1f + 0.2f * attackCount;
+		}
+
+		void recordAttack(int target, float now) {
+			attackCount = factorFor(target, now) == 1f ? 1 : attackCount + 1;
+			targetId = target;
+			lastAttackAt = now;
+		}
+
+		void restore(int target, int count, float time) {
+			targetId = target;
+			attackCount = Math.max(0, count);
+			lastAttackAt = time;
+		}
 	}
 
 	public static class HitState {

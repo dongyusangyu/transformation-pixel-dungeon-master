@@ -39,6 +39,7 @@ public class StormCloud extends Blob {
 		int cell;
 
 		Fire fire = (Fire) Dungeon.level.blobs.get(Fire.class);
+		CursedFlame cursedFlame = (CursedFlame) Dungeon.level.blobs.get(CursedFlame.class);
 		for (int i = area.left; i < area.right; i++){
 			for (int j = area.top; j < area.bottom; j++){
 				cell = i + j*Dungeon.level.width();
@@ -47,6 +48,7 @@ public class StormCloud extends Blob {
 					if (fire != null){
 						fire.clear(cell);
 					}
+					if (cursedFlame != null) cursedFlame.clear(cell);
 
 					//fiery enemies take damage as if they are in toxic gas
 					Char ch = Actor.findChar(cell);

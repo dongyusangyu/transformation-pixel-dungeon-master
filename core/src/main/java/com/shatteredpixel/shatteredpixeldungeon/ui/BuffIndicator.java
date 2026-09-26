@@ -192,6 +192,7 @@ public class BuffIndicator extends Component {
     public  static  final  int HOLYPRAER=128;
     public  static  final  int DELAYEDSATISFACTION=129;
     public  static  final  int MINIBOSS=130;
+	public static final int SEAL_COMBO = 131;
 	public static final int ARCANE_CONFLUENCE = 132;
 	public static final int FOCUSED_CASTING = 133;
 	public static final int SKILLED_PARRY = 134;
@@ -217,7 +218,8 @@ public class BuffIndicator extends Component {
     public static final int NATURAL_CHILD = 155;
     public static final int SERPENT_STAFF_SPOON = 156;
     public static final int CURSE_BURNING = 157;
-    public static final int PRECISE_LOCK = 158;
+	public static final int PRECISE_LOCK = 158;
+	public static final int AUXILIARY_CORE_BOOST = 159;
 
 
 

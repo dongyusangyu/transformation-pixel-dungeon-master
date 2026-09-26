@@ -65,6 +65,12 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	}
 
 	@Override
+	public int STRReq(int level) {
+		int requirement = strengthRequirementForLevel(level);
+		return masteryPotionBonus ? requirement - 2 : requirement;
+	}
+
+	@Override
 	public int min(int level) {
 		return minForLevel(level);
 	}
@@ -77,11 +83,13 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 
 
 	public static int abilityMin(int level) {
-		return 7 + effectiveLevel(level);
+		int l = effectiveLevel(level);
+		return (minForLevel(l) + 1) / 2 + 4 + 2 * l;
 	}
 
 	public static int abilityMax(int level) {
-		return 7 + 11 * effectiveLevel(level);
+		int l = effectiveLevel(level);
+		return (maxForLevel(l) + 1) / 2 + 4 + 2 * l;
 	}
 
 	public static boolean abilityTargetAllowed(boolean alive, Char.Alignment alignment,
@@ -160,15 +168,8 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	@Override
 	public int damageRoll(Char owner) {
 		if (!abilityDamageActive) return super.damageRoll(owner);
-		int damage = augment.damageFactor(Random.NormalIntRange(
-				abilityMin(buffedLvl()), abilityMax(buffedLvl())));
-		if (owner instanceof Hero) {
-			int excessStrength = ((Hero) owner).STR() - STRReq();
-			if (excessStrength > 0) {
-				damage += Hero.heroDamageIntRange(0, excessStrength);
-			}
-		}
-		return damage;
+		return (super.damageRoll(owner) + 1) / 2
+				+ 4 + 2 * effectiveLevel(buffedLvl());
 	}
 
 	ArrayList<Char> collectSplashTargets(Char attacker, Char primaryTarget) {

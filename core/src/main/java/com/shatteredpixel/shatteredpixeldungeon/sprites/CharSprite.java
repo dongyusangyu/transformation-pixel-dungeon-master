@@ -39,6 +39,7 @@ import com.shatteredpixel.shatteredpixeldungeon.effects.Speck;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Splash;
 import com.shatteredpixel.shatteredpixeldungeon.effects.TorchHalo;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ElmoParticle;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.CursedFlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.FlameParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.ShadowParticle;
 import com.shatteredpixel.shatteredpixeldungeon.effects.particles.SnowParticle;
@@ -93,7 +94,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	protected float shadowOffset    = 0.25f;
 
 	public enum State {
-		BURNING, LEVITATING, INVISIBLE, PARALYSED, FROZEN, ILLUMINATED, CHILLED, DARKENED, MARKED, HEALING, SHIELDED,
+		BURNING, CURSED_BURNING, LEVITATING, INVISIBLE, ETHEREAL, PARALYSED, FROZEN, ILLUMINATED, CHILLED, DARKENED, MARKED, HEALING, SHIELDED,
 		HEARTS, GLOWING, AURA, COIN, RUNEMARK, ENEMY_RED, ENEMY_YELLOW, ENEMY_BLUE, ENEMY_GREEN
 	}
 	
@@ -109,6 +110,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	protected PosTweener motion;
 	
 	protected Emitter burning;
+	protected Emitter cursedBurning;
 	protected Emitter chilled;
 	protected Emitter marked;
 	protected Emitter levitation;
@@ -568,6 +570,10 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		return this instanceof HeroSprite ? 0.4f : 0.2f;
 	}
 
+	private float etherealAlpha() {
+		return this instanceof HeroSprite ? 0.55f : 0.35f;
+	}
+
 	//Aura needs color and ray count data too
 	public void aura( int color, int nRays ){
 		add(State.AURA);
@@ -610,6 +616,15 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				} else {
 					alpha(targetAlpha);
 				}
+				break;
+			case CURSED_BURNING:
+				if (cursedBurning != null) cursedBurning.on = false;
+				cursedBurning = emitter();
+				cursedBurning.pour(CursedFlameParticle.FACTORY, 0.06f);
+				if (visible) Sample.INSTANCE.play(Assets.Sounds.BURNING);
+				break;
+			case ETHEREAL:
+				if (!isState(State.INVISIBLE)) alpha(etherealAlpha());
 				break;
 			case PARALYSED:
 				paused = true;
@@ -739,7 +754,16 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 					invisible.killAndErase();
 					invisible = null;
 				}
-				alpha(1f);
+				alpha(isState(State.ETHEREAL) ? etherealAlpha() : 1f);
+				break;
+			case CURSED_BURNING:
+				if (cursedBurning != null) {
+					cursedBurning.on = false;
+					cursedBurning = null;
+				}
+				break;
+			case ETHEREAL:
+				alpha(isState(State.INVISIBLE) ? invisibleAlpha() : 1f);
 				break;
 			case PARALYSED:
 				paused = false;
@@ -934,6 +958,8 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		super.resetColor();
 		if (isState(State.INVISIBLE)){
 			alpha(invisibleAlpha());
+		} else if (isState(State.ETHEREAL)) {
+			alpha(etherealAlpha());
 		}
 	}
 	

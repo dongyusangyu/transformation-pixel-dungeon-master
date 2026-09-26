@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.watabou.utils.Bundle;
 import org.junit.Test;
 import sun.misc.Unsafe;
@@ -13,6 +14,8 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class MountainGuardTest {
 
@@ -21,9 +24,9 @@ public class MountainGuardTest {
         MountainGuard guard = newGuard();
         assertEquals(6, guard.weaponTier());
         assertEquals(6, guard.min(0));
-        assertEquals(25, guard.max(0));
+        assertEquals(21, guard.max(0));
         assertEquals(9, guard.min(3));
-        assertEquals(40, guard.max(3));
+        assertEquals(36, guard.max(3));
         assertEquals(22, guard.STRReq());
         assertEquals(7, MountainGuard.maxBlockForLevel(0));
         assertEquals(16, MountainGuard.maxBlockForLevel(3));
@@ -43,10 +46,10 @@ public class MountainGuardTest {
 
     @Test
     public void formulasUseExactDurationsAndFloorReflection() {
-        assertEquals(3, MountainGuard.slowDurationForLevel(0));
-        assertEquals(8, MountainGuard.slowDurationForLevel(5));
-        assertEquals(1f, MountainGuard.wallDurationForLevel(0), 0f);
-        assertEquals(2.5f, MountainGuard.wallDurationForLevel(3), 0f);
+        assertEquals(5, MountainGuard.slowDurationForLevel(0));
+        assertEquals(10, MountainGuard.slowDurationForLevel(5));
+        assertEquals(2f, MountainGuard.wallDurationForLevel(0), 0f);
+        assertEquals(5f, MountainGuard.wallDurationForLevel(3), 0f);
         assertEquals(0, MountainGuard.reflectedDamageFor(1));
         assertEquals(5, MountainGuard.reflectedDamageFor(10));
         assertEquals(5, MountainGuard.reflectedDamageFor(11));
@@ -108,32 +111,42 @@ public class MountainGuardTest {
     }
 
     @Test
-    public void releaseAreaIsNineByNineWithoutRowWrapping() {
-        int width = 20;
-        int center = 10 + 10 * width;
-        assertEquals(true, MountainGuard.isInsideReleaseSquare(center, 6 + 6 * width, width));
-        assertEquals(true, MountainGuard.isInsideReleaseSquare(center, 14 + 14 * width, width));
-        assertEquals(false, MountainGuard.isInsideReleaseSquare(center, 15 + 10 * width, width));
-        assertEquals(false, MountainGuard.isInsideReleaseSquare(center, 10 + 15 * width, width));
+    public void releaseAffectsAllLivingEnemiesInHeroFov() {
+        assertTrue(MountainGuard.canReleaseAffect(true, true, true));
+        assertFalse(MountainGuard.canReleaseAffect(false, true, true));
+        assertFalse(MountainGuard.canReleaseAffect(true, false, true));
+        assertFalse(MountainGuard.canReleaseAffect(true, true, false));
+    }
+
+    @Test
+    public void wallCounterDamageScalesFromHalfWeaponDamage() {
+        MountainGuard guard = newGuard();
+        assertEquals(3, guard.counterDamageMinForLevel(0));
+        assertEquals(10, guard.counterDamageMaxForLevel(0));
+        assertEquals(3, guard.counterDamageMinForLevel(1));
+        assertEquals(13, guard.counterDamageMaxForLevel(1));
     }
 
     @Test
     public void wallCounterUsesTwoChargesAndExactDuration() {
         MountainGuard guard = newGuard();
         assertEquals(2, guard.baseChargeUseForTest());
-        assertEquals(1f, MountainGuard.wallDurationForLevel(0), 0f);
-        assertEquals(4.5f, MountainGuard.wallDurationForLevel(7), 0f);
+        assertEquals(2f, MountainGuard.wallDurationForLevel(0), 0f);
+        assertEquals(9f, MountainGuard.wallDurationForLevel(7), 0f);
         assertEquals(0f, MountainGuard.wallFadePercent(4f, 4f), 0f);
         assertEquals(0.5f, MountainGuard.wallFadePercent(4f, 2f), 0f);
         assertEquals(1f, MountainGuard.wallFadePercent(4f, 0f), 0f);
     }
 
     @Test
-    public void wallCounterBlocksUnavoidableEnemyDamageAndReflectsHalf() {
+    public void wallCounterBlocksDirectEnemyDamageAndReflectsWeaponDamage() {
         Hero hero = newBareHero();
         MountainGuard.MountainWallCounter counter = new MountainGuard.MountainWallCounter();
         counter.target = hero;
         hero.add(counter);
+        hero.belongings = (com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings)
+                allocate(com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings.class);
+        hero.belongings.weapon = newGuard();
         class CapturingEnemy extends Char {
             @Override
             public void damage(int damage, Object source, DamageTag... tags) {
@@ -145,8 +158,8 @@ public class MountainGuardTest {
         enemy.alignment = Char.Alignment.ENEMY;
 
         assertEquals(0, MountainGuard.interceptEnemyDamage(
-                hero, 11, enemy, DamageTag.UNAVOIDABLE));
-        assertEquals(15, enemy.HP);
+                hero, 11, enemy, DamageTag.PHYSICAL, DamageTag.UNAVOIDABLE));
+        assertTrue(enemy.HP <= 17 && enemy.HP >= 10);
         assertEquals(7, MountainGuard.interceptEnemyDamage(
                 hero, 7, new Object(), DamageTag.UNAVOIDABLE));
     }
@@ -161,7 +174,20 @@ public class MountainGuardTest {
                     .getDeclaredField("tier");
             tier.setAccessible(true);
             tier.setInt(guard, MountainGuard.TIER);
+            Field augment = Weapon.class.getDeclaredField("augment");
+            augment.setAccessible(true);
+            augment.set(guard, Weapon.Augment.NONE);
             return guard;
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static Object allocate(Class<?> type) {
+        try {
+            Field field = Unsafe.class.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            return ((Unsafe) field.get(null)).allocateInstance(type);
         } catch (Exception e) {
             throw new AssertionError(e);
         }

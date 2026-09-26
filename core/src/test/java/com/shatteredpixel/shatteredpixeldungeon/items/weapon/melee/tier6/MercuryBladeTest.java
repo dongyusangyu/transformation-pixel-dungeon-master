@@ -34,10 +34,10 @@ public class MercuryBladeTest {
 
 	@Test
 	public void virtualThrowUsesTierFiveTridentDamageCurve() {
-		assertEquals(10, MercuryBlade.throwMinForLevel(0));
-		assertEquals(25, MercuryBlade.throwMaxForLevel(0));
-		assertEquals(16, MercuryBlade.throwMinForLevel(3));
-		assertEquals(40, MercuryBlade.throwMaxForLevel(3));
+		assertEquals(8, MercuryBlade.throwMinForLevel(0));
+		assertEquals(20, MercuryBlade.throwMaxForLevel(0));
+		assertEquals(14, MercuryBlade.throwMinForLevel(3));
+		assertEquals(32, MercuryBlade.throwMaxForLevel(3));
 	}
 
 	@Test
@@ -46,7 +46,7 @@ public class MercuryBladeTest {
 		assertEquals(0, MercuryBlade.liquidMetalCost(true));
 		assertEquals(2f, MercuryBlade.oozeDuration(false), 0f);
 		assertEquals(3f, MercuryBlade.oozeDuration(true), 0f);
-		assertEquals(5f, MercuryBlade.solidificationDuration(), 0f);
+		assertEquals(2f, MercuryBlade.solidificationDuration(), 0f);
 		assertEquals(1, MercuryBlade.abilityChargeCost());
 	}
 
@@ -129,7 +129,7 @@ public class MercuryBladeTest {
 	@Test
 	public void exSpriteConstantUsesFrame150WithMeasuredBounds() throws Exception {
 		String source = readMainSource("sprites/EXItemSpriteSheet.java");
-		assertTrue(source.contains("MERCURY_BLADE = encode(150, 15, 16)"));
+		assertTrue(source.contains("MERCURY_BLADE = encode(150, 13, 16)"));
 	}
 
 	@Test

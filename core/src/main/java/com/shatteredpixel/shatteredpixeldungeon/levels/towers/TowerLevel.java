@@ -74,8 +74,6 @@ public class TowerLevel extends RegularLevel {
 		return true;
 	}
 
-	private static final int FIRST_CONTENT_DEPTH = 16;
-	private static final int LAST_CONTENT_DEPTH = 25;
 	// Stored as a positive branch depth; UI presents these floors as T1, T2, and so on.
 	public static final int BRANCH = 3;
 	private int generationTowerFloor = -1;
@@ -409,10 +407,19 @@ public class TowerLevel extends RegularLevel {
 	}
 
 	private int contentDepthForFloor(int floor) {
-		int offset = Math.min(
-				LAST_CONTENT_DEPTH - FIRST_CONTENT_DEPTH,
-				Math.max(0, floor - 1));
-		return FIRST_CONTENT_DEPTH + offset;
+		return legacyContentDepthForFloor(floor);
+	}
+
+	public static int keyDepthForGeneration(int towerFloor, int fallbackDepth) {
+		return TowerKeyDepth.forGeneration(towerFloor, fallbackDepth);
+	}
+
+	public int secretRoomKeyDepth() {
+		return keyDepthForGeneration(generationTowerFloor, Dungeon.depth);
+	}
+
+	public static int legacyContentDepthForFloor(int floor) {
+		return TowerKeyDepth.legacyContentDepth(floor);
 	}
 
 	static boolean isShopFloor(int floor) {

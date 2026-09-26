@@ -225,7 +225,7 @@ public class GentlemanElfArenaTest {
 		assertEquals(-1, arena.cupId());
 		assertFalse(cup.isAlive());
 	}
-	@Test public void cleanupRemovesWineStatesFromEveryCharacter() {
+	@Test public void cleanupLeavesUnrelatedCharactersWineStatesAlone() {
 		GentlemanElf boss = new GentlemanElf();
 		GentlemanElfIllusion illusion = new GentlemanElfIllusion(boss);
 		DeathKnight enemy = new DeathKnight();
@@ -240,9 +240,9 @@ public class GentlemanElfArenaTest {
 
 		arena.cleanup();
 
-		assertNull(boss.buff(Drunkenness.class));
-		assertNull(illusion.buff(Exhilaration.class));
-		assertNull(enemy.buff(Drunkenness.class));
+		assertNotNull(boss.buff(Drunkenness.class));
+		assertNotNull(illusion.buff(Exhilaration.class));
+		assertNotNull(enemy.buff(Drunkenness.class));
 	}
 	private static class TrackingIllusion extends GentlemanElfIllusion {
 		boolean destroyed;

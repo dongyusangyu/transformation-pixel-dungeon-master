@@ -240,6 +240,21 @@ public class Hunger extends Buff implements Hero.Doom {
 	}
 
 	public void affectHunger(float energy, boolean overrideLimits ) {
+		affectHunger(energy, overrideLimits, false);
+	}
+
+	public float drainForHungerKnight(float amount) {
+		if (amount <= 0 || target.buff(NewCycleHungerProtection.class) != null) return 0f;
+		if (target.buff(WellFed.class) != null) {
+			affectHunger(-amount);
+			return 0f;
+		}
+		float oldLevel = level;
+		affectHunger(-amount, false, true);
+		return Math.max(0f, Math.min(1f, (oldLevel + amount - STARVING) / amount));
+	}
+
+	private void affectHunger(float energy, boolean overrideLimits, boolean suppressOverflowDamage) {
 
 		if (energy < 0 && target.buff(NewCycleHungerProtection.class) != null) {
 			return;
@@ -259,11 +274,13 @@ public class Hunger extends Buff implements Hero.Doom {
 		} else if (level > STARVING) {
 			float excess = level - STARVING;
 			level = STARVING;
-			partialDamage += excess * (target.HT/1000f);
-			if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
-				partialDamage += excess * (target.HT/1000f)*hero.pointsNegative(Talent.UNBEAR_HUNGER)*0.5f;
+			if (!suppressOverflowDamage) {
+				partialDamage += excess * (target.HT/1000f);
+				if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
+					partialDamage += excess * (target.HT/1000f)*hero.pointsNegative(Talent.UNBEAR_HUNGER)*0.5f;
+				}
 			}
-			if (partialDamage > 1f){
+			if (!suppressOverflowDamage && partialDamage > 1f){
                 if(hero.buff(Reason.class)!=null){
                     Reason.loseReason(target,2);
                 }
@@ -287,14 +304,16 @@ public class Hunger extends Buff implements Hero.Doom {
 				GLog.n( Messages.get(this, "onstarving") );
 			}
 
+			if (!suppressOverflowDamage) {
 			int hungerDamage = 1;
 			if(hero.pointsNegative(Talent.UNBEAR_HUNGER)>0){
 				hungerDamage += Math.round(0.5f*hero.pointsNegative(Talent.UNBEAR_HUNGER)*hungerDamage);
 			}
 			target.damage( hungerDamage, this , DamageTag.PHYSICAL, DamageTag.HUNGER);
-            if(hero.buff(Reason.class)!=null){
+			if(hero.buff(Reason.class)!=null){
                 Reason.loseReason(target,2);
             }
+			}
 		}
 
 		BuffIndicator.refreshHero();

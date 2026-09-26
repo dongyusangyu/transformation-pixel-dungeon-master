@@ -34,6 +34,7 @@ public enum DictionaryJournal {
         ARMORS.d.put("armor_plate",         ItemSpriteSheet.ARMOR_PLATE);
         ARMORS.d.put("armor_slime",         ItemSpriteSheet.ARMOR_SLIME);
         ARMORS.d.put("armor_epic",          ItemSpriteSheet.ARMOR_WARRIOR);
+        ARMORS.d.put("armor_stylus",        ItemSpriteSheet.STYLUS);
         ARMORS.d.put("armor_glyph_1",       ItemSpriteSheet.STYLUS);
         ARMORS.d.put("armor_glyph_2",       ItemSpriteSheet.STYLUS);
         ARMORS.d.put("armor_glyph_3",       ItemSpriteSheet.STYLUS);
@@ -287,6 +288,7 @@ public enum DictionaryJournal {
         WANDS.d.put("wand_grass",           ItemSpriteSheet.WAND_REGROWTH);
         WANDS.d.put("wand_transfusion",     ItemSpriteSheet.WAND_TRANSFUSION);
         WANDS.d.put("wand_warding",         ItemSpriteSheet.WAND_WARDING);
+        WANDS.d.put("wand_cursedflame",     EXItemSpriteSheet.WAND_CURSED_FLAME);
         //weapon, melee
         WEAPONS.d.put("melee_wornsword",    ItemSpriteSheet.WORN_SHORTSWORD);
         WEAPONS.d.put("melee_gloves",       ItemSpriteSheet.GLOVES);
@@ -403,6 +405,7 @@ public enum DictionaryJournal {
         TRINKETS.d.put("trinket_spyglass",ItemSpriteSheet.SPYGLASS);
         TRINKETS.d.put("trinket_magicweather",ItemSpriteSheet.MAGIC_FEATHER);
         TRINKETS.d.put("trinket_spearshield",ItemSpriteSheet.SPEAR_SHIELD);
+        TRINKETS.d.put("trinket_twin_demon_eyes", EXItemSpriteSheet.TWIN_DEMON_EYES);
         //Documents
         DOCUMENTS.d.put("info_intro",       ItemSpriteSheet.EBONY_CHEST);
         DOCUMENTS.d.put("info_tier",        ItemSpriteSheet.GLAIVE);

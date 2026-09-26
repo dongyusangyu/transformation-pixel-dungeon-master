@@ -28,6 +28,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Electricity;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Freezing;
@@ -64,6 +65,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorrosion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorruption;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfDisintegration;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
@@ -111,6 +113,7 @@ public class ElementalBlast extends ArmorAbility {
 		effectTypes.put(WandOfTransfusion.class,    MagicMissile.BLOOD_CONE);
 		effectTypes.put(WandOfCorruption.class,     MagicMissile.SHADOW_CONE);
 		effectTypes.put(WandOfRegrowth.class,       MagicMissile.FOLIAGE_CONE);
+		effectTypes.put(WandOfCursedFlame.class,    MagicMissile.CURSED_FLAME_CONE);
 	}
 
 	private static final HashMap<Class<?extends Wand>, Float> damageFactors = new HashMap<>();
@@ -128,6 +131,7 @@ public class ElementalBlast extends ArmorAbility {
 		damageFactors.put(WandOfTransfusion.class,      0f);
 		damageFactors.put(WandOfCorruption.class,       0f);
 		damageFactors.put(WandOfRegrowth.class,         0f);
+		damageFactors.put(WandOfCursedFlame.class,      0.67f);
 	}
 
 	{
@@ -176,7 +180,7 @@ public class ElementalBlast extends ArmorAbility {
 			projectileProps = Ballistica.STOP_TARGET;
 
 		//*** Wand of Fireblast ***
-		} else if (wandCls == WandOfFireblast.class){
+		} else if (wandCls == WandOfFireblast.class || wandCls == WandOfCursedFlame.class){
 			projectileProps = projectileProps | Ballistica.IGNORE_SOFT_SOLID;
 
 		//*** Wand of Warding ***
@@ -211,6 +215,7 @@ public class ElementalBlast extends ArmorAbility {
 						int charsHit = 0;
 						Freezing freeze = (Freezing)Dungeon.level.blobs.get( Freezing.class );
 						Fire fire = (Fire)Dungeon.level.blobs.get( Fire.class );
+						CursedFlame cursedFlame = (CursedFlame)Dungeon.level.blobs.get( CursedFlame.class );
 						for (int cell : aoe.cells) {
 
 							//### Cell effects ###
@@ -233,11 +238,17 @@ public class ElementalBlast extends ArmorAbility {
 									GameScene.add( Blob.seed( cell, 4, Fire.class ) );
 								}
 
+							//*** Wand of Cursed Flame ***
+							} else if (finalWandCls == WandOfCursedFlame.class){
+								seedCursedFlame(cell, hero.pos,
+										cursedFlameDuration(hero.pointsInTalent(Talent.ELEMENTAL_POWER)));
+
 							//*** Wand of Frost ***
 							} else if (finalWandCls == WandOfFrost.class){
 								if (fire != null){
 									fire.clear(cell);
 								}
+								if (cursedFlame != null) cursedFlame.clear(cell);
 
 							//*** Wand of Prismatic Light ***
 							} else if (finalWandCls == WandOfPrismaticLight.class){
@@ -439,6 +450,22 @@ public class ElementalBlast extends ArmorAbility {
 
 		Sample.INSTANCE.play( Assets.Sounds.CHARGEUP );
 
+	}
+
+	static int cursedFlameDuration(int elementalPowerPoints) {
+		return Math.min(8, Math.round(4f * (1f + 0.25f * elementalPowerPoints)));
+	}
+
+	static void seedCursedFlame(int cell, int heroCell, int duration) {
+		if (cell == heroCell || !Dungeon.level.insideMap(cell)) return;
+		if (Dungeon.level.map[cell] == Terrain.DOOR) {
+			Level.set(cell, Terrain.OPEN_DOOR);
+			GameScene.updateMap(cell);
+		}
+		if (!CursedFlame.canIgnite(Dungeon.level, cell)) return;
+		Freezing freeze = (Freezing) Dungeon.level.blobs.get(Freezing.class);
+		if (freeze != null) freeze.clear(cell);
+		GameScene.add(Blob.seed(cell, duration, CursedFlame.class));
 	}
 
 	@Override

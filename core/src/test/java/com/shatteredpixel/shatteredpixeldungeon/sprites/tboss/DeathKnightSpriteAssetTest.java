@@ -65,6 +65,28 @@ public class DeathKnightSpriteAssetTest {
     }
 
     @Test
+    public void swordWaveEffectHasFourCrispSixteenPixelFrames() throws IOException {
+        BufferedImage image = ImageIO.read(asset("effects/death_knight_slash.png").toFile());
+        assertNotNull(image);
+        assertEquals(64, image.getWidth());
+        assertEquals(16, image.getHeight());
+        assertTrue(image.getColorModel().hasAlpha());
+
+        for (int frame = 0; frame < 4; frame++) {
+            int visible = 0;
+            for (int y = 0; y < 16; y++) {
+                for (int x = frame * 16; x < frame * 16 + 16; x++) {
+                    int alpha = image.getRGB(x, y) >>> 24;
+                    assertTrue("semi-transparent pixel in frame " + frame,
+                            alpha == 0 || alpha == 255);
+                    if (alpha == 255) visible++;
+                }
+            }
+            assertTrue("empty sword-wave frame " + frame, visible >= 6);
+        }
+    }
+
+    @Test
     public void productionCodeUsesApprovedFrameMapAndAssets() throws IOException {
         Path java = coreDirectory().resolve("src/main/java/com/shatteredpixel/shatteredpixeldungeon");
         String assets = read(java.resolve("Assets.java"));
@@ -83,17 +105,15 @@ public class DeathKnightSpriteAssetTest {
         assertTrue(sprite.contains("void phaseTransition()"));
         assertTrue(sprite.contains("ShadowParticle.UP"));
         assertTrue(sprite.contains("die.frames(film, 24, 25, 26, 27, 28, 29)"));
-        assertTrue(slash.contains("texture(Assets.Sprites.EX_ITEMS)"));
+        assertTrue(assets.contains("DEATH_KNIGHT_SLASH = \"effects/death_knight_slash.png\""));
+        assertTrue(slash.contains("texture(Assets.Effects.DEATH_KNIGHT_SLASH)"));
         assertTrue(slash.contains("new TextureFilm(texture, 16, 16)"));
-        assertTrue(slash.contains("EXItemSpriteSheet.DEATH_KNIGHT_SLASH_FRAME"));
-        assertFalse(slash.contains("        angle ="));
-        assertTrue(slash.contains("public static void showVolley"));
-        assertTrue(slash.contains("speed.set"));
-        assertTrue(slash.contains("travelTime"));
+        assertFalse(slash.contains("EXItemSpriteSheet.DEATH_KNIGHT_SLASH_FRAME"));
+        assertFalse(slash.contains("showVolley"));
+        assertFalse(slash.contains("speed.set"));
         assertTrue(slash.contains("public void update()"));
         assertTrue(boss.contains("spriteClass = DeathKnightSprite.class"));
-        assertTrue(boss.contains("DeathKnightSlash.showVolley"));
-        assertTrue(!boss.contains("DeathKnightSlash.show(sprite.parent"));
+        assertTrue(boss.contains("DeathKnightSlash.show(sprite.parent"));
     }
 
     @Test

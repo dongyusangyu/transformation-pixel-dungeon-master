@@ -56,7 +56,8 @@ public class PotionOfCleansing extends ExoticPotion {
             }
         }
 		
-		cleanse( hero );
+		cleanse( hero, com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionPotency.duration(
+				com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionPotency.drunk(hero), Cleanse.DURATION));
 		new Flare( 6, 32 ).color(0xFF4CD2, true).show( curUser.sprite, 2f );
 	}
 	

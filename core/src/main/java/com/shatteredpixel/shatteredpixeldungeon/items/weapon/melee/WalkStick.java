@@ -66,7 +66,7 @@ public class WalkStick extends MeleeWeapon{
     public static class DefensiveStance extends FlavourBuff {
 
         {
-            announced = true;
+            announced = false;
             type = buffType.POSITIVE;
         }
 

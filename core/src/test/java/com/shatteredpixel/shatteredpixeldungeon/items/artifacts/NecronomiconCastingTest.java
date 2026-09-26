@@ -41,6 +41,20 @@ public class NecronomiconCastingTest {
     }
 
     @Test
+    public void castFailuresDistinguishInvalidTargetsChargeAndSpace() {
+        assertEquals(Necronomicon.CastFailure.NONE,
+                Necronomicon.castFailure(true, true, 1, false));
+        assertEquals(Necronomicon.CastFailure.INVALID_TARGET,
+                Necronomicon.castFailure(true, false, 2, true));
+        assertEquals(Necronomicon.CastFailure.NEEDS_TWO_CHARGE,
+                Necronomicon.castFailure(false, false, 1, true));
+        assertEquals(Necronomicon.CastFailure.NO_SPACE,
+                Necronomicon.castFailure(false, false, 2, false));
+        assertEquals(Necronomicon.CastFailure.NONE,
+                Necronomicon.castFailure(false, false, 2, true));
+    }
+
+    @Test
     public void sameCellBallisticaDoesNotWalkAwayFromItsSource() {
         Level previous = Dungeon.level;
         try {
@@ -91,6 +105,9 @@ public class NecronomiconCastingTest {
 
         assertTrue(source.contains(
                 "new Ballistica(curUser.pos, target, Ballistica.PROJECTILE)"));
+        assertTrue(source.contains("no_charge_summon"));
+        assertTrue(source.contains("invalid_target"));
+        assertTrue(source.contains("GLog.i("));
     }
 
     private static class TestLevel extends Level {

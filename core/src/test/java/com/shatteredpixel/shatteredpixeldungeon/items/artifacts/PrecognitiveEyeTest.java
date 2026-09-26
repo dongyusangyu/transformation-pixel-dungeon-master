@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Generator;
+import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfExperience;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.watabou.utils.Random;
@@ -111,6 +112,14 @@ public class PrecognitiveEyeTest {
 	}
 
 	@Test
+	public void activationAndMaximumLevelHaveDedicatedFeedback() throws IOException {
+		String source = sourceFile();
+		assertTrue(source.contains("Speck.LIGHT"));
+		assertTrue(source.contains("Assets.Sounds.TELEPORT"));
+		assertTrue(source.contains("max_level"));
+	}
+
+	@Test
 	public void equippedEyeGainsExperienceFromHeroExperience() {
 		Hero hero = TestHeroFactory.create();
 		PrecognitiveEye eye = new PrecognitiveEye();
@@ -122,6 +131,23 @@ public class PrecognitiveEyeTest {
 		hero.belongings.artifact = null;
 		eye.onHeroGainExp(0.5f, hero);
 		assertEquals(50, eye.exp);
+	}
+
+	@Test
+	public void equippedEyeReceivesChargeFromPotionSizedHeroExperience() {
+		Hero hero = TestHeroFactory.create();
+		PrecognitiveEye eye = new PrecognitiveEye();
+		eye.level(4);
+		hero.belongings.artifact = eye;
+		Hero previousHero = Dungeon.hero;
+		try {
+			Dungeon.hero = hero;
+			hero.earnExp(hero.maxExp(), PotionOfExperience.class);
+			assertEquals(100, eye.exp);
+			assertEquals(3, eye.charge);
+		} finally {
+			Dungeon.hero = previousHero;
+		}
 	}
 
 	@Test

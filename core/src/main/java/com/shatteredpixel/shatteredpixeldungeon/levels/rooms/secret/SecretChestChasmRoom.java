@@ -27,7 +27,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.keys.GoldenKey;
 import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfLevitation;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.watabou.utils.Point;
 
@@ -53,6 +55,17 @@ public class SecretChestChasmRoom extends SecretRoom {
 	@Override
 	public int maxHeight() {
 		return 9;
+	}
+
+	public static boolean containsCell(Level level, int cell) {
+		return level instanceof RegularLevel
+				&& ((RegularLevel) level).room(cell) instanceof SecretChestChasmRoom;
+	}
+
+	private static int keyDepth(Level level) {
+		return level instanceof TowerLevel
+				? ((TowerLevel) level).secretRoomKeyDepth()
+				: Dungeon.depth;
 	}
 	
 	@Override
@@ -85,28 +98,28 @@ public class SecretChestChasmRoom extends SecretRoom {
 		p = new Point(left+1, top+1);
 		Painter.set(level, p, Terrain.EMPTY_SP);
 		if (chests > 0) {
-			level.drop(new GoldenKey(Dungeon.depth), level.pointToCell(p));
+			level.drop(new GoldenKey(keyDepth(level)), level.pointToCell(p));
 			chests--;
 		}
 		
 		p.x = right-1;
 		Painter.set(level, p, Terrain.EMPTY_SP);
 		if (chests > 0) {
-			level.drop(new GoldenKey(Dungeon.depth), level.pointToCell(p));
+			level.drop(new GoldenKey(keyDepth(level)), level.pointToCell(p));
 			chests--;
 		}
 		
 		p.y = bottom-1;
 		Painter.set(level, p, Terrain.EMPTY_SP);
 		if (chests > 0) {
-			level.drop(new GoldenKey(Dungeon.depth), level.pointToCell(p));
+			level.drop(new GoldenKey(keyDepth(level)), level.pointToCell(p));
 			chests--;
 		}
 		
 		p.x = left+1;
 		Painter.set(level, p, Terrain.EMPTY_SP);
 		if (chests > 0) {
-			level.drop(new GoldenKey(Dungeon.depth), level.pointToCell(p));
+			level.drop(new GoldenKey(keyDepth(level)), level.pointToCell(p));
 			chests--;
 		}
 		

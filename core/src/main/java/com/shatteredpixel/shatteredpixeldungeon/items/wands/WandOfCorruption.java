@@ -85,47 +85,8 @@ public class WandOfCorruption extends Wand {
 		image = ItemSpriteSheet.WAND_CORRUPTION;
 	}
 	
-	//Note that some debuffs here have a 0% chance to be applied.
-	// This is because the wand of corruption considers them to be a certain level of harmful
-	// for the purposes of reducing resistance, but does not actually apply them itself
-	
-	private static final float MINOR_DEBUFF_WEAKEN = 1/4f;
-	private static final HashMap<Class<? extends Buff>, Float> MINOR_DEBUFFS = new HashMap<>();
-	static{
-		MINOR_DEBUFFS.put(Weakness.class,       2f);
-		MINOR_DEBUFFS.put(Vulnerable.class,     2f);
-		MINOR_DEBUFFS.put(Cripple.class,        1f);
-		MINOR_DEBUFFS.put(Blindness.class,      1f);
-		MINOR_DEBUFFS.put(Terror.class,         1f);
+	// Some entries have zero application chance but still weaken corruption resistance.
 
-		MINOR_DEBUFFS.put(Chill.class,          0f);
-		MINOR_DEBUFFS.put(Ooze.class,           0f);
-		MINOR_DEBUFFS.put(Roots.class,          0f);
-		MINOR_DEBUFFS.put(Vertigo.class,        0f);
-		MINOR_DEBUFFS.put(Drowsy.class,         0f);
-		MINOR_DEBUFFS.put(Bleeding.class,       0f);
-		MINOR_DEBUFFS.put(Burning.class,        0f);
-		MINOR_DEBUFFS.put(Poison.class,         0f);
-	}
-
-	private static final float MAJOR_DEBUFF_WEAKEN = 1/2f;
-	private static final HashMap<Class<? extends Buff>, Float> MAJOR_DEBUFFS = new HashMap<>();
-	static{
-		MAJOR_DEBUFFS.put(Amok.class,           3f);
-		MAJOR_DEBUFFS.put(Slow.class,           2f);
-		MAJOR_DEBUFFS.put(Hex.class,            2f);
-		MAJOR_DEBUFFS.put(Paralysis.class,      1f);
-
-		MAJOR_DEBUFFS.put(Daze.class,           0f);
-		MAJOR_DEBUFFS.put(Dread.class,          0f);
-		MAJOR_DEBUFFS.put(Charm.class,          0f);
-		MAJOR_DEBUFFS.put(MagicalSleep.class,   0f);
-		MAJOR_DEBUFFS.put(SoulMark.class,       0f);
-		MAJOR_DEBUFFS.put(Corrosion.class,      0f);
-		MAJOR_DEBUFFS.put(Frost.class,          0f);
-		MAJOR_DEBUFFS.put(Doom.class,           0f);
-	}
-	
 	@Override
 	public void onZap(Ballistica bolt) {
 		Char ch = Actor.findChar(bolt.collisionPos);
@@ -165,11 +126,7 @@ public class WandOfCorruption extends Wand {
 			enemyResist *= 1 + 4*Math.pow(enemy.HP/(float)enemy.HT, 2);
 			
 			//debuffs placed on the enemy reduce their resistance
-			for (Buff buff : enemy.buffs()){
-				if (MAJOR_DEBUFFS.containsKey(buff.getClass()))         enemyResist *= (1f-MAJOR_DEBUFF_WEAKEN);
-				else if (MINOR_DEBUFFS.containsKey(buff.getClass()))    enemyResist *= (1f-MINOR_DEBUFF_WEAKEN);
-				else if (buff.type == Buff.buffType.NEGATIVE)           enemyResist *= (1f-MINOR_DEBUFF_WEAKEN);
-			}
+			enemyResist *= CorruptionDebuffRules.resistanceMultiplier(enemy);
 			
 			//cannot re-corrupt or doom an enemy, so give them a major debuff instead
 			if(enemy.buff(Corruption.class) != null || enemy.buff(Doom.class) != null){
@@ -181,9 +138,9 @@ public class WandOfCorruption extends Wand {
 			} else {
 				float debuffChance = corruptingPower / enemyResist;
 				if (Random.Float() < debuffChance){
-					debuffEnemy( enemy, MAJOR_DEBUFFS);
+					debuffEnemy( enemy, CorruptionDebuffRules.MAJOR_DEBUFFS);
 				} else {
-					debuffEnemy( enemy, MINOR_DEBUFFS);
+					debuffEnemy( enemy, CorruptionDebuffRules.MINOR_DEBUFFS);
 				}
 			}
 
@@ -192,7 +149,7 @@ public class WandOfCorruption extends Wand {
 					&& !enemy.properties().contains(Char.Property.UNDEAD)){
 				Buff.affect(enemy, ErodingSoul.class);
 				if (((Hero) curUser).pointsInTalent(Talent.ERODING_SOUL) > 1 && Random.Float() < 0.5f){
-					debuffEnemy(enemy, MINOR_DEBUFFS);
+					debuffEnemy(enemy, CorruptionDebuffRules.MINOR_DEBUFFS);
 				}
 			}
 
@@ -226,8 +183,8 @@ public class WandOfCorruption extends Wand {
 			Buff.append(enemy, debuffCls, 6 + buffedLvl()*3);
 		} else {
 			//if no debuff can be applied (all are present), then go up one tier
-			if (category == MINOR_DEBUFFS)          debuffEnemy( enemy, MAJOR_DEBUFFS);
-			else if (category == MAJOR_DEBUFFS)     corruptEnemy( enemy );
+			if (category == CorruptionDebuffRules.MINOR_DEBUFFS)          debuffEnemy( enemy, CorruptionDebuffRules.MAJOR_DEBUFFS);
+			else if (category == CorruptionDebuffRules.MAJOR_DEBUFFS)     corruptEnemy( enemy );
 		}
 	}
 	

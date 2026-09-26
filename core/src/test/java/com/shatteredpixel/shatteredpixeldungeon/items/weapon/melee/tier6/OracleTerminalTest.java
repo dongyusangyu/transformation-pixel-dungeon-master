@@ -52,18 +52,20 @@ public class OracleTerminalTest {
 
 	@Test
 	public void formMathMatchesSpecification() {
-		assertEquals(0, OracleTerminal.slashDamage(3));
-		assertEquals(1, OracleTerminal.slashDamage(4));
-		assertEquals(25, OracleTerminal.slashDamage(100));
-		assertEquals(4, OracleTerminal.bleedLevel(-1));
-		assertEquals(11, OracleTerminal.bleedLevel(7));
+		assertEquals(2, OracleTerminal.swordDanceDurationForLevel(0));
+		assertEquals(9, OracleTerminal.swordDanceDurationForLevel(7));
+		assertEquals(2, OracleTerminal.thrustAbilityExtraRange(0));
+		assertEquals(3, OracleTerminal.thrustAbilityExtraRange(7));
+		assertEquals(0, OracleTerminal.thrustBleedForDamage(-1));
+		assertEquals(3, OracleTerminal.thrustBleedForDamage(10));
+		assertEquals(3, OracleTerminal.thrustBleedForDamage(11));
 		assertEquals(15, OracleTerminal.scytheDamage(10));
 		assertEquals(17, OracleTerminal.scytheDamage(11));
 	}
 
 	@Test
 	public void eachFormHasItsOwnVisibleBuffAndExactIcon() {
-		assertEquals(5f, OracleTerminal.FORM_DURATION, 0f);
+		assertEquals(10f, OracleTerminal.FORM_DURATION, 0f);
 		assertEquals(OracleTerminal.Form.BLUNT,
 				new OracleTerminal.BluntForm().form());
 		assertEquals(OracleTerminal.Form.SLASH,
@@ -148,21 +150,19 @@ public class OracleTerminalTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/"
 						+ "KindOfWeapon.java");
 		assertTrue(weaponSource.contains(
-				"publicvoidonAttackResolved(Heroattacker,Chardefender,booleanhit,"
-						+ "intdamageDealt,DamageTag...damageTags)"));
+				"publicvoidonAttackResolved(Heroattacker,Chardefender,booleanhit,"));
 
-		String heroSource = compactSourceAt(
-				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/hero/"
-						+ "Hero.java");
-		assertTrue(heroSource.contains(
-				"weapon.onAttackResolved(this,enemy,hit,damageDealt,damageTags)"));
+		String charSource = compactSourceAt(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/actors/Char.java");
+		assertTrue(charSource.contains("finishAttackResolution(enemy,"));
+		assertTrue(charSource.contains("onAttackResolved(enemy,true,damageDealt,damageTags)"));
 	}
 
 	@Test
-	public void bluntChanceUsesAFixedTwentyFivePercentBoundary() {
+	public void bluntChanceUsesOneThirdBoundary() {
 		assertTrue(OracleTerminal.bluntTriggers(0f));
-		assertTrue(OracleTerminal.bluntTriggers(0.249999f));
-		assertFalse(OracleTerminal.bluntTriggers(0.25f));
+		assertTrue(OracleTerminal.bluntTriggers(0.3332f));
+		assertFalse(OracleTerminal.bluntTriggers(1f / 3f));
 		assertFalse(OracleTerminal.bluntTriggers(0.99f));
 	}
 
@@ -242,15 +242,17 @@ public class OracleTerminalTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/"
 						+ "melee/tier6/OracleTerminal.java");
 		assertTrue(source.contains("Buff.affect(target,Paralysis.class,1f)"));
-		assertTrue(source.contains("Buff.affect(target,Daze.class,1f)"));
-		assertTrue(source.contains(
-				"Buff.affect(target,Bleeding.class).set(bleedLevel(buffedLvl()))"));
-		assertTrue(source.contains("Buff.affect(target,Vulnerable.class,2f)"));
+		assertFalse(source.contains("Buff.affect(target,Daze.class,1f)"));
+		assertTrue(source.contains("Buff.affect(target,KingBlade.Disarm.class,1f)"));
+		assertTrue(source.contains("thrustBleedForDamage(damageDealt)"));
+		assertTrue(source.contains("DamageTag.NO_ARMOR"));
+		assertTrue(source.contains("if(hit&&!enemy.isAlive())onAbilityKill(hero,enemy)"));
+		assertTrue(source.contains("Buff.prolong(target,Vulnerable.class,5f)"));
 		assertTrue(source.contains("target.buff(ScytheExecutionMark.class)==null"));
 		assertTrue(source.contains("WandOfBlastWave.throwCharImmediately("));
-		assertTrue(source.contains("canReach(hero,candidate.pos)"));
-		assertTrue(source.contains("slashTargets.add(candidate)"));
-		assertTrue(source.contains("candidate.damage(splashDamage,hero,DamageTag.PHYSICAL)"));
+		assertTrue(source.contains("swordDanceDurationForLevel(buffedLvl())"));
+		assertTrue(source.contains("thrustAbilityExtraRange(buffedLvl())"));
+		assertFalse(source.contains("slashTargets.add(candidate)"));
 		assertFalse(source.contains("candidate.attack("));
 	}
 
@@ -271,13 +273,9 @@ public class OracleTerminalTest {
 		String chinese = sourceAt("src/main/assets/messages/items/items_zh.properties");
 		assertTrue(chinese.contains("items.weapon.melee.tier6.oracleterminal.name=神谕终端"));
 		assertTrue(chinese.contains("items.weapon.melee.tier6.oracleterminal.blunt_desc="));
-		assertTrue(chinese.contains("oracleterminal.blunt_desc=神谕终端当前幻化为打击武器（抽取概率30%%）"));
 		assertTrue(chinese.contains("items.weapon.melee.tier6.oracleterminal.slash_desc="));
-		assertTrue(chinese.contains("oracleterminal.slash_desc=神谕终端当前幻化为斩击武器（抽取概率30%%）"));
 		assertTrue(chinese.contains("items.weapon.melee.tier6.oracleterminal.thrust_desc="));
-		assertTrue(chinese.contains("oracleterminal.thrust_desc=神谕终端当前幻化为突刺武器（抽取概率30%%）"));
 		assertTrue(chinese.contains("items.weapon.melee.tier6.oracleterminal.scythe_desc="));
-		assertTrue(chinese.contains("oracleterminal.scythe_desc=神谕终端当前幻化为镰刀（抽取概率10%%）"));
 		assertTrue(chinese.contains("items.weapon.melee.tier6.oracleterminal.catalog_desc="));
 	}
 

@@ -56,7 +56,7 @@ public class Tier6WeaponIntegrationTest {
 				LakeSword.class,
 				MountainGuard.class
 		}, tierSix.classes);
-		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, tierSix.defaultProbs, 0f);
+		assertArrayEquals(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1}, tierSix.defaultProbs, 0f);
 		assertEquals(6, Generator.wepTiers.length);
 		assertEquals(tierSix, Generator.wepTiers[5]);
 	}

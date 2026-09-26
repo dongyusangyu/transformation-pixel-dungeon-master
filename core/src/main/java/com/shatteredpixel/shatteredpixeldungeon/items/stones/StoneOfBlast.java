@@ -21,8 +21,14 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.stones;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
+import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TwinDemonEyes;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 public class StoneOfBlast extends Runestone {
 	
@@ -32,7 +38,14 @@ public class StoneOfBlast extends Runestone {
 	
 	@Override
 	protected void activate(int cell) {
-		new Bomb.ConjuredBomb().explode(cell);
+		new Bomb.ConjuredBomb() {
+			@Override
+			protected void onExplosionComplete(ArrayList<Char> affectedChars) {
+				Char target = TwinDemonEyes.nearestZapTarget(
+						new LinkedHashSet<>(affectedChars), Dungeon.hero);
+				TwinDemonEyes.onSuccessfulRangedHit(Dungeon.hero, target);
+			}
+		}.explode(cell);
 	}
 	
 }

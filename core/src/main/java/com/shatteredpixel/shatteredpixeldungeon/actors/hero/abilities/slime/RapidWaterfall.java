@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
+import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Fire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.StormCloud;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -89,6 +90,7 @@ public class RapidWaterfall extends ArmorAbility {
             int cell;
 
             Fire fire = (Fire) Dungeon.level.blobs.get(Fire.class);
+            CursedFlame cursedFlame = (CursedFlame) Dungeon.level.blobs.get(CursedFlame.class);
             for (int i = area.left; i < area.right; i++){
                 for (int j = area.top; j < area.bottom; j++){
                     cell = i + j*Dungeon.level.width();
@@ -97,6 +99,7 @@ public class RapidWaterfall extends ArmorAbility {
                         if (fire != null){
                             fire.clear(cell);
                         }
+                        if (cursedFlame != null) cursedFlame.clear(cell);
                         //fiery enemies take damage as if they are in toxic gas
                         Char ch = Actor.findChar(cell);
                         if (ch != null
