@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+if command -v python >/dev/null 2>&1; then
+    python scripts/privacy_guard.py --revision HEAD
+    exec python scripts/privacy_guard.py --history
+fi
+python3 scripts/privacy_guard.py --revision HEAD
+exec python3 scripts/privacy_guard.py --history
