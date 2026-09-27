@@ -18,6 +18,7 @@ local.properties
 *.dex
 *.class
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.nar
@@ -72,3 +73,37 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Private administration, player records, and local operations
+/.private/
+.env
+.env.*
+!.env.example
+**/admin_console.py
+**/challenge_analysis.json
+**/cumulative_win_rate_analysis.json
+/server/deploy_*.py
+/server/deploy_*.ps1
+/server/analyze_*.py
+/server/fetch_cloud_db_readonly.py
+/server/inspect_cloud_rankings.py
+/server/*challenge_excel.mjs
+/server/talent-cloud-admin.service
+/server/talent-cloud-snapshot.service
+/server/talent-cloud-snapshot.timer
+/server/deployment_reports/
+cloud_data/
+cloud_snapshots/
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+
+# Dependencies, training output, and temporary workspaces
+node_modules/
+/.codex-artifacts/
+/tmp/
+/pw_stage/
+**/build-codex*/
+/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/custom/agentMin/training/logs/

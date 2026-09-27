@@ -1,0 +1,21 @@
+name: Repository privacy
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  privacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test privacy guard
+        run: python3 -m unittest discover -s scripts -p test_privacy_guard.py
+      - name: Check tracked files and credentials
+        run: python3 scripts/privacy_guard.py --revision HEAD
+      - name: Check repository history
+        run: python3 scripts/privacy_guard.py --history
