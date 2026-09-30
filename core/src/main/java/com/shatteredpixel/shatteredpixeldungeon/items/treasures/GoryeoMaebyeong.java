@@ -5,6 +5,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 public class GoryeoMaebyeong extends Treasures {
 
 	public GoryeoMaebyeong() {
-		super(EXItemSpriteSheet.GORYEO_MAEBYEONG, CollectionRarity.COMMON, 900);
+		super(EXItemSpriteSheet.GORYEO_MAEBYEONG, CollectionRarity.TOP, 6000);
 	}
 }

@@ -152,7 +152,7 @@ public class WandOfCursedFlameCastTest {
         }
     }
 
-    @Test public void directMagicHitUsesSharedCursedFireResistanceAndBothTags() {
+    @Test public void directMagicHitUsesOnlyMagicRatherThanCursedBurningResistance() {
         RecordingGnoll fiery = new RecordingGnoll(24) {
             @Override public float resist(Class effect) {
                 return effect == CursedFlameDamage.class ? 0.5f : 1f;
@@ -165,9 +165,9 @@ public class WandOfCursedFlameCastTest {
                 @Override public int damageRoll(Char target) { return 20; }
             };
             wand.onZap(new Ballistica(hero.pos, fiery.pos, wand.collisionProperties(fiery.pos)));
-            assertEquals(8, fiery.damage);
+            assertEquals(20, fiery.damage);
             assertTrue(DamageTag.of(fiery.tags).contains(DamageTag.MAGICAL));
-            assertTrue(DamageTag.of(fiery.tags).contains(DamageTag.FIRE));
+            assertFalse(DamageTag.of(fiery.tags).contains(DamageTag.FIRE));
             assertFalse(DamageTag.of(fiery.tags).contains(DamageTag.PHYSICAL));
         } finally {
             Actor.remove(fiery);

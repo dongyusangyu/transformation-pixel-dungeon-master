@@ -217,6 +217,11 @@ public class QuickRecipe extends Component {
 				Wand.PlaceHolder.class));
 		recipes.add(new GuideRecipe(new RubbingsTome.Recipe(), RubbingsTome.class,
 				Scroll.PlaceHolder.class, Scroll.PlaceHolder.class, Stylus.class));
+		return recipes;
+	}
+
+	static ArrayList<GuideRecipe> weaponCraftingGuideRecipes() {
+		ArrayList<GuideRecipe> recipes = new ArrayList<>();
 		recipes.add(new GuideRecipe(new Necronomicon.Recipe(), Necronomicon.class,
 				CorpseDust.class, RubbingsTome.class,
 				Necronomicon.AlchemyWandPlaceholder.class));
@@ -449,6 +454,9 @@ public class QuickRecipe extends Component {
 					ArrayList<Item> inputs = recipe.getIngredients();
 					result.add(new QuickRecipe(recipe, inputs, recipe.sampleOutput(inputs))
 							.disableQuickAlchemy());
+				}
+				for (GuideRecipe recipe : weaponCraftingGuideRecipes()) {
+					result.add(recipe.create());
 				}
 				return result;
 		}

@@ -77,6 +77,11 @@ public enum Rankings {
 	public ArrayList<Record> records;
 	private ArrayList<Record> heroHallRecords = new ArrayList<>();
 	private final LinkedHashSet<String> restartSourceGameIDs = new LinkedHashSet<>();
+	private final LinkedHashSet<String> deletedGameIDs = new LinkedHashSet<>();
+	private final LinkedHashSet<String> deletedHeroHallIDs = new LinkedHashSet<>();
+	private final LinkedHashSet<String> restoredHeroHallIDs = new LinkedHashSet<>();
+	private long syncGeneration;
+	private long syncRevision;
 	public int lastRecord;
 	public int totalNumber;
 	public int wonNumber;
@@ -526,6 +531,12 @@ public enum Rankings {
 	private static final String NEW_CYCLE_WON   = "new_cycle_won";
 	static final String HERO_HALL_RECORDS = "hero_hall_records";
 	static final String RESTART_SOURCE_GAME_IDS = "restart_source_game_ids";
+	private static final String LATEST_GAME_ID = "latest_game_id";
+	private static final String SYNC_GENERATION = "sync_generation";
+	private static final String SYNC_REVISION = "sync_device_revision";
+	private static final String DELETED_GAME_IDS = "deleted_game_ids";
+	private static final String DELETED_HERO_HALL_IDS = "deleted_hero_hall_ids";
+	private static final String RESTORED_HERO_HALL_IDS = "restored_hero_hall_ids";
 
 	public static final String LATEST_DAILY	        = "latest_daily";
 	public static final String DAILY_HISTORY_DATES  = "daily_history_dates";
@@ -540,6 +551,14 @@ public enum Rankings {
 		Bundle bundle = new Bundle();
 		bundle.put( RECORDS, records );
 		bundle.put( LATEST, lastRecord );
+		bundle.put(LATEST_GAME_ID, lastRecord >= 0 && lastRecord < records.size()
+				? records.get(lastRecord).gameID : "");
+		bundle.put(SYNC_GENERATION, syncGeneration);
+		long nextRevision = Math.max(syncRevision + 1, System.currentTimeMillis());
+		bundle.put(SYNC_REVISION, nextRevision);
+		bundle.put(DELETED_GAME_IDS, deletedGameIDs.toArray(new String[0]));
+		bundle.put(DELETED_HERO_HALL_IDS, deletedHeroHallIDs.toArray(new String[0]));
+		bundle.put(RESTORED_HERO_HALL_IDS, restoredHeroHallIDs.toArray(new String[0]));
 		bundle.put( TOTAL, totalNumber );
 		bundle.put( WON, wonNumber );
 		bundle.put( NEW_CYCLE_TOTAL, newCycleTotalNumber );
@@ -563,6 +582,7 @@ public enum Rankings {
 
 		try {
 			FileUtils.bundleToFile( RANKINGS_FILE, bundle);
+			syncRevision = nextRevision;
 			return true;
 		} catch (IOException e) {
 			ShatteredPixelDungeon.reportException(e);
@@ -580,21 +600,44 @@ public enum Rankings {
 		records = new ArrayList<>();
 		heroHallRecords = new ArrayList<>();
 		restartSourceGameIDs.clear();
+		deletedGameIDs.clear();
+		deletedHeroHallIDs.clear();
+		restoredHeroHallIDs.clear();
+		syncGeneration = syncRevision = 0;
+		lastRecord = -1;
+		totalNumber = wonNumber = newCycleTotalNumber = newCycleWonNumber = 0;
+		latestDaily = latestDailyReplay = null;
+		dailyScoreHistory.clear();
 		
 		try {
 			Bundle bundle = FileUtils.bundleFromFile( RANKINGS_FILE );
+			syncGeneration = bundle.contains(SYNC_GENERATION) ? Math.max(0, bundle.getLong(SYNC_GENERATION)) : 0;
+			syncRevision = bundle.contains(SYNC_REVISION) ? Math.max(0, bundle.getLong(SYNC_REVISION)) : 0;
+			loadSyncIDs(bundle, DELETED_GAME_IDS, deletedGameIDs);
+			loadSyncIDs(bundle, DELETED_HERO_HALL_IDS, deletedHeroHallIDs);
+			loadSyncIDs(bundle, RESTORED_HERO_HALL_IDS, restoredHeroHallIDs);
 			
 			for (Bundlable record : bundle.getCollection( RECORDS )) {
-				records.add( (Record)record );
+				if (!deletedGameIDs.contains(((Record) record).gameID)) records.add((Record) record);
 			}
 			if (bundle.contains(HERO_HALL_RECORDS)) {
 				for (Bundlable record : bundle.getCollection(HERO_HALL_RECORDS)) {
-					heroHallRecords.add((Record) record);
+					if (!deletedHeroHallIDs.contains(((Record) record).gameID)) heroHallRecords.add((Record) record);
 				}
 				Collections.sort(heroHallRecords, scoreComparator);
 			}
 			boolean needsSave = restoreRestartReservations(bundle);
 			lastRecord = bundle.getInt( LATEST );
+			if (bundle.contains(LATEST_GAME_ID)) {
+				lastRecord = -1;
+				String latestID = bundle.getString(LATEST_GAME_ID);
+				for (int index = 0; index < records.size(); index++) {
+					if (latestID.equals(records.get(index).gameID)) {
+						lastRecord = index;
+						break;
+					}
+				}
+			}
 			ArrayList<Record> originalOrder = new ArrayList<>(records);
 			int originalLastRecord = lastRecord;
 			normalizeRecords();
@@ -674,6 +717,16 @@ public enum Rankings {
 			}
 		}
 		return summary.toArray(new String[0]);
+	}
+
+	private static void loadSyncIDs(Bundle bundle, String key, Set<String> ids) {
+		if (!bundle.contains(key)) return;
+		String[] stored = bundle.getStringArray(key);
+		if (stored != null) {
+			for (String id : stored) {
+				if (id != null && !id.isEmpty()) ids.add(id);
+			}
+		}
 	}
 	
 	public static class Record implements Bundlable {
@@ -1015,11 +1068,15 @@ public enum Rankings {
 		if (!copyToHeroHall(heroHallRecords, record)) {
 			return false;
 		}
+		boolean wasDeleted = deletedHeroHallIDs.remove(record.gameID);
+		restoredHeroHallIDs.add(record.gameID);
 		if (saveWithResult()) {
 			uploadCloudData();
 			return true;
 		}
 		removeFromHeroHall(heroHallRecords, record.gameID);
+		if (wasDeleted) deletedHeroHallIDs.add(record.gameID);
+		restoredHeroHallIDs.remove(record.gameID);
 		return false;
 	}
 
@@ -1036,12 +1093,67 @@ public enum Rankings {
 			}
 		}
 		removeFromHeroHall(heroHallRecords, record.gameID);
+		deletedHeroHallIDs.add(record.gameID);
+		boolean wasRestored = restoredHeroHallIDs.remove(record.gameID);
 		if (saveWithResult()) {
 			uploadCloudData();
 			return true;
 		}
 		heroHallRecords.add(removed);
+		deletedHeroHallIDs.remove(record.gameID);
+		if (wasRestored) restoredHeroHallIDs.add(record.gameID);
 		Collections.sort(heroHallRecords, scoreComparator);
+		return false;
+	}
+
+	public boolean removeRecord(Record record) {
+		load();
+		if (record == null || record.gameID == null || !records.contains(record)) return false;
+		ArrayList<Record> previous = new ArrayList<>(records);
+		int previousLatest = lastRecord;
+		Record latest = lastRecord >= 0 && lastRecord < records.size() ? records.get(lastRecord) : null;
+		records.remove(record);
+		deletedGameIDs.add(record.gameID);
+		lastRecord = normalizeRecords(records, latest == record ? null : latest);
+		if (saveWithResult()) {
+			uploadCloudData();
+			return true;
+		}
+		records = previous;
+		lastRecord = previousLatest;
+		deletedGameIDs.remove(record.gameID);
+		return false;
+	}
+
+	public boolean clearRecords() {
+		load();
+		ArrayList<Record> previousRecords = records;
+		LinkedHashMap<Long, Double> previousHistory = dailyScoreHistory;
+		LinkedHashSet<String> previousDeleted = new LinkedHashSet<>(deletedGameIDs);
+		long previousGeneration = syncGeneration;
+		Record previousDaily = latestDaily;
+		Record previousReplay = latestDailyReplay;
+		int[] counts = {lastRecord, totalNumber, wonNumber, newCycleTotalNumber, newCycleWonNumber, localTotal, localWon};
+		records = new ArrayList<>();
+		dailyScoreHistory = new LinkedHashMap<>();
+		deletedGameIDs.clear();
+		syncGeneration = Math.max(syncGeneration + 1, System.currentTimeMillis());
+		lastRecord = -1;
+		totalNumber = wonNumber = newCycleTotalNumber = newCycleWonNumber = localTotal = localWon = 0;
+		latestDaily = latestDailyReplay = null;
+		if (saveWithResult()) {
+			uploadCloudData();
+			return true;
+		}
+		records = previousRecords;
+		dailyScoreHistory = previousHistory;
+		deletedGameIDs.addAll(previousDeleted);
+		syncGeneration = previousGeneration;
+		latestDaily = previousDaily;
+		latestDailyReplay = previousReplay;
+		lastRecord = counts[0]; totalNumber = counts[1]; wonNumber = counts[2];
+		newCycleTotalNumber = counts[3]; newCycleWonNumber = counts[4];
+		localTotal = counts[5]; localWon = counts[6];
 		return false;
 	}
 

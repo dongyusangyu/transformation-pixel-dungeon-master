@@ -5,9 +5,10 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnightBombardment.Band;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.Group;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.TextureFilm;
 import com.watabou.utils.RectF;
@@ -51,11 +52,11 @@ public class DeathKnightSlash extends Image {
         frame(frames[0]);
     }
 
-    public static void show(Group parent, int from, int[] affectedCells, Band[] bands) {
+    public static void show(int from, int[] affectedCells, Band[] bands) {
         Level level = Dungeon.level;
-        if (parent == null || level == null || !SPDSettings.charAnimations()) return;
+        if (level == null || !SPDSettings.charAnimations()) return;
         Entry[] entries = plan(level.width(), level.length(), from, affectedCells, bands);
-        if (entries.length > 0) parent.add(new DeathKnightSlash(level, from, entries));
+        if (entries.length > 0) GameScene.effect(new DeathKnightSlash(level, from, entries));
     }
 
     static Entry[] plan(int width, int length, int from, int[] affectedCells, Band[] bands) {
@@ -99,13 +100,30 @@ public class DeathKnightSlash extends Image {
     }
 
     @Override
+    public boolean isVisible() {
+        Camera camera = camera();
+        if (!visible || !exists || camera == null || Dungeon.level != level || level.heroFOV == null) return false;
+        // This Image draws many cells; its last draw position is not the batch's bounding box.
+        for (Entry entry : entries) {
+            if (entry.cell >= level.heroFOV.length || !level.heroFOV[entry.cell]) continue;
+            float cellX = entry.cell % level.width() * DungeonTilemap.SIZE;
+            float cellY = entry.cell / level.width() * DungeonTilemap.SIZE;
+            if (cellX <= camera.scroll.x + camera.width && cellX + DungeonTilemap.SIZE >= camera.scroll.x
+                    && cellY <= camera.scroll.y + camera.height && cellY + DungeonTilemap.SIZE >= camera.scroll.y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void draw() {
         if (Dungeon.level != level || level.heroFOV == null) return;
         int lastFrame = -1;
         boolean lastFlipH = false;
         boolean lastFlipV = false;
         for (Entry entry : entries) {
-            if (!level.heroFOV[entry.cell]) continue;
+            if (entry.cell >= level.heroFOV.length || !level.heroFOV[entry.cell]) continue;
             int index = frameIndex(elapsed, entry.delay);
             if (index < 0) continue;
             int cellX = entry.cell % level.width();

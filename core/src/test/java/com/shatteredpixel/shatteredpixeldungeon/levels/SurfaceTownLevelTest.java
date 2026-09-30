@@ -61,6 +61,23 @@ public class SurfaceTownLevelTest {
 		assertEquals(0, Dungeon.LimitedDrops.HIKING_BACKPACK.count);
 	}
 
+	@Test
+	public void surfaceShopSanitizerRemovesAllEquipmentCurses() {
+		Path sourcePath = Paths.get("src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/SurfaceTownLevel.java");
+		if (!Files.isRegularFile(sourcePath)) {
+			sourcePath = Paths.get("core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/SurfaceTownLevel.java");
+		}
+		String source;
+		try {
+			source = Files.readString(sourcePath);
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+		assertTrue(source.contains("((Weapon) item).enchant(null)"));
+		assertTrue(source.contains("((Armor) item).inscribe(null)"));
+		assertTrue(source.contains("item instanceof Ring || item instanceof Weapon || item instanceof Armor"));
+	}
+
 	private static int occurrences(String source, String token) {
 		int count = 0;
 		int offset = 0;

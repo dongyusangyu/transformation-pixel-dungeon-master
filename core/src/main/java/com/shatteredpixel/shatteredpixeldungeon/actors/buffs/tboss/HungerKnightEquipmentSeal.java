@@ -3,6 +3,8 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
 /** Temporarily suppresses weapon enchantments and armor glyphs without mutating items. */
@@ -19,6 +21,10 @@ public class HungerKnightEquipmentSeal extends Buff {
 
     public void setOwnerId(int ownerId) { this.ownerId = ownerId; }
     public int ownerId() { return ownerId; }
+
+    @Override public int icon() { return BuffIndicator.GLYPH_RECALL; }
+
+    @Override public void tintIcon(Image icon) { icon.hardlight(0x908498); }
 
     public static HungerKnightEquipmentSeal attach(Hero hero, int ownerId) {
         if (hero == null) return null;

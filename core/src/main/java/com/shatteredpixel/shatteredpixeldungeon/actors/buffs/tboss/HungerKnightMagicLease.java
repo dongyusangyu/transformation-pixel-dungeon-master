@@ -4,6 +4,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
 /**
@@ -33,6 +35,10 @@ public class HungerKnightMagicLease extends Buff {
     }
 
     public int ownerId() { return ownerId; }
+
+    @Override public int icon() { return BuffIndicator.WAND; }
+
+    @Override public void tintIcon(Image icon) { icon.hardlight(0xB34E59); }
 
     public static float capMovementSpeed(Hero hero, float speed) {
         return TowerBoss.towerRulesActive() && hero != null

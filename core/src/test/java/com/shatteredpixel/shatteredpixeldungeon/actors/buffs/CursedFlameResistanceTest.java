@@ -12,7 +12,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfElements;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfArcana;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.CorruptionDebuffRules;
-import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
@@ -44,14 +43,6 @@ public class CursedFlameResistanceTest {
 		target.HT = target.HP = 100;
 		CursedFlameDamage.apply(target, 1, this);
 		assertTrue(target.lastDamage >= 50 && target.lastDamage <= 60);
-	}
-
-	@Test
-	public void directWandHitDoesNotUseFrostElementalsBurningOverride() {
-		RecordingFrost target = new RecordingFrost();
-		target.HT = target.HP = 100;
-		CursedFlameDamage.applyMagical(target, 10, new WandOfCursedFlame());
-		assertEquals(10, target.lastDamage);
 	}
 
 	@Test
@@ -128,19 +119,6 @@ public class CursedFlameResistanceTest {
 			assertNotNull(Buff.affect(antiMagic, ChampionEnemy.AntiMagic.class));
 			CursedFlameDamage.apply(antiMagic, 20, CursedBurning.class);
 			assertEquals(90, antiMagic.HP);
-		}
-	}
-
-	@Test
-	public void antiMagicChampionBlocksTheWandsDirectMagicButNotCursedBurning() {
-		try (HeadlessDamageRun ignored = new HeadlessDamageRun()) {
-			Gnoll target = new Gnoll();
-			target.HT = target.HP = 100;
-			assertNotNull(Buff.affect(target, ChampionEnemy.AntiMagic.class));
-			CursedFlameDamage.applyMagical(target, 20, new WandOfCursedFlame());
-			assertEquals("the crafted wand is subject to the champion's wand immunity", 100, target.HP);
-			CursedFlameDamage.apply(target, 20, CursedBurning.class);
-			assertEquals("cursed burning retains the normal elemental damage reduction", 90, target.HP);
 		}
 	}
 

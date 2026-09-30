@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WeaponSpecial
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAggression;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
@@ -270,6 +271,8 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 			GLog.w(Messages.get(this, "follower_busy"));
 		} else if (Dungeon.level.distance(ball.pos, user.pos) != 1) {
 			GLog.w(Messages.get(this, "need_near_hero"));
+		} else if (isVisibleWallTarget(user, dst)) {
+			GLog.w(Messages.get(this, "wall_target"));
 		} else if (!inertialThrowPathAllowed(ball.pos, user.pos, dst,
 				hasEnchant(Projecting.class, user))) {
 			GLog.w(Messages.get(this, "wrong_path"));
@@ -278,6 +281,13 @@ public class ChainMace extends MeleeWeapon implements WeaponSpecialAction {
 		} else {
 			dispatchThrow(user, ball, dst);
 		}
+	}
+
+	private boolean isVisibleWallTarget(Hero hero, int cell) {
+		if (cell < 0 || cell >= Dungeon.level.length() || hero.fieldOfView == null
+				|| cell >= hero.fieldOfView.length || !hero.fieldOfView[cell]) return false;
+		int terrain = Dungeon.level.map[cell];
+		return terrain == Terrain.WALL || terrain == Terrain.WALL_DECO || terrain == Terrain.SECRET_DOOR;
 	}
 
 	@Override

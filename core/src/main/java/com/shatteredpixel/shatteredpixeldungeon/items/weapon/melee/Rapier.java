@@ -161,17 +161,22 @@ public class Rapier extends MeleeWeapon {
 					});
 				} else {
 					//spends charge but otherwise does not count as an ability use
-					Charger charger = Buff.affect(hero, Charger.class);
-					charger.partialCharge -= 1;
-					while (charger.partialCharge < 0 && charger.charges > 0) {
-						charger.charges--;
-						charger.partialCharge++;
-					}
+					spendChargeForMissedLunge(hero);
 					updateQuickslot();
 					GLog.w(Messages.get(Rapier.class, "ability_no_target"));
 					hero.spendAndNext(1/hero.speed());
 				}
 			}
 		});
+	}
+
+	static void spendChargeForMissedLunge(Hero hero) {
+		Charger charger = Buff.affect(hero, Charger.class);
+		charger.partialCharge -= 1;
+		while (charger.partialCharge < 0 && charger.charges > 0) {
+			charger.charges--;
+			charger.partialCharge++;
+		}
+		hero.belongings.abilityWeapon = null;
 	}
 }

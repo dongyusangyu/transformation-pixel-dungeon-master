@@ -184,6 +184,9 @@ public class Emitter extends Group {
 	abstract public static class Factory {
 		
 		abstract public void emit( Emitter emitter, int index, float x, float y );
+		public void emit( Emitter emitter, int index, float x, float y, int cell ) {
+			emit( emitter, index, x, y );
+		}
 		
 		public boolean lightMode() {
 			return false;

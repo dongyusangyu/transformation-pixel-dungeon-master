@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.GentlemanElfSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Bundle;
@@ -439,7 +440,7 @@ public class TowerBossLevel extends TowerLevel {
 				cup.pos = cell;
 				GameScene.add(cup, 1f);
 				gentlemanElfArena.cupId(cup.id());
-				if (boss.sprite != null) boss.yell(Messages.get(boss, "cup_spawn"));
+				GLog.n(Messages.get(boss, "cup_spawn"));
 				Splash.at(cell, 0x55CC66, 12);
 				return true;
 			}

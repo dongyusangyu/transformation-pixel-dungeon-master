@@ -44,6 +44,66 @@ public class AndroidPlatformSupportTest {
 	}
 
 	@Test
+	public void visibleNavigationAndTaskbarInsetsAreReservedForGameControls() {
+		AndroidPlatformSupport.SafeNavigationInsets insets =
+				AndroidPlatformSupport.safeNavigationInsets(18, 0, 96, false, false, true);
+
+		assertEquals(18, insets.left);
+		assertEquals(96, insets.bottom);
+	}
+
+	@Test
+	public void hiddenNavigationBarsDoNotReserveObsoleteInsets() {
+		AndroidPlatformSupport.SafeNavigationInsets insets =
+				AndroidPlatformSupport.safeNavigationInsets(18, 0, 96, true, false, false);
+
+		assertEquals(0, insets.left);
+		assertEquals(0, insets.bottom);
+	}
+
+	@Test
+	public void visibleNavigationIsReservedEvenIfFullscreenWasRequested() {
+		AndroidPlatformSupport.SafeNavigationInsets insets =
+				AndroidPlatformSupport.safeNavigationInsets(0, 0, 96, true, false, true);
+
+		assertEquals(96, insets.bottom);
+	}
+
+	@Test
+	public void systemInsetChangesAndNavigationModeChangesRequestRelayout() {
+		assertFalse(AndroidPlatformSupport.shouldRelayoutForSystemInsets(null,
+				new AndroidPlatformSupport.SystemInsets(0, 0, 0, false, false, true)));
+		assertTrue(AndroidPlatformSupport.shouldRelayoutForSystemInsets(null,
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, false, true)));
+		assertTrue(AndroidPlatformSupport.shouldRelayoutForSystemInsets(
+				new AndroidPlatformSupport.SystemInsets(0, 0, 64, false, false, true),
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, false, true)));
+		assertTrue(AndroidPlatformSupport.shouldRelayoutForSystemInsets(
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, false, true),
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, true, false, false)));
+		assertTrue(AndroidPlatformSupport.shouldRelayoutForSystemInsets(
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, false, true),
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, true, true)));
+		assertFalse(AndroidPlatformSupport.shouldRelayoutForSystemInsets(
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, false, true),
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, false, false, true)));
+		assertFalse(AndroidPlatformSupport.shouldRelayoutForSystemInsets(
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, true, false, false),
+				new AndroidPlatformSupport.SystemInsets(0, 0, 144, true, false, false)));
+	}
+
+	@Test
+	public void keyboardInsetsDoNotTriggerNavigationRelayout() {
+		AndroidPlatformSupport.SystemInsets before =
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, true, false, false);
+		AndroidPlatformSupport.SystemInsets keyboardVisible =
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, true, false, true, true);
+		assertFalse(AndroidPlatformSupport.shouldRelayoutForSystemInsets(before, keyboardVisible));
+		assertTrue(AndroidPlatformSupport.shouldRelayoutForSystemInsets(before,
+				new AndroidPlatformSupport.SystemInsets(0, 0, 96, true, false, true)));
+	}
+
+	@Test
 	public void windowFocusLossDoesNotRefreshSystemUI() {
 		assertTrue(AndroidLauncher.shouldUpdateSystemUIOnWindowFocusChange(true));
 		assertFalse(AndroidLauncher.shouldUpdateSystemUIOnWindowFocusChange(false));

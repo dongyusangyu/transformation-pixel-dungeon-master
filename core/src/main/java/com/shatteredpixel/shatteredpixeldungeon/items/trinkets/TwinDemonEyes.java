@@ -27,7 +27,6 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
-import com.watabou.utils.Callback;
 import com.watabou.utils.Random;
 
 import java.util.Set;
@@ -61,6 +60,7 @@ public class TwinDemonEyes extends Trinket {
 
     private Mode mode = randomMode();
     private boolean lockActive;
+    private boolean finishingLock;
     private int lockTargetId;
     private int lastTargetCell = -1;
     private int elapsedLockTurns;
@@ -82,9 +82,7 @@ public class TwinDemonEyes extends Trinket {
             return Messages.get(this, "typical_stats_desc", lockDuration());
         }
         if (mode == Mode.FLAME_EYE) {
-            int level = Math.max(0, Math.min(3, buffedLvl()));
-            return Messages.get(this, "stats_desc_flame", lockDuration(), flameShotCount(lockDuration()),
-                    4, 1 + level);
+            return Messages.get(this, "stats_desc_flame", lockDuration());
         }
         return Messages.get(this, "stats_desc_laser", lockDuration());
     }
@@ -99,10 +97,6 @@ public class TwinDemonEyes extends Trinket {
 
     static boolean isFlameShotTurn(int lockTurn) {
         return lockTurn > 0 && (lockTurn & 1) == 1;
-    }
-
-    private static int flameShotCount(int duration) {
-        return (duration + 1) / 2;
     }
 
     public boolean isLocked() {
@@ -223,21 +217,22 @@ public class TwinDemonEyes extends Trinket {
     }
 
     public boolean finishLock(FinishReason reason) {
-        if (!lockActive) return false;
-        onLockFinish(reason);
-        clearAwareness(Dungeon.hero);
-        lockActive = false;
-        lockTargetId = 0;
-        lastTargetCell = -1;
-        elapsedLockTurns = 0;
-        lockDepth = -1;
-        lockBranch = -1;
-        mode = mode == Mode.FLAME_EYE ? Mode.LASER_EYE : Mode.FLAME_EYE;
-        if (com.badlogic.gdx.Gdx.app != null) {
-            GLog.w(Messages.get(this, mode == Mode.LASER_EYE
-                    ? "mode_changed_laser" : "mode_changed_flame"));
+        if (!lockActive || finishingLock) return false;
+        // Damage can remove the item or target while its final laser is resolving.
+        finishingLock = true;
+        try {
+            onLockFinish(reason);
+            clearAwareness(Dungeon.hero);
+            clearLockState();
+            mode = mode == Mode.FLAME_EYE ? Mode.LASER_EYE : Mode.FLAME_EYE;
+            if (com.badlogic.gdx.Gdx.app != null) {
+                GLog.w(Messages.get(this, mode == Mode.LASER_EYE
+                        ? "mode_changed_laser" : "mode_changed_flame"));
+            }
+            return true;
+        } finally {
+            finishingLock = false;
         }
-        return true;
     }
 
     @Override
@@ -314,8 +309,9 @@ public class TwinDemonEyes extends Trinket {
                 return Messages.get(this, "desc_flame", damage, 4, 1 + level, turns);
             }
             int level = eyes.buffedLvl();
-            int maxDamage = (5 + level) * eyes.lockDuration();
             int minDamage = 5 + level;
+            int chargedTurns = Math.max(1, eyes.elapsedLockTurns);
+            int maxDamage = minDamage * chargedTurns;
             int turns = Math.max(0, eyes.lockDuration() - eyes.elapsedLockTurns);
             return Messages.get(this, "desc_laser", minDamage, maxDamage, turns);
         }
@@ -387,7 +383,8 @@ public class TwinDemonEyes extends Trinket {
         final int expectedBranch = Dungeon.branch;
         final int itemLevel = buffedLvl();
         final int burnTurns = elapsedLockTurns == 1 ? 4 : 1 + itemLevel;
-        Ballistica shot = new Ballistica(owner.pos, aimCell, Ballistica.PROJECTILE);
+        final int sourceCell = owner.pos;
+        Ballistica shot = new Ballistica(sourceCell, aimCell, Ballistica.PROJECTILE);
         int collisionCell = shot.collisionPos;
         int previousFreeCell = shot.path.get(Math.max(0, shot.dist - 1));
         if (collisionCell != aimCell && Actor.findChar(collisionCell) == null
@@ -402,24 +399,14 @@ public class TwinDemonEyes extends Trinket {
         final int impactCell = collisionCell;
         final int freeCell = previousFreeCell;
 
-        if (owner.sprite == null || owner.sprite.parent == null) {
-            resolveFlameImpact(expectedLevel, owner, expectedDepth, expectedBranch,
-                    impactCell, freeCell, itemLevel, burnTurns);
-            return;
+        if (owner.sprite != null && owner.sprite.parent != null) {
+            Sample.INSTANCE.play(Assets.Sounds.ZAP, 1f, Random.Float(0.9f, 1.1f));
+            MagicMissile missile = (MagicMissile) owner.sprite.parent.recycle(MagicMissile.class);
+            missile.reset(MagicMissile.CURSED_FLAME, sourceCell, impactCell, null);
         }
-
-        Sample.INSTANCE.play(Assets.Sounds.ZAP, 1f, Random.Float(0.9f, 1.1f));
-        final boolean[] settled = {false};
-        MagicMissile.boltFromChar(owner.sprite.parent, MagicMissile.CURSED_FLAME,
-                owner.sprite, impactCell, new Callback() {
-                    @Override public void call() {
-                        if (settled[0]) return;
-                        settled[0] = true;
-                        if (!isCurrentContext(expectedLevel, owner, expectedDepth, expectedBranch, false)) return;
-                        resolveFlameImpact(expectedLevel, owner, expectedDepth, expectedBranch,
-                                impactCell, freeCell, itemLevel, burnTurns);
-                    }
-                });
+        // Resolve on the actor thread before another actor can leave the impact cell.
+        resolveFlameImpact(expectedLevel, owner, expectedDepth, expectedBranch,
+                impactCell, freeCell, itemLevel, burnTurns);
     }
 
     protected void onLockFinish(FinishReason reason) {
@@ -468,37 +455,25 @@ public class TwinDemonEyes extends Trinket {
     private void fireLaser(Level expectedLevel, Hero owner, int expectedDepth, int expectedBranch,
                            int destination, int itemLevel, int chargedTurns, boolean allowRemovedItem) {
         if (!isCurrentContext(expectedLevel, owner, expectedDepth, expectedBranch, allowRemovedItem)) return;
-        int endpoint = fixedRangeEndpoint(expectedLevel, owner.pos, destination, 12);
-        Ballistica ray = new Ballistica(owner.pos, endpoint, Ballistica.STOP_TARGET);
-        int endIndex = ray.dist;
+        int sourceCell = owner.pos;
+        // Clip the original ray by length; clamping an extrapolated endpoint changes its direction.
+        Ballistica ray = new Ballistica(sourceCell, destination, Ballistica.WONT_STOP);
+        int endIndex = Math.min(12, ray.path.size() - 1);
         int endCell = ray.path.get(Math.max(0, endIndex));
         resolveLaserPath(expectedLevel, owner, ray.path, endIndex, itemLevel, chargedTurns);
 
         if (owner.sprite != null && owner.sprite.parent != null) {
             Beam beam;
             if (chargedTurns < 8) {
-                beam = new Beam.DeathRay(owner.sprite.center(), DungeonTilemap.raisedTileCenterToWorld(endCell));
+                beam = new Beam.DeathRay(DungeonTilemap.raisedTileCenterToWorld(sourceCell),
+                        DungeonTilemap.raisedTileCenterToWorld(endCell));
             } else {
-                beam = new Beam.LightRay(owner.sprite.center(), DungeonTilemap.raisedTileCenterToWorld(endCell));
+                beam = new Beam.LightRay(DungeonTilemap.raisedTileCenterToWorld(sourceCell),
+                        DungeonTilemap.raisedTileCenterToWorld(endCell));
                 beam.tint(1f, 0.16f, 0.16f, 1f);
             }
             owner.sprite.parent.add(beam);
         }
-    }
-
-    private static int fixedRangeEndpoint(Level level, int source, int destination, int range) {
-        int width = level.width();
-        int height = level.height();
-        int sx = source % width;
-        int sy = source / width;
-        int dx = destination % width - sx;
-        int dy = destination / width - sy;
-        int distance = Math.max(Math.abs(dx), Math.abs(dy));
-        if (distance == 0 || range <= 0) return source;
-        float scale = range / (float) distance;
-        int ex = Math.max(0, Math.min(width - 1, Math.round(sx + dx * scale)));
-        int ey = Math.max(0, Math.min(height - 1, Math.round(sy + dy * scale)));
-        return ex + ey * width;
     }
 
     void resolveLaserPath(Level expectedLevel, Hero owner, java.util.List<Integer> path,

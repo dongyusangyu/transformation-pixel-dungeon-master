@@ -129,6 +129,28 @@ public class SkeletonKey extends Artifact {
 
 	}
 
+	private static int findDoorPushCell(int userPos, int target, Char toMove){
+		int opposite = target + (target - userPos);
+		if (Dungeon.level.insideMap(opposite)
+				&& !Dungeon.level.solid[opposite]
+				&& Actor.findChar(opposite) == null
+				&& (Dungeon.level.openSpace[opposite] || !Char.hasProp(toMove, Char.Property.LARGE))){
+			return opposite;
+		}
+		int pushCell = -1;
+		for (int i : PathFinder.NEIGHBOURS8){
+			int cell = target + i;
+			if (Dungeon.level.insideMap(cell)
+					&& !Dungeon.level.solid[cell]
+					&& Actor.findChar(cell) == null
+					&& (Dungeon.level.openSpace[cell] || !Char.hasProp(toMove, Char.Property.LARGE))
+					&& (pushCell == -1 || Dungeon.level.trueDistance(userPos, pushCell) < Dungeon.level.trueDistance(userPos, cell))){
+				pushCell = cell;
+			}
+		}
+		return pushCell;
+	}
+
 	public CellSelector.Listener targeter = new CellSelector.Listener(){
 
 		@Override
@@ -226,17 +248,7 @@ public class SkeletonKey extends Artifact {
 
 							Char toMove = Actor.findChar(target);
 
-							int pushCell = -1;
-							//push to the closest open cell that's further than the door
-							for (int i : PathFinder.NEIGHBOURS8){
-								if (!Dungeon.level.solid[target+i]
-										&& Actor.findChar(target+i) == null
-										&& (Dungeon.level.openSpace[target+i] || !Char.hasProp(toMove, Char.Property.LARGE))
-										&& Dungeon.level.trueDistance(curUser.pos, target+i) > Dungeon.level.trueDistance(curUser.pos, target)
-										&& (pushCell == -1 || Dungeon.level.trueDistance(curUser.pos, pushCell) > Dungeon.level.trueDistance(curUser.pos, target + i))){
-									pushCell = target + i;
-								}
-							}
+							int pushCell = findDoorPushCell(curUser.pos, target, toMove);
 
 							if (pushCell != -1 && !Char.hasProp(toMove, Char.Property.IMMOVABLE)){
 								Ballistica push = new Ballistica(target, pushCell, Ballistica.PROJECTILE);

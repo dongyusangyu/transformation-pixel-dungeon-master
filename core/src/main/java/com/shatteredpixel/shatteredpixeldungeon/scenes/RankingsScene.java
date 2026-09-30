@@ -47,6 +47,8 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndDailies;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndRanking;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndVictoryCongrats;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
@@ -233,6 +235,29 @@ public class RankingsScene extends PixelScene {
 			SPDSettings.victoryNagged(true);
 			add(new WndVictoryCongrats());
 		}
+
+		IconButton btnClear = new IconButton(Icons.CLOSE.get()) {
+			@Override protected String hoverText() {
+				return Messages.get(RankingsScene.class, "clear_title");
+			}
+			@Override protected void onClick() {
+				addToFront(new WndOptions(Messages.get(RankingsScene.class, "clear_title"),
+						Messages.get(RankingsScene.class, "clear_confirm"),
+						Messages.get(RankingsScene.class, "delete_yes"),
+						Messages.get(RankingsScene.class, "delete_no")) {
+					@Override protected void onSelect(int index) {
+						if (index != 0) return;
+						if (Rankings.INSTANCE.clearRecords()) {
+							ShatteredPixelDungeon.switchNoFade(RankingsScene.this.getClass());
+						} else {
+							addToFront(new WndMessage(Messages.get(RankingsScene.class, "delete_failed")));
+						}
+					}
+				});
+			}
+		};
+		btnClear.setRect(left, insets.top, 16, 20);
+		add(btnClear);
 
 		add(btnCycleRankings);
 		if (btnHeroHall != null) {
@@ -426,6 +451,24 @@ public class RankingsScene extends PixelScene {
 		@Override
 		protected void onClick() {
 			parent.add( new WndRanking( rec, fromHeroHall ) );
+		}
+
+		@Override protected boolean onLongClick() {
+			if (fromHeroHall) return false;
+			parent.add(new WndOptions(Messages.get(RankingsScene.class, "delete_title"),
+					Messages.get(RankingsScene.class, "delete_confirm"),
+					Messages.get(RankingsScene.class, "delete_yes"),
+					Messages.get(RankingsScene.class, "delete_no")) {
+				@Override protected void onSelect(int index) {
+					if (index != 0) return;
+					if (Rankings.INSTANCE.removeRecord(rec)) {
+						ShatteredPixelDungeon.switchNoFade(rec.newCycle ? NewCycleRankingsScene.class : RankingsScene.class);
+					} else {
+						ShatteredPixelDungeon.scene().add(new WndMessage(Messages.get(RankingsScene.class, "delete_failed")));
+					}
+				}
+			});
+			return true;
 		}
 	}
 }

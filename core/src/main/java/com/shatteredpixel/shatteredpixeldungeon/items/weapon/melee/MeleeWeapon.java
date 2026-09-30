@@ -591,6 +591,8 @@ public class MeleeWeapon extends Weapon {
 	public enum UpgradeAbilityStatType {
 		LEGACY(null),
 		DAMAGE("ability_damage"),
+		AMBUSH_DAMAGE("ability_ambush_damage"),
+		ATTACK_RANGE("feature_attack_range"),
 		DURATION("ability_duration"),
 		MIRROR_HEALTH("ability_mirror_health"),
 		KNOCKBACK_DISTANCE("ability_knockback_distance"),

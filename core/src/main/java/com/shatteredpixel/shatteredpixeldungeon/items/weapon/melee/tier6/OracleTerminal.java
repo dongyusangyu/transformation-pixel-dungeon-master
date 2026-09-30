@@ -16,6 +16,7 @@ package com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Bleeding;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -32,6 +33,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.abilities.princess.K
 import com.shatteredpixel.shatteredpixeldungeon.ui.AttackIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.watabou.utils.Callback;
+import com.watabou.noosa.audio.Sample;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -311,12 +313,32 @@ public class OracleTerminal extends MeleeWeapon {
 				GLog.w(Messages.get(this, "ability_no_target"));
 				return;
 			}
-			beforeAbilityUsed(hero, enemy);
-			int bleed = 25 + 4 * Math.max(0, buffedLvl());
-			if (enemy.isImmune(Bleeding.class)) enemy.damage(bleed, hero, DamageTag.PHYSICAL);
-			else Buff.affect(enemy, Bleeding.class).set(bleed);
-			hero.spendAndNext(Actor.TICK);
-			afterAbilityUsed(hero);
+			hero.chooseEnemy(enemy);
+			hero.busy();
+			Callback harvest = new Callback() {
+				@Override
+				public void call() {
+					if (!isValidEnemy(hero, enemy) || enemy.pos != target) {
+						hero.next();
+						return;
+					}
+					beforeAbilityUsed(hero, enemy);
+					AttackIndicator.target(enemy);
+					Invisibility.dispel();
+					int bleed = 25 + 4 * Math.max(0, buffedLvl());
+					if (enemy.isImmune(Bleeding.class)) {
+						enemy.damage(bleed, hero, DamageTag.PHYSICAL);
+					} else {
+						Buff.affect(enemy, Bleeding.class).set(bleed);
+					}
+					Sample.INSTANCE.play(Assets.Sounds.HIT_SLASH);
+					if (!enemy.isAlive()) onAbilityKill(hero, enemy);
+					hero.spendAndNext(Actor.TICK);
+					afterAbilityUsed(hero);
+				}
+			};
+			if (hero.sprite == null) harvest.call();
+			else hero.sprite.attack(enemy.pos, harvest);
 			return;
 		}
 		if (hasForm(hero, Form.SLASH)) {
@@ -388,25 +410,39 @@ public class OracleTerminal extends MeleeWeapon {
 
 	@Override
 	public String targetingPrompt() {
-		if (spoonAbility(com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero)) return null;
+		if (!usesAbilityTargeting(currentFormType(
+				com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero))) return null;
 		return Messages.get(this, "prompt");
 	}
 
 	@Override
+	public String actionName(String action, Hero hero) {
+		if (action.equals(AC_ABILITY)) {
+			return Messages.upperCase(Messages.get(this, abilityNameKey(currentFormType(hero))));
+		}
+		return super.actionName(action, hero);
+	}
+
+	static boolean usesAbilityTargeting(Form form) {
+		return form != Form.SLASH && form != Form.SPOON;
+	}
+
+	static String abilityNameKey(Form form) {
+		if (form == null || form == Form.BLUNT) return "ability_name";
+		switch (form) {
+			case SLASH: return "slash_ability_name";
+			case THRUST: return "thrust_ability_name";
+			case SCYTHE: return "scythe_ability_name";
+			case SPOON: return "spoon_ability_name";
+			default: return "ability_name";
+		}
+	}
+
+	@Override
 	protected String abilityName() {
-		if (spoonAbility(com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero)) {
-			return Messages.titleCase(Messages.get(this, "spoon_ability_name"));
-		}
-		if (hasForm(com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero, Form.SCYTHE)) {
-			return Messages.titleCase(Messages.get(this, "scythe_ability_name"));
-		}
-		if (hasForm(com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero, Form.SLASH)) {
-			return Messages.titleCase(Messages.get(this, "slash_ability_name"));
-		}
-		if (hasForm(com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero, Form.THRUST)) {
-			return Messages.titleCase(Messages.get(this, "thrust_ability_name"));
-		}
-		return super.abilityName();
+		return Messages.titleCase(Messages.get(this,
+				abilityNameKey(currentFormType(
+						com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero))));
 	}
 
 	@Override

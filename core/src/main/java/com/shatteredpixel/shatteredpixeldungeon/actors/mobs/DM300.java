@@ -652,7 +652,7 @@ public class DM300 extends Mob {
 			Statistics.subLimation[2] = true;
 		}
 
-		Badges.validateBossSlain();
+		Badges.validateBossSlain(Badges.BossIdentity.DM300);
 		Badges.validateDM400Unlock();
 		if (Statistics.qualifiedForBossChallengeBadge){
 			Badges.validateBossChallengeCompleted();

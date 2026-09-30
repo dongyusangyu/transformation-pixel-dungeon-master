@@ -202,6 +202,10 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.Starflower;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Stormvine;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Sungrass;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Swiftthistle;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs.ChronoSuccubus;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs.DeferredScorpio;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs.VaultArmoredStatue;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs.VeilbreakerEye;
 import com.watabou.utils.Bundle;
 
 import java.util.ArrayList;
@@ -222,7 +226,8 @@ public enum Bestiary {
 	TRAP,
 	PLANT,
 	TOWER_MOBS,
-	TOWER_BOSSES;
+	TOWER_BOSSES,
+	TOWER_TRAPS;
 
 	//tracks whether an entity has been encountered
 	private final LinkedHashMap<Class<?>, Boolean> seen = new LinkedHashMap<>();
@@ -268,7 +273,7 @@ public enum Bestiary {
 		BOSSES.addEntities(Goo.class, WarriorBoss.class,
 				Tengu.class,RogueBoss.ShadowRogue.class, RogueBoss.class,
 				Pylon.class, DM300.class,
-				HuntressBoss.class, HuntressBoss.DistractingHawk.class, HuntressBoss.HuntressTentacle.class,
+                HuntressBoss.DistractingHawk.class, HuntressBoss.HuntressTentacle.class,HuntressBoss.class,
 				DwarfKing.class,
 				YogDzewa.Larva.class, YogFist.BurningFist.class, YogFist.SoiledFist.class, YogFist.RottingFist.class, YogFist.RustedFist.class,YogFist.BrightFist.class, YogFist.DarkFist.class, YogDzewa.class,
 				ChaosDisciples.ScorpioBoss.class,ChaosDisciples.EyeBoss.class,ChaosDisciples.RipperBoss.class,ChaosDisciples.SuccBoss.class, GreatDemon.class,
@@ -286,7 +291,8 @@ public enum Bestiary {
 
 		QUEST.addEntities(FetidRat.class, GnollTrickster.class, GreatCrab.class,
 				Elemental.NewbornFireElemental.class, RotLasher.class, RotHeart.class,
-				CrystalWisp.class, CrystalGuardian.class, CrystalSpire.class, GnollGuard.class, GnollSapper.class, GnollGeomancer.class);
+				CrystalWisp.class, CrystalGuardian.class, CrystalSpire.class, GnollGuard.class, GnollSapper.class, GnollGeomancer.class,
+				VaultArmoredStatue.class, VeilbreakerEye.class, ChronoSuccubus.class, DeferredScorpio.class);
 
 		NEUTRAL.addEntities(Ghost.class, RatKing.class, Shopkeeper.class, Wandmaker.class, Blacksmith.class, Imp.class, Sheep.class, Bee.class);
 
@@ -302,12 +308,10 @@ public enum Bestiary {
 		TRAP.addEntities(WornDartTrap.class, PoisonDartTrap.class, DisintegrationTrap.class, GatewayTrap.class,
 				ChillingTrap.class, BurningTrap.class, ShockingTrap.class, AlarmTrap.class, GrippingTrap.class, TeleportationTrap.class, OozeTrap.class,
 				FrostTrap.class, BlazingTrap.class, StormTrap.class, GuardianTrap.class, FlashingTrap.class, WarpingTrap.class,
-				ConfusionTrap.class, ToxicTrap.class, CorrosionTrap.class,
+				CursedFlameTrap.class, ConfusionTrap.class, ToxicTrap.class, CorrosionTrap.class,
 				FlockTrap.class, SummoningTrap.class, WeakeningTrap.class, CursingTrap.class,
-				GeyserTrap.class, ExplosiveTrap.class, AbyssExplosiveTrap.class, RockfallTrap.class, PitfallTrap.class,
-				DistortionTrap.class, DisarmingTrap.class, GrimTrap.class, MaliceTrap.class, InfernalTrap.class, RimeTrap.class,
-				RedCrossTrap.class, DigestionTrap.class, TransformationTrap.class, RoastSheepTrap.class,
-				CursedFlameTrap.class, SoulScorchTrap.class);
+				GeyserTrap.class, ExplosiveTrap.class, RockfallTrap.class, PitfallTrap.class,
+				DistortionTrap.class, DisarmingTrap.class, GrimTrap.class, SoulScorchTrap.class);
 
 		PLANT.addEntities(Rotberry.class, Sungrass.class, Fadeleaf.class, Icecap.class,
 				Firebloom.class, Sorrowmoss.class, Swiftthistle.class, Blindweed.class,
@@ -322,8 +326,11 @@ public enum Bestiary {
 				HeavyCrabification.class, MarshSlime.class, RuneSpinner.class,
 				ChainShadowThief.class, DeathButterfly.class, DarkMechanicalFist.class,
 				MyriadBlackShadow.class, TapirCrocodile.class);
-		TOWER_BOSSES.addEntities(PestilenceKnight.class, DeathKnight.class,
-				GentlemanElf.class, HungerKnight.class);
+		TOWER_BOSSES.addEntities(HungerKnight.class,PestilenceKnight.class, DeathKnight.class,
+				GentlemanElf.class);
+		TOWER_TRAPS.addEntities(RoastSheepTrap.class, RedCrossTrap.class, MaliceTrap.class,
+				InfernalTrap.class, RimeTrap.class, DigestionTrap.class, TransformationTrap.class,
+				AbyssExplosiveTrap.class);
 
 	}
 

@@ -204,7 +204,7 @@ public class LiquidMetal extends Item {
 					if (m.quantity() < m.defaultQuantity()){
 						if (quantity()*durabilityPerMetal >= m.durabilityPerUse()){
 							m.quantity(m.quantity()+1);
-							if (maxToUse < quantity()){
+							if (hasMetalLeftAfterReplenishing(maxToUse, quantity())){
 								Catalog.countUses(LiquidMetal.class, (int)Math.ceil(maxToUse));
 								GLog.i(Messages.get(LiquidMetal.class, "apply", (int)Math.ceil(maxToUse)));
 								quantity -= (int)Math.ceil(maxToUse);
@@ -246,6 +246,10 @@ public class LiquidMetal extends Item {
 			}
 		}
 	};
+
+	static boolean hasMetalLeftAfterReplenishing(float maxToUse, int available) {
+		return Math.ceil(maxToUse) < available;
+	}
 
 	public static class Recipe extends com.shatteredpixel.shatteredpixeldungeon.items.Recipe {
 

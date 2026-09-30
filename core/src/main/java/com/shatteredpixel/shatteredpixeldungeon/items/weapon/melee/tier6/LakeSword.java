@@ -341,7 +341,8 @@ public class LakeSword extends MeleeWeapon implements WeaponSpecialAction {
 
 	@Override
 	public String abilityInfo() {
-		return Messages.get(this, "ability_desc", windProtectionDurationForLevel(buffedLvl()));
+		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
+				windProtectionDurationForLevel(levelKnown ? buffedLvl() : 0));
 	}
 
 	@Override

@@ -11,6 +11,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.enchantments.Blazing;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.RuneString;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.PoisonDart;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 
 import org.junit.Test;
@@ -84,6 +87,30 @@ public class AuxiliaryCoreTest {
 		assertEquals(Weapon.Augment.MAGIC, target.augment);
 		assertEquals(3, target.level());
 		assertSame(enchantment, target.getEnchant());
+	}
+
+	@Test
+	public void infusionRejectsDartsAndUnusedRuneStringsButKeepsUsedStrings() {
+		AuxiliaryCore core = new AuxiliaryCore();
+		assertFalse(core.canInfuse(new Dart()));
+		assertFalse(core.canInfuse(new PoisonDart()));
+		assertFalse(core.canInfuse(new RuneString()));
+		assertTrue(core.canInfuse(new RuneString.RuneString1()));
+	}
+
+	@Test
+	public void executionRejectsInvalidTargetBeforeConsumingCoreOrChangingAugment() throws Exception {
+		AuxiliaryCore core = new AuxiliaryCore();
+		Dart dart = new Dart();
+		java.lang.reflect.Method apply = AuxiliaryCore.class.getDeclaredMethod(
+				"applyInfusion", com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero.class, Weapon.class);
+		apply.setAccessible(true);
+		com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero hero =
+				com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory.create();
+		hero.belongings.weapon = core;
+		apply.invoke(core, hero, dart);
+		assertEquals(Weapon.Augment.NONE, dart.augment);
+		assertSame(core, hero.belongings.weapon);
 	}
 
 	@Test

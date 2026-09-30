@@ -24,7 +24,10 @@ package com.shatteredpixel.shatteredpixeldungeon.tiles;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.LastShopLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.levels.SurfaceTownLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.Trap;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
@@ -67,14 +70,22 @@ public class TerrainFeaturesTilemap extends DungeonTilemap {
 			return plants.get(pos).image + 7*16;
 		}
 
-		int stage = (Dungeon.depth-1)/5;
-		if (Dungeon.depth == 21 && Dungeon.level instanceof LastShopLevel) stage--;
-		stage = Math.min(stage, 4);
+		int stage = vegetationStage(Dungeon.level, Dungeon.depth);
 		return regionalVegetationVisual(
 				tile,
 				stage,
 				DungeonTileSheet.tileVariance[pos],
 				Dungeon.branch == TowerLevel.BRANCH);
+	}
+
+	static int vegetationStage(Level level, int depth) {
+		int stage = (depth - 1) / 5;
+		if (depth == 21 && level instanceof LastShopLevel) stage--;
+		// Surface and raid grass use the sewer palette, independent of location depth.
+		if (level instanceof ExtractionRaidLevel || level instanceof SurfaceTownLevel) {
+			stage = 0;
+		}
+		return Math.max(0, Math.min(stage, 4));
 	}
 
 	static int regionalVegetationVisual(int tile, int stage, int variance, boolean towerTheme) {

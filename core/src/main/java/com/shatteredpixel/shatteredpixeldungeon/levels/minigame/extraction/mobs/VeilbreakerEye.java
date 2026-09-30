@@ -1,9 +1,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs;
 
+import com.watabou.utils.Bundle;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Preparation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
 import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
@@ -19,12 +22,29 @@ import com.watabou.utils.Random;
  */
 public class VeilbreakerEye extends Eye {
 
-	private static final float CONE_ANGLE = 60f;
-	private static final float HALF_CONE_COSINE = 0.8660254f;
-
 	{
 		spriteClass = VeilbreakerEyeSprite.class;
+		properties.add(Property.MINIBOSS);
+		properties.add(Property.INORGANIC);
+		properties.remove(Property.DEMONIC);
+		flying = true;
+		immunities.add(Levitation.class);
 	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		if (alignment == Alignment.ALLY) {
+			alignment = Alignment.ENEMY;
+			state = WANDERING;
+			enemy = null;
+			enemyID = -1;
+			target = -1;
+		}
+	}
+
+	private static final float CONE_ANGLE = 60f;
+	private static final float HALF_CONE_COSINE = 0.8660254f;
 
 	@Override
 	public int attackSkill(Char target) {

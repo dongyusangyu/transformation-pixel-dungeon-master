@@ -3,6 +3,8 @@ package com.shatteredpixel.shatteredpixeldungeon.actors.buffs.tboss;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
 import java.util.LinkedHashSet;
@@ -27,6 +29,10 @@ public class HungerKnightTalentSeal extends Buff {
     public void add(Talent talent) { if (talent != null) talents.add(talent); }
     public boolean contains(Talent talent) { return talents.contains(talent); }
     public int size() { return talents.size(); }
+
+    @Override public int icon() { return BuffIndicator.DEGRADE; }
+
+    @Override public void tintIcon(Image icon) { icon.hardlight(0x88649E); }
 
     public static boolean isSealed(Hero hero, Talent talent) {
         if (hero == null || talent == null) return false;

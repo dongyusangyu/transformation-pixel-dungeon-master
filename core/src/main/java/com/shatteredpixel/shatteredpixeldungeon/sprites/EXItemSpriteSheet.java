@@ -61,8 +61,8 @@ public final class EXItemSpriteSheet {
 
 	// Row 10 (indices 144-159): new tier 6 weapons.
 	public static final int GREAT_GREAT_GREATSWORD = encode(144, 16, 16);
-	public static final int SAKURA_BLOSSOM = encode(145, 16, 16);
-	public static final int BLOOD_SAKURA = encode(146, 16, 16);
+	public static final int  BLOOD_SAKURA = encode(145, 16, 16);
+	public static final int SAKURA_BLOSSOM = encode(146, 16, 16);
 	public static final int CHAIN_MACE = encode(147, 16, 16);
 	public static final int TWO_HANDED_GREATSWORD = encode(148, 16, 16);
 	public static final int PALERMO_SWORD = encode(149, 16, 16);

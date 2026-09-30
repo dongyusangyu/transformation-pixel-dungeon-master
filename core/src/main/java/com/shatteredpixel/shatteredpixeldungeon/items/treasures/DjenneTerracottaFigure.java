@@ -6,6 +6,6 @@ public class DjenneTerracottaFigure extends Treasures {
 
 	public DjenneTerracottaFigure() {
 		super(EXItemSpriteSheet.DJENNE_TERRACOTTA_FIGURE,
-				CollectionRarity.COMMON, 500);
+				CollectionRarity.TOP, 4000);
 	}
 }

@@ -74,6 +74,16 @@ public class TowerBossGeneratorTest {
     }
 
     @Test
+    public void predictionNeverFallsBehindTheHighestDefeatedBoss() {
+        assertEquals(10, TowerBossGenerator.predictionDepth(9, false, 5));
+        assertEquals(15, TowerBossGenerator.predictionDepth(9, false, 10));
+        assertEquals(15, TowerBossGenerator.predictionDepth(1, false, 10));
+        assertEquals(20, TowerBossGenerator.predictionDepth(9, false, 15));
+        assertEquals(15, TowerBossGenerator.predictionDepth(15, true, 10));
+        assertEquals(20, TowerBossGenerator.predictionDepth(15, false, 15));
+    }
+
+    @Test
     public void registryEntryKeepsFutureWeightAndFloorBounds() {
         assertEquals(4, TowerBossGenerator.entries().size());
         TowerBossGenerator.Entry entry = TowerBossGenerator.entries().get(0);

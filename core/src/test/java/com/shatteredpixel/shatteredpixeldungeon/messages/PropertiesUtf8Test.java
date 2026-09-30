@@ -21,6 +21,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PropertiesUtf8Test {
+	@Test public void gameBundleLoaderReadsAllMessagesAsUtf8() throws Exception {
+		try (Stream<Path> files = Files.walk(projectRoot().resolve("core/src/main/assets/messages"))) {
+			for (Path file : (Iterable<Path>) files.filter(p -> p.toString().endsWith(".properties"))::iterator) {
+				String path = file.toString();
+				com.badlogic.gdx.utils.I18NBundle bundle = com.badlogic.gdx.utils.I18NBundle.createBundle(
+						new com.badlogic.gdx.files.FileHandle(path.substring(0, path.length() - 11)),
+						java.util.Locale.ROOT, "UTF-8");
+				Properties expected = loadProperties(file);
+				for (String key : expected.stringPropertyNames()) {
+					assertEquals(file + ": " + key, expected.getProperty(key), bundle.get(key));
+				}
+			}
+		}
+	}
 
 	@Test
 	public void projectPropertiesAreUtf8WithoutBomOrUnicodeEscapes() throws Exception {

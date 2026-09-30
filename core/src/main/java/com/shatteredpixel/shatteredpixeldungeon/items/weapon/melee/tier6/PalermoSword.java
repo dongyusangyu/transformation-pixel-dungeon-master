@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.AttackIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
@@ -67,6 +68,7 @@ public class PalermoSword extends MeleeWeapon {
 	private boolean nextStab;
 	// Set during a confirmed hit, then consumed by that attack's time settlement.
 	private transient boolean skipNextAttackDelay;
+	private transient XiexiangContext activeXiexiang;
 
 	{
 		// Reserved 16x16 cell directly after the two-handed greatsword.
@@ -132,9 +134,18 @@ public class PalermoSword extends MeleeWeapon {
 		if (target != null && target.alignment == Char.Alignment.ENEMY
 				&& hero.belongings.attackingWeapon() == this) {
 			precisionState.recordAttack(target.id(), gameTime());
-			if (hitState.recordEnemyHit()) {
-				Buff.affect(hero, FutureAcceleration.class).refreshForNextAttack();
-				Buff.affect(hero, Breathing.class);
+			if (hitState.recordEnemyHit(hit)) {
+				FutureAcceleration future = Buff.affect(hero, FutureAcceleration.class);
+				future.refreshForNextAttack();
+				Breathing breathing = Buff.affect(hero, Breathing.class);
+				if (activeXiexiang != null && activeXiexiang.hero == hero) {
+					activeXiexiang.acceleratedDuringSequence = true;
+					future.armForNextAttack();
+				}
+				if (hero.sprite != null) {
+					hero.sprite.showStatus(CharSprite.POSITIVE, Messages.titleCase(future.name()));
+					hero.sprite.showStatus(CharSprite.POSITIVE, Messages.titleCase(breathing.name()));
+				}
 				BuffIndicator.refreshHero();
 			}
 		}
@@ -173,8 +184,10 @@ public class PalermoSword extends MeleeWeapon {
 
 		hero.busy();
 		beforeAbilityUsed(hero, target);
-		armFutureAccelerationForAbility(hero.buff(FutureAcceleration.class));
-		XiexiangContext context = new XiexiangContext(hero, target);
+		boolean acceleratedAtStart = armFutureAccelerationForAbility(
+				hero.buff(FutureAcceleration.class));
+		XiexiangContext context = new XiexiangContext(hero, target, acceleratedAtStart);
+		activeXiexiang = context;
 		moveForXiexiang(context, landingCell, true);
 	}
 
@@ -330,7 +343,9 @@ public class PalermoSword extends MeleeWeapon {
 	private void finishXiexiang(XiexiangContext context) {
 		if (context.finished) return;
 		context.finished = true;
-		context.hero.spendAndNext(context.hero.attackDelay());
+		if (activeXiexiang == context) activeXiexiang = null;
+		context.hero.spendAndNext(xiexiangDelay(context.hero.attackDelay(),
+				context.acceleratedAtStart, context.acceleratedDuringSequence));
 		afterAbilityUsed(context.hero);
 	}
 
@@ -399,10 +414,13 @@ public class PalermoSword extends MeleeWeapon {
 		boolean lockedInPlace;
 		boolean movementPending;
 		boolean finished;
+		final boolean acceleratedAtStart;
+		boolean acceleratedDuringSequence;
 
-		XiexiangContext(Hero hero, Char target) {
+		XiexiangContext(Hero hero, Char target, boolean acceleratedAtStart) {
 			this.hero = hero;
 			this.target = target;
+			this.acceleratedAtStart = acceleratedAtStart;
 		}
 	}
 
@@ -435,7 +453,11 @@ public class PalermoSword extends MeleeWeapon {
 
 		if (future != null && future.appliesToThisAttack()) {
 			future.detach();
-			skipNextAttackDelay = true;
+			if (activeXiexiang != null && activeXiexiang.hero == attacker) {
+				activeXiexiang.acceleratedDuringSequence = true;
+			} else {
+				skipNextAttackDelay = true;
+			}
 		}
 		Breathing breathing = attacker.buff(Breathing.class);
 		if (breathing != null) {
@@ -469,6 +491,12 @@ public class PalermoSword extends MeleeWeapon {
 
 	public static float delayAfterFutureAcceleration(float normalDelay, boolean accelerated) {
 		return accelerated ? 0f : normalDelay;
+	}
+
+	static float xiexiangDelay(float normalDelay, boolean acceleratedAtStart,
+			boolean acceleratedDuringSequence) {
+		return delayAfterFutureAcceleration(normalDelay,
+				acceleratedAtStart || acceleratedDuringSequence);
 	}
 
 	public static int xiexiangTargetRange(int attackReach) {
@@ -597,7 +625,8 @@ public class PalermoSword extends MeleeWeapon {
 	public static class HitState {
 		private int hitsSinceReward;
 
-		public boolean recordEnemyHit() {
+		public boolean recordEnemyHit(boolean hit) {
+			if (!hit) return false;
 			hitsSinceReward = (hitsSinceReward + 1) % HITS_PER_REWARD;
 			return hitsSinceReward == 0;
 		}

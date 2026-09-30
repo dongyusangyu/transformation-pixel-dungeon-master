@@ -400,6 +400,11 @@ public class WndJournal extends WndTabbed {
 	}
 	
 	public static class AlchemyTab extends Component {
+
+		public void moveKeepingScroll(float x, float y) {
+			saveScrollPosition();
+			setPos(x, y);
+		}
 		
 		private RedButton[] pageButtons;
 		private static final int NUM_BUTTONS = 10;

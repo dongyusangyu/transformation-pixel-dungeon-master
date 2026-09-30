@@ -18,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessGameMessages;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 import org.junit.AfterClass;
@@ -43,15 +44,18 @@ import static org.junit.Assert.assertTrue;
 public class HungerKnightTest {
 
     private static HeadlessItemSprites sprites;
+    private static HeadlessGameMessages messages;
 
     @BeforeClass
-    public static void installHeadlessSprites() {
+    public static void installHeadlessSprites() throws Exception {
+        messages = new HeadlessGameMessages();
         sprites = new HeadlessItemSprites();
     }
 
     @AfterClass
     public static void restoreHeadlessSprites() {
         sprites.close();
+        messages.close();
     }
 
     @Test

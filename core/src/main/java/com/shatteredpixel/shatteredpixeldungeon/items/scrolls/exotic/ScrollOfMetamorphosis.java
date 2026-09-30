@@ -214,6 +214,11 @@ public class ScrollOfMetamorphosis extends Scroll {
 		}
 
 		@Override
+		public boolean inheritsPreviousOffset() {
+			return false;
+		}
+
+		@Override
 		public void onBackPressed() {
 
 			if (curItem instanceof ScrollOfMetamorphosis && identifiedByUse){
@@ -345,6 +350,11 @@ public class ScrollOfMetamorphosis extends Scroll {
 		}
 
 		@Override
+		public boolean inheritsPreviousOffset() {
+			return false;
+		}
+
+		@Override
 		public void onBackPressed() {
 			if (curItem instanceof ScrollOfMetamorphosis) {
 				((ScrollOfMetamorphosis) curItem).confirmCancelation(this);
@@ -424,6 +434,11 @@ public class ScrollOfMetamorphosis extends Scroll {
 		@Override
 		public void onBackPressed() {
 			super.onBackPressed();
+		}
+
+		@Override
+		public boolean inheritsPreviousOffset() {
+			return false;
 		}
 	}
 
@@ -518,6 +533,11 @@ public class ScrollOfMetamorphosis extends Scroll {
 		@Override
 		public void onBackPressed() {
 			super.onBackPressed();
+		}
+
+		@Override
+		public boolean inheritsPreviousOffset() {
+			return false;
 		}
 		@Override
 		public void offset(int xOffset, int yOffset) {

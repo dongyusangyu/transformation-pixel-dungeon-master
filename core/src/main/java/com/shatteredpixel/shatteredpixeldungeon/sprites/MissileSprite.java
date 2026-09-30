@@ -121,6 +121,7 @@ public class MissileSprite extends ItemSprite implements Tweener.Listener {
 	private static final HashMap<Class<?extends Item>, Integer> ANGULAR_SPEEDS = new HashMap<>();
 	static {
 		ANGULAR_SPEEDS.put(Dart.class,          0);
+		ANGULAR_SPEEDS.put(com.shatteredpixel.shatteredpixeldungeon.actors.mobs.HuntressBoss.GaleArrowVFX.class, 0);
 		ANGULAR_SPEEDS.put(ThrowingKnife.class, 0);
 		ANGULAR_SPEEDS.put(ThrowingSpike.class, 0);
 		ANGULAR_SPEEDS.put(FishingSpear.class,  0);

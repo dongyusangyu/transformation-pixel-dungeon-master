@@ -114,8 +114,11 @@ public class HundredTonHammer extends MeleeWeapon {
 	public String abilityInfo() {
 		int level = levelKnown ? buffedLvl() : 0;
 		return Messages.get(this, levelKnown ? "ability_desc" : "typical_ability_desc",
-				augment.damageFactor(min(level)) + augment.damageFactor(ambushDamageBonus(level)),
-				augment.damageFactor(max(level)) + augment.damageFactor(ambushDamageBonus(level)));
+				ambushAbilityDamage(min(level), level), ambushAbilityDamage(max(level), level));
+	}
+
+	private int ambushAbilityDamage(int normalDamage, int level) {
+		return augment.damageFactor(normalDamage) + augment.damageFactor(ambushDamageBonus(level));
 	}
 
 	@Override
@@ -126,7 +129,8 @@ public class HundredTonHammer extends MeleeWeapon {
 	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
-		result.add(abilityStat(UpgradeAbilityStatType.KNOCKBACK_DISTANCE, upgradeAbilityStat(level)));
+		result.add(abilityStat(UpgradeAbilityStatType.AMBUSH_DAMAGE,
+				ambushAbilityDamage(min(level), level) + "-" + ambushAbilityDamage(max(level), level)));
 		return result;
 	}
 

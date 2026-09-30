@@ -103,6 +103,36 @@ public class OracleTerminalTest {
 	}
 
 	@Test
+	public void swordDanceDoesNotRequestATargetButOtherTargetedFormsStillDo() {
+		assertFalse(OracleTerminal.usesAbilityTargeting(OracleTerminal.Form.SLASH));
+		assertFalse(OracleTerminal.usesAbilityTargeting(OracleTerminal.Form.SPOON));
+		assertTrue(OracleTerminal.usesAbilityTargeting(OracleTerminal.Form.BLUNT));
+		assertTrue(OracleTerminal.usesAbilityTargeting(OracleTerminal.Form.THRUST));
+		assertTrue(OracleTerminal.usesAbilityTargeting(OracleTerminal.Form.SCYTHE));
+	}
+
+	@Test
+	public void abilityButtonNameFollowsTheCurrentForm() {
+		assertEquals("ability_name", OracleTerminal.abilityNameKey(OracleTerminal.Form.BLUNT));
+		assertEquals("slash_ability_name", OracleTerminal.abilityNameKey(OracleTerminal.Form.SLASH));
+		assertEquals("thrust_ability_name", OracleTerminal.abilityNameKey(OracleTerminal.Form.THRUST));
+		assertEquals("scythe_ability_name", OracleTerminal.abilityNameKey(OracleTerminal.Form.SCYTHE));
+		assertEquals("spoon_ability_name", OracleTerminal.abilityNameKey(OracleTerminal.Form.SPOON));
+	}
+
+	@Test
+	public void scytheHarvestUsesAttackAnimationAndHitSound() throws IOException {
+		String source = compactSourceAt(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/items/weapon/"
+						+ "melee/tier6/OracleTerminal.java");
+		int scythe = source.indexOf("if(hasForm(hero,Form.SCYTHE))");
+		int slash = source.indexOf("if(hasForm(hero,Form.SLASH))", scythe);
+		String scytheAbility = source.substring(scythe, slash);
+		assertTrue(scytheAbility.contains("hero.sprite.attack(enemy.pos"));
+		assertTrue(scytheAbility.contains("Assets.Sounds.HIT_SLASH"));
+	}
+
+	@Test
 	public void applyingAFormReplacesEveryPreviousOracleForm() {
 		Rat target = new Rat();
 

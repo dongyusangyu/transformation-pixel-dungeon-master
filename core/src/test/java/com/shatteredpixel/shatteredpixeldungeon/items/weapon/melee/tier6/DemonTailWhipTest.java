@@ -138,8 +138,13 @@ public class DemonTailWhipTest {
 		assertEquals(Generator.Category.WEP_T6.classes.length,
 				Generator.Category.WEP_T6.defaultProbs.length);
 		float expectedWeight = Generator.Category.WEP_T6.defaultProbs[0];
-		for (float weight : Generator.Category.WEP_T6.defaultProbs) {
-			assertEquals(expectedWeight, weight, 0f);
+		for (int i = 0; i < Generator.Category.WEP_T6.defaultProbs.length; i++) {
+			float weight = Generator.Category.WEP_T6.defaultProbs[i];
+			if (Generator.Category.WEP_T6.classes[i] == LakeSword.class) {
+				assertEquals("the Lake Sword is not a natural drop", 0f, weight, 0f);
+			} else {
+				assertEquals(expectedWeight, weight, 0f);
+			}
 		}
 		assertEquals(expectedWeight,
 				Generator.Category.WEP_T6.defaultProbs[weaponIndex], 0f);

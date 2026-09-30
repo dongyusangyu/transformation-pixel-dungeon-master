@@ -70,14 +70,14 @@ public class WandOfCursedFlameStaffTest {
         assertNull(target.buff(CursedBurning.class));
     }
 
-    @Test public void procConsumesExistingBurnAndRefreshesFourTurnsAfterImmediateHit() {
+    @Test public void procConsumesExistingBurnAndRefreshesFourTurnsWithoutAnExtraStatusHit() {
         RecordingGnoll target = burnedTarget();
         WandOfCursedFlame wand = new WandOfCursedFlame();
         wand.level(3);
         wand.onHit(null, hero, target, 8);
         assertEquals(1, target.wandHits.size());
-        assertTrue("(1+3)*U[2,6] at level 3", target.wandHits.get(0) >= 8);
-        assertTrue(target.wandHits.get(0) <= 24);
+        assertTrue("(1+4)*U[2,6] at level 3", target.wandHits.get(0) >= 10);
+        assertTrue(target.wandHits.get(0) <= 30);
         assertNotNull(target.buff(CursedBurning.class));
 		assertEquals(4f, target.buff(CursedBurning.class).remaining(), 0.001f);
         assertTrue("the staff proc is cursed burning rather than a magic zap",

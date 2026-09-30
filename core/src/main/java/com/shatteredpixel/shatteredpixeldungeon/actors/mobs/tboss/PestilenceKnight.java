@@ -38,6 +38,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossGenerator
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
@@ -996,7 +997,11 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
     }
 
     private void announceSkill(String key, Object... args) {
-        if (sprite != null) yell(Messages.get(this, key, args));
+        if ("phase_outbreak".equals(key) || "phase_terminal".equals(key)) {
+            GLog.n(Messages.get(this, key, args));
+        } else if (sprite != null) {
+            yell(Messages.get(this, key, args));
+        }
     }
 
     private static String prescriptionAnnouncementKey(int index) {
@@ -1059,8 +1064,7 @@ public class PestilenceKnight extends TowerBoss implements MagicalRangedAttack {
             clearBlob(Sewage.class);
             for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
                 if (mob instanceof PlagueGuard) {
-                    mob.alignment = Alignment.NEUTRAL;
-                    mob.destroy();
+                    ((PlagueGuard) mob).dismissAfterEncounter();
                 }
             }
         }

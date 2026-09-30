@@ -21,12 +21,19 @@ public class v0_3_X {
         ChangeInfo changes = new ChangeInfo("v0.3.0fix", true, "");
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
+        changes = new ChangeInfo("fix2", false, null);
+        changes.hardlight(Window.TITLE_COLOR);
+        changeInfos.add(changes);
+
+        addButton(changes, Icons.get(Icons.CATALOG), "v0_3_0.button_1.title", "v0_3_0fix2.button_1.text");
+        addButton(changes, Icons.PREFS, "v0_3_0.button_3.title", "v0_3_0fix2.button_2.text");
+        addButton(changes, Icons.WARNING, "v0_3_0.button_5.title", "v0_3_0fix2.button_3.text");
         changes = new ChangeInfo("fix1", false, null);
         changes.hardlight(Window.TITLE_COLOR);
         changeInfos.add(changes);
 
         addButton(changes, new ItemSprite(EXItemSpriteSheet.NECRONOMICON, null), "v0_3_0.button_1.title", "v0_3_0fix1.button_1.text");
-        addButton(changes, Icons.PREFS, "v0_3_0.button_3.title", "v0_3_0fix2.button_1.text");
+        addButton(changes, Icons.PREFS, "v0_3_0.button_3.title", "v0_3_0fix1.button_2.text");
         addButton(changes, Icons.WARNING, "v0_3_0.button_5.title", "v0_3_0.button_5.text");
     }
 

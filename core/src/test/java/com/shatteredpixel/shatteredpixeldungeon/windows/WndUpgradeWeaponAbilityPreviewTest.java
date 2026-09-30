@@ -119,8 +119,11 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 
 	@Test
 	public void typedRowsExposeTheExpectedValues() {
-		MeleeWeapon.UpgradeAbilityStat hammerDistance = new HundredTonHammer()
-				.upgradeAbilityStats(3).get(0);
+		HundredTonHammer hammer = new HundredTonHammer();
+		assertEquals("ability_ambush_damage",
+				hammer.upgradeAbilityStats(3).get(0).type.messageKey());
+		assertEquals("21-54", hammer.upgradeAbilityStats(3).get(0).value);
+		MeleeWeapon.UpgradeAbilityStat hammerDistance = hammer.upgradeFeatureStats(3).get(0);
 		assertEquals(MeleeWeapon.UpgradeAbilityStatType.KNOCKBACK_DISTANCE, hammerDistance.type);
 		assertEquals("2", hammerDistance.value);
 
@@ -136,6 +139,22 @@ public class WndUpgradeWeaponAbilityPreviewTest {
 
 		assertEquals(16, MountainGuard.maxBlockForLevel(3));
 		assertEquals(12, SoulBlade.maxBlockForLevel(3));
+	}
+
+	@Test
+	public void tailWhipRangeIsAnUnconditionalFeatureIncludingUnchangedUpgradeSteps() throws IOException {
+		com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.DemonTailWhip whip =
+				new com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.tier6.DemonTailWhip();
+		int[] levels = {-7, 0, 1, 6, 7, 13, 14, 20, 21};
+		String[] ranges = {"3", "3", "3", "3", "4", "4", "5", "5", "6"};
+		for (int i = 0; i < levels.length; i++) {
+			assertEquals(1, whip.upgradeFeatureStats(levels[i]).size());
+			assertEquals("feature_attack_range", whip.upgradeFeatureStats(levels[i]).get(0).type.messageKey());
+			assertEquals(ranges[i], whip.upgradeFeatureStats(levels[i]).get(0).value);
+		}
+		String source = sourceFile("src/main/java/com/shatteredpixel/shatteredpixeldungeon/windows/WndUpgrade.java");
+		assertTrue(source.indexOf("weapon.upgradeFeatureStats(levelFrom)")
+				< source.indexOf("if (canViewWeaponAbilityUpgrade"));
 	}
 
 	@Test

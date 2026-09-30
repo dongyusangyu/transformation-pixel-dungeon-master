@@ -35,6 +35,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossRewardGen
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.tboss.HungerKnightSprite;
+import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PathFinder;
@@ -266,7 +267,7 @@ public class HungerKnight extends TowerBoss {
             Talent only = normal != null ? normal : bossTalent;
             return Messages.get(this, "swallow_single", only.title());
         } else {
-            return Messages.get(this, "swallow_pair", none, none);
+            return none;
         }
     }
 
@@ -277,10 +278,12 @@ public class HungerKnight extends TowerBoss {
     }
 
     private void flushPendingTalentAnnouncement() {
-        if (!talentAnnouncementPending || sprite == null) return;
+        if (!talentAnnouncementPending) return;
         Talent normal = talentByName(pendingOrdinaryTalent);
         Talent bossTalent = talentByName(pendingBossTalent);
-        yell(talentSelectionMessage(normal, bossTalent));
+        String message = talentSelectionMessage(normal, bossTalent);
+        if (normal == null && bossTalent == null) GLog.p(message);
+        else GLog.n(message);
         clearPendingTalentAnnouncement();
     }
 
@@ -614,15 +617,9 @@ public class HungerKnight extends TowerBoss {
         if (sprite != null) {
             String message = Messages.get(this,
                     phase == Phase.DEPLETION ? "phase_depletion" : "phase_exhaustion");
-            if (talentAnnouncementPending) {
-                message += "\n" + talentSelectionMessage(
-                        talentByName(pendingOrdinaryTalent), talentByName(pendingBossTalent));
-                clearPendingTalentAnnouncement();
-            }
             yell(message);
-        }else{
-
         }
+        flushPendingTalentAnnouncement();
         spend(TICK);
         return true;
     }
@@ -1011,7 +1008,7 @@ public class HungerKnight extends TowerBoss {
     private boolean rearmPending() {
         pendingPaused = false;
         showPendingTelegraph();
-        if (sprite != null) yell(Messages.get(this, "rearm"));
+        GLog.w(Messages.get(this, "rearm"));
         finishBossAction();
         spend(TICK);
         return true;
@@ -1075,19 +1072,10 @@ public class HungerKnight extends TowerBoss {
         if (!noticeAnnounced) {
             noticeAnnounced = true;
             if (sprite != null) {
-                String notice = Messages.get(this, "notice");
-                if (talentAnnouncementPending) {
-                    notice += "\n" + talentSelectionMessage(
-                            talentByName(pendingOrdinaryTalent),
-                            talentByName(pendingBossTalent));
-                    clearPendingTalentAnnouncement();
-                }
-                yell(notice);
-
+                yell(Messages.get(this, "notice"));
             }
-        } else {
-            flushPendingTalentAnnouncement();
         }
+        flushPendingTalentAnnouncement();
     }
 
     @Override

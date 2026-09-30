@@ -14,8 +14,13 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.traps;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
+import com.watabou.utils.Random;
+
+import java.util.ArrayList;
 
 public class AbyssExplosiveTrap extends ExplosiveTrap {
 
@@ -37,5 +42,19 @@ public class AbyssExplosiveTrap extends ExplosiveTrap {
 	@Override
 	public boolean avoids(Char ch) {
 		return active && visible && ch instanceof Mob;
+	}
+
+	@Override
+	protected void onExplosionComplete(ArrayList<Char> affectedChars) {
+		for (Char affected : affectedChars) {
+			if (shouldRemoveLevitation(Random.Int(3))
+					&& affected != null && affected.buff(Levitation.class) != null) {
+				Buff.detach(affected, Levitation.class);
+			}
+		}
+	}
+
+	static boolean shouldRemoveLevitation(int roll) {
+		return roll == 0;
 	}
 }

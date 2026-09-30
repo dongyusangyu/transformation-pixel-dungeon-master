@@ -67,33 +67,33 @@ public class TreasureCatalogTest {
 	};
 
 	private static final Treasures.CollectionRarity[] COLLECTION_RARITIES = {
+			Treasures.CollectionRarity.COMMON,
+			Treasures.CollectionRarity.COMMON,
+			Treasures.CollectionRarity.COMMON,
+			Treasures.CollectionRarity.COMMON,
+			Treasures.CollectionRarity.COMMON,
+			Treasures.CollectionRarity.UNCOMMON,
+			Treasures.CollectionRarity.UNCOMMON,
+			Treasures.CollectionRarity.UNCOMMON,
+			Treasures.CollectionRarity.UNCOMMON,
+			Treasures.CollectionRarity.UNCOMMON,
+			Treasures.CollectionRarity.RARE,
+			Treasures.CollectionRarity.RARE,
+			Treasures.CollectionRarity.RARE,
+			Treasures.CollectionRarity.RARE,
+			Treasures.CollectionRarity.RARE,
 			Treasures.CollectionRarity.TOP,
-			Treasures.CollectionRarity.RARE,
-			Treasures.CollectionRarity.RARE,
-			Treasures.CollectionRarity.RARE,
-			Treasures.CollectionRarity.UNCOMMON,
-			Treasures.CollectionRarity.UNCOMMON,
-			Treasures.CollectionRarity.UNCOMMON,
-			Treasures.CollectionRarity.UNCOMMON,
-			Treasures.CollectionRarity.UNCOMMON,
-			Treasures.CollectionRarity.UNCOMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON,
-			Treasures.CollectionRarity.COMMON
+			Treasures.CollectionRarity.TOP,
+			Treasures.CollectionRarity.TOP,
+			Treasures.CollectionRarity.TOP,
+			Treasures.CollectionRarity.TOP
 	};
 
 	private static final int[] VALUES = {
-			5000,
-			4500, 4000, 3500,
-			2500, 2300, 2100, 1900, 1700, 1500,
-			1400, 1300, 1200, 1100, 1000, 900, 800, 600, 500, 500
+			1100, 1000, 950, 900, 700,
+			2500, 2300, 2000, 1700, 1500,
+			4500, 4250, 4000, 3750, 3500,
+			6000, 5500, 5000, 4500, 4000
 	};
 
 	@Test
@@ -132,7 +132,7 @@ public class TreasureCatalogTest {
 		String key = "items.treasures.treasures.value";
 
 		assertMessage(defaults, key);
-		assertEquals("价值:%s", chinese.getProperty(key));
+		assertEquals("价值：_%s_", chinese.getProperty(key));
 	}
 
 	private static void assertMessage(Properties messages, String key) {

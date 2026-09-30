@@ -581,7 +581,7 @@ public class DeathKnight extends TowerBoss {
 
     private void showBombardmentFx() {
         if (sprite == null || sprite.parent == null || pendingCells.length == 0) return;
-        DeathKnightSlash.show(sprite.parent, pos, pendingCells, pendingBands);
+        DeathKnightSlash.show(pos, pendingCells, pendingBands);
     }
 
     private boolean beginLeapResolution(int whiteCell) {

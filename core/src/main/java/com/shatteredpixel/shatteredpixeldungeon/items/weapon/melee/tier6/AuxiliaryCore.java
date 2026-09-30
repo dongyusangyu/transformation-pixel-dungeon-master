@@ -21,6 +21,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.FlavourBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.exotic.ScrollOfEnchantment;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
@@ -138,7 +139,8 @@ public class AuxiliaryCore extends MeleeWeapon {
 	}
 
 	public boolean canInfuse(Item item) {
-		if (item == null || item == this || !(item instanceof Weapon)) return false;
+		if (item == null || item == this || !(item instanceof Weapon)
+				|| !ScrollOfEnchantment.enchantable(item)) return false;
 		int targetTier;
 		if (item instanceof MeleeWeapon) {
 			targetTier = ((MeleeWeapon) item).tier;
@@ -175,6 +177,7 @@ public class AuxiliaryCore extends MeleeWeapon {
 	};
 
 	private void applyInfusion(Hero hero, Weapon target) {
+		if (hero == null || !canInfuse(target)) return;
 		infuseWeapon(target);
 		consumeCore(hero);
 		Sample.INSTANCE.play(Assets.Sounds.EVOKE);

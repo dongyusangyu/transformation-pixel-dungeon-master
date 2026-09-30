@@ -5,6 +5,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 public class MuiscaGoldenRaft extends Treasures {
 
 	public MuiscaGoldenRaft() {
-		super(EXItemSpriteSheet.MUISCA_GOLDEN_RAFT, CollectionRarity.TOP, 5000);
+		super(EXItemSpriteSheet.MUISCA_GOLDEN_RAFT, CollectionRarity.COMMON, 1100);
 	}
 }

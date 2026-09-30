@@ -52,7 +52,6 @@ public class CursedBurning extends Buff {
 			burn.burnItem();
 		}
 		burn.remaining = Math.max(burn.remaining, duration);
-		CursedFlameDamage.apply(target, CursedFlameDamage.roll(target), burn);
 		if (burn.remaining <= 0) burn.detach();
 		return burn;
 	}
@@ -67,7 +66,7 @@ public class CursedBurning extends Buff {
 		}
 		if (remaining > 0) {
 			for (int i = 0; i < nextHits && target != null && target.isAlive(); i++) {
-				CursedFlameDamage.apply(target, CursedFlameDamage.roll(target), this);
+				CursedFlameDamage.apply(target, CursedFlameDamage.rollBurning(target), this);
 			}
 			nextHits = nextHits == 2 ? 1 : 2;
 			if (--itemBurnIn <= 0) {

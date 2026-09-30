@@ -238,6 +238,32 @@ class CloudRestoreTest(unittest.TestCase):
         self.assertEqual(self.CURRENT_DEVICE, rows[1][1])
         self.assertNotEqual(self.CURRENT_DEVICE, rows[0][1])
 
+    def test_changed_cloud_snapshot_rejects_delayed_commit_without_consuming_permission(self):
+        prepared = self.store.download(player_uuid=self.UUID_B, device_key=self.CURRENT_DEVICE,
+                                       prepare_restore=True)
+        self.store.upload(self.UUID_B, "legacy-device-b", "", {"owner": "new backup"}, {})
+        self.assertFalse(self.store.commit_restore(self.UUID_B, self.CURRENT_DEVICE,
+                                                  prepared["restore_token"]))
+        with sqlite3.connect(self.db_path) as db:
+            allowed = db.execute("SELECT restore_allowed FROM player_cloud_data WHERE player_uuid = ?",
+                                 (self.UUID_B,)).fetchone()[0]
+        self.assertEqual(1, allowed)
+
+    def test_old_restore_session_schema_is_migrated_without_erasing_players(self):
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("DROP TABLE restore_sessions")
+            db.execute("CREATE TABLE restore_sessions(token TEXT PRIMARY KEY, player_uuid TEXT NOT NULL, "
+                       "device_key TEXT NOT NULL, expires_at INTEGER NOT NULL, committed INTEGER NOT NULL DEFAULT 0)")
+        migrated = TalentCloudStore(self.db_path)
+        with sqlite3.connect(self.db_path) as db:
+            columns = {row[1] for row in db.execute("PRAGMA table_info(restore_sessions)")}
+            players = db.execute("SELECT COUNT(*) FROM player_cloud_data").fetchone()[0]
+        self.assertIn("snapshot_hash", columns)
+        self.assertEqual(2, players)
+        prepared = migrated.download(player_uuid=self.UUID_B, device_key=self.CURRENT_DEVICE,
+                                     prepare_restore=True)
+        self.assertTrue(migrated.commit_restore(self.UUID_B, self.CURRENT_DEVICE, prepared["restore_token"]))
+
 
 if __name__ == "__main__":
     unittest.main()

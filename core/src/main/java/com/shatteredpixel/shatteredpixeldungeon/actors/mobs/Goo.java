@@ -388,7 +388,7 @@ public class Goo extends Mob implements PhysicalRangedAttack {
 			Dungeon.level.drop( new GooBlob(), pos + ofs ).sprite.drop( pos );
 		}
 		
-		Badges.validateBossSlain();
+		Badges.validateBossSlain(Badges.BossIdentity.GOO);
 		Badges.validateSlimeUnlock();
 		if (Statistics.qualifiedForBossChallengeBadge){
 			Badges.validateBossChallengeCompleted();

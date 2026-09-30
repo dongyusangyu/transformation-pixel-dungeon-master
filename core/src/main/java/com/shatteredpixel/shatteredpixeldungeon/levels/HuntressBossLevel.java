@@ -25,9 +25,13 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.painters.Painter;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BossHealthBar;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
+import com.watabou.noosa.Group;
+import com.watabou.noosa.Tilemap;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Bundle;
@@ -47,6 +51,7 @@ public class HuntressBossLevel extends Level {
 
 	private static final int WIDTH = 31;
 	private static final int HEIGHT = 32;
+	private static final int CITY_HEIGHT = 11;
 	private static final int ENTRANCE_X = 15;
 	private static final int ENTRANCE_Y = 29;
 	private static final int EXIT_X = 15;
@@ -63,6 +68,8 @@ public class HuntressBossLevel extends Level {
 	private static final int PREFERRED_FADELEAF_SEPARATION = 6;
 	private static final Rect ARENA = new Rect(3, 2, 28, 24);
 	private static final String STATE = "huntress_boss_state";
+	private static final String CITY_APPROACH_VERSION = "huntress_city_approach_version";
+	private static final int CURRENT_CITY_APPROACH_VERSION = 1;
 	private static final String COVER_CLUSTER_CELLS = "cover_cluster_cells";
 	private static final String COVER_CLUSTER_SIZES = "cover_cluster_sizes";
 	static final int COVER_CLUSTER_COUNT = 8;
@@ -137,6 +144,15 @@ public class HuntressBossLevel extends Level {
 	private State state = State.START;
 	private List<Set<Integer>> coverClusters = new ArrayList<>();
 
+	// Map dimensions identify the layout, keeping pre-expansion saves unmodified.
+	int arenaOffset() {
+		return height() == HEIGHT + CITY_HEIGHT ? CITY_HEIGHT : 0;
+	}
+
+	private int arenaCell(int x, int y) {
+		return x + (y + arenaOffset()) * width();
+	}
+
 	{
 		color1 = 0x534f3e;
 		color2 = 0xb9d661;
@@ -198,7 +214,7 @@ public class HuntressBossLevel extends Level {
 				&& isLegalVegetationTerrain(map[cell])
 				&& cell != entrance()
 				&& cell != exit()
-				&& cell != GATE_X + GATE_Y * width()
+				&& cell != arenaCell(GATE_X, GATE_Y)
 				&& distance(cell, triggerCell()) > TRIGGER_SPAWN_BUFFER
 				&& plants.get(cell) == null
 				&& heaps.get(cell) == null;
@@ -293,11 +309,11 @@ public class HuntressBossLevel extends Level {
 	}
 
 	boolean isReservedEncounterCell(int cell) {
-		int entrance = ENTRANCE_X + ENTRANCE_Y * width();
-		int exit = EXIT_X + EXIT_Y * width();
-		int trigger = TRIGGER_X + TRIGGER_Y * width();
-		int gate = GATE_X + GATE_Y * width();
-		int boss = BOSS_X + BOSS_Y * width();
+		int entrance = arenaCell(ENTRANCE_X, ENTRANCE_Y);
+		int exit = exit();
+		int trigger = triggerCell();
+		int gate = arenaCell(GATE_X, GATE_Y);
+		int boss = arenaCell(BOSS_X, BOSS_Y);
 		return cell == entrance || cell == exit || cell == gate || cell == boss
 				|| distance(cell, trigger) <= 2;
 	}
@@ -308,10 +324,10 @@ public class HuntressBossLevel extends Level {
 			traversable[cell] = (Terrain.flags[map[cell]] & Terrain.PASSABLE) != 0
 					&& !blockedCoverCells.contains(cell);
 		}
-		int entrance = ENTRANCE_X + ENTRANCE_Y * width();
-		int exit = EXIT_X + EXIT_Y * width();
-		int trigger = TRIGGER_X + TRIGGER_Y * width();
-		int boss = BOSS_X + BOSS_Y * width();
+		int entrance = arenaCell(ENTRANCE_X, ENTRANCE_Y);
+		int exit = arenaOffset() > 0 ? arenaCell(EXIT_X, EXIT_Y) : exit();
+		int trigger = triggerCell();
+		int boss = arenaCell(BOSS_X, BOSS_Y);
 		PathFinder.buildDistanceMap(entrance, traversable);
 		boolean entrancePaths = PathFinder.distance[trigger] < Integer.MAX_VALUE
 				&& PathFinder.distance[exit] < Integer.MAX_VALUE;
@@ -346,8 +362,7 @@ public class HuntressBossLevel extends Level {
 		for (int[] anchor : COVER_ANCHORS) {
 			LinkedHashSet<Integer> cluster = new LinkedHashSet<>();
 			for (int[] offset : COVER_SHAPES[shapeIndex]) {
-				cluster.add(anchor[0] + offset[0]
-						+ (anchor[1] + offset[1]) * WIDTH);
+				cluster.add(arenaCell(anchor[0] + offset[0], anchor[1] + offset[1]));
 			}
 			result.add(cluster);
 		}
@@ -358,6 +373,15 @@ public class HuntressBossLevel extends Level {
 		for (int attempt = 0; attempt < COVER_LAYOUT_ATTEMPTS; attempt++) {
 			List<Set<Integer>> candidate = coverClustersForSeed(
 					dungeonSeed + attempt * 0x9E3779B9L);
+			if (arenaOffset() > 0) {
+				List<Set<Integer>> shifted = new ArrayList<>();
+				for (Set<Integer> cluster : candidate) {
+					Set<Integer> cells = new LinkedHashSet<>();
+					for (int cell : cluster) cells.add(cell + arenaOffset() * width());
+					shifted.add(cells);
+				}
+				candidate = shifted;
+			}
 			if (validCoverLayout(candidate)) {
 				return candidate;
 			}
@@ -407,24 +431,28 @@ public class HuntressBossLevel extends Level {
 
 	@Override
 	protected boolean build() {
-		setSize(WIDTH, HEIGHT);
-		Painter.fill(this, 0, 0, WIDTH, HEIGHT, Terrain.WALL);
+		setSize(WIDTH, HEIGHT + CITY_HEIGHT);
+		Painter.fill(this, 0, 0, WIDTH, height(), Terrain.WALL);
 
 		// Main arena and its solid outer rim.
-		Painter.fill(this, 2, 1, 27, 24, Terrain.WALL);
-		Painter.fill(this, ARENA, Terrain.EMPTY);
+		Painter.fill(this, 2, 1 + arenaOffset(), 27, 24, Terrain.WALL);
+		Painter.fill(this, ARENA.left, ARENA.top + arenaOffset(),
+				ARENA.width(), ARENA.height(), Terrain.EMPTY);
 
 		// A compact entrance buffer which remains vegetation-free.
-		Painter.fill(this, 12, 23, 7, 8, Terrain.WALL);
-		Painter.fill(this, 13, 24, 5, 6, Terrain.EMPTY);
-		Painter.set(this, 15, 23, Terrain.EMPTY);
+		Painter.fill(this, 12, 23 + arenaOffset(), 7, 8, Terrain.WALL);
+		Painter.fill(this, 13, 24 + arenaOffset(), 5, 6, Terrain.EMPTY);
+		Painter.set(this, arenaCell(15, 23), Terrain.EMPTY);
+		buildCityApproach();
 
-		int entrance = ENTRANCE_X + ENTRANCE_Y * width();
+		int entrance = arenaCell(ENTRANCE_X, ENTRANCE_Y);
 		int exit = EXIT_X + EXIT_Y * width();
 		Painter.set(this, entrance, Terrain.ENTRANCE);
 		Painter.set(this, exit, Terrain.EXIT);
 		transitions.add(new LevelTransition(this, entrance, LevelTransition.Type.REGULAR_ENTRANCE));
-		transitions.add(new LevelTransition(this, exit, LevelTransition.Type.REGULAR_EXIT));
+		LevelTransition exitTransition = new LevelTransition(this, exit, LevelTransition.Type.REGULAR_EXIT);
+		exitTransition.set(EXIT_X - 2, 0, EXIT_X + 2, EXIT_Y);
+		transitions.add(exitTransition);
 
 		coverClusters = validatedCoverClusters(Dungeon.seedForDepth(15, 0));
 		for (Set<Integer> cluster : coverClusters) {
@@ -445,6 +473,7 @@ public class HuntressBossLevel extends Level {
 			Random.popGenerator();
 		}
 
+		decorateArena();
 		state = State.START;
 		return true;
 	}
@@ -453,10 +482,108 @@ public class HuntressBossLevel extends Level {
 	protected void createMobs() {
 	}
 
+	private void buildCityApproach() {
+		paintCityApproach(false);
+		addCityApproachTiles();
+	}
+
+	private void paintCityApproach(boolean gateOpen) {
+		// DM-300's city frontage, centered on this narrower map; the arena starts below row 12.
+		Painter.fill(this, 0, 0, width(), 13, Terrain.WALL);
+		Painter.fill(this, 0, 3, width(), 4, Terrain.CHASM);
+		Painter.fill(this, 5, 7, 21, 1, Terrain.CHASM);
+		Painter.fill(this, 8, 3, 1, 6, Terrain.REGION_DECO_ALT);
+		Painter.fill(this, 22, 3, 1, 6, Terrain.REGION_DECO_ALT);
+		Painter.fill(this, 9, 8, 13, 1, Terrain.CHASM);
+		Painter.fill(this, 11, 9, 9, 1, Terrain.CHASM);
+		Painter.fill(this, 12, 10, 7, 1, Terrain.CHASM);
+		Painter.fill(this, 13, 3, 5, 10, Terrain.EMPTY);
+		Painter.fill(this, 14, 2, 3, 3, Terrain.EMPTY_SP);
+		for (int y : new int[]{5, 7, 9}) {
+			Painter.set(this, 14, y, Terrain.STATUE);
+			Painter.set(this, 16, y, Terrain.STATUE);
+		}
+		Painter.fill(this, 15, 5, 1, 6, Terrain.EMPTY_SP);
+		Painter.fill(this, 14, 0, 3, 3, Terrain.EXIT);
+		Painter.fill(this, 13, 12, 5, 1, gateOpen ? Terrain.EMPTY : Terrain.CUSTOM_DECO);
+	}
+
+	private void addCityApproachTiles() {
+		CustomTilemap road = new CavesBossLevel.CityEntrance();
+		road.setRect(0, 0, width(), 11);
+		customTiles.add(road);
+		CustomTilemap overhang = new CavesBossLevel.EntranceOverhang();
+		overhang.setRect(0, 0, width(), 11);
+		customWalls.add(overhang);
+		CityFence fence = new CityFence();
+		fence.setRect(13, 12, 5, 1);
+		customTiles.add(fence);
+	}
+
+	private void decorateArena() {
+		Random.pushGenerator(Dungeon.seedForDepth(15, 0) + 150016L);
+		try {
+			for (int cell = 0; cell < length() - width(); cell++) {
+				int y = cell / width() - arenaOffset();
+				if (y < 1 || y >= ARENA.bottom || isReservedEncounterCell(cell)) continue;
+				if (isArenaCell(cell) && map[cell] == Terrain.EMPTY && Random.Float() < 0.20f) {
+					map[cell] = Terrain.EMPTY_DECO;
+				} else if (map[cell] == Terrain.WALL && isArenaCell(cell + width())
+						&& (Terrain.flags[map[cell + width()]] & Terrain.PASSABLE) != 0
+						&& Random.Float() < 0.25f) {
+					map[cell] = Terrain.WALL_DECO;
+				}
+			}
+		} finally {
+			Random.popGenerator();
+		}
+	}
+
+	@Override
+	public Group addVisuals() {
+		super.addVisuals();
+		CavesLevel.addCavesVisuals(this, visuals);
+		return visuals;
+	}
+
+	public static class CityFence extends CustomTilemap {
+		{ texture = Assets.Environment.CAVES_BOSS; }
+
+		@Override public String name(int tileX, int tileY) {
+			if (tileX < 0 || tileX >= tileW || tileY < 0 || tileY >= tileH) return null;
+			return Messages.get(CavesBossLevel.class, "gate_name");
+		}
+
+		@Override public String desc(int tileX, int tileY) {
+			if (tileX < 0 || tileX >= tileW || tileY < 0 || tileY >= tileH) return null;
+			Level level = Dungeon.level;
+			if (level == null) return null;
+			int cell = this.tileX + tileX + (this.tileY + tileY) * level.width();
+			if (cell < 0 || cell >= level.length()) return null;
+			return Messages.get(HuntressBossLevel.class,
+					level.solid[cell] ? "gate_desc" : "gate_desc_broken");
+		}
+
+		@Override public Tilemap create() {
+			Tilemap result = super.create();
+			updateState(Dungeon.level);
+			return result;
+		}
+
+		void updateState(Level level) {
+			if (vis == null) return;
+			int[] data = new int[tileW];
+			for (int i = 0; i < tileW; i++) {
+				data[i] = (level.solid[tileX + i + tileY * level.width()] ? 40 : 32) + i;
+			}
+			vis.map(data, tileW);
+		}
+	}
+
 	@Override
 	protected void createItems() {
-		int leftSupply = ENTRANCE_X - 2 + (ENTRANCE_Y - 2) * width();
-		int rightSupply = ENTRANCE_X + 2 + (ENTRANCE_Y - 2) * width();
+		int leftSupply = arenaCell(ENTRANCE_X - 2, ENTRANCE_Y - 2);
+		int rightSupply = arenaCell(ENTRANCE_X + 2, ENTRANCE_Y - 2);
 		drop(createEntranceDart().quantity(1), leftSupply);
 		drop(createEntranceDart().quantity(1), rightSupply);
 	}
@@ -499,9 +626,32 @@ public class HuntressBossLevel extends Level {
 	}
 
 	@Override
+	public String tileName(int tile) {
+		if (tile == Terrain.STATUE || tile == Terrain.STATUE_SP) {
+			return Messages.get(CityLevel.class, "statue_name");
+		} else if (tile == Terrain.REGION_DECO || tile == Terrain.REGION_DECO_ALT) {
+			return Messages.get(CavesLevel.class, "region_deco_name");
+		}
+		return super.tileName(tile);
+	}
+
+	@Override
+	public String tileDesc(int tile) {
+		if (tile == Terrain.STATUE || tile == Terrain.STATUE_SP) {
+			return Messages.get(CityLevel.class, "statue_desc");
+		} else if (tile == Terrain.REGION_DECO || tile == Terrain.REGION_DECO_ALT) {
+			return Messages.get(CavesLevel.class, "region_deco_desc");
+		} else if (tile == Terrain.EXIT) {
+			return Messages.get(CityLevel.class, "exit_desc");
+		}
+		return super.tileDesc(tile);
+	}
+
+	@Override
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(STATE, state);
+		if (arenaOffset() > 0) bundle.put(CITY_APPROACH_VERSION, CURRENT_CITY_APPROACH_VERSION);
 		int total = 0;
 		for (Set<Integer> cluster : coverClusters) total += cluster.size();
 		int[] cells = new int[total];
@@ -520,6 +670,9 @@ public class HuntressBossLevel extends Level {
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
 		state = bundle.contains(STATE) ? bundle.getEnum(STATE, State.class) : State.START;
+		if (arenaOffset() > 0 && bundle.getInt(CITY_APPROACH_VERSION) < CURRENT_CITY_APPROACH_VERSION) {
+			restoreCityApproach();
+		}
 		coverClusters = bundle.contains(COVER_CLUSTER_CELLS)
 				&& bundle.contains(COVER_CLUSTER_SIZES)
 				? restoreCoverClusters(bundle.getIntArray(COVER_CLUSTER_CELLS),
@@ -530,6 +683,53 @@ public class HuntressBossLevel extends Level {
 				((HuntressBoss) mob).finishLevelRestore(this);
 			}
 		}
+	}
+
+	private void restoreCityApproach() {
+		paintCityApproach(state == State.WON);
+		customTiles.removeIf(tile -> tile instanceof CavesBossLevel.CityEntrance || tile instanceof CityFence);
+		customWalls.removeIf(tile -> tile instanceof CavesBossLevel.EntranceOverhang);
+		addCityApproachTiles();
+		LevelTransition exit = getTransition(LevelTransition.Type.REGULAR_EXIT);
+		if (exit != null) exit.set(EXIT_X - 2, 0, EXIT_X + 2, EXIT_Y);
+		buildFlagMaps();
+		cleanWalls();
+
+		// Do not lose items or strand actors on the old passable edges that are now real walls.
+		Set<Integer> heapCells = new HashSet<>();
+		for (Heap heap : heaps.valueList()) heapCells.add(heap.pos);
+		for (Heap heap : heaps.valueList()) {
+			int cell = relocatedCityCell(heap.pos, heapCells);
+			if (cell != heap.pos) {
+				heaps.remove(heap.pos);
+				heap.pos = cell;
+				heaps.put(cell, heap);
+				heapCells.add(cell);
+			}
+		}
+		Set<Integer> mobCells = new HashSet<>();
+		for (Mob mob : mobs) mobCells.add(mob.pos);
+		for (Mob mob : mobs) {
+			if (mob.flying && mob.pos >= 0 && mob.pos < length() && !solid[mob.pos]) continue;
+			mob.pos = relocatedCityCell(mob.pos, mobCells);
+			mobCells.add(mob.pos);
+		}
+	}
+
+	private int relocatedCityCell(int from, Set<Integer> occupied) {
+		if (from < 0 || from >= 13 * width() || passable[from]) return from;
+		int closest = from;
+		int bestDistance = Integer.MAX_VALUE;
+		for (int cell = width(); cell < 12 * width(); cell++) {
+			if (!passable[cell] || occupied.contains(cell)) continue;
+			int distance = Math.abs(cell % width() - from % width())
+					+ Math.abs(cell / width() - from / width());
+			if (distance < bestDistance) {
+				closest = cell;
+				bestDistance = distance;
+			}
+		}
+		return closest;
 	}
 
 	private List<Set<Integer>> restoreCoverClusters(int[] cells, int[] sizes) {
@@ -556,7 +756,8 @@ public class HuntressBossLevel extends Level {
 
 	private boolean isStoredCoverCell(int cell) {
 		return cell >= 0 && cell < length() && isArenaCell(cell)
-				&& !isReservedEncounterCell(cell) && map[cell] == Terrain.WALL;
+				&& !isReservedEncounterCell(cell)
+				&& (map[cell] == Terrain.WALL || map[cell] == Terrain.WALL_DECO);
 	}
 
 	private List<Set<Integer>> rebuildCoverClustersFromMap() {
@@ -702,7 +903,7 @@ public class HuntressBossLevel extends Level {
 		sealEncounter();
 		Statistics.qualifiedForBossChallengeBadge = true;
 
-		int gate = GATE_X + GATE_Y * width();
+		int gate = arenaCell(GATE_X, GATE_Y);
 
 		Heap heap = heaps.get(gate);
 		while (heap != null && !heap.isEmpty()) {
@@ -1256,8 +1457,8 @@ public class HuntressBossLevel extends Level {
 
 	@Override
 	public void onSealedResurrectionReset() {
-		int leftSupply = ENTRANCE_X - 2 + (ENTRANCE_Y - 2) * width();
-		int rightSupply = ENTRANCE_X + 2 + (ENTRANCE_Y - 2) * width();
+		int leftSupply = arenaCell(ENTRANCE_X - 2, ENTRANCE_Y - 2);
+		int rightSupply = arenaCell(ENTRANCE_X + 2, ENTRANCE_Y - 2);
 		for (int cell : new int[]{leftSupply, rightSupply}) {
 			Heap heap = heaps.get(cell);
 			if (heap == null || heap.type != Heap.Type.HEAP) {
@@ -1290,9 +1491,19 @@ public class HuntressBossLevel extends Level {
 			}
 		});
 		super.unseal();
-		int gate = GATE_X + GATE_Y * width();
+		int gate = arenaCell(GATE_X, GATE_Y);
 		set(gate, Terrain.EMPTY, this);
 		GameScene.updateMap(gate);
+		if (arenaOffset() > 0) {
+			for (int x = 13; x <= 17; x++) {
+				int cell = x + 12 * width();
+				set(cell, Terrain.EMPTY, this);
+				GameScene.updateMap(cell);
+			}
+			for (CustomTilemap tile : customTiles) {
+				if (tile instanceof CityFence) ((CityFence) tile).updateState(this);
+			}
+		}
 		Dungeon.observe();
 
 		Game.runOnRenderThread(new Callback() {
@@ -1324,11 +1535,11 @@ public class HuntressBossLevel extends Level {
 	}
 
 	int triggerCell() {
-		return TRIGGER_X + TRIGGER_Y * width();
+		return arenaCell(TRIGGER_X, TRIGGER_Y);
 	}
 
 	boolean triggersFightAt(int cell) {
-		return isArenaCell(cell) && cell / width() <= TRIGGER_Y;
+		return isArenaCell(cell) && cell / width() <= TRIGGER_Y + arenaOffset();
 	}
 
 	boolean isArenaCell(int cell) {
@@ -1336,7 +1547,7 @@ public class HuntressBossLevel extends Level {
 			return false;
 		}
 		int x = cell % width();
-		int y = cell / width();
+		int y = cell / width() - arenaOffset();
 		return x >= ARENA.left && x < ARENA.right
 				&& y >= ARENA.top && y < ARENA.bottom;
 	}

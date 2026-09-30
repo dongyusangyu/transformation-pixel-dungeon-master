@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.effects.FloatingText;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.utils.Bundle;
 
 public class Corruption extends AllyBuff {
 
@@ -36,6 +37,7 @@ public class Corruption extends AllyBuff {
 	}
 
 	private float buildToDamage = 0f;
+	private static final String BUILD_TO_DAMAGE = "build_to_damage";
 
 	//corrupted enemies are usually fully healed and cleansed of most debuffs
 	public static void corruptionHeal(Char target){
@@ -73,6 +75,18 @@ public class Corruption extends AllyBuff {
 	@Override
 	public int icon() {
 		return BuffIndicator.CORRUPT;
+	}
+
+	@Override
+	public void storeInBundle(Bundle bundle) {
+		super.storeInBundle(bundle);
+		bundle.put(BUILD_TO_DAMAGE, buildToDamage);
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		buildToDamage = bundle.getFloat(BUILD_TO_DAMAGE);
 	}
 
 }

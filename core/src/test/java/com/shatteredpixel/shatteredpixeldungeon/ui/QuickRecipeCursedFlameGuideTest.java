@@ -12,12 +12,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class QuickRecipeCursedFlameGuideTest {
-    @Test public void enhancedWeaponPageOffersCursedFlameCraftingWithExactIngredients() {
-        assertTrue(QuickRecipe.enhancedWeaponGuideRecipes().stream().anyMatch(guide ->
+    @Test public void weaponCraftingPageOffersCursedFlameWithExactIngredients() {
+        assertTrue(QuickRecipe.weaponCraftingGuideRecipes().stream().anyMatch(guide ->
                 guide.recipe instanceof WandOfCursedFlame.Recipe
                         && guide.outputType == WandOfCursedFlame.class
                         && Arrays.equals(guide.ingredientTypes, new Class[]{
                                 WandOfMagicMissile.class, WandOfFireblast.class, MetalShard.class})
                         && guide.recipe.cost(null) == 5));
+    }
+
+    @Test public void cursedFlameIsNotListedAmongEnhancedWeaponRecipes() {
+        assertTrue(QuickRecipe.enhancedWeaponGuideRecipes().stream().noneMatch(guide ->
+                guide.recipe instanceof WandOfCursedFlame.Recipe));
     }
 }

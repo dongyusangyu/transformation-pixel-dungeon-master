@@ -22,7 +22,8 @@ public class CombatFeedbackAdjustmentTest {
 
 		assertTrue(indicators.contains("SEAL_COMBO = 131"));
 		assertTrue(indicators.contains("AUXILIARY_CORE_BOOST = 159"));
-		assertTrue(seal.contains("return sealEquipped() ? BuffIndicator.SEAL_COMBO : BuffIndicator.NONE"));
+		assertTrue(seal.contains("if (!sealEquipped()) return BuffIndicator.NONE"));
+		assertTrue(seal.contains("return cooldown > 0 ? BuffIndicator.TIME : BuffIndicator.SEAL_COMBO"));
 		assertTrue(core.contains("return BuffIndicator.AUXILIARY_CORE_BOOST"));
 	}
 

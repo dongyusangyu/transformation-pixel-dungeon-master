@@ -88,6 +88,8 @@ public enum DictionaryJournal {
         ALCHEMY.d.put("phantom_meat",       ItemSpriteSheet.PHANTOM_MEAT);
         ALCHEMY.d.put("supply_ration",       ItemSpriteSheet.SUPPLY_RATION);
         ALCHEMY.d.put("tincture",           ItemSpriteSheet.TINCTURE);
+        ALCHEMY.d.put("food_greenglowfruit", EXItemSpriteSheet.GREEN_GLOW_FRUIT);
+        ALCHEMY.d.put("sourwinearoma",       EXItemSpriteSheet.SOUR_WINE_AROMA);
 
         //potions, enhanced ones implemented
         ALCHEMY.d.put("potion_exp",         ItemSpriteSheet.POTION_INDIGO);
@@ -117,6 +119,7 @@ public enum DictionaryJournal {
         ALCHEMY.d.put("scroll_alter",       ItemSpriteSheet.SCROLL_ODAL);
         ALCHEMY.d.put("scroll_upgrade",     ItemSpriteSheet.SCROLL_ODAL);
         ALCHEMY.d.put("scroll_meta",     ItemSpriteSheet.SCROLL_META);
+        ALCHEMY.d.put("scroll_extraction", EXItemSpriteSheet.SCROLL_EXTRACTION);
 
         //brew,elixir,2 to show all
         ALCHEMY.d.put("potion_brews",       ItemSpriteSheet.BREW_INFERNAL);

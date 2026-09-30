@@ -618,9 +618,10 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				}
 				break;
 			case CURSED_BURNING:
-				if (cursedBurning != null) cursedBurning.on = false;
+				if (cursedBurning != null) cursedBurning.killAndErase();
 				cursedBurning = emitter();
-				cursedBurning.pour(CursedFlameParticle.FACTORY, 0.06f);
+				cursedBurning.pour(CursedFlameParticle.CHARACTER_FACTORY, 0.06f);
+				cursedBurning.visible = cursedBurningVisible(ch, visualEffectsVisible());
 				if (visible) Sample.INSTANCE.play(Assets.Sounds.BURNING);
 				break;
 			case ETHEREAL:
@@ -758,7 +759,7 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				break;
 			case CURSED_BURNING:
 				if (cursedBurning != null) {
-					cursedBurning.on = false;
+					cursedBurning.killAndErase();
 					cursedBurning = null;
 				}
 				break;
@@ -893,6 +894,9 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		}
 
 		boolean effectsVisible = visualEffectsVisible();
+		if (cursedBurning != null) {
+			cursedBurning.visible = cursedBurningVisible(ch, effectsVisible);
+		}
 
 		if (burning != null) {
 			burning.visible = effectsVisible;
@@ -953,6 +957,14 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		}
 	}
 	
+	static boolean cursedBurningVisible(Char ch, boolean spriteVisible) {
+		if (!spriteVisible || ch == null || Dungeon.level == null || Dungeon.level.heroFOV == null) {
+			return false;
+		}
+		int cell = ch.pos;
+		return cell >= 0 && cell < Dungeon.level.heroFOV.length && Dungeon.level.heroFOV[cell];
+	}
+
 	@Override
 	public void resetColor() {
 		super.resetColor();

@@ -187,8 +187,10 @@ public class Heap implements Bundlable {
 		}
 
 		//lost backpack must always be on top of a heap
-		if ((item.dropsDownHeap && type != Type.FOR_SALE) || peek() instanceof LostBackpack) {
+		if (item.dropsDownHeap && type != Type.FOR_SALE) {
 			items.add( item );
+		} else if (peek() instanceof LostBackpack) {
+			items.add( 1, item );
 		} else {
 			items.addFirst( item );
 		}

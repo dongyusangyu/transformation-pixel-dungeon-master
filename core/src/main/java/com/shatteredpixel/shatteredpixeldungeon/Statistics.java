@@ -44,6 +44,7 @@ public class Statistics {
 	public static int hazardAssistedKills;
 	public static int ankhsUsed;
 	public static int towerBossesDefeated;
+	public static int highestTowerBossDefeated;
 	private static SparseArray<Integer> corpsesSlainByLevel = new SparseArray<>();
 	//tracks every item type 'seen' this run (i.e. would be added to catalogs)
 	public static HashSet<Class> itemTypesDiscovered = new HashSet<>();
@@ -102,6 +103,7 @@ public class Statistics {
 		hazardAssistedKills = 0;
 		ankhsUsed		= 0;
 		towerBossesDefeated = 0;
+		highestTowerBossDefeated = 0;
 		corpsesSlainByLevel.clear();
 		itemTypesDiscovered.clear();
 
@@ -157,6 +159,7 @@ public class Statistics {
 	private static final String HAZARD_ASSISTS	= "hazard_assists";
 	private static final String ANKHS		= "ankhsUsed";
 	private static final String TOWER_BOSSES_DEFEATED = "tower_bosses_defeated";
+	private static final String HIGHEST_TOWER_BOSS_DEFEATED = "highest_tower_boss_defeated";
 	private static final String CORPSE_SLAIN_KEYS = "corpse_slain_keys";
 	private static final String CORPSE_SLAIN_VALUES = "corpse_slain_values";
 
@@ -211,6 +214,7 @@ public class Statistics {
 		bundle.put(HAZARD_ASSISTS, hazardAssistedKills);
 		bundle.put( ANKHS,		ankhsUsed );
 		bundle.put( TOWER_BOSSES_DEFEATED, towerBossesDefeated );
+		bundle.put( HIGHEST_TOWER_BOSS_DEFEATED, highestTowerBossDefeated );
 		int[] corpseKeys = corpsesSlainByLevel.keyArray();
 		int[] corpseValues = new int[corpseKeys.length];
 		for (int i = 0; i < corpseKeys.length; i++) {
@@ -274,6 +278,9 @@ public class Statistics {
 		ankhsUsed		= bundle.getInt( ANKHS );
 		towerBossesDefeated = bundle.contains(TOWER_BOSSES_DEFEATED)
 				? Math.max(0, bundle.getInt(TOWER_BOSSES_DEFEATED)) : 0;
+		highestTowerBossDefeated = bundle.contains(HIGHEST_TOWER_BOSS_DEFEATED)
+				? Math.max(0, bundle.getInt(HIGHEST_TOWER_BOSS_DEFEATED))
+				: legacyTowerBossDepth(towerBossesDefeated);
 		corpsesSlainByLevel.clear();
 		if (bundle.contains(CORPSE_SLAIN_KEYS) && bundle.contains(CORPSE_SLAIN_VALUES)) {
 			int[] keys = bundle.getIntArray(CORPSE_SLAIN_KEYS);
@@ -399,6 +406,18 @@ public class Statistics {
 		if (towerBossesDefeated < Integer.MAX_VALUE) towerBossesDefeated++;
 	}
 
+	public static void recordTowerBossDefeated(int depth) {
+		recordTowerBossDefeated();
+		if (depth > 0 && depth % TowerBossLevel.FLOORS_PER_BOSS == 0) {
+			highestTowerBossDefeated = Math.max(highestTowerBossDefeated, depth);
+		}
+	}
+
+	private static int legacyTowerBossDepth(int defeatedCount) {
+		long inferredDepth = (long) Math.max(0, defeatedCount) * TowerBossLevel.FLOORS_PER_BOSS;
+		return (int) Math.min(Integer.MAX_VALUE, inferredDepth);
+	}
+
 	/**
 	 * Supplies a conservative count for saves created before tower boss scores
 	 * were persisted. The current unfinished boss floor is not counted unless
@@ -416,6 +435,8 @@ public class Statistics {
 			completed++;
 		}
 		towerBossesDefeated = Math.max(towerBossesDefeated, completed);
+		highestTowerBossDefeated = Math.max(highestTowerBossDefeated,
+				legacyTowerBossDepth(completed));
 	}
 
 	public static void recoverTowerDepth(int depth, int branch) {

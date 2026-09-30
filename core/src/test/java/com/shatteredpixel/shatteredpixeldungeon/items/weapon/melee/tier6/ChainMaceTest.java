@@ -17,11 +17,13 @@ import com.watabou.utils.Bundle;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Properties;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -188,8 +190,13 @@ public class ChainMaceTest {
 				"items.weapon.melee.tier6.chainmace$ballfollower.desc=This solid iron ball is bound to its wielder by a heavy chain. It matches the wielder's speed while following and returns at triple speed after a command. It is neutral, cannot be targeted or buffed, and cannot be harmed or killed."));
 		assertTrue(chinese.contains(
 				"items.weapon.melee.tier6.chainmace$ballfollower.name=链锤铁球"));
-		assertTrue(chinese.contains(
-				"items.weapon.melee.tier6.chainmace$ballfollower.desc=这颗实心铁球由沉重的锁链牵引。普通随行时与持有者同速，执行命令后以三倍速度回返。它保持中立，无法被锁定、施加效果、伤害或杀死。"));
+		Properties properties = new Properties();
+		properties.load(new StringReader(chinese));
+		String description = properties.getProperty("items.weapon.melee.tier6.chainmace$ballfollower.desc");
+		assertTrue(description.contains("由沉重的锁链牵引"));
+		assertTrue(description.contains("与使用者相同的移动速度"));
+		assertTrue(description.contains("三倍的移动速度"));
+		assertTrue(description.contains("无法将其杀死"));
 	}
 
 	@Test
@@ -392,7 +399,7 @@ public class ChainMaceTest {
 		Path coreDirectory = workingDirectory.resolve("core");
 		if (!Files.isDirectory(coreDirectory)) coreDirectory = workingDirectory;
 		return new String(Files.readAllBytes(coreDirectory.resolve(relativePath)),
-				StandardCharsets.UTF_8);
+				StandardCharsets.UTF_8).replace("\r\n", "\n");
 	}
 
 	private static String itemMessages(String languageFile) throws IOException {

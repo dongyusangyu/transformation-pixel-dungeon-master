@@ -64,7 +64,7 @@ public class BlobEmitter extends Emitter {
 						&& map[cell] > 0) {
 					float x = (i + Random.Float(bound.left, bound.right)) * size;
 					float y = (j + Random.Float(bound.top, bound.bottom)) * size;
-					factory.emit(this, index, x, y);
+					factory.emit(this, index, x, y, cell);
 				}
 			}
 		}

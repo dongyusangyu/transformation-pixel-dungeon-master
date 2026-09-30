@@ -107,3 +107,14 @@ node_modules/
 /pw_stage/
 **/build-codex*/
 /core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/custom/agentMin/training/logs/
+
+# Local translation and audit scratch files
+/.tmp*
+/%tmp
+/TRANSLATION_PROGRESS.md
+/customkeys.txt
+/items_changed_*.txt
+/items_missing_*.txt
+/missing.json
+/scripts/SyncRaidGrassAtlas.java
+/server/CLOUD_SYNC_PROTOCOL.md

@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.treasures.PakalJadeMask;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.RuWareBowl;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.SuttonHooHelmet;
 import com.shatteredpixel.shatteredpixeldungeon.items.treasures.TurquoiseSerpent;
+import com.shatteredpixel.shatteredpixeldungeon.items.keys.RaidAccessCard;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class TreasureCatalogJournalTest {
 
 	private static final Class<?>[] APPROVED_TREASURES = {
+			RaidAccessCard.class,
 			MuiscaGoldenRaft.class,
 			ImperialCrown.class,
 			PakalJadeMask.class,
@@ -119,6 +121,33 @@ public class TreasureCatalogJournalTest {
 		String key = "journal.catalog.treasures.title";
 		assertEquals("treasures", loadJournalMessages("journal.properties").getProperty(key));
 		assertEquals("藏品", loadJournalMessages("journal_zh.properties").getProperty(key));
+	}
+
+	@Test
+	public void collectibleDiscoveryHintsDescribeTheirRequestSource() throws IOException {
+		assertEquals("You can find this item through a surface shopkeeper's request.",
+				loadItemMessages("items.properties").getProperty("items.treasures.treasures.discover_hint"));
+		assertEquals("你可在地表店主的委托任务中发现该物品。",
+				loadItemMessages("items_zh.properties").getProperty("items.treasures.treasures.discover_hint"));
+		assertEquals("You can find this item through a surface shopkeeper's request.",
+				loadItemMessages("items.properties").getProperty("items.keys.raidaccesscard.discover_hint"));
+		assertEquals("你可在地表店主的委托任务中发现该物品。",
+				loadItemMessages("items_zh.properties").getProperty("items.keys.raidaccesscard.discover_hint"));
+		assertEquals("You can buy this item in a tower shop.",
+				loadItemMessages("items.properties").getProperty("items.scrolls.scrollofextraction.discover_hint"));
+		assertEquals("你可在高塔商店购买该物品。",
+				loadItemMessages("items_zh.properties").getProperty("items.scrolls.scrollofextraction.discover_hint"));
+	}
+
+	private static Properties loadItemMessages(String fileName) throws IOException {
+		Path source = coreDirectory()
+				.resolve("src/main/assets/messages/items")
+				.resolve(fileName);
+		Properties properties = new Properties();
+		try (Reader reader = Files.newBufferedReader(source, StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
+		return properties;
 	}
 
 	private static Properties loadJournalMessages(String fileName) throws IOException {

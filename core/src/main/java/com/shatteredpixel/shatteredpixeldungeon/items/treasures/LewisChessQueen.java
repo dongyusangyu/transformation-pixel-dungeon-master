@@ -5,6 +5,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 public class LewisChessQueen extends Treasures {
 
 	public LewisChessQueen() {
-		super(EXItemSpriteSheet.LEWIS_CHESS_QUEEN, CollectionRarity.COMMON, 1400);
+		super(EXItemSpriteSheet.LEWIS_CHESS_QUEEN, CollectionRarity.RARE, 4500);
 	}
 }

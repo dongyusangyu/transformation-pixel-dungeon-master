@@ -113,7 +113,8 @@ public class DeathKnightSpriteAssetTest {
         assertFalse(slash.contains("speed.set"));
         assertTrue(slash.contains("public void update()"));
         assertTrue(boss.contains("spriteClass = DeathKnightSprite.class"));
-        assertTrue(boss.contains("DeathKnightSlash.show(sprite.parent"));
+        assertTrue(boss.contains("DeathKnightSlash.show(pos, pendingCells, pendingBands)"));
+        assertTrue(slash.contains("GameScene.effect(new DeathKnightSlash"));
     }
 
     @Test

@@ -164,6 +164,37 @@ public class MountainGuardTest {
                 hero, 7, new Object(), DamageTag.UNAVOIDABLE));
     }
 
+    @Test
+    public void wallCounterBlocksPhysicalButNotMagicalOrOngoingDamage() {
+        Hero hero = newBareHero();
+        MountainGuard.MountainWallCounter counter = new MountainGuard.MountainWallCounter();
+        counter.target = hero;
+        hero.add(counter);
+        hero.belongings = (com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings)
+                allocate(com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings.class);
+        hero.belongings.weapon = newGuard();
+        Char enemy = new Char() {
+            @Override
+            public void damage(int damage, Object source, DamageTag... tags) {
+                HP -= damage;
+            }
+        };
+        enemy.HT = enemy.HP = 20;
+        enemy.alignment = Char.Alignment.ENEMY;
+
+        assertEquals(0, MountainGuard.interceptEnemyDamage(
+                hero, 11, enemy, DamageTag.PHYSICAL));
+        assertEquals(11, MountainGuard.interceptEnemyDamage(
+                hero, 11, enemy, DamageTag.MAGICAL));
+        assertEquals(11, MountainGuard.interceptEnemyDamage(
+                hero, 11, enemy, DamageTag.PHYSICAL, DamageTag.POISON));
+    }
+
+    @Test
+    public void specialActionUsesMountainGuardColor() {
+        assertEquals(0x3D93BB, newGuard().indicatorColor());
+    }
+
     private static MountainGuard newGuard() {
         try {
             Field field = Unsafe.class.getDeclaredField("theUnsafe");

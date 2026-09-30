@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.Wand;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfBlastWave;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorrosion;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCorruption;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfDisintegration;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFireblast;
 import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfFrost;
@@ -36,6 +37,7 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.CheckBox;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.OptionSlider;
@@ -194,6 +196,9 @@ public class TestRing extends TestGenerator {
             case 11:
                 return WandOfTransfusion.class;
             case 12:
+                return WandOfWarding.class;
+            case 13:
+                return WandOfCursedFlame.class;
             default:
                 return WandOfWarding.class;
         }
@@ -212,14 +217,14 @@ public class TestRing extends TestGenerator {
 
     private void buildWandList() {
         if (!wandList.isEmpty()) return;
-        for (int i = 0; i < 13; ++i) {
+        for (int i = 0; i < 14; ++i) {
             wandList.add(idToWand(i));
         }
     }
 
     private int total(int category){
         if (category == RING_CAT) return 13;
-        if (category == WAND_CAT) return 13;
+        if (category == WAND_CAT) return 14;
         return 0;
     }
 
@@ -333,8 +338,8 @@ public class TestRing extends TestGenerator {
                     im.scale.set(1.6f);
                     btn.icon(im);
                 } else if (category == WAND_CAT) {
-                    Image im = new Image(Assets.Sprites.ITEMS);
-                    im.frame(ItemSpriteSheet.film.get(Objects.requireNonNull(Reflection.newInstance(wandList.get(i))).image));
+                    ItemSprite im = new ItemSprite(Objects.requireNonNull(
+                            Reflection.newInstance(wandList.get(i))));
                     im.scale.set(0.9f);
                     btn.icon(im);
                 }

@@ -6,6 +6,6 @@ public class EthiopianProcessionalCross extends Treasures {
 
 	public EthiopianProcessionalCross() {
 		super(EXItemSpriteSheet.ETHIOPIAN_PROCESSIONAL_CROSS,
-				CollectionRarity.COMMON, 600);
+				CollectionRarity.TOP, 5000);
 	}
 }

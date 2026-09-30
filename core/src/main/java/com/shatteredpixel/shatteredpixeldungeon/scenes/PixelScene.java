@@ -314,6 +314,18 @@ public class PixelScene extends Scene {
 		savedWindows.clear();
 	}
 
+	/** Reposition open windows without destroying their contents. */
+	public void onSafeInsetsChanged() {
+		relayoutOpenWindows(Game.platform.getSafeInsets(PlatformSupport.INSET_BLK));
+	}
+
+	protected void relayoutOpenWindows(RectF insets) {
+		if (members == null) return;
+		for (Gizmo g : members.toArray(new Gizmo[0])) {
+			if (g instanceof Window) ((Window) g).onSafeInsetsChanged(insets);
+		}
+	}
+
 	@Override
 	public void destroy() {
 		super.destroy();
@@ -415,13 +427,14 @@ public class PixelScene extends Scene {
 	//returns insets for the common case of all on top/bottom and only blocking on left/right
 	//plus scaled to pixel zoom
 	public RectF getCommonInsets(){
-		RectF all = Game.platform.getSafeInsets(PlatformSupport.INSET_ALL);
-		RectF blocking = Game.platform.getSafeInsets(PlatformSupport.INSET_BLK);
+		return getCommonInsets(
+				Game.platform.getSafeInsets(PlatformSupport.INSET_ALL),
+				Game.platform.getSafeInsets(PlatformSupport.INSET_BLK));
+	}
 
-		all.left =  blocking.left;
-		all.right = blocking.right;
-
-		return all.scale(1f/defaultZoom);
+	protected RectF getCommonInsets(RectF all, RectF blocking){
+		return new RectF(blocking.left, all.top, blocking.right, all.bottom)
+				.scale(1f/defaultZoom);
 	}
 
 	protected static class Fader extends ColorBlock {

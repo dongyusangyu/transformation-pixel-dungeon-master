@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
+import math
 import re
 import secrets
 import sqlite3
@@ -112,10 +114,14 @@ class TalentCloudStore:
                     player_uuid TEXT NOT NULL,
                     device_key TEXT NOT NULL,
                     expires_at INTEGER NOT NULL,
-                    committed INTEGER NOT NULL DEFAULT 0
+                    committed INTEGER NOT NULL DEFAULT 0,
+                    snapshot_hash TEXT NOT NULL DEFAULT ''
                 )
                 """
             )
+            session_columns = [row[1] for row in db.execute("PRAGMA table_info(restore_sessions)")]
+            if "snapshot_hash" not in session_columns:
+                db.execute("ALTER TABLE restore_sessions ADD COLUMN snapshot_hash TEXT NOT NULL DEFAULT ''")
             self._seed_activity_baseline(db)
 
     def is_blacklisted(self, device_ip: str):
@@ -147,18 +153,22 @@ class TalentCloudStore:
     def upload(self, player_uuid: str, device_key: str, legacy_device_ip: str, global_data: dict, talent_stats: dict):
         timestamp = now_ms()
         with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             player_uuid, primary_device = self._resolve_player_uuid(db, player_uuid, device_key, legacy_device_ip)
             old_row = db.execute(
-                "SELECT global_data, talent_stats FROM player_cloud_data WHERE device_ip = ?",
-                (primary_device,),
+                "SELECT global_data, talent_stats FROM player_cloud_data WHERE player_uuid = ?",
+                (player_uuid,),
             ).fetchone()
             if old_row is None:
                 old_row = db.execute(
-                    "SELECT global_data, talent_stats FROM player_cloud_data WHERE player_uuid = ?",
-                    (player_uuid,),
+                    "SELECT global_data, talent_stats FROM player_cloud_data WHERE device_ip = ? AND player_uuid = ?",
+                    (primary_device, player_uuid),
                 ).fetchone()
             old_global = self._loads(old_row[0]) if old_row else {}
             old_talent_stats = self._loads(old_row[1]) if old_row else {}
+            global_data = deepcopy(global_data) if isinstance(global_data, dict) else {}
+            if isinstance(global_data.get("rankings"), dict):
+                global_data["rankings"]["sync_device_key"] = primary_device
             merged_talent_stats = self._merge_talent_stats(old_talent_stats, talent_stats)
             merged_global = self._merge_global_data(old_global, global_data, merged_talent_stats)
 
@@ -201,6 +211,14 @@ class TalentCloudStore:
                 "device_key": primary_device,
                 "global_data": merged_global,
                 "talent_stats": merged_talent_stats,
+                "rankings_accepted": (
+                    not isinstance(global_data.get("rankings"), dict) or (
+                        self._safe_int(global_data["rankings"].get("sync_generation", 0))
+                        == self._safe_int(merged_global["rankings"].get("sync_generation", 0))
+                        and self._safe_int(global_data["rankings"].get("sync_device_revision", 0))
+                        >= self._safe_int(merged_global["rankings"].get("sync_device_revisions", {}).get(primary_device, 0))
+                    )
+                ),
             }
 
     def _resolve_player_uuid(self, db, requested_uuid: str, device_key: str, legacy_device_ip: str):
@@ -274,6 +292,8 @@ class TalentCloudStore:
         prepare_restore: bool = False,
     ):
         with self._connect() as db:
+            if prepare_restore or consume_restore_permission:
+                db.execute("BEGIN IMMEDIATE")
             player_uuid = (player_uuid or "").strip()
             device_key = (device_key or "").strip()
             legacy_device_ip = (legacy_device_ip or "").strip()
@@ -314,7 +334,8 @@ class TalentCloudStore:
                 }
             restore_token = None
             if prepare_restore:
-                restore_token = self._create_restore_session(db, row[0], device_key)
+                restore_token = self._create_restore_session(
+                    db, row[0], device_key, self._restore_snapshot_hash(row[2], row[3]))
             elif consume_restore_permission:
                 if not self._finalize_restore(db, row[0], device_key):
                     return {
@@ -348,7 +369,7 @@ class TalentCloudStore:
             db.execute("BEGIN IMMEDIATE")
             session = db.execute(
                 """
-                SELECT player_uuid, device_key, expires_at, committed
+                SELECT player_uuid, device_key, expires_at, committed, snapshot_hash
                 FROM restore_sessions
                 WHERE token = ?
                 """,
@@ -359,6 +380,11 @@ class TalentCloudStore:
                 or session[0] != player_uuid
                 or session[1] != device_key
             ):
+                return False
+            current = db.execute("SELECT global_data, talent_stats FROM player_cloud_data WHERE player_uuid = ?",
+                                 (player_uuid,)).fetchone()
+            if current is None or not session[4] or session[4] != self._restore_snapshot_hash(*current):
+                db.execute("DELETE FROM restore_sessions WHERE token = ?", (token,))
                 return False
             if session[3]:
                 return True
@@ -379,7 +405,7 @@ class TalentCloudStore:
             return True
 
     @staticmethod
-    def _create_restore_session(db, player_uuid: str, device_key: str):
+    def _create_restore_session(db, player_uuid: str, device_key: str, snapshot_hash: str):
         timestamp = now_ms()
         db.execute(
             "DELETE FROM restore_sessions WHERE committed = 0 AND expires_at < ?",
@@ -389,12 +415,16 @@ class TalentCloudStore:
         token = secrets.token_urlsafe(32)
         db.execute(
             """
-            INSERT INTO restore_sessions(token, player_uuid, device_key, expires_at, committed)
-            VALUES (?, ?, ?, ?, 0)
+            INSERT INTO restore_sessions(token, player_uuid, device_key, expires_at, committed, snapshot_hash)
+            VALUES (?, ?, ?, ?, 0, ?)
             """,
-            (token, player_uuid, device_key, timestamp + 5 * 60 * 1000),
+            (token, player_uuid, device_key, timestamp + 5 * 60 * 1000, snapshot_hash),
         )
         return token
+
+    @staticmethod
+    def _restore_snapshot_hash(global_data: str, talent_stats: str):
+        return hashlib.sha256((global_data + "\0" + talent_stats).encode("utf-8")).hexdigest()
 
     def _finalize_restore(self, db, player_uuid: str, device_key: str):
         updated = db.execute(
@@ -633,24 +663,71 @@ class TalentCloudStore:
     def _merge_rankings(cls, existing, incoming):
         existing = existing if isinstance(existing, dict) else {}
         incoming = incoming if isinstance(incoming, dict) else {}
-        merged = {}
+        old_generation = max(0, cls._safe_int(existing.get("sync_generation", 0)))
+        new_generation = max(0, cls._safe_int(incoming.get("sync_generation", 0)))
+        if new_generation < old_generation:
+            return deepcopy(existing)
+        revisions = deepcopy(existing.get("sync_device_revisions", {}))
+        if not isinstance(revisions, dict):
+            revisions = {}
+        device = incoming.get("sync_device_key")
+        revision = cls._safe_int(incoming.get("sync_device_revision", 0))
+        if device and "sync_device_revision" in incoming:
+            if revision < cls._safe_int(revisions.get(device, -1), -1):
+                return deepcopy(existing)
+            revisions[device] = revision
+        if new_generation > old_generation:
+            # Only an explicit generation change resets history; missing files do not.
+            existing = {}
+        merged = deepcopy(existing)
+        merged.update(deepcopy(incoming))
+        merged.pop("sync_device_key", None)
+        merged.pop("sync_device_revision", None)
+        merged["sync_generation"] = new_generation
+        merged["sync_device_revisions"] = revisions
+        deleted = cls._ranking_ids(existing, incoming, "deleted_game_ids")
+        deleted_hall = cls._ranking_ids(existing, incoming, "deleted_hero_hall_ids")
+        deleted_hall.difference_update(cls._ranking_ids({}, incoming, "restored_hero_hall_ids"))
+        merged["deleted_game_ids"] = sorted(deleted)
+        merged["deleted_hero_hall_ids"] = sorted(deleted_hall)
+        latest_id = cls._latest_game_id(incoming) or cls._latest_game_id(existing)
 
         records_map = {}
         for record in cls._as_list(existing.get("records")) + cls._as_list(incoming.get("records")):
             if not isinstance(record, dict):
                 continue
             game_id = record.get("gameID")
-            if not game_id:
+            if not isinstance(game_id, str) or not game_id or game_id in deleted:
                 continue
             previous = records_map.get(game_id)
             if previous is None or cls._record_sort_key(record) < cls._record_sort_key(previous):
-                records_map[game_id] = record
-        records = sorted(records_map.values(), key=cls._record_sort_key)[:11]
+                records_map[game_id] = deepcopy(record)
+            if previous and (previous.get("restarted") or record.get("restarted")):
+                records_map[game_id]["restarted"] = True
+        records = sorted(records_map.values(), key=cls._record_sort_key)
+        for cycle in (False, True):
+            cycle_records = [r for r in records if bool(r.get("new_cycle", False)) == cycle]
+            while len(cycle_records) > 11:
+                removed = cycle_records[-1]
+                if removed["gameID"] == latest_id:
+                    removed = cycle_records[-2]
+                records.remove(removed)
+                cycle_records.remove(removed)
         merged["records"] = records
 
-        merged["latest"] = cls._resolve_latest_index(records, incoming.get("latest"), existing.get("latest"))
-        merged["total"] = max(cls._safe_int(existing.get("total", 0)), cls._safe_int(incoming.get("total", 0)), len(records))
-        merged["won"] = max(cls._safe_int(existing.get("won", 0)), cls._safe_int(incoming.get("won", 0)))
+        merged["latest"] = next((i for i, r in enumerate(records) if r["gameID"] == latest_id), -1)
+        merged["latest_game_id"] = latest_id if merged["latest"] >= 0 else ""
+        for cycle, total_key, won_key in ((False, "total", "won"),
+                                           (True, "new_cycle_total", "new_cycle_won")):
+            eligible = [r for r in records if bool(r.get("new_cycle", False)) == cycle
+                        and not r.get("custom_seed")]
+            merged[total_key] = max(cls._safe_int(existing.get(total_key, 0)),
+                                    cls._safe_int(incoming.get(total_key, 0)), len(eligible))
+            merged[won_key] = max(cls._safe_int(existing.get(won_key, 0)),
+                                  cls._safe_int(incoming.get(won_key, 0)),
+                                  sum(bool(r.get("win")) for r in eligible))
+        merged["restart_source_game_ids"] = sorted(
+            cls._ranking_ids(existing, incoming, "restart_source_game_ids"))
 
         latest_daily = cls._pick_best_record(existing.get("latest_daily"), incoming.get("latest_daily"))
         if latest_daily:
@@ -668,8 +745,27 @@ class TalentCloudStore:
             merged["hero_hall_records"] = deepcopy(cls._as_list(incoming.get("hero_hall_records")))
         elif "hero_hall_records" in existing:
             merged["hero_hall_records"] = deepcopy(cls._as_list(existing.get("hero_hall_records")))
+        if "hero_hall_records" in merged:
+            merged["hero_hall_records"] = [r for r in merged["hero_hall_records"]
+                                           if isinstance(r, dict) and r.get("gameID") not in deleted_hall]
 
         return merged
+
+    @classmethod
+    def _ranking_ids(cls, existing, incoming, key):
+        return {value for source in (existing, incoming) for value in cls._as_list(source.get(key))
+                if isinstance(value, str) and value}
+
+    @classmethod
+    def _latest_game_id(cls, source):
+        if "latest_game_id" in source:
+            value = source["latest_game_id"]
+            return value if isinstance(value, str) else ""
+        records = cls._as_list(source.get("records"))
+        index = cls._safe_int(source.get("latest", -1), -1)
+        if 0 <= index < len(records) and isinstance(records[index], dict):
+            return records[index].get("gameID", "")
+        return ""
 
     @classmethod
     def _merge_daily_history(cls, existing: dict, incoming: dict):
@@ -801,10 +897,23 @@ class TalentCloudStore:
 
     @staticmethod
     def _record_sort_key(record):
+        try:
+            score = float(record.get("score", 0))
+            if not math.isfinite(score):
+                score = 0.0
+        except (TypeError, ValueError, OverflowError):
+            score = 0.0
+        # Match Double.compare(score) and the signed Java String.hashCode tie-breaker.
+        hash_code = 0
+        encoded = str(record.get("gameID", "")).encode("utf-16-be", errors="surrogatepass")
+        for i in range(0, len(encoded), 2):
+            hash_code = (31 * hash_code + int.from_bytes(encoded[i:i + 2], "big")) & 0xffffffff
+        if hash_code >= 0x80000000:
+            hash_code -= 0x100000000
         return (
             0 if not record.get("custom_seed") else 1,
-            -TalentCloudStore._safe_int(record.get("score", 0)),
-            str(record.get("gameID", "")),
+            -score,
+            -hash_code,
         )
 
     @staticmethod
@@ -901,9 +1010,7 @@ class CloudHandler(BaseHTTPRequestHandler):
                 "ok": True,
                 "player_uuid": merged["player_uuid"],
                 "device_key": merged["device_key"],
-                "global_data": merged["global_data"],
-                "talent_stats": merged["talent_stats"],
-                "aggregate": self.store.aggregate(),
+                "rankings_accepted": merged["rankings_accepted"],
             })
         except Exception as exc:
             self._send_json({"ok": False, "error": str(exc)}, status=400)

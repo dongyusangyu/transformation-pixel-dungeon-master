@@ -90,7 +90,6 @@ import com.shatteredpixel.shatteredpixeldungeon.items.spells.TransformSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.UnstableSpell;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.WildEnergy;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.Runestone;
-import com.shatteredpixel.shatteredpixeldungeon.items.treasures.Treasures;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.TrinketCatalyst;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.AdrenalineDart;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.BlindingDart;
@@ -282,7 +281,7 @@ public class TestPotion extends TestGenerator {
     private static ArrayList<Class<? extends Item>> remainList = new ArrayList<>();
     private static ArrayList<Class<? extends Item>> trinketList = new ArrayList<>();
     private static ArrayList<Class<? extends Item>> equipmentList = new ArrayList<>();
-    private static ArrayList<Class<? extends Treasures>> treasureList = new ArrayList<>();
+    private static ArrayList<Class<? extends Item>> treasureList = new ArrayList<>();
 
     private void buildList() {
         if (potionList.isEmpty() || exoticPotionList.isEmpty()) {
@@ -375,7 +374,7 @@ public class TestPotion extends TestGenerator {
         if(treasureList.isEmpty()){
             Class<?>[] classes = Catalog.TREASURES.items().toArray(new Class[0]);
             for (Class<?> t : classes) {
-                treasureList.add((Class<? extends Treasures>) t);
+                treasureList.add((Class<? extends Item>) t);
             }
         }
     }

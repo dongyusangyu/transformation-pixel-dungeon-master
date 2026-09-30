@@ -70,7 +70,6 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private static final String WINE_TARGET = "gentleman_wine_target", WINE_CELLS = "gentleman_wine_cells";
 	private static final String WINE_STATE = "gentleman_wine_state", WINE_TIME = "gentleman_wine_time";
 	private static final String CUP_BOOST = "gentleman_cup_boost";
-	private static final String LAST_POUNCE = "gentleman_last_pounce", POUNCE_COUNT = "gentleman_pounce_count";
 	private static final String OWNED_WINE = "gentleman_owned_wine";
 
 	private Phase phase = Phase.TOAST_GAME;
@@ -87,8 +86,7 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private int wineTargetCell = -1;
 	private int[] wineWarningCells = new int[0];
 	private WineState wineWarningState = WineState.DRUNKENNESS;
-	private float wineWarningTime, cupBoostTime, lastPounceTime;
-	private int successfulPounces;
+	private float wineWarningTime, cupBoostTime;
 	private boolean ownedHeroWine;
 	private transient GentlemanElfArena arena;
 	private transient boolean restoreGrace;
@@ -521,12 +519,13 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 			if (phase == Phase.FINAL_DUEL) {
 				hit = true;
 				int stacks = target.buff(HeavyInjury.class) == null ? 0 : target.buff(HeavyInjury.class).stacks();
+				boolean hadHeavyInjury = target instanceof Hero && target.buff(HeavyInjury.class) != null;
 				int damage = Math.round(Random.NormalIntRange(20, 30) * (1f + stacks * 0.1f));
 				target.damage(damage, this, DamageTag.PHYSICAL);
 				if (target.isAlive()) markSkillHit(target);
 				if (target instanceof Hero) {
 					HeavyInjury.apply(target);
-					if (hasDrunkenness(target)) applyPounceSelfDamage(Actor.now());
+					if (hasDrunkenness(target)) applyPounceSelfDamage(hadHeavyInjury);
 				}
 			} else {
 				hit = true;
@@ -823,7 +822,10 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 	private Char toastTarget() { return canPerceive(enemy) ? enemy : null; }
 	static boolean cupDashEligible(int distance) { return distance >= 2 && distance <= 8; }
 	private static boolean contains(int[] cells, int cell) { if (cells != null) for (int value : cells) if (value == cell) return true; return false; }
-	private void announce(String key) { if (sprite != null) yell(Messages.get(this, key)); }
+	private void announce(String key) {
+		if ("toast".equals(key)) GLog.w(Messages.get(this, key));
+		else if (sprite != null) yell(Messages.get(this, key));
+	}
 	private static Skill firstPhaseSkillAt(int action) {
 		int beat = Math.floorMod(action, 6);
 		return beat == 2 ? Skill.TOAST : beat == 5 ? Skill.DEVOUR : Skill.NORMAL;
@@ -867,18 +869,11 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		Buff.detach(Dungeon.hero, HeavyInjury.class);
 		ownedHeroWine = false;
 	}
-	int pounceSelfDamageAt(float now) {
-		if (successfulPounces == 0) return 50;
-		int missed = Math.max(0, Math.min(10, (int) Math.floor(now - lastPounceTime) - 1));
-		return 100 - 5 * missed;
+	int pounceSelfDamage(boolean hadHeavyInjury) {
+		return hadHeavyInjury ? 100 : 50;
 	}
-	void recordPounceHitAt(float now) {
-		successfulPounces++;
-		lastPounceTime = now;
-	}
-	private void applyPounceSelfDamage(float now) {
-		int loss = pounceSelfDamageAt(now);
-		recordPounceHitAt(now);
+	private void applyPounceSelfDamage(boolean hadHeavyInjury) {
+		int loss = pounceSelfDamage(hadHeavyInjury);
 		HP = Math.max(0, HP - loss);
 		if (sprite != null) sprite.showStatus(com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite.NEGATIVE, Integer.toString(loss));
 		if (HP <= 0) die(this);
@@ -968,7 +963,6 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		bundle.put(WINE_TARGET, wineTargetCell); bundle.put(WINE_CELLS, wineWarningCells);
 		bundle.put(WINE_STATE, wineWarningState.name()); bundle.put(WINE_TIME, wineWarningTime);
 		bundle.put(CUP_BOOST, cupBoostTime);
-		bundle.put(LAST_POUNCE, lastPounceTime); bundle.put(POUNCE_COUNT, successfulPounces);
 		bundle.put(OWNED_WINE, ownedHeroWine);
 	}
 	@Override public void restoreFromBundle(Bundle bundle) {
@@ -997,8 +991,6 @@ public class GentlemanElf extends TowerBoss implements ElfWineCup.Listener {
 		wineWarningState = enumValue(WineState.class, bundle.getString(WINE_STATE), WineState.DRUNKENNESS);
 		wineWarningTime = Math.max(0, bundle.getFloat(WINE_TIME));
 		cupBoostTime = Math.max(0, bundle.getFloat(CUP_BOOST));
-		lastPounceTime = bundle.getFloat(LAST_POUNCE);
-		successfulPounces = Math.max(0, bundle.getInt(POUNCE_COUNT));
 		ownedHeroWine = bundle.getBoolean(OWNED_WINE);
 		if (phase == Phase.FINAL_DUEL) { cancelWineWarning(); activeIllusions = 0; }
 		if (pendingSkill != Skill.NONE && pendingSkill != Skill.BANQUET && pendingCells.length == 0) clearPendingSkill();

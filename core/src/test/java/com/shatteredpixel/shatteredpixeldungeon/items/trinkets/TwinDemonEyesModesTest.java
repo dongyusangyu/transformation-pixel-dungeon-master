@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items.trinkets;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
@@ -8,12 +9,21 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CursedBurning;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
+import com.shatteredpixel.shatteredpixeldungeon.effects.Beam;
+import com.shatteredpixel.shatteredpixeldungeon.effects.MagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessGameMessages;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.SparseArray;
+import com.watabou.noosa.Game;
+import com.watabou.noosa.Gizmo;
+import com.watabou.noosa.Group;
+import com.watabou.utils.PointF;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -29,17 +39,31 @@ import static org.junit.Assert.*;
 public class TwinDemonEyesModesTest {
 
     private static HeadlessItemSprites sprites;
+    private static HeadlessGameMessages messages;
     private Level oldLevel;
     private Hero oldHero;
+    private int oldDepth;
+    private int oldBranch;
+    private float oldElapsed;
     private TestLevel level;
     private Hero hero;
 
-    @BeforeClass public static void installSheets() { sprites = new HeadlessItemSprites(); }
-    @AfterClass public static void restoreSheets() { sprites.close(); }
+    @BeforeClass public static void installSheets() throws Exception {
+        sprites = new HeadlessItemSprites();
+        sprites.addSheet(Assets.Effects.EFFECTS, 64, 64);
+        messages = new HeadlessGameMessages();
+    }
+    @AfterClass public static void restoreSheets() {
+        messages.close();
+        sprites.close();
+    }
 
     @Before public void setUp() {
         oldLevel = Dungeon.level;
         oldHero = Dungeon.hero;
+        oldDepth = Dungeon.depth;
+        oldBranch = Dungeon.branch;
+        oldElapsed = Game.elapsed;
         level = new TestLevel();
         level.setSize(9, 9);
         level.blobs = new HashMap<>();
@@ -64,7 +88,144 @@ public class TwinDemonEyesModesTest {
     @After public void tearDown() {
         Dungeon.level = oldLevel;
         Dungeon.hero = oldHero;
+        Dungeon.depth = oldDepth;
+        Dungeon.branch = oldBranch;
+        Game.elapsed = oldElapsed;
         Actor.clear();
+    }
+
+    @Test public void movingHeroFiresFlameFromItsNewLogicalCell() {
+        RecordingGnoll target = mob(43);
+        eyesAtLevel(0, TwinDemonEyes.Mode.FLAME_EYE, target);
+        Group visuals = attachVisuals(target);
+        hero.pos = 41;
+        hero.sprite.isMoving = true;
+
+        hero.buff(TwinDemonEyes.EyeLock.class).act();
+
+        MagicMissile missile = visual(visuals, MagicMissile.class);
+        PointF start = DungeonTilemap.raisedTileCenterToWorld(41);
+        assertEquals(start.x, missile.x + missile.width / 2, 0.01f);
+        assertEquals(start.y, missile.y + missile.height / 2, 0.01f);
+    }
+
+    @Test public void hiddenFlameTargetIsHitBeforeVisualsAdvance() {
+        RecordingGnoll target = mob(43);
+        eyesAtLevel(1, TwinDemonEyes.Mode.FLAME_EYE, target);
+        Group visuals = attachVisuals(target);
+        target.sprite.visible = false;
+        hero.spendConstant(0.4f);
+
+        hero.buff(TwinDemonEyes.EyeLock.class).act();
+
+        assertNotNull(visual(visuals, MagicMissile.class));
+        assertEquals(3, target.totalDamage);
+        assertEquals(4f, target.buff(CursedBurning.class).remaining(), 0.01f);
+        target.pos = 52;
+        Game.elapsed = 1f;
+        visual(visuals, MagicMissile.class).update();
+        assertEquals("finishing the animation must not apply damage again", 3, target.totalDamage);
+    }
+
+    @Test public void flameCanHitALockedTargetWithoutATargetSprite() {
+        RecordingGnoll target = mob(43);
+        eyesAtLevel(0, TwinDemonEyes.Mode.FLAME_EYE, target);
+        Group visuals = attachVisuals(target);
+        target.sprite = null;
+
+        hero.buff(TwinDemonEyes.EyeLock.class).act();
+
+        assertEquals(1, target.totalDamage);
+        assertNotNull(target.buff(CursedBurning.class));
+        assertNotNull(visual(visuals, MagicMissile.class));
+    }
+
+    @Test public void fractionalTurnsDoNotPreventHiddenLaserDamage() {
+        hero.pos = 22;
+        RecordingGnoll target = mob(49);
+        eyesAtLevel(1, TwinDemonEyes.Mode.LASER_EYE, target);
+        Group visuals = attachVisuals(target);
+        target.sprite.visible = false;
+        TwinDemonEyes.EyeLock lock = hero.buff(TwinDemonEyes.EyeLock.class);
+        for (int turn = 0; turn < 6; turn++) {
+            hero.spendConstant(0.4f);
+            assertTrue(lock.act());
+        }
+
+        assertTrue(target.totalDamage >= 6 && target.totalDamage <= 36);
+        assertEquals(1, target.damageCalls);
+        assertTrue(target.allTags.contains(DamageTag.MAGICAL));
+        assertNotNull(visual(visuals, Beam.class));
+        assertNull(hero.buff(TwinDemonEyes.EyeLock.class));
+    }
+
+    @Test public void movingHeroFiresLaserFromItsNewLogicalCell() {
+        RecordingGnoll target = mob(43);
+        TwinDemonEyes eyes = eyesAtLevel(0, TwinDemonEyes.Mode.LASER_EYE, target);
+        Group visuals = attachVisuals(target);
+        hero.pos = 41;
+        hero.sprite.isMoving = true;
+        eyes.recordLockTurn(target.pos);
+
+        eyes.finishLock();
+
+        Beam beam = visual(visuals, Beam.class);
+        PointF start = DungeonTilemap.raisedTileCenterToWorld(41);
+        assertEquals(start.x, beam.x + beam.origin.x, 0.01f);
+        assertEquals(start.y, beam.y + beam.origin.y, 0.01f);
+        assertEquals(5, target.totalDamage);
+    }
+
+    @Test public void laserStillHitsDiagonalTargetNearMapEdge() {
+        hero.pos = 40;
+        RecordingGnoll target = mob(51);
+        TwinDemonEyes eyes = eyesAtLevel(0, TwinDemonEyes.Mode.LASER_EYE, target);
+        eyes.recordLockTurn(target.pos);
+
+        eyes.finishLock();
+
+        assertEquals("clipping a long beam must preserve its direction through the target", 5,
+                target.totalDamage);
+    }
+
+    @Test public void finishingLaserCannotReenterAndDamageTwice() {
+        hero.pos = 22;
+        RecordingGnoll target = mob(49);
+        TwinDemonEyes eyes = eyesAtLevel(0, TwinDemonEyes.Mode.LASER_EYE, target);
+        target.onDamage = () -> eyes.finishLock(TwinDemonEyes.FinishReason.TARGET_LOST);
+        eyes.recordLockTurn(target.pos);
+
+        eyes.finishLock();
+
+        assertEquals(5, target.totalDamage);
+        assertEquals(1, target.damageCalls);
+        assertEquals(TwinDemonEyes.Mode.FLAME_EYE, eyes.mode());
+    }
+
+    private Group attachVisuals(RecordingGnoll target) {
+        Group group = new Group();
+        hero.sprite = new SilentSprite();
+        hero.sprite.width = hero.sprite.height = 16;
+        PointF center = DungeonTilemap.raisedTileCenterToWorld(hero.pos);
+        hero.sprite.x = center.x - 8;
+        hero.sprite.y = center.y - 8;
+        group.add(hero.sprite);
+        target.sprite = new SilentSprite();
+        target.sprite.width = target.sprite.height = 16;
+        return group;
+    }
+
+    private static <T extends Gizmo> T visual(Group group, Class<T> type) {
+        for (Gizmo member : group.members) {
+            if (type.isInstance(member)) return type.cast(member);
+        }
+        throw new AssertionError("missing visual: " + type.getSimpleName());
+    }
+
+    private static class SilentSprite extends CharSprite {
+        @Override public void add(State state) {}
+        @Override public void remove(State state) {}
+        @Override public void showStatus(int color, String text, Object... args) {}
     }
 
     @Test public void flameModeHitsFirstProjectileCollisionAndAppliesShortBurn() {
@@ -262,12 +423,18 @@ public class TwinDemonEyesModesTest {
 
     private static class RecordingGnoll extends Gnoll {
         int totalDamage;
+        int damageCalls;
+        Runnable onDamage;
         java.util.EnumSet<DamageTag> allTags = java.util.EnumSet.noneOf(DamageTag.class);
         RecordingGnoll(int cell) { pos = cell; HT = HP = 500; }
         @Override public void damage(int amount, Object source, DamageTag... tags) {
+            damageCalls++;
             totalDamage += amount;
             allTags.addAll(DamageTag.of(tags));
             HP -= amount;
+            Runnable callback = onDamage;
+            onDamage = null;
+            if (callback != null) callback.run();
         }
     }
 

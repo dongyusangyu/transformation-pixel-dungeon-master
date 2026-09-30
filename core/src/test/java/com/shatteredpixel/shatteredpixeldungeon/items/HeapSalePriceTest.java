@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.items;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Shopkeeper;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.watabou.utils.Bundle;
 
 import org.junit.Test;
@@ -24,6 +25,26 @@ public class HeapSalePriceTest {
 
 		assertEquals(20, restored.saleDepth());
 		assertEquals(Shopkeeper.sellPrice(restored.peek(), 20), restored.salePrice());
+	}
+
+	@Test
+	public void newSaleItemsRemainImmediatelyBelowLostBackpack() {
+		Heap heap = new Heap();
+		heap.type = Heap.Type.FOR_SALE;
+		Item first = new FixedValueItem();
+		Item second = new FixedValueItem();
+		Item third = new FixedValueItem();
+		LostBackpack backpack = TestHeroFactory.allocateItem(LostBackpack.class);
+		heap.drop(first);
+		heap.drop(backpack);
+		heap.drop(second);
+		heap.drop(third);
+
+		assertEquals(backpack, heap.pickUp());
+		assertEquals(third, heap.peek());
+		assertEquals(third, heap.pickUp());
+		assertEquals(second, heap.pickUp());
+		assertEquals(first, heap.peek());
 	}
 
 	public static class FixedValueItem extends Item {

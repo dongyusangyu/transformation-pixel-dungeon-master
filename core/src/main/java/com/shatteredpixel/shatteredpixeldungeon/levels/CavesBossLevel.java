@@ -694,7 +694,7 @@ public class CavesBossLevel extends Level {
 						data[i] = 13;
 					} else if (i / tileW == 3) {
 						//except on two columns specifically, where we have metal structures
-						if (i % tileW == 9 || i % tileW == 23){
+						if (i % tileW == tileW/2 - 7 || i % tileW == tileW/2 + 7){
 							data[i] = -1;
 						} else {
 							data[i] = 21;

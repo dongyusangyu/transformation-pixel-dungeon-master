@@ -902,13 +902,13 @@ public enum HeroClass {
 			case WARRIOR:
 				return 5;
 			case MAGE:
-				return 3;
+				return 4;
 			case ROGUE:
 				return 6;
 			case HUNTRESS:
 				return 4;
 			case DUELIST:
-				return 4;
+				return 5;
 			case CLERIC:
 				return 4;
 			case FREEMAN:
@@ -922,7 +922,7 @@ public enum HeroClass {
 			case PRINCESS:
 				return 2;
             case FRIAR:
-                return 2;
+                return 3;
 			default:
 				return 1;
 

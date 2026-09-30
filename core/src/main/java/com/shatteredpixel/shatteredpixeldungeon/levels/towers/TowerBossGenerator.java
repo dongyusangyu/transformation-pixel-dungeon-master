@@ -77,6 +77,13 @@ public final class TowerBossGenerator {
         return nextBossDepthAfter(currentDepth);
     }
 
+    public static int predictionDepth(int currentDepth, boolean currentBossPending,
+            int highestDefeatedBossDepth) {
+        int positionBasedDepth = predictionDepth(currentDepth, currentBossPending);
+        int progressBasedDepth = nextBossDepthAfter(highestDefeatedBossDepth);
+        return Math.max(positionBasedDepth, progressBasedDepth);
+    }
+
     public static String predictId(long dungeonSeed, int currentDepth, int branch,
             boolean currentBossPending) {
         return selectId(dungeonSeed, predictionDepth(currentDepth, currentBossPending), branch);

@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.towers;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.TowerBoss;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.watabou.utils.Bundle;
 
@@ -55,7 +56,7 @@ final class TowerBossEncounter {
     void onBossDefeated(TowerBoss boss, Host host) {
         if (bossDefeated) return;
         bossDefeated = true;
-        Statistics.recordTowerBossDefeated();
+        Statistics.recordTowerBossDefeated(Dungeon.depth);
         host.cleanupArena(boss);
         host.unsealArena();
     }

@@ -174,8 +174,10 @@ public class PestilenceArenaController implements Bundlable {
     }
 
     ActivationResult onHeroEntered(TowerBossLevel level, Hero hero, boolean bossStarted) {
-        if (hero == null) return ActivationResult.NONE;
-        if (prepared && hero.pos == purifierCell && purifierCooldown > 0) {
+        if (level == null || hero == null || !prepared
+                || purifierCell < 0 || purifierCell >= level.length()
+                || hero.pos != purifierCell) return ActivationResult.NONE;
+        if (purifierCooldown > 0) {
             GLog.w(Messages.get(PestilenceArenaController.class,
                     "recharging", purifierCooldown));
             return ActivationResult.NONE;

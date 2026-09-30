@@ -231,7 +231,7 @@ public class TenguHard extends Boss{
         GameScene.bossSlain();
         super.die( cause );
 
-        Badges.validateBossSlain();
+        Badges.validateBossSlain(Badges.BossIdentity.TENGU);
 
         LloydsBeacon beacon = Dungeon.hero.belongings.getItem(LloydsBeacon.class);
         if (beacon != null) {

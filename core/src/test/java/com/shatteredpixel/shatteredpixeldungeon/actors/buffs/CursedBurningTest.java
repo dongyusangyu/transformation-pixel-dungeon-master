@@ -29,27 +29,27 @@ public class CursedBurningTest {
 	@AfterClass public static void restoreSheets() { sprites.close(); }
 
 	@Test
-	public void fourTurnBurnHitsImmediatelyThenTwiceOnceTwice() {
+	public void fourTurnBurnDealsSixPeriodicHitsWithoutAnApplicationHit() {
 		RecordingGnoll target = new RecordingGnoll();
 		CursedBurning burn = CursedBurning.apply(target, 4f);
 		assertNotNull(burn);
-		assertEquals(1, target.hits);
+		assertEquals(0, target.hits);
 		assertEquals("application should show the requested four-turn duration", 4f,
 				burn.remaining(), 0.001f);
 		burn.act();
-		assertEquals(3, target.hits);
+		assertEquals(2, target.hits);
 		assertEquals("one completed turn should consume exactly one round", 3f,
 				burn.remaining(), 0.001f);
 		burn.act();
-		assertEquals(4, target.hits);
+		assertEquals(3, target.hits);
 		burn.act();
-		assertEquals(6, target.hits);
+		assertEquals(5, target.hits);
 		assertEquals(1f, burn.remaining(), 0.001f);
 		burn.act();
-		assertEquals(7, target.hits);
+		assertEquals(6, target.hits);
 		assertNull("the final damaging tick ends the burn", target.buff(CursedBurning.class));
 		burn.act();
-		assertEquals(7, target.hits);
+		assertEquals(6, target.hits);
 		assertNull(target.buff(CursedBurning.class));
 	}
 
@@ -64,7 +64,7 @@ public class CursedBurningTest {
 		burn.act();
 		burn.act();
 		burn.act();
-		assertEquals(8, target.hits);
+		assertEquals(6, target.hits);
 	}
 
 	@Test
@@ -80,7 +80,7 @@ public class CursedBurningTest {
 		assertTrue(restored.attachTo(target));
 		assertEquals(3f, restored.remaining(), 0.001f);
 		restored.act();
-		assertEquals(4, target.hits);
+		assertEquals(3, target.hits);
 	}
 
 	@Test
@@ -105,7 +105,7 @@ public class CursedBurningTest {
 			DamagedGnoll target = new DamagedGnoll();
 			CursedBurning burn = CursedBurning.apply(target, 4f);
 			for (int i = 0; i < 4; i++) burn.act();
-			assertEquals(7, target.hits);
+			assertEquals(6, target.hits);
 			assertTrue(target.HP < 1000);
 			assertTrue(target.HP >= 970);
 		} finally {

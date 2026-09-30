@@ -163,6 +163,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Tatteki;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RitualDagger;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
+import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfCursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
 
@@ -265,6 +266,7 @@ public enum Catalog {
 		GLYPHS.addItems(Armor.Glyph.curses);
 
 		WANDS.addItems(Generator.Category.WAND.classes);
+		WANDS.addItems(WandOfCursedFlame.class);
 
 		RINGS.addItems(Generator.Category.RING.classes);
         RINGS.addItems(RingOfKing.class);
@@ -311,7 +313,7 @@ public enum Catalog {
 				ReclaimTrap.class, SummonElemental.class, BeaconOfReturning.class);
 
 		MISC_CONSUMABLES.addItems( Gold.class, EnergyCrystal.class, Dewdrop.class,
-				IronKey.class, GoldenKey.class, CrystalKey.class, RaidAccessCard.class, WornKey.class,
+				IronKey.class, GoldenKey.class, CrystalKey.class, WornKey.class,
 				TrinketCatalyst.class, Stylus.class, Torch.class, Honeypot.class, Ankh.class,
 				CorpseDust.class, Embers.class, CeremonialCandle.class, DarkGold.class, DwarfToken.class,
 				GooBlob.class, TengusMask.class, MetalShard.class, KingsCrown.class,
@@ -322,6 +324,7 @@ public enum Catalog {
 				ScrollOfExtraction.class, SourWineAroma.class);
 
 		TREASURES.addItems(
+				RaidAccessCard.class,
 				MuiscaGoldenRaft.class,
 				ImperialCrown.class,
 				PakalJadeMask.class,

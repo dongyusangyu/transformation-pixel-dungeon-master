@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.android;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -41,6 +42,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.custom.testmode.PackageTrie;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.noosa.Game;
@@ -52,6 +54,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import dalvik.system.DexFile;
 
@@ -73,6 +76,169 @@ public class AndroidPlatformSupport extends PlatformSupport {
 	static final int WINDOW_MODE_FLAGS_MASK =
 			WindowManager.LayoutParams.FLAG_FULLSCREEN
 			| WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
+
+	static final class SafeNavigationInsets {
+		final int left;
+		final int right;
+		final int bottom;
+
+		SafeNavigationInsets(int left, int right, int bottom) {
+			this.left = left;
+			this.right = right;
+			this.bottom = bottom;
+		}
+	}
+
+	static final class SystemInsets {
+		final int left;
+		final int right;
+		final int bottom;
+		final boolean fullscreen;
+		final boolean multiWindow;
+		final boolean navigationVisible;
+		final boolean imeVisible;
+
+		SystemInsets(int left, int right, int bottom, boolean fullscreen,
+				boolean multiWindow, boolean navigationVisible) {
+			this(left, right, bottom, fullscreen, multiWindow, navigationVisible, false);
+		}
+
+		SystemInsets(int left, int right, int bottom, boolean fullscreen,
+				boolean multiWindow, boolean navigationVisible, boolean imeVisible) {
+			this.left = left;
+			this.right = right;
+			this.bottom = bottom;
+			this.fullscreen = fullscreen;
+			this.multiWindow = multiWindow;
+			this.navigationVisible = navigationVisible;
+			this.imeVisible = imeVisible;
+		}
+	}
+
+	private View insetsDecorView;
+	private volatile SystemInsets lastSystemInsets;
+	private volatile boolean keyboardRequested;
+	private final AtomicBoolean insetRefreshPending = new AtomicBoolean();
+
+	static SafeNavigationInsets safeNavigationInsets(int left, int right, int bottom,
+			boolean fullscreen, boolean multiWindow, boolean navigationVisible) {
+		if (!navigationVisible || multiWindow) {
+			return new SafeNavigationInsets(0, 0, 0);
+		}
+		return new SafeNavigationInsets(Math.max(0, left), Math.max(0, right), Math.max(0, bottom));
+	}
+
+	static boolean shouldRelayoutForSystemInsets(SystemInsets previous, SystemInsets current) {
+		if (current.imeVisible) return false;
+		SafeNavigationInsets currentSafe = safeNavigationInsets(current.left, current.right,
+				current.bottom, current.fullscreen, current.multiWindow, current.navigationVisible);
+		if (previous == null) {
+			return currentSafe.left > 0 || currentSafe.right > 0 || currentSafe.bottom > 0;
+		}
+		SafeNavigationInsets previousSafe = safeNavigationInsets(previous.left, previous.right,
+				previous.bottom, previous.fullscreen, previous.multiWindow, previous.navigationVisible);
+		return previousSafe.left != currentSafe.left
+				|| previousSafe.right != currentSafe.right
+				|| previousSafe.bottom != currentSafe.bottom;
+	}
+
+	@SuppressLint("NewApi")
+	private SafeNavigationInsets navigationBarInsets(WindowInsets windowInsets) {
+		if (windowInsets == null) {
+			return new SafeNavigationInsets(0, 0, 0);
+		}
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+			Insets insets = windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars());
+			return new SafeNavigationInsets(insets.left, insets.right, insets.bottom);
+		}
+		return new SafeNavigationInsets(windowInsets.getStableInsetLeft(),
+				windowInsets.getStableInsetRight(), windowInsets.getStableInsetBottom());
+	}
+
+	private SystemInsets currentSystemInsets(WindowInsets windowInsets) {
+		SafeNavigationInsets navigation = navigationBarInsets(windowInsets);
+		boolean multiWindow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+				&& AndroidLauncher.instance != null && AndroidLauncher.instance.isInMultiWindowMode();
+		return new SystemInsets(navigation.left, navigation.right, navigation.bottom,
+				SPDSettings.fullscreen(), multiWindow, navigationBarVisible(windowInsets),
+				keyboardRequested || imeVisible(windowInsets));
+	}
+
+	@SuppressLint("NewApi")
+	private boolean imeVisible(WindowInsets windowInsets) {
+		if (windowInsets == null) return false;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+			return windowInsets.isVisible(WindowInsets.Type.ime());
+		}
+		return windowInsets.getSystemWindowInsetBottom()
+				> windowInsets.getStableInsetBottom() + 24;
+	}
+
+	@Override
+	public void setOnscreenKeyboardVisible(boolean value, boolean multiline) {
+		keyboardRequested = value;
+		super.setOnscreenKeyboardVisible(value, multiline);
+	}
+
+	@SuppressLint("NewApi")
+	private boolean navigationBarVisible(WindowInsets windowInsets) {
+		if (windowInsets == null) return false;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+			return windowInsets.isVisible(WindowInsets.Type.navigationBars());
+		}
+		return windowInsets.getSystemWindowInsetLeft() > 0
+				|| windowInsets.getSystemWindowInsetRight() > 0
+				|| windowInsets.getSystemWindowInsetBottom() > 0;
+	}
+
+	public void installWindowInsetsListener() {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || AndroidLauncher.instance == null) {
+			return;
+		}
+
+		AndroidLauncher.instance.runOnUiThread(() -> {
+			if (AndroidLauncher.instance == null) {
+				return;
+			}
+			View decor = AndroidLauncher.instance.getWindow().getDecorView();
+			if (insetsDecorView != decor) {
+				insetsDecorView = decor;
+				lastSystemInsets = null;
+				decor.setOnApplyWindowInsetsListener((view, insets) -> {
+					SystemInsets current = currentSystemInsets(insets);
+					if (current.imeVisible) return insets;
+					boolean changed = shouldRelayoutForSystemInsets(lastSystemInsets, current);
+					lastSystemInsets = current;
+					if (changed) {
+						requestSafeInsetRelayout();
+					}
+					return insets;
+				});
+			}
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+				decor.requestApplyInsets();
+			}
+		});
+	}
+
+	private void requestSafeInsetRelayout() {
+		if (Gdx.app == null || Game.width <= 0 || Game.height <= 0
+				|| ShatteredPixelDungeon.scene() == null
+				|| !insetRefreshPending.compareAndSet(false, true)) {
+			return;
+		}
+
+		Gdx.app.postRunnable(() -> {
+			try {
+					if (AndroidLauncher.instance != null
+							&& ShatteredPixelDungeon.scene() instanceof PixelScene) {
+						((PixelScene) ShatteredPixelDungeon.scene()).onSafeInsetsChanged();
+				}
+			} finally {
+				insetRefreshPending.set(false);
+			}
+		});
+	}
 
 	public PackageTrie findClasses(String pkgName) throws ClassNotFoundException {
 		PackageTrie trie = new PackageTrie();
@@ -103,10 +269,9 @@ public class AndroidPlatformSupport extends PlatformSupport {
 		// Match upstream behavior: the setting only matters when there is a
 		// navigation or gesture bar to hide.
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && AndroidLauncher.instance != null) {
-			WindowInsets insets = AndroidLauncher.instance.getWindow().getDecorView().getRootWindowInsets();
-			return insets != null && (insets.getStableInsetBottom() > 0
-					|| insets.getStableInsetRight() > 0
-					|| insets.getStableInsetLeft() > 0);
+			WindowInsets rootInsets = AndroidLauncher.instance.getWindow().getDecorView().getRootWindowInsets();
+			SafeNavigationInsets insets = navigationBarInsets(rootInsets);
+			return insets.bottom > 0 || insets.right > 0 || insets.left > 0;
 		} else {
 			return true;
 		}
@@ -153,12 +318,15 @@ public class AndroidPlatformSupport extends PlatformSupport {
 			WindowInsets rootInsets = AndroidLauncher.instance.getWindow().getDecorView().getRootWindowInsets();
 			if (rootInsets != null) {
 
-				// Navigation/gesture bars should be respected when the player disables hidden system bars.
-				if (supportsFullScreen() && !SPDSettings.fullscreen()) {
-					insets.left = Math.max(insets.left, rootInsets.getStableInsetLeft());
-					insets.right = Math.max(insets.right, rootInsets.getStableInsetRight());
-					insets.bottom = Math.max(insets.bottom, rootInsets.getStableInsetBottom());
-				}
+				// Android 11+ reports navigation bars and taskbars through this inset.
+				SystemInsets systemInsets = lastSystemInsets == null
+						? currentSystemInsets(rootInsets) : lastSystemInsets;
+				SafeNavigationInsets safe = safeNavigationInsets(systemInsets.left, systemInsets.right,
+						systemInsets.bottom, systemInsets.fullscreen,
+						systemInsets.multiWindow, systemInsets.navigationVisible);
+				insets.left = Math.max(insets.left, safe.left);
+				insets.right = Math.max(insets.right, safe.right);
+				insets.bottom = Math.max(insets.bottom, safe.bottom);
 
 				if (level > INSET_BLK) {
 					DisplayCutout cutout = rootInsets.getDisplayCutout();
@@ -291,6 +459,9 @@ public class AndroidPlatformSupport extends PlatformSupport {
 				if (AndroidLauncher.instance == null) {
 					return;
 				}
+				// The IME temporarily changes system bar visibility. Restoring immersive
+				// flags while it owns the screen can dismiss the keyboard.
+				if (keyboardRequested) return;
 				boolean fullscreenAvailable = canUseFullscreen();
 				View decor = AndroidLauncher.instance.getWindow().getDecorView();
 				
@@ -301,6 +472,9 @@ public class AndroidPlatformSupport extends PlatformSupport {
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
 					boolean hideSystemBars = supportsFullScreen() && SPDSettings.fullscreen();
 					decor.setSystemUiVisibility(systemUiFlags(hideSystemBars));
+				}
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+					decor.requestApplyInsets();
 				}
 			}
 		});

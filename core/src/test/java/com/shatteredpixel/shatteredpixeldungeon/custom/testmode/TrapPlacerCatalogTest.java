@@ -33,6 +33,9 @@ public class TrapPlacerCatalogTest {
 	public void catalogExactlyFollowsTrapBestiaryAndEveryEntryCanBeCreated() {
 		List<Class<? extends Trap>> catalog = TrapPlacer.trapClasses();
 		ArrayList<Class<?>> bestiary = new ArrayList<>(Bestiary.TRAP.entities());
+		for (Bestiary category : Bestiary.values()) {
+			if ("TOWER_TRAPS".equals(category.name())) bestiary.addAll(category.entities());
+		}
 
 		assertEquals(bestiary, new ArrayList<Class<?>>(catalog));
 		assertEquals(catalog.size(), new HashSet<>(catalog).size());

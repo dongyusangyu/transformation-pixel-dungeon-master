@@ -242,7 +242,7 @@ public class Tengu extends Mob implements PhysicalRangedAttack {
 		GameScene.bossSlain();
 		super.die( cause );
 		
-		Badges.validateBossSlain();
+		Badges.validateBossSlain(Badges.BossIdentity.TENGU);
 		Badges.validateNinjaUnlock();
 		if (Statistics.qualifiedForBossChallengeBadge){
 			Badges.validateBossChallengeCompleted();

@@ -29,7 +29,7 @@ public class TestPotionTreasureTest {
 	@Test
 	public void treasureCategoryUsesCatalogOrderAndExtendedSheetIcon() throws Exception {
 		String source = source();
-		assertTrue(source.contains("ArrayList<Class<? extends Treasures>> treasureList"));
+		assertTrue(source.contains("ArrayList<Class<? extends Item>> treasureList"));
 		assertTrue(source.contains("Catalog.TREASURES.items()"));
 		assertTrue(source.contains("case TREASURE_CATEGORY: return EXItemSpriteSheet.MUISCA_GOLDEN_RAFT;"));
 	}

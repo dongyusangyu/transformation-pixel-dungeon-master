@@ -45,6 +45,7 @@ public class Assets {
 		public static final String TILES_CAVES  = "environment/tiles_caves.png";
 		public static final String TILES_CITY   = "environment/tiles_city.png";
 		public static final String TILES_HALLS  = "environment/tiles_halls.png";
+		public static final String TILES_UES    = "environment/tiles_UES.png";
 		public static final String TILES_SURFACE_LUSH   = "environment/tiles_surface_lush.png";
 		public static final String TILES_SURFACE_WINTER = "environment/tiles_surface_winter.png";
 		public static final String TILES_CHINESE_HALL  = "environment/tiles_chinese_hall.png";
@@ -62,6 +63,7 @@ public class Assets {
 		public static final String WATER_CAVES  = "environment/water2.png";
 		public static final String WATER_CITY   = "environment/water3.png";
 		public static final String WATER_HALLS  = "environment/water4.png";
+		public static final String WATER_UES    = "environment/water_UES.png";
 		public static final String WATER_SURFACE_LUSH   = "environment/water_surface_lush.png";
 		public static final String WATER_SURFACE_WINTER = "environment/water_surface_winter.png";
 		public static final String WATER_CHINESE_HALL  = "environment/water_chinese_hall.png";
@@ -147,6 +149,7 @@ public class Assets {
 	}
 
 	public static class Music {
+		public static final String UES                  = "music/UES.ogg";
 		public static final String THEME_1              = "music/theme_1.ogg";
 		public static final String THEME_2              = "music/theme_2.ogg";
 		public static final String THEME_FINALE         = "music/theme_finale.ogg";
@@ -473,6 +476,7 @@ public class Assets {
         public static final String SLIMEMUCUS4    = "sprites/slimemucus4.png";
 		public static final String DECOY    = "sprites/decoy.png";
 		public static final String DRONES    = "sprites/drones.png";
+		public static final String UES_DRONES = "sprites/UES_drones.png";
         public static final String DRONES1    = "sprites/drones1.png";
         public static final String DRONES2    = "sprites/drones2.png";
 

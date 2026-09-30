@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Degrade;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
@@ -133,11 +134,18 @@ public class WornShortsword extends MeleeWeapon {
 		}
 
 		upgradeRecastTarget(item);
-		curUser.spend(1f);
+		curUser.busy();
+		curUser.spend(Actor.TICK);
+		if (curUser.sprite != null) {
+			// The operate completion callback resumes the actor exactly once.
+			curUser.sprite.operate(curUser.pos);
+		} else {
+			curUser.next();
+		}
 	}
 
 	private void upgradeRecastTarget(Item item){
-		ScrollOfUpgrade.upgrade(curUser);
+		if (curUser.sprite != null) ScrollOfUpgrade.upgrade(curUser);
 
 		Degrade.detach(curUser, Degrade.class);
 
@@ -151,7 +159,7 @@ public class WornShortsword extends MeleeWeapon {
 				item = w.upgrade();
 			}
 
-			if (w.cursedKnown && wasCursed && !w.cursed){
+			if (curUser.sprite != null && w.cursedKnown && wasCursed && !w.cursed){
 				ScrollOfUpgrade.weakenCurse(curUser);
 			}
 		} else {

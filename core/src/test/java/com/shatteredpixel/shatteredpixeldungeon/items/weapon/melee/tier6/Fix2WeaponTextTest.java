@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Properties;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class Fix2WeaponTextTest {
@@ -71,6 +72,42 @@ public class Fix2WeaponTextTest {
 			assertTrue(items.getProperty("items.trinkets.twindemoneyes$eyelock.desc_flame") != null);
 			assertTrue(items.getProperty("items.trinkets.twindemoneyes$eyelock.desc_laser") != null);
 		}
+	}
+
+	@Test
+	public void mountainGuardAbilityDurationsFormatAsStringsInBothLanguages() throws IOException {
+		for (String file : new String[]{"items.properties", "items_zh.properties"}) {
+			Properties items = load("src/main/assets/messages/items/" + file);
+			assertFormatted(items, "items.weapon.melee.tier6.mountainguard.ability_desc", "3", 3, 16);
+			assertFormatted(items, "items.weapon.melee.tier6.mountainguard.typical_ability_desc", "3", 3, 16);
+		}
+		assertEquals("魔法伤害", load("src/main/assets/messages/items/items_zh.properties")
+				.getProperty("items.wands.wandofcursedflame.upgrade_stat_name_1"));
+		assertEquals("Magic Damage", load("src/main/assets/messages/items/items.properties")
+				.getProperty("items.wands.wandofcursedflame.upgrade_stat_name_1"));
+		assertTrue(load("src/main/assets/messages/items/items_zh.properties")
+				.getProperty("items.weapon.melee.tier6.mountainguard.ability_desc")
+				.contains("直接物理攻击"));
+	}
+
+	@Test
+	public void twinDemonEyesDescriptionsMatchTheirDynamicValues() throws IOException {
+		for (String file : new String[]{"items.properties", "items_zh.properties"}) {
+			Properties items = load("src/main/assets/messages/items/" + file);
+			assertFormatted(items, "items.trinkets.twindemoneyes.stats_desc_flame", 8);
+			assertFormatted(items, "items.trinkets.twindemoneyes$eyelock.desc_flame", 7, 4, 3, 6);
+			assertFormatted(items, "items.trinkets.twindemoneyes$eyelock.desc_laser", 8, 48, 5);
+		}
+
+		Properties items = load("src/main/assets/messages/items/items_zh.properties");
+		assertTrue(items.getProperty("items.trinkets.twindemoneyes.stats_desc_flame")
+				.contains("间歇性迸射一发咒焰火球"));
+		assertTrue(items.getProperty("items.trinkets.twindemoneyes$eyelock.desc_flame")
+				.contains("最近一次被远程武器命中的目标"));
+		assertTrue(items.getProperty("items.trinkets.twindemoneyes$eyelock.desc_laser")
+				.contains("12格射程"));
+		assertTrue(items.getProperty("items.trinkets.twindemoneyes$eyelock.desc_laser")
+				.contains("不可闪避"));
 	}
 
 	@Test

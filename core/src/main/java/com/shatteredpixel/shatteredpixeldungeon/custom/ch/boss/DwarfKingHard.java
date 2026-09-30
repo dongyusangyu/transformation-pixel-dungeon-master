@@ -514,7 +514,7 @@ public class DwarfKingHard extends Boss{
         Dungeon.level.drop(ankh, dropPos).sprite.drop(pos);
         Dungeon.level.drop(new Ankh(), dropPos).sprite.drop(pos);
 
-        Badges.validateBossSlain();
+        Badges.validateBossSlain(Badges.BossIdentity.DWARF_KING);
 
         Dungeon.level.unseal();
 

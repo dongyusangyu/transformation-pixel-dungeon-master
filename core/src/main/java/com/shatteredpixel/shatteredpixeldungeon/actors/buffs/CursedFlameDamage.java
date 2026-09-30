@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ChampionEnemy.Blazing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.watabou.utils.Random;
 
 /** Shared resistance calculation for environmental and lingering cursed fire. */
@@ -15,6 +16,15 @@ public final class CursedFlameDamage {
 
 	public static int roll(Char target) {
 		return Random.IntRange(1, 5 + Dungeon.scalingDepth()/3);
+	}
+
+	public static int rollBurning(Char target) {
+		int floor = Dungeon.branch == TowerLevel.BRANCH ? Dungeon.depth : Dungeon.scalingDepth();
+		return Random.IntRange(1, maxBurningDamageForDepth(floor));
+	}
+
+	static int maxBurningDamageForDepth(int floor) {
+		return 3 + Math.max(0, floor) / 8;
 	}
 
 	/** Protective effects of the same kind do not stack; elemental resistance is separate. */
@@ -30,14 +40,6 @@ public final class CursedFlameDamage {
 
 	public static int apply(Char target, int raw, Object source) {
 		return apply(target, raw, source, DamageTag.PHYSICAL);
-	}
-
-	/** Direct wand strikes use the same cursed-fire protection, with magical mitigation. */
-	public static int applyMagical(Char target, int raw, Object source) {
-		Class<?> sourceClass = source instanceof Class<?> ? (Class<?>) source
-				: source == null ? Object.class : source.getClass();
-		if (target != null && target.isImmune(sourceClass)) return 0;
-		return apply(target, raw, source, DamageTag.MAGICAL);
 	}
 
 	private static int apply(Char target, int raw, Object source, DamageTag nature) {

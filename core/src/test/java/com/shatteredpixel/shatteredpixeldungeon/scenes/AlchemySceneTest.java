@@ -21,10 +21,34 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class AlchemySceneTest {
+	@Test
+	public void energyRowFitsAboveNavigationBarIncludingSixteenPixelButton() {
+		assertEquals(160f, AlchemyScene.energyRowTop(200, 16, 12, 16), 0.001f);
+		assertEquals(176f, AlchemyScene.energyRowTop(200, 0, 12, 16), 0.001f);
+	}
+
+	@Test
+	public void energyRowFitsTallerTextAndKeepsEightPixelMargin() {
+		assertEquals(152f, AlchemyScene.energyRowTop(200, 16, 24, 16), 0.001f);
+	}
+
+	@Test
+	public void navigationInsetsShiftTheCenterOfAlchemyControls() {
+		assertEquals(-8f, AlchemyScene.safeCenterShift(0, 0, 0, 16), 0.001f);
+		assertEquals(12f, AlchemyScene.safeCenterShift(0, 16, 24, 16), 0.001f);
+	}
+
+	@Test
+	public void energyRowStaysInsideLandscapeSideInsets() {
+		assertEquals(52f, AlchemyScene.energyRowLeft(100, 20, 180, 16, 64, 16), 0.001f);
+		assertEquals(20f, AlchemyScene.energyRowLeft(25, 20, 180, 16, 64, 16), 0.001f);
+		assertEquals(84f, AlchemyScene.energyRowLeft(170, 20, 180, 16, 64, 16), 0.001f);
+	}
 
 	@After
 	public void clearDungeonHero() {

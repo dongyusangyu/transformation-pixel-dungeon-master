@@ -60,6 +60,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.traps.SummoningTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TransformationTrap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WarpingTrap;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.Random;
@@ -68,6 +69,36 @@ import com.watabou.utils.Reflection;
 import java.util.ArrayList;
 
 public class TowerLevel extends RegularLevel {
+
+	@Override
+	public String tileName(int tile) {
+		switch (tile) {
+			case Terrain.WATER: return Messages.get(TowerLevel.class, "water_name");
+			case Terrain.GRASS: return Messages.get(TowerLevel.class, "grass_name");
+			case Terrain.STATUE:
+			case Terrain.STATUE_SP:
+			case Terrain.REGION_DECO:
+			case Terrain.REGION_DECO_ALT: return Messages.get(TowerLevel.class, "decoration_name");
+			default: return super.tileName(tile);
+		}
+	}
+
+	@Override
+	public String tileDesc(int tile) {
+		switch (tile) {
+			case Terrain.ENTRANCE:
+			case Terrain.ENTRANCE_SP:
+				return Messages.get(TowerLevel.class, Dungeon.depth == 1 ? "surface_blocked" : "entrance_desc");
+			case Terrain.EXIT:
+			case Terrain.UNLOCKED_EXIT: return Messages.get(TowerLevel.class, "exit_desc");
+			case Terrain.BOOKSHELF: return Messages.get(TowerLevel.class, "bookshelf_desc");
+			case Terrain.STATUE:
+			case Terrain.STATUE_SP:
+			case Terrain.REGION_DECO:
+			case Terrain.REGION_DECO_ALT: return Messages.get(TowerLevel.class, "decoration_desc");
+			default: return super.tileDesc(tile);
+		}
+	}
 
 	@Override
 	protected boolean lakeSwordScabbardGenerationEnabled() {
@@ -215,7 +246,7 @@ public class TowerLevel extends RegularLevel {
 
 	@Override
 	protected Feeling randomLevelFeeling() {
-		return withLevelFeelingEffects(TowerGenerationRules.feelingForRoll(Random.Int(4)));
+		return withLevelFeelingEffects(TowerGenerationRules.feelingForRoll(Random.Int(16)));
 	}
 
 	@Override

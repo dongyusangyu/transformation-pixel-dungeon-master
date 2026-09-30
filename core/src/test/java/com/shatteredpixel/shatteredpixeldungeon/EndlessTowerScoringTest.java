@@ -145,6 +145,27 @@ public class EndlessTowerScoringTest {
 	}
 
 	@Test
+	public void highestDefeatedTowerBossFloorSurvivesSaveAndMigratesLegacyCount() {
+		Statistics.reset();
+		Statistics.recordTowerBossDefeated(10);
+		Statistics.recordTowerBossDefeated(5);
+		assertEquals(10, Statistics.highestTowerBossDefeated);
+
+		Bundle bundle = new Bundle();
+		Statistics.storeInBundle(bundle);
+		Statistics.reset();
+		Statistics.restoreFromBundle(bundle);
+		assertEquals(10, Statistics.highestTowerBossDefeated);
+
+		Bundle oldSave = new Bundle();
+		oldSave.put("tower_bosses_defeated", 3);
+		oldSave.put("maxDepth", 1);
+		oldSave.put("negativetalents", new boolean[4]);
+		Statistics.restoreFromBundle(oldSave);
+		assertEquals(15, Statistics.highestTowerBossDefeated);
+	}
+
+	@Test
 	public void totalScoreCanExceedIntegerRange() {
 		double total = Rankings.combineScore(
 				2_000_000_000d,

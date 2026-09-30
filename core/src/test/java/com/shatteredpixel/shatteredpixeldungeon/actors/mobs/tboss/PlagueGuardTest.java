@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.StatueSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
 
 import org.junit.AfterClass;
@@ -51,6 +52,25 @@ public class PlagueGuardTest {
         assertFalse(guard.recovering());
         assertTrue(guard.isActiveGuard());
         assertEquals(guard.HT, guard.HP);
+    }
+
+    @Test
+    public void encounterDismissalIsPermanentAndDoesNotUseRecovery() {
+        PlagueGuard guard = new PlagueGuard();
+        guard.sprite = new CharSprite();
+        guard.HP = 0;
+        assertTrue(guard.isAlive());
+        assertTrue(guard.recovering());
+
+        guard.dismissAfterEncounter();
+        guard.reviveAfterPurifier();
+
+        assertFalse(guard.isAlive());
+        assertFalse(guard.recovering());
+        assertEquals(0, guard.HP);
+        assertFalse(guard.sprite.alive);
+        guard.dismissAfterEncounter();
+        assertFalse(guard.isAlive());
     }
 
     @Test

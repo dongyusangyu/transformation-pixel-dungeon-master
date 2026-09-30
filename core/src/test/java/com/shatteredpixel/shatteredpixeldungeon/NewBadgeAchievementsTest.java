@@ -25,6 +25,7 @@ import javax.imageio.ImageIO;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class NewBadgeAchievementsTest {
@@ -230,7 +231,7 @@ public class NewBadgeAchievementsTest {
 				"Badges.validateChainMaceSixTargets()");
 		assertSourceContains("levels/towers/TowerBossLevel.java",
 				"public boolean isActiveTowerBoss(String bossId)");
-		assertSourceContains("Badges.java", "validateBossSlain();");
+		assertSourceContains("Badges.java", "validateBossSlain(BossIdentity boss)");
 	}
 
 	@Test
@@ -251,6 +252,34 @@ public class NewBadgeAchievementsTest {
 		assertEquals(Badges.Badge.HEROBOSS_SLAIN_2, Badges.heroBossBadge(10));
 		assertEquals(Badges.Badge.HEROBOSS_SLAIN_3, Badges.heroBossBadge(15));
 		assertEquals(null, Badges.heroBossBadge(20));
+	}
+
+	@Test
+	public void heroBossCountersRequireTheMatchingBossIdentity() {
+		assertEquals(Badges.Badge.HEROBOSS_COUNTER_1,
+				Badges.heroBossCounterBadge(Badges.BossIdentity.GOO, HeroClass.SLIMEGIRL));
+		assertEquals(Badges.Badge.HEROBOSS_COUNTER_2,
+				Badges.heroBossCounterBadge(Badges.BossIdentity.TENGU, HeroClass.NINJA));
+		assertEquals(Badges.Badge.HEROBOSS_COUNTER_3,
+				Badges.heroBossCounterBadge(Badges.BossIdentity.DM300, HeroClass.DM400));
+		assertEquals(Badges.Badge.HEROBOSS_COUNTER_4,
+				Badges.heroBossCounterBadge(Badges.BossIdentity.DWARF_KING, HeroClass.PRINCESS));
+		assertEquals(Badges.Badge.HEROBOSS_COUNTER_5,
+				Badges.heroBossCounterBadge(Badges.BossIdentity.YOG_DZEWA, HeroClass.FRIAR));
+
+		assertNull(Badges.heroBossCounterBadge(Badges.BossIdentity.WARRIOR_HERO, HeroClass.SLIMEGIRL));
+		assertNull(Badges.heroBossCounterBadge(Badges.BossIdentity.HUNTRESS_HERO, HeroClass.DM400));
+	}
+
+	@Test
+	public void heroBossProgressUsesIdentityInsteadOfCurrentDepth() {
+		assertEquals(Badges.Badge.BOSS_SLAIN_1,
+				Badges.bossSlainBadge(Badges.BossIdentity.WARRIOR_HERO));
+		assertEquals(Badges.Badge.HEROBOSS_SLAIN_2,
+				Badges.heroBossBadge(Badges.BossIdentity.ROGUE_HERO));
+		assertEquals(Badges.Badge.BOSS_SLAIN_3,
+				Badges.bossSlainBadge(Badges.BossIdentity.HUNTRESS_HERO));
+		assertNull(Badges.heroBossBadge(Badges.BossIdentity.DM300));
 	}
 
 	@Test

@@ -7,17 +7,16 @@ import com.watabou.utils.Reflection;
 public final class TreasureGenerator {
 
 	private static final Class<? extends Treasures>[] TOP = new Class[]{
-			MuiscaGoldenRaft.class
+			GoryeoMaebyeong.class, JavaneseGoldCup.class,
+			EthiopianProcessionalCross.class, GreatZimbabweBird.class, DjenneTerracottaFigure.class
 	};
 
 	private static final Class<? extends Treasures>[] RARE = new Class[]{
-			ImperialCrown.class,
-			PakalJadeMask.class,
-			SuttonHooHelmet.class
+			LewisChessQueen.class, HarbavilleTriptych.class,
+			AlMughiraPyxis.class, BlacasEwer.class, GreatKhanPaiza.class
 	};
 
 	private static final Class<? extends Treasures>[] UNCOMMON = new Class[]{
-			BookOfKells.class,
 			CholaNataraja.class,
 			DojigiriYasutsuna.class,
 			TurquoiseSerpent.class,
@@ -26,16 +25,8 @@ public final class TreasureGenerator {
 	};
 
 	private static final Class<? extends Treasures>[] COMMON = new Class[]{
-			LewisChessQueen.class,
-			HarbavilleTriptych.class,
-			AlMughiraPyxis.class,
-			BlacasEwer.class,
-			GreatKhanPaiza.class,
-			GoryeoMaebyeong.class,
-			JavaneseGoldCup.class,
-			EthiopianProcessionalCross.class,
-			GreatZimbabweBird.class,
-			DjenneTerracottaFigure.class
+			MuiscaGoldenRaft.class, ImperialCrown.class, PakalJadeMask.class,
+			SuttonHooHelmet.class, BookOfKells.class
 	};
 
 	private TreasureGenerator() {
@@ -48,6 +39,8 @@ public final class TreasureGenerator {
 	}
 
 	static Treasures.CollectionRarity collectionRarityForRoll(float roll) {
+		// With mean base values 930/2000/4000/5000 and existing quality rolls,
+		// 3.5 collectibles per raid retain an expected total value of 5001.06075.
 		if (roll < 0.01f) {
 			return Treasures.CollectionRarity.TOP;
 		} else if (roll < 0.05f) {

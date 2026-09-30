@@ -92,9 +92,10 @@ public class HuntressBossTest {
 	}
 
 	@Test
-	public void huntressSlainAwardsItsDedicatedHeroBossBadgeInsteadOfThirdBossBadges()
+	public void huntressSlainAwardsItsDedicatedHeroBossBadgeAlongsideThirdBossBadge()
 			throws ReflectiveOperationException {
 		int previousDepth = Dungeon.depth;
+		Hero previousHero = Dungeon.hero;
 		String previousCustomSeed = Dungeon.customSeedText;
 		Field globalBadges = Badges.class.getDeclaredField("global");
 		globalBadges.setAccessible(true);
@@ -103,24 +104,28 @@ public class HuntressBossTest {
 		Badges.saveLocal(previousLocalBadges);
 		try {
 			Dungeon.depth = 15;
+			Dungeon.hero = com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory.create();
+			Dungeon.hero.heroClass = com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass.WARRIOR;
+			Dungeon.hero.subClass = com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroSubClass.NONE;
 			Dungeon.customSeedText = "huntress-badge-test";
 			Badges.loadLocal(new Bundle());
 			globalBadges.set(null, new HashSet<Badge>());
 
-			Badges.validateHeroBossSlain();
+			Badges.validateHeroBossSlain(Badges.BossIdentity.HUNTRESS_HERO);
 
 			Bundle savedBadges = new Bundle();
 			Badges.saveLocal(savedBadges);
 			Set<Badge> awarded = Badges.restore(savedBadges);
 			assertTrue(awarded.contains(Badge.HEROBOSS_SLAIN_3));
 			assertEquals(Badges.gold + 26, Badge.HEROBOSS_SLAIN_3.image);
-			assertFalse(awarded.contains(Badge.BOSS_SLAIN_3));
+		assertTrue(awarded.contains(Badge.BOSS_SLAIN_3));
 			assertFalse(awarded.contains(Badge.BOSS_CHALLENGE_3));
 		} finally {
 			Badges.loadLocal(previousLocalBadges);
 			globalBadges.set(null, previousGlobalBadges);
 			Dungeon.customSeedText = previousCustomSeed;
 			Dungeon.depth = previousDepth;
+			Dungeon.hero = previousHero;
 		}
 	}
 
@@ -3386,7 +3391,7 @@ public class HuntressBossTest {
 	@Test
 	public void normalAndGaleProjectilesUseNonSpinningItemTypes() {
 		assertEquals(SpiritBow.SpiritArrow.class, HuntressBoss.projectileClassFor(false));
-		assertEquals(Dart.class, HuntressBoss.projectileClassFor(true));
+		assertEquals("GaleArrowVFX", HuntressBoss.projectileClassFor(true).getSimpleName());
 	}
 
 	@Test
@@ -4818,6 +4823,7 @@ public class HuntressBossTest {
 		private TestLevel() {
 			blobs = new HashMap<>();
 			mobs = new HashSet<>();
+			plants = new SparseArray<>();
 		}
 
 		@Override

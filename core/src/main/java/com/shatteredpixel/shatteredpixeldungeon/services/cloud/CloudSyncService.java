@@ -19,13 +19,18 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class CloudSyncService {
 
     private static final String SERVER_URL = "http://103.236.98.149:44141";
     private static final String PENDING_RESTORE_FILE = "cloud_restore_pending.dat";
+    private static final AtomicLong restoreRequests = new AtomicLong();
+    private static final AtomicLong uploadRequests = new AtomicLong();
+    private static final AtomicLong aggregateRequests = new AtomicLong();
 
     public interface Callback {
         void onSuccess();
@@ -37,6 +42,7 @@ public class CloudSyncService {
         NOT_FOUND,
         NOT_ALLOWED,
         INVALID_RESPONSE,
+        STALE,
         NETWORK
     }
 
@@ -46,6 +52,8 @@ public class CloudSyncService {
     }
 
     public static void uploadLocalData(Callback callback){
+        Badges.loadGlobal();
+        Journal.loadGlobal();
         Badges.saveGlobal(true);
         Journal.saveGlobal(true);
 
@@ -91,6 +99,17 @@ public class CloudSyncService {
             restoreFail(callback, RestoreFailure.INVALID_UUID);
             return;
         }
+        final RestoreContext context;
+        try {
+            deviceKey();
+            Badges.saveGlobal();
+            Journal.saveGlobal();
+            context = newRestoreContext();
+        } catch (Exception e) {
+            ShatteredPixelDungeon.reportException(e);
+            restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
+            return;
+        }
         String restoreDeviceKey = stableDeviceKey();
 
         Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.GET);
@@ -114,7 +133,8 @@ public class CloudSyncService {
                             response.getString("player_uuid")
                     );
                     String restoreToken = response.getString("restore_token");
-                    if (restoredUUID == null || restoreToken == null || restoreToken.isEmpty()){
+                    if (restoredUUID == null || restoreToken == null || restoreToken.isEmpty()
+                            || !response.contains("global_data")){
                         restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
                         return;
                     }
@@ -123,6 +143,7 @@ public class CloudSyncService {
                             restoredUUID,
                             restoreDeviceKey,
                             restoreToken,
+                            context,
                             callback
                     );
                 } catch (Exception e){
@@ -144,6 +165,7 @@ public class CloudSyncService {
     }
 
     private static void fetchAggregate(Callback callback){
+        long requestID = aggregateRequests.incrementAndGet();
         Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.GET);
         request.setUrl(SERVER_URL + "/api/aggregate?t=" + System.currentTimeMillis());
         request.setTimeOut(15000);
@@ -153,7 +175,7 @@ public class CloudSyncService {
                 try {
                     Bundle response = read(httpResponse.getResultAsString());
                     if (response.getBoolean("ok") && response.contains("aggregate")){
-                        applyAggregateOnGameThread(response.getBundle("aggregate"), callback);
+                        applyAggregateOnGameThread(response.getBundle("aggregate"), requestID, callback);
                     } else {
                         fail(callback);
                     }
@@ -176,6 +198,9 @@ public class CloudSyncService {
     }
 
     private static void post(String path, Bundle payload, Callback callback){
+        long requestID = uploadRequests.incrementAndGet();
+        long restoreID = restoreRequests.get();
+        String expectedUUID = playerUUID();
         Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.POST);
         request.setUrl(SERVER_URL + path);
         request.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -187,7 +212,20 @@ public class CloudSyncService {
                 try {
                     Bundle response = read(httpResponse.getResultAsString());
                     if (response.getBoolean("ok")){
-                        applySyncResponseOnGameThread(response, callback);
+                        Gdx.app.postRunnable(() -> {
+                            try {
+                                if (requestID != uploadRequests.get() || restoreID != restoreRequests.get()
+                                        || !expectedUUID.equals(playerUUID())) {
+                                    callback.onFailure();
+                                    return;
+                                }
+                                applyUploadResponse(response, expectedUUID);
+                                callback.onSuccess();
+                            } catch (Exception e) {
+                                ShatteredPixelDungeon.reportException(e);
+                                callback.onFailure();
+                            }
+                        });
                     } else {
                         fail(callback);
                     }
@@ -213,21 +251,24 @@ public class CloudSyncService {
         return Bundle.read(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8.name())));
     }
 
-    private static void applySyncResponseOnGameThread(Bundle response, Callback callback){
-        Gdx.app.postRunnable(() -> {
-            try {
-                applySyncResponse(response);
-                callback.onSuccess();
-            } catch (Exception e){
-                ShatteredPixelDungeon.reportException(e);
-                callback.onFailure();
-            }
-        });
+    private static void applyUploadResponse(Bundle response, String expectedUUID){
+        if (response.getBoolean("blacklisted")) return;
+        String uuid = CloudRestoreIdentity.resolveRestoredUUID(expectedUUID, response.getString("player_uuid"));
+        if (uuid == null) throw new IllegalArgumentException("Invalid upload identity");
+        SPDSettings.cloudPlayerUUID(uuid);
+        // Upload responses are acknowledgements, never permission to restore personal data.
+        if (response.contains("rankings_accepted") && !response.getBoolean("rankings_accepted")) {
+            throw new IllegalArgumentException("Outdated rankings; explicit restore or reset required");
+        }
     }
 
-    private static void applyAggregateOnGameThread(Bundle aggregate, Callback callback){
+    private static void applyAggregateOnGameThread(Bundle aggregate, long requestID, Callback callback){
         Gdx.app.postRunnable(() -> {
             try {
+                if (requestID != aggregateRequests.get()) {
+                    callback.onSuccess();
+                    return;
+                }
                 TalentCatalog.restoreServerStats(aggregate);
                 Journal.saveGlobal(true);
                 callback.onSuccess();
@@ -243,17 +284,25 @@ public class CloudSyncService {
             String restoredUUID,
             String restoreDeviceKey,
             String restoreToken,
+            RestoreContext context,
             RestoreCallback callback
     ){
         Gdx.app.postRunnable(() -> {
             String currentDeviceID = SPDSettings.cloudDeviceID();
             try {
+                Badges.saveGlobal();
+                Journal.saveGlobal();
+                if (!context.isCurrent()) {
+                    callback.onFailure(RestoreFailure.STALE);
+                    return;
+                }
                 savePendingRestore(
                         response,
                         restoredUUID,
                         restoreDeviceKey,
                         restoreToken,
                         currentDeviceID,
+                        context,
                         false
                 );
                 commitRestore(
@@ -262,6 +311,7 @@ public class CloudSyncService {
                         restoreDeviceKey,
                         restoreToken,
                         currentDeviceID,
+                        context,
                         callback,
                         1
                 );
@@ -278,6 +328,8 @@ public class CloudSyncService {
 
     public static void resumePendingRestore(RestoreCallback callback){
         try {
+            Badges.saveGlobal();
+            Journal.saveGlobal();
             Bundle pending = FileUtils.bundleFromFile(PENDING_RESTORE_FILE);
             Bundle response = pending.getBundle("response");
             String restoredUUID = CloudRestoreIdentity.resolveRestoredUUID(
@@ -291,6 +343,8 @@ public class CloudSyncService {
             String restoreDeviceKey = pending.getString("device_key");
             String restoreToken = pending.getString("restore_token");
             String currentDeviceID = pending.getString("local_device_id");
+            RestoreContext context = new RestoreContext(restoreRequests.incrementAndGet(),
+                    pending.getString("local_fingerprint"));
             if (
                     restoredUUID == null
                     || responseUUID == null
@@ -298,9 +352,15 @@ public class CloudSyncService {
                     || restoreDeviceKey.isEmpty()
                     || restoreToken == null
                     || restoreToken.isEmpty()
+                    || !response.contains("global_data")
             ){
 			FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
                 restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
+                return;
+            }
+            if (!context.isCurrent()) {
+                discardPendingRestore(restoreToken);
+                restoreFail(callback, RestoreFailure.STALE);
                 return;
             }
             if (pending.getBoolean("committed")){
@@ -310,6 +370,7 @@ public class CloudSyncService {
                         restoreDeviceKey,
                         restoreToken,
                         currentDeviceID,
+                        context,
                         callback
                 );
             } else {
@@ -319,6 +380,7 @@ public class CloudSyncService {
                         restoreDeviceKey,
                         restoreToken,
                         currentDeviceID,
+                        context,
                         callback,
                         1
                 );
@@ -336,6 +398,7 @@ public class CloudSyncService {
             String restoreDeviceKey,
             String restoreToken,
             String currentDeviceID,
+            RestoreContext context,
             boolean committed
     ) throws Exception {
         Bundle pending = new Bundle();
@@ -345,6 +408,7 @@ public class CloudSyncService {
         pending.put("restore_token", restoreToken);
         pending.put("local_device_id", currentDeviceID == null ? "" : currentDeviceID);
         pending.put("committed", committed);
+        pending.put("local_fingerprint", context.fingerprint);
         FileUtils.bundleToFile(PENDING_RESTORE_FILE, pending);
     }
 
@@ -354,9 +418,14 @@ public class CloudSyncService {
             String restoreDeviceKey,
             String restoreToken,
             String currentDeviceID,
+            RestoreContext context,
             RestoreCallback callback,
             int retriesRemaining
     ){
+        if (context.requestID != restoreRequests.get()) {
+            restoreFail(callback, RestoreFailure.STALE);
+            return;
+        }
         Bundle payload = new Bundle();
         payload.put("player_uuid", restoredUUID);
         payload.put("device_key", restoreDeviceKey);
@@ -383,10 +452,11 @@ public class CloudSyncService {
                                 restoreDeviceKey,
                                 restoreToken,
                                 currentDeviceID,
+                                context,
                                 callback
                         );
                     } else {
-				FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
+                        discardPendingRestore(restoreToken);
                         restoreFail(callback, RestoreFailure.INVALID_RESPONSE);
                     }
                 } catch (Exception e){
@@ -397,6 +467,7 @@ public class CloudSyncService {
                             restoreDeviceKey,
                             restoreToken,
                             currentDeviceID,
+                            context,
                             callback,
                             retriesRemaining
                     );
@@ -411,6 +482,7 @@ public class CloudSyncService {
                         restoreDeviceKey,
                         restoreToken,
                         currentDeviceID,
+                        context,
                         callback,
                         retriesRemaining
                 );
@@ -429,22 +501,30 @@ public class CloudSyncService {
             String restoreDeviceKey,
             String restoreToken,
             String currentDeviceID,
+            RestoreContext context,
             RestoreCallback callback,
             int retriesRemaining
     ){
-        if (retriesRemaining > 0){
-            commitRestore(
-                    response,
-                    restoredUUID,
-                    restoreDeviceKey,
-                    restoreToken,
-                    currentDeviceID,
-                    callback,
-                    retriesRemaining - 1
-            );
-        } else {
-            restoreFail(callback, RestoreFailure.NETWORK);
-        }
+        Gdx.app.postRunnable(() -> {
+            try {
+                Badges.saveGlobal();
+                Journal.saveGlobal();
+                if (!context.isCurrent()) {
+                    discardPendingRestore(restoreToken);
+                    callback.onFailure(RestoreFailure.STALE);
+                    return;
+                }
+                if (retriesRemaining > 0) {
+                    commitRestore(response, restoredUUID, restoreDeviceKey, restoreToken,
+                            currentDeviceID, context, callback, retriesRemaining - 1);
+                } else {
+                    callback.onFailure(RestoreFailure.NETWORK);
+                }
+            } catch (Exception e) {
+                ShatteredPixelDungeon.reportException(e);
+                callback.onFailure(RestoreFailure.INVALID_RESPONSE);
+            }
+        });
     }
 
     private static void finishCommittedRestoreOnGameThread(
@@ -453,26 +533,45 @@ public class CloudSyncService {
             String restoreDeviceKey,
             String restoreToken,
             String currentDeviceID,
+            RestoreContext context,
             RestoreCallback callback
     ){
         Gdx.app.postRunnable(() -> {
+            boolean applying = false;
             try {
+                Badges.saveGlobal();
+                Journal.saveGlobal();
+                if (!context.isCurrent()) {
+                    discardPendingRestore(restoreToken);
+                    callback.onFailure(RestoreFailure.STALE);
+                    return;
+                }
                 savePendingRestore(
                         response,
                         restoredUUID,
                         restoreDeviceKey,
                         restoreToken,
                         currentDeviceID,
+                        context,
                         true
                 );
+                applying = true;
                 restoreLocalIdentity(restoredUUID, currentDeviceID);
-                applySyncResponse(response);
+                applyRestoreResponse(response);
                 restoreLocalIdentity(restoredUUID, currentDeviceID);
 				FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
                 callback.onSuccess();
             } catch (Exception e){
                 ShatteredPixelDungeon.reportException(e);
-                restoreLocalIdentity(restoredUUID, currentDeviceID);
+                if (applying) {
+                    restoreLocalIdentity(restoredUUID, currentDeviceID);
+                    try {
+                        savePendingRestore(response, restoredUUID, restoreDeviceKey, restoreToken, currentDeviceID,
+                                new RestoreContext(context.requestID, localDataFingerprint()), true);
+                    } catch (Exception saveError) {
+                        ShatteredPixelDungeon.reportException(saveError);
+                    }
+                }
                 callback.onFailure(RestoreFailure.INVALID_RESPONSE);
             }
         });
@@ -483,7 +582,7 @@ public class CloudSyncService {
         SPDSettings.cloudPlayerUUID(playerUUID == null ? "" : playerUUID);
     }
 
-    private static void applySyncResponse(Bundle response) throws Exception {
+    private static void applyRestoreResponse(Bundle response) throws Exception {
         boolean journalChanged = false;
         String restoredUUID = null;
         if (response.contains("player_uuid")){
@@ -513,13 +612,64 @@ public class CloudSyncService {
     }
 
     private static void refreshGlobalState(){
-        Badges.loadGlobal();
+        Badges.reloadGlobal();
         Rankings.INSTANCE.records = null;
         Rankings.INSTANCE.latestDaily = null;
         Rankings.INSTANCE.latestDailyReplay = null;
         Rankings.INSTANCE.dailyScoreHistory.clear();
         Rankings.INSTANCE.load();
         Journal.reloadGlobal();
+    }
+
+    private static RestoreContext newRestoreContext() throws Exception {
+        return new RestoreContext(restoreRequests.incrementAndGet(), localDataFingerprint());
+    }
+
+    private static final class RestoreContext {
+        final long requestID;
+        final String fingerprint;
+
+        RestoreContext(long requestID, String fingerprint) {
+            this.requestID = requestID;
+            this.fingerprint = fingerprint;
+        }
+
+        boolean isCurrent() throws Exception {
+            return requestID == restoreRequests.get() && fingerprint != null && !fingerprint.isEmpty()
+                    && fingerprint.equals(localDataFingerprint());
+        }
+    }
+
+    private static String localDataFingerprint() throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        digest.update((playerUUID() + "\0" + String.valueOf(SPDSettings.cloudDeviceID()) + "\0")
+                .getBytes(StandardCharsets.UTF_8));
+        for (String file : new String[]{Rankings.RANKINGS_FILE, Badges.BADGES_FILE, Journal.JOURNAL_FILE}) {
+            digest.update(file.getBytes(StandardCharsets.UTF_8));
+            if (FileUtils.fileExists(file)) {
+                byte[] bytes = FileUtils.getFileHandle(file).readBytes();
+                digest.update((":" + bytes.length + ":").getBytes(StandardCharsets.UTF_8));
+                digest.update(bytes);
+            } else {
+                digest.update((byte) 0);
+            }
+        }
+        byte[] hash = digest.digest();
+        StringBuilder result = new StringBuilder();
+        for (byte value : hash) result.append(String.format(java.util.Locale.ROOT, "%02x", value & 0xff));
+        return result.toString();
+    }
+
+    private static void discardPendingRestore(String token) {
+        Gdx.app.postRunnable(() -> {
+            try {
+                if (hasPendingRestore() && token.equals(FileUtils.bundleFromFile(PENDING_RESTORE_FILE).getString("restore_token"))) {
+                    FileUtils.deleteBundleFile(PENDING_RESTORE_FILE);
+                }
+            } catch (Exception e) {
+                ShatteredPixelDungeon.reportException(e);
+            }
+        });
     }
 
     private static void fail(Callback callback){

@@ -21,6 +21,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.towers.PestilenceArenaController;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessItemSprites;
+import com.shatteredpixel.shatteredpixeldungeon.testutil.HeadlessGameMessages;
 import com.shatteredpixel.shatteredpixeldungeon.testutil.TestHeroFactory;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.watabou.utils.Bundle;
@@ -46,15 +47,18 @@ import static org.junit.Assert.assertTrue;
 public class PestilenceKnightTest {
 
     private static HeadlessItemSprites sprites;
+    private static HeadlessGameMessages messages;
 
     @BeforeClass
-    public static void installHeadlessSprites() {
+    public static void installHeadlessSprites() throws Exception {
+        messages = new HeadlessGameMessages();
         sprites = new HeadlessItemSprites();
     }
 
     @AfterClass
     public static void restoreHeadlessSprites() {
         sprites.close();
+        messages.close();
     }
 
     @Test
@@ -147,6 +151,40 @@ public class PestilenceKnightTest {
             Dungeon.hero = previousHero;
             Dungeon.depth = previousDepth;
             Game.version = previousVersion;
+        }
+    }
+
+    @Test
+    public void arenaCleanupDismissesActiveAndRecoveringGuardsAndTheirSprites() {
+        com.shatteredpixel.shatteredpixeldungeon.levels.Level previousLevel = Dungeon.level;
+        try {
+            TowerBossLevel level = new TowerBossLevel();
+            level.mobs = new HashSet<>();
+            level.blobs = new HashMap<>();
+            Dungeon.level = level;
+
+            PlagueGuard active = new PlagueGuard();
+            active.sprite = new com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite();
+            PlagueGuard recovering = new PlagueGuard();
+            recovering.sprite = new com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite();
+            recovering.HP = 0;
+            assertTrue(recovering.isAlive());
+            level.mobs.add(active);
+            level.mobs.add(recovering);
+
+            new PestilenceKnight(30).cleanupArena(level);
+
+            assertTrue(level.mobs.isEmpty());
+            assertFalse(active.isAlive());
+            assertFalse(recovering.isAlive());
+            assertFalse(active.sprite.alive);
+            assertFalse(recovering.sprite.alive);
+            active.reviveAfterPurifier();
+            recovering.reviveAfterPurifier();
+            assertEquals(0, active.HP);
+            assertEquals(0, recovering.HP);
+        } finally {
+            Dungeon.level = previousLevel;
         }
     }
 

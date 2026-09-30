@@ -151,7 +151,7 @@ public class ScrollOfTransmutation extends InventoryScroll {
 					}
 					hero.spend(-hero.cooldown()); //cancel equip/unequip time
 				} else {
-					if (item instanceof MissileWeapon){
+					if (TransmutationStackPolicy.removesEntireStack(item)) {
 						item.detachAll(hero.belongings.backpack);
 					} else {
 						item.detach(hero.belongings.backpack);

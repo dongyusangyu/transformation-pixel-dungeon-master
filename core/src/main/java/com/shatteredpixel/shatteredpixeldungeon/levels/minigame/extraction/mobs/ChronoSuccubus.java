@@ -1,7 +1,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs;
 
+import com.watabou.utils.Bundle;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.RaidDroneSprites;
+
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Succubus;
@@ -13,6 +17,27 @@ import com.watabou.utils.Random;
  * A succubus which can end the hero's stopped-time effects.
  */
 public class ChronoSuccubus extends Succubus {
+
+	{
+		spriteClass = RaidDroneSprites.Siren.class;
+		properties.add(Property.MINIBOSS);
+		properties.add(Property.INORGANIC);
+		properties.remove(Property.DEMONIC);
+		flying = true;
+		immunities.add(Levitation.class);
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		if (alignment == Alignment.ALLY) {
+			alignment = Alignment.ENEMY;
+			state = WANDERING;
+			enemy = null;
+			enemyID = -1;
+			target = -1;
+		}
+	}
 
 	@Override
 	public int attackSkill(Char target) {

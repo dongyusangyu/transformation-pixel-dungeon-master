@@ -44,6 +44,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -333,7 +334,16 @@ public class Shopkeeper extends NPC {
 		return true;
 	}
 
+	@Override
+	public String description() {
+		return Dungeon.branch == TowerLevel.BRANCH
+				? Messages.get(Shopkeeper.class, "tower_desc") : super.description();
+	}
+
 	public String chatText(){
+		if (Dungeon.branch == TowerLevel.BRANCH) {
+			return Messages.get(Shopkeeper.class, "talk_tower");
+		}
 		if (Dungeon.hero.buff(AscensionChallenge.class) != null){
 			return Messages.get(this, "talk_ascent");
 		}

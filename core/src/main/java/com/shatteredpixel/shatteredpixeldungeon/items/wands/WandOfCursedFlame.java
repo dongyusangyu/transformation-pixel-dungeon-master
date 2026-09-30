@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CursedFlame;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.CursedFlameDamage;
@@ -89,12 +90,16 @@ public class WandOfCursedFlame extends DamageWand {
         if (flame != null) GameScene.add(flame);
 
         if (direct != null) {
-            CursedFlameDamage.applyMagical(direct, damageRoll(direct), this);
+            applyDirectHit(direct, damageRoll(direct));
             Sample.INSTANCE.play(Assets.Sounds.HIT_MAGIC);
         } else {
             Dungeon.level.pressCell(center);
         }
         Sample.INSTANCE.play(Assets.Sounds.BURNING);
+    }
+
+    void applyDirectHit(Char target, int damage) {
+        if (target != null) target.damage(damage, this, DamageTag.MAGICAL);
     }
 
     @Override public void fx(Ballistica bolt, Callback callback) {

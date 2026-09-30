@@ -568,7 +568,7 @@ public class YogDzewa extends Mob implements MagicalRangedAttack {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void die( Object cause ) {
-        Badges.validateBossSlain();
+        Badges.validateBossSlain(Badges.BossIdentity.YOG_DZEWA);
 
 		Bestiary.skipCountingEncounters = true;
 		for (Mob mob : (Iterable<Mob>)Dungeon.level.mobs.clone()) {

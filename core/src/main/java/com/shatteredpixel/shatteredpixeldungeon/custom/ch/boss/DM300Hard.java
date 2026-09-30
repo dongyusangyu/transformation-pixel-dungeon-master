@@ -234,7 +234,7 @@ public class DM300Hard extends Boss{
 
         Dungeon.level.drop(new SkeletonKey(Dungeon.depth), pos).sprite.drop();
         GameScene.bossSlain();
-        Badges.validateBossSlain();
+        Badges.validateBossSlain(Badges.BossIdentity.DM300);
         LloydsBeacon beacon = Dungeon.hero.belongings.getItem(LloydsBeacon.class);
         if (beacon != null) {
             beacon.upgrade();

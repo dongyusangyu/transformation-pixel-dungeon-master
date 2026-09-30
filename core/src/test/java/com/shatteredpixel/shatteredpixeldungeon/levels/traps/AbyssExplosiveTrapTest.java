@@ -121,6 +121,13 @@ public class AbyssExplosiveTrapTest {
 	}
 
 	@Test
+	public void oneThirdLevitationRemovalOnlyAppliesToAbyssTrapAffectedCharacters() {
+		assertTrue(AbyssExplosiveTrap.shouldRemoveLevitation(0));
+		assertFalse(AbyssExplosiveTrap.shouldRemoveLevitation(1));
+		assertFalse(AbyssExplosiveTrap.shouldRemoveLevitation(2));
+	}
+
+	@Test
 	public void revealingAbyssTrapInvalidatesCachedMonsterStep() {
 		Level previousLevel = Dungeon.level;
 		try {

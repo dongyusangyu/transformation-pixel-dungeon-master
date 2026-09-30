@@ -179,6 +179,22 @@ import java.util.Locale;
 
 public class GameScene extends PixelScene {
 
+	static String towerBossPrediction(int depth, String bossId) {
+		String floor = Dungeon.displayDepthLabel(depth, TowerLevel.BRANCH);
+		String key = "tower_boss_prediction_" + bossId;
+		if (Messages.canget(GameScene.class, key)) {
+			return Messages.get(GameScene.class, key, floor);
+		}
+		String bossName = bossId;
+		for (TowerBossGenerator.Entry entry : TowerBossGenerator.entries()) {
+			if (entry.id().equals(bossId)) {
+				bossName = TowerBossGenerator.create(bossId).name();
+				break;
+			}
+		}
+		return Messages.get(GameScene.class, "tower_boss_prediction", floor, bossName);
+	}
+
 	static GameScene scene;
 	private static volatile boolean checkpointRequested;
 	private static volatile long checkpointRetryAfter;
@@ -227,6 +243,11 @@ public class GameScene extends PixelScene {
 	private static boolean invVisible = true;
 
 	private Toolbar toolbar;
+	private SkinnedBlock safeBottomBar;
+	private PointerArea safeBottomBlocker;
+	private RectF positionedSafeInsets;
+	private float menuBarLayoutOffset;
+	private float heroPaneCutoutExtra;
 	private Toast prompt;
 
 	private AttackIndicator attack;
@@ -266,6 +287,7 @@ public class GameScene extends PixelScene {
 		}
 
 		RectF insets = getCommonInsets();
+		positionedSafeInsets = new RectF(insets);
 		//we want to check if large is the same as blocking here
 		float largeInsetTop = Game.platform.getSafeInsets(PlatformSupport.INSET_LRG).scale(1f/defaultZoom).top;
 
@@ -468,6 +490,8 @@ public class GameScene extends PixelScene {
 
 		menu = new MenuPane();
 		menu.camera = uiCamera;
+		menuBarLayoutOffset = menuBarMaxLeft
+				- (uiCamera.width - insets.right - MenuPane.WIDTH);
 		menu.setPos( menuBarMaxLeft, screentop);
 		add(menu);
 
@@ -485,6 +509,7 @@ public class GameScene extends PixelScene {
 
 		status = new StatusPane( SPDSettings.interfaceSize() > 0 );
 		status.camera = uiCamera;
+		heroPaneCutoutExtra = Math.max(0, heroPaneExtraWidth - insets.left);
 		StatusPane.heroPaneExtraWidth = heroPaneExtraWidth;
 		StatusPane.hpBarMaxWidth = hpBarMaxWidth;
 		StatusPane.buffBarRowMaxWidths = buffBarRowLimits;
@@ -557,16 +582,18 @@ public class GameScene extends PixelScene {
 			toolbar.setRect( insets.left, uiCamera.height - toolbar.height() - insets.bottom, uiCamera.width - insets.right, toolbar.height() );
 		}
 
-		if (insets.bottom > 0){
-			SkinnedBlock bar = new SkinnedBlock(uiCamera.width, insets.bottom, TextureCache.createSolid(0x88000000));
-			bar.camera = uiCamera;
-			bar.y = uiCamera.height - insets.bottom;
-			add(bar);
+		safeBottomBar = new SkinnedBlock(uiCamera.width, insets.bottom,
+				TextureCache.createSolid(0x88000000));
+		safeBottomBar.camera = uiCamera;
+		safeBottomBar.y = uiCamera.height - insets.bottom;
+		safeBottomBar.visible = insets.bottom > 0;
+		add(safeBottomBar);
 
-			PointerArea blocker = new PointerArea(0, uiCamera.height - insets.bottom, uiCamera.width, insets.bottom);
-			blocker.camera = uiCamera;
-			add(blocker);
-		}
+		safeBottomBlocker = new PointerArea(0, uiCamera.height - insets.bottom,
+				uiCamera.width, insets.bottom);
+		safeBottomBlocker.camera = uiCamera;
+		safeBottomBlocker.active = insets.bottom > 0;
+		add(safeBottomBlocker);
 
 		layoutTags();
 
@@ -664,12 +691,10 @@ public class GameScene extends PixelScene {
 					boolean currentBossPending = level instanceof TowerBossLevel
 							&& !((TowerBossLevel) level).bossEncounterDefeated();
 					int bossDepth = TowerBossGenerator.predictionDepth(
-							Dungeon.depth, currentBossPending);
-					String bossId = TowerBossGenerator.predictId(Dungeon.seed, Dungeon.depth,
-							TowerLevel.BRANCH, currentBossPending);
-					GLog.w(Messages.get(this, "tower_boss_prediction"),
-							Dungeon.displayDepthLabel(bossDepth, TowerLevel.BRANCH),
-							TowerBossGenerator.create(bossId).name());
+							Dungeon.depth, currentBossPending, Statistics.highestTowerBossDefeated);
+					String bossId = TowerBossGenerator.selectId(Dungeon.seed, bossDepth,
+							TowerLevel.BRANCH);
+					GLog.w(towerBossPrediction(bossDepth, bossId));
 				}
 				if (InterlevelScene.mode == InterlevelScene.Mode.DESCEND
 						|| InterlevelScene.mode == InterlevelScene.Mode.FALL) {
@@ -770,6 +795,8 @@ public class GameScene extends PixelScene {
 					GLog.w(level.feeling.desc());
 					Notes.add(Notes.Landmark.SECRETS_FLOOR);
 					break;
+				case SKY_ISLAND:
+				case BARREN:
 				case CHAOS:
 					GLog.w(level.feeling.desc());
 					break;
@@ -1063,8 +1090,10 @@ public class GameScene extends PixelScene {
 	@Override
 	public synchronized Gizmo erase (Gizmo g) {
 		Gizmo result = super.erase(g);
-		if (result instanceof Window){
+		if (result instanceof Window && ((Window) result).inheritsPreviousOffset()){
 			lastOffset = ((Window) result).getOffset();
+		} else if (result instanceof Window) {
+			lastOffset = null;
 		}
 		return result;
 	}
@@ -1076,6 +1105,11 @@ public class GameScene extends PixelScene {
 	private boolean tagResume    = false;
 
 	public static void layoutTags() {
+		RectF insets = Game.platform.getSafeInsets( PlatformSupport.INSET_ALL );
+		layoutTags(insets.scale(1f / uiCamera.zoom));
+	}
+
+	private static void layoutTags(RectF insets) {
 
 		updateTags = false;
 
@@ -1092,9 +1126,6 @@ public class GameScene extends PixelScene {
 
 		//adjust spacing for elements based on display cutouts
 		// We use ALL here as some elements can be a fair but up the side of the screen
-		RectF insets = Game.platform.getSafeInsets( PlatformSupport.INSET_ALL );
-		insets = insets.scale(1f / uiCamera.zoom);
-
 		boolean tagsOnLeft = SPDSettings.flipTags();
 		float tagWidth = Tag.SIZE + (tagsOnLeft ? insets.left : insets.right);
 		float tagLeft = tagsOnLeft ? 0 : uiCamera.width - tagWidth;
@@ -1511,7 +1542,7 @@ public class GameScene extends PixelScene {
 
 			//If a window is already present (or was just present)
 			// then inherit the offset it had
-			if (scene.inventory != null && scene.inventory.visible){
+			if (wnd.inheritsPreviousOffset() && scene.inventory != null && scene.inventory.visible){
 				Point offsetToInherit = null;
 				for (Gizmo g : scene.members){
 					if (g instanceof Window) offsetToInherit = ((Window) g).getOffset();
@@ -1523,6 +1554,8 @@ public class GameScene extends PixelScene {
 					wnd.offset(offsetToInherit);
 					wnd.boundOffsetWithMargin(3);
 				}
+			} else {
+				lastOffset = null;
 			}
 
 			scene.addToFront(wnd);
@@ -1555,7 +1588,8 @@ public class GameScene extends PixelScene {
 		if (scene != null && scene.inventory != null){
 			if (scene.inventory.visible){
 				scene.inventory.visible = scene.inventory.active = invVisible = false;
-				scene.toolbar.setPos(scene.toolbar.left(), uiCamera.height-scene.toolbar.height());
+				scene.toolbar.setPos(scene.toolbar.left(), uiCamera.height-scene.toolbar.height()
+						- scene.getCommonInsets().bottom);
 			} else {
 				scene.inventory.visible = scene.inventory.active = invVisible = true;
 				scene.toolbar.setPos(scene.toolbar.left(), scene.inventory.top()-scene.toolbar.height());
@@ -2056,6 +2090,52 @@ public class GameScene extends PixelScene {
 			}
 			savedSelector = null;
 		}
+	}
+
+	@Override
+	public void onSafeInsetsChanged() {
+		RectF allInsets = Game.platform.getSafeInsets(PlatformSupport.INSET_ALL);
+		RectF windowInsets = Game.platform.getSafeInsets(PlatformSupport.INSET_BLK);
+		RectF insets = getCommonInsets(allInsets, windowInsets);
+		if (toolbar == null) {
+			relayoutOpenWindows(windowInsets);
+			return;
+		}
+
+		if (menu != null) {
+			menu.setPos(uiCamera.width - insets.right - MenuPane.WIDTH + menuBarLayoutOffset,
+					menu.top());
+		}
+		if (status != null) {
+			StatusPane.heroPaneExtraWidth = insets.left + heroPaneCutoutExtra;
+			float statusY = SPDSettings.interfaceSize() > 0
+					? uiCamera.height - 39 - insets.bottom : status.top();
+			status.setRect(insets.left, statusY,
+					uiCamera.width - insets.left - insets.right, status.height());
+		}
+		if (inventory != null) {
+			inventory.setPos(uiCamera.width - inventory.width() - insets.right,
+					uiCamera.height - inventory.height() - insets.bottom);
+		}
+		float inventoryHeight = inventory != null && inventory.visible ? inventory.height() : 0;
+		toolbar.setRect(insets.left,
+				uiCamera.height - toolbar.height() - inventoryHeight - insets.bottom,
+				uiCamera.width - insets.left - insets.right, toolbar.height());
+		if (safeBottomBar != null) {
+			safeBottomBar.size(uiCamera.width, insets.bottom);
+			safeBottomBar.y = uiCamera.height - insets.bottom;
+			safeBottomBar.visible = insets.bottom > 0;
+		}
+		if (safeBottomBlocker != null) {
+			safeBottomBlocker.x = 0;
+			safeBottomBlocker.y = uiCamera.height - insets.bottom;
+			safeBottomBlocker.width = uiCamera.width;
+			safeBottomBlocker.height = insets.bottom;
+			safeBottomBlocker.active = insets.bottom > 0;
+		}
+		positionedSafeInsets = new RectF(insets);
+		layoutTags(allInsets.scale(1f / uiCamera.zoom));
+		relayoutOpenWindows(windowInsets);
 	}
 
 	public static boolean cancel() {

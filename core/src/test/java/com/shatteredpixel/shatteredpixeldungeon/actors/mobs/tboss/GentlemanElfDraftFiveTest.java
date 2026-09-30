@@ -15,19 +15,17 @@ public class GentlemanElfDraftFiveTest {
 		assertEquals(GentlemanElf.Phase.FINAL_DUEL, boss.phase());
 	}
 
-	@Test public void consecutivePouncesUseElapsedWholeMissedTurnsAndSaveTheirClock() {
+	@Test public void pounceSelfDamageDependsOnHeavyInjuryBeforeTheHit() {
 		GentlemanElf boss = new GentlemanElf();
 		boss.setPhaseForTest(GentlemanElf.Phase.FINAL_DUEL, 2);
-		assertEquals(50, boss.pounceSelfDamageAt(10f));
-		boss.recordPounceHitAt(10f);
-		assertEquals(100, boss.pounceSelfDamageAt(11f));
-		assertEquals(95, boss.pounceSelfDamageAt(12f));
-		assertEquals(50, boss.pounceSelfDamageAt(50f));
+		assertEquals(50, boss.pounceSelfDamage(false));
+		assertEquals(100, boss.pounceSelfDamage(true));
 		Bundle bundle = new Bundle();
 		boss.storeInBundle(bundle);
 		GentlemanElf restored = new GentlemanElf();
 		restored.restoreFromBundle(bundle);
-		assertEquals(95, restored.pounceSelfDamageAt(12f));
+		assertEquals(50, restored.pounceSelfDamage(false));
+		assertEquals(100, restored.pounceSelfDamage(true));
 	}
 
 	@Test public void heavyInjuryRefreshesToTenAndBlocksHealingUntilItExpires() {

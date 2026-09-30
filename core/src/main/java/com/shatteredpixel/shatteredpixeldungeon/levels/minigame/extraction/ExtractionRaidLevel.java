@@ -2,7 +2,6 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
@@ -37,6 +36,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.ShadowCaster;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.noosa.audio.Music;
 import com.watabou.utils.BArray;
 import com.watabou.utils.Bundle;
@@ -53,6 +53,33 @@ import java.util.ListIterator;
  * Randomized combat floor for the extraction minigame.
  */
 public class ExtractionRaidLevel extends Level {
+
+	@Override
+	public String tileName(int tile) {
+		switch (tile) {
+			case Terrain.WATER: return Messages.get(ExtractionRaidLevel.class, "water_name");
+			case Terrain.GRASS: return Messages.get(ExtractionRaidLevel.class, "grass_name");
+			case Terrain.EXIT: return Messages.get(ExtractionRaidLevel.class, "exit_name");
+			case Terrain.STATUE:
+			case Terrain.STATUE_SP:
+			case Terrain.REGION_DECO:
+			case Terrain.REGION_DECO_ALT: return Messages.get(ExtractionRaidLevel.class, "cargo_crate_name");
+			default: return super.tileName(tile);
+		}
+	}
+
+	@Override
+	public String tileDesc(int tile) {
+		switch (tile) {
+			case Terrain.EXIT: return Messages.get(ExtractionRaidLevel.class, "exit_desc");
+			case Terrain.BOOKSHELF: return Messages.get(ExtractionRaidLevel.class, "bookshelf_desc");
+			case Terrain.STATUE:
+			case Terrain.STATUE_SP:
+			case Terrain.REGION_DECO:
+			case Terrain.REGION_DECO_ALT: return Messages.get(ExtractionRaidLevel.class, "cargo_crate_desc");
+			default: return super.tileDesc(tile);
+		}
+	}
 
 	public static final int DEPTH = 31;
 	public static final int BRANCH = 1;
@@ -519,19 +546,17 @@ public class ExtractionRaidLevel extends Level {
 
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_HALLS;
+		return Assets.Environment.TILES_UES;
 	}
 
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_HALLS;
+		return Assets.Environment.WATER_UES;
 	}
 
 	@Override
 	public void playLevelMusic() {
-		Music.INSTANCE.play(
-				Statistics.amuletObtained ? Assets.Music.HALLS_TENSE : Assets.Music.HALLS_1,
-				true);
+		Music.INSTANCE.play(Assets.Music.UES, true);
 	}
 
 	@Override

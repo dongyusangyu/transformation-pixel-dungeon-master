@@ -17,6 +17,7 @@ public class PlagueGuard extends Statue {
     private static final int RECOVERY_PER_TURN = 25;
 
     private boolean recovering;
+    private boolean dismissed;
 
     {
         HP = HT = 120;
@@ -37,6 +38,7 @@ public class PlagueGuard extends Statue {
 
     @Override
     protected boolean act() {
+        if (dismissed) return true;
         if (recovering) {
             heal(RECOVERY_PER_TURN, false);
             if (HP >= HT) recovering = false;
@@ -55,6 +57,7 @@ public class PlagueGuard extends Statue {
 
     @Override
     public boolean isAlive() {
+        if (dismissed) return false;
         if (HP <= 0) {
             HP = 1;
             if (!recovering) {
@@ -69,11 +72,11 @@ public class PlagueGuard extends Statue {
 
     @Override
     public boolean isInvulnerable(Class effect) {
-        return recovering || super.isInvulnerable(effect);
+        return dismissed || recovering || super.isInvulnerable(effect);
     }
 
     public boolean isActiveGuard() {
-        return !recovering && isAlive();
+        return !dismissed && !recovering && isAlive();
     }
 
     public boolean recovering() {
@@ -81,7 +84,7 @@ public class PlagueGuard extends Statue {
     }
 
     public void reviveAfterPurifier() {
-        if (!recovering) return;
+        if (dismissed || !recovering) return;
         HP = HT;
         recovering = false;
         state = HUNTING;
@@ -89,6 +92,18 @@ public class PlagueGuard extends Statue {
             enemy = Dungeon.hero;
             target = Dungeon.hero.pos;
         }
+    }
+
+    /** Removes this encounter-only guard without triggering statue drops or kill rewards. */
+    public void dismissAfterEncounter() {
+        if (dismissed) return;
+        dismissed = true;
+        recovering = false;
+        HP = 0;
+        enemy = null;
+        target = -1;
+        alignment = Alignment.NEUTRAL;
+        destroyWithoutRewards();
     }
 
     @Override

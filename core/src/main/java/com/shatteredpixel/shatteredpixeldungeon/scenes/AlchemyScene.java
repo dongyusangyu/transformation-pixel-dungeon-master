@@ -93,6 +93,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Random;
+import com.watabou.utils.RectF;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,11 +120,18 @@ public class AlchemyScene extends PixelScene {
 	private Image energyIcon;
 	private RenderedTextBlock energyLeft;
 	private IconButton energyAdd;
+	private StyledButton btnGuide;
+	private ExitButton btnExit;
+	private IconTitle title;
+	private RenderedTextBlock desc;
+	private NinePatch inputBG;
+	private NinePatch guideBG;
+	private RectF layoutInsets;
 	private boolean energyAddBlinking = false;
 
 	private static boolean splitAlchGuide = false;
 	private WndJournal.AlchemyTab alchGuide = null;
-	private static int centerW;
+	private static float centerW;
 
 	private static final int BTN_SIZE	= 28;
 
@@ -134,6 +142,10 @@ public class AlchemyScene extends PixelScene {
 	@Override
 	public void create() {
 		super.create();
+		RectF insets = getCommonInsets();
+		layoutInsets = insets;
+		float safeWidth = Camera.main.width - insets.left - insets.right;
+		float safeHeight = Camera.main.height - insets.top - insets.bottom;
 		
 		water = new SkinnedBlock(
 				Camera.main.width, Camera.main.height,
@@ -162,13 +174,13 @@ public class AlchemyScene extends PixelScene {
 		im.scale.y = Camera.main.width;
 		add(im);
 
-		ExitButton btnExit = new ExitButton(){
+		btnExit = new ExitButton(){
 			@Override
 			protected void onClick() {
 				Game.switchScene(GameScene.class);
 			}
 		};
-		btnExit.setPos( Camera.main.width - btnExit.width(), 0 );
+		btnExit.setPos( Camera.main.width - insets.right - btnExit.width(), insets.top );
 		add( btnExit );
 
 		bubbleEmitter = new Emitter();
@@ -177,33 +189,33 @@ public class AlchemyScene extends PixelScene {
 		lowerBubbles = new Emitter();
 		add(lowerBubbles);
 		
-		IconTitle title = new IconTitle(Icons.ALCHEMY.get(), Messages.get(this, "title") );
+		title = new IconTitle(Icons.ALCHEMY.get(), Messages.get(this, "title") );
 		title.setSize(200, 0);
 		title.setPos(
-				(Camera.main.width - title.reqWidth()) / 2f,
-				(20 - title.height()) / 2f
+				insets.left + (safeWidth - title.reqWidth()) / 2f,
+				insets.top + (20 - title.height()) / 2f
 		);
 		align(title);
 		add(title);
 		
-		int w = Math.min(50 + Camera.main.width/2, 150);
-		int left = (Camera.main.width - w)/2;
+		int w = Math.min(50 + (int)safeWidth/2, 150);
+		int left = (int)(insets.left + (safeWidth - w)/2);
 
-		centerW = left + w/2;
+		centerW = left + w/2f;
 
-		int pos = (Camera.main.height - 120)/2;
+		int pos = (int)(insets.top + (safeHeight - 120)/2);
 
 		if (splitAlchGuide &&
-				Camera.main.width >= 300 &&
-				Camera.main.height >= PixelScene.MIN_HEIGHT_FULL){
-			w = Math.min(150, Camera.main.width/2);
-			left = (Camera.main.width/2 - w);
-			centerW = left + w/2;
+				safeWidth >= 300 &&
+				safeHeight >= PixelScene.MIN_HEIGHT_FULL){
+			w = Math.min(150, (int)safeWidth/2);
+			left = (int)(insets.left + safeWidth/2 - w);
+			centerW = left + w/2f;
 
-			NinePatch guideBG = Chrome.get(Chrome.Type.TOAST);
-			guideBG.size(126 + guideBG.marginHor(), Math.min(Camera.main.height - 18, 191 + guideBG.marginVer()));
-			guideBG.y = Math.max(17, (Camera.main.height - guideBG.height())/2f);
-			guideBG.x = Camera.main.width - left - guideBG.width();
+			guideBG = Chrome.get(Chrome.Type.TOAST);
+			guideBG.size(126 + guideBG.marginHor(), Math.min(safeHeight - 18, 191 + guideBG.marginVer()));
+			guideBG.y = Math.max(insets.top + 17, insets.top + (safeHeight - guideBG.height())/2f);
+			guideBG.x = Camera.main.width - insets.right - (left - insets.left) - guideBG.width();
 			add(guideBG);
 
 			alchGuide = new WndJournal.AlchemyTab();
@@ -217,7 +229,7 @@ public class AlchemyScene extends PixelScene {
 			splitAlchGuide = false;
 		}
 		
-		RenderedTextBlock desc = PixelScene.renderTextBlock(6);
+		desc = PixelScene.renderTextBlock(6);
 		desc.maxWidth(w);
 		desc.text( Messages.get(AlchemyScene.class, "text") );
 		desc.setPos(left + (w - desc.width())/2, pos);
@@ -225,7 +237,7 @@ public class AlchemyScene extends PixelScene {
 		
 		pos += desc.height() + 6;
 
-		NinePatch inputBG = Chrome.get(Chrome.Type.TOAST_TR);
+		inputBG = Chrome.get(Chrome.Type.TOAST_TR);
 		inputBG.x = left + 6;
 		inputBG.y = pos;
 		inputBG.size(BTN_SIZE+8, 3*BTN_SIZE + 4 + 8);
@@ -411,9 +423,9 @@ public class AlchemyScene extends PixelScene {
 		
 		pos += 10;
 
-		if (Camera.main.height >= 280){
+		if (safeHeight >= 280){
 			//last elements get centered even with a split alch guide UI, as long as there's enough height
-			centerW = Camera.main.width/2;
+			centerW = insets.left + safeWidth/2f;
 		}
 
 		bubbleEmitter.pos(0,
@@ -436,7 +448,7 @@ public class AlchemyScene extends PixelScene {
 		energyLeft = PixelScene.renderTextBlock(energyText, 9);
 		energyLeft.setPos(
 				centerW - energyLeft.width()/2,
-				Camera.main.height - 8 - energyLeft.height()
+				energyRowTop(Camera.main.height, insets.bottom, energyLeft.height(), 16)
 		);
 		energyLeft.hardlight(0x44CCFF);
 		add(energyLeft);
@@ -522,11 +534,13 @@ public class AlchemyScene extends PixelScene {
 		sparkEmitter.autoKill = false;
 		add(sparkEmitter);
 
-		StyledButton btnGuide = new StyledButton( Chrome.Type.TOAST_TR, Messages.get(AlchemyScene.class,"guide")){
+		btnGuide = new StyledButton( Chrome.Type.TOAST_TR, Messages.get(AlchemyScene.class,"guide")){
 			@Override
 			protected void onClick() {
 				super.onClick();
-				if (Camera.main.width >= 300 && Camera.main.height >= PixelScene.MIN_HEIGHT_FULL){
+				RectF insets = getCommonInsets();
+				if (Camera.main.width - insets.left - insets.right >= 300
+						&& Camera.main.height - insets.top - insets.bottom >= PixelScene.MIN_HEIGHT_FULL){
 					splitAlchGuide = !splitAlchGuide;
 					ShatteredPixelDungeon.seamlessResetScene();
 				} else {
@@ -568,6 +582,7 @@ public class AlchemyScene extends PixelScene {
 		btnGuide.setPos(centerW - btnGuide.width()/2f, energyAdd.top()- btnGuide.height()-2);
 		align(btnGuide);
 		add(btnGuide);
+		onSafeInsetsChanged();
 
 		TrinketCatalyst cata = hero.belongings.getItem(TrinketCatalyst.class);
 		if (cata != null && cata.hasRolledTrinkets()){
@@ -589,6 +604,100 @@ public class AlchemyScene extends PixelScene {
 	public void update() {
 		super.update();
 		water.offset( 0, -5 * Game.elapsed );
+	}
+
+	static float energyRowTop(float screenHeight, float bottomInset,
+			float textHeight, float buttonHeight) {
+		return screenHeight - bottomInset - 8 - Math.max(textHeight, buttonHeight);
+	}
+
+	static float safeCenterShift(float oldLeading, float oldTrailing,
+			float newLeading, float newTrailing) {
+		return (newLeading - newTrailing - oldLeading + oldTrailing)/2f;
+	}
+
+	static float energyRowLeft(float center, float safeLeft, float safeRight,
+			float iconWidth, float textWidth, float buttonWidth) {
+		float rowWidth = iconWidth + textWidth + buttonWidth;
+		return Math.max(safeLeft, Math.min(center - textWidth/2f - iconWidth,
+				safeRight - rowWidth));
+	}
+
+	/** Called on the render thread when Android system bars change without resizing the surface. */
+	@Override
+	public void onSafeInsetsChanged() {
+		super.onSafeInsetsChanged();
+		if (energyLeft == null || energyIcon == null || energyAdd == null) return;
+
+		RectF insets = getCommonInsets();
+		float safeWidth = Camera.main.width - insets.left - insets.right;
+		if (layoutInsets != null) {
+			float dx = safeCenterShift(layoutInsets.left, layoutInsets.right,
+					insets.left, insets.right);
+			float dy = safeCenterShift(layoutInsets.top, layoutInsets.bottom,
+					insets.top, insets.bottom);
+			if (dx != 0 || dy != 0) {
+				centerW += dx;
+				if (desc != null) desc.setPos(desc.left() + dx, desc.top() + dy);
+				if (inputBG != null) {
+					inputBG.x += dx;
+					inputBG.y += dy;
+				}
+				for (int i = 0; i < inputs.length; i++) {
+					if (inputs[i] != null) inputs[i].setPos(inputs[i].left() + dx, inputs[i].top() + dy);
+					if (combines[i] != null) combines[i].setPos(combines[i].left() + dx, combines[i].top() + dy);
+					if (outputs[i] != null) outputs[i].setPos(outputs[i].left() + dx, outputs[i].top() + dy);
+				}
+				if (cancel != null) cancel.setPos(cancel.left() + dx, cancel.top() + dy);
+				if (repeat != null) repeat.setPos(repeat.left() + dx, repeat.top() + dy);
+				if (smokeEmitter != null && outputs[0] != null) {
+					smokeEmitter.pos(outputs[0].left() + (BTN_SIZE-16)/2f,
+							outputs[0].top() + (BTN_SIZE-16)/2f, 16, 16);
+				}
+				if (guideBG != null) {
+					guideBG.x += dx;
+					guideBG.y += dy;
+					if (alchGuide != null) {
+						alchGuide.moveKeepingScroll(guideBG.x + guideBG.marginLeft(),
+								guideBG.y + guideBG.marginTop());
+					}
+				}
+			}
+		}
+		layoutInsets = insets;
+		if (btnExit != null) {
+			btnExit.setPos(Camera.main.width - insets.right - btnExit.width(), insets.top);
+		}
+		if (title != null) {
+			title.setPos(insets.left + (safeWidth - title.reqWidth())/2f,
+					insets.top + (20 - title.height())/2f);
+			align(title);
+		}
+
+		float rowHeight = Math.max(energyLeft.height(), Math.max(energyIcon.height(), energyAdd.height()));
+		float rowTop = energyRowTop(Camera.main.height, insets.bottom, rowHeight, rowHeight);
+		float rowLeft = energyRowLeft(centerW, insets.left,
+				Camera.main.width - insets.right, energyIcon.width(),
+				energyLeft.width(), energyAdd.width());
+		energyIcon.x = rowLeft;
+		energyIcon.y = rowTop + (rowHeight - energyIcon.height())/2f;
+		align(energyIcon);
+		energyLeft.setPos(rowLeft + energyIcon.width(),
+				rowTop + (rowHeight - energyLeft.height())/2f);
+		energyAdd.setRect(energyLeft.right(),
+				rowTop + (rowHeight - energyAdd.height())/2f,
+				energyAdd.width(), energyAdd.height());
+		align(energyAdd);
+		if (btnGuide != null) {
+			btnGuide.setPos(Math.max(insets.left, Math.min(centerW - btnGuide.width()/2f,
+					Camera.main.width - insets.right - btnGuide.width())),
+					rowTop - btnGuide.height() - 2);
+			align(btnGuide);
+		}
+		if (sparkEmitter != null) {
+			sparkEmitter.pos(energyLeft.left(), energyLeft.top(),
+					energyLeft.width(), energyLeft.height());
+		}
 	}
 	
 	@Override
@@ -762,16 +871,7 @@ public class AlchemyScene extends PixelScene {
 				energyText += "+" + toolkit.availableEnergy();
 			}
 			energyLeft.text(energyText);
-			energyLeft.setPos(
-					centerW - energyLeft.width()/2,
-					Camera.main.height - 8 - energyLeft.height()
-			);
-
-			energyIcon.x = energyLeft.left() - energyIcon.width();
-			align(energyIcon);
-
-			energyAdd.setPos(energyLeft.right(), energyAdd.top());
-			align(energyAdd);
+			onSafeInsetsChanged();
 			
 			result = recipe.brew(ingredients);
 		}
@@ -972,16 +1072,7 @@ public class AlchemyScene extends PixelScene {
 			energyText += "+" + toolkit.availableEnergy();
 		}
 		energyLeft.text(energyText);
-		energyLeft.setPos(
-				centerW - energyLeft.width()/2,
-				Camera.main.height - 8 - energyLeft.height()
-		);
-
-		energyIcon.x = energyLeft.left() - energyIcon.width();
-		align(energyIcon);
-
-		energyAdd.setPos(energyLeft.right(), energyAdd.top());
-		align(energyAdd);
+		onSafeInsetsChanged();
 
 		bubbleEmitter.start(Speck.factory( Speck.BUBBLE ), 0.01f, 100 );
 		sparkEmitter.burst(SparkParticle.FACTORY, 20);

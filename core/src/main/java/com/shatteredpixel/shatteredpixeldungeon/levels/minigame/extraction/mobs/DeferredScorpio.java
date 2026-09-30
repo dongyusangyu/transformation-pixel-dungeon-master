@@ -1,8 +1,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.mobs;
 
+import com.watabou.utils.Bundle;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.RaidDroneSprites;
+
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Levitation;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Scorpio;
 import com.watabou.utils.Random;
 
@@ -10,6 +14,27 @@ import com.watabou.utils.Random;
  * A scorpio that attacks six times as often with low-damage strikes.
  */
 public class DeferredScorpio extends Scorpio {
+
+	{
+		spriteClass = RaidDroneSprites.Gunner.class;
+		properties.add(Property.MINIBOSS);
+		properties.add(Property.INORGANIC);
+		properties.remove(Property.DEMONIC);
+		flying = true;
+		immunities.add(Levitation.class);
+	}
+
+	@Override
+	public void restoreFromBundle(Bundle bundle) {
+		super.restoreFromBundle(bundle);
+		if (alignment == Alignment.ALLY) {
+			alignment = Alignment.ENEMY;
+			state = WANDERING;
+			enemy = null;
+			enemyID = -1;
+			target = -1;
+		}
+	}
 
 	public static final int ATTACKS_PER_TURN = 6;
 	public static final float ATTACK_INTERVAL_FACTOR = 1f / ATTACKS_PER_TURN;

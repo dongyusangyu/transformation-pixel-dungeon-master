@@ -36,7 +36,7 @@ public class EyeSprite extends MobSprite {
 
 	private int zapPos;
 
-	private Animation charging;
+	protected Animation charging;
 	private Emitter chargeParticles;
 	
 	public EyeSprite() {
@@ -133,7 +133,7 @@ public class EyeSprite extends MobSprite {
 			}
 			((Eye)ch).deathGaze();
 			ch.next();
-		} else if (anim == die){
+		} else if (anim == die && chargeParticles != null){
 			chargeParticles.killAndErase();
 		}
 	}

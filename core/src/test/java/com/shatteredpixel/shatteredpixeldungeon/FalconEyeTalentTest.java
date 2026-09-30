@@ -17,14 +17,15 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class FalconEyeTalentTest {
 
 	@Test
 	public void piercingRangeUsesCurrentViewDistance() {
-		assertEquals(6, Talent.falconEyePiercingDistance(1, 8, true));
-		assertEquals(8, Talent.falconEyePiercingDistance(2, 8, true));
+		assertEquals(4, Talent.falconEyePiercingDistance(1, 8, true));
+		assertEquals(6, Talent.falconEyePiercingDistance(2, 8, true));
 	}
 
 	@Test
@@ -35,8 +36,25 @@ public class FalconEyeTalentTest {
 
 	@Test
 	public void piercingRangeFollowsAlreadyAdjustedViewDistance() {
-		assertEquals(5, Talent.falconEyePiercingDistance(1, 7, true));
-		assertEquals(9, Talent.falconEyePiercingDistance(1, 12, true));
+		assertEquals(4, Talent.falconEyePiercingDistance(1, 7, true));
+		assertEquals(6, Talent.falconEyePiercingDistance(1, 12, true));
+		assertEquals(9, Talent.falconEyePiercingDistance(2, 12, true));
+	}
+
+	@Test
+	public void piercingRangeCanExceedTwelveTiles() {
+		assertEquals(10, Talent.falconEyePiercingDistance(1, 20, true));
+		assertEquals(15, Talent.falconEyePiercingDistance(2, 20, true));
+		assertEquals(15, Talent.falconEyePiercingDistance(1, 30, true));
+		assertEquals(23, Talent.falconEyePiercingDistance(2, 30, true));
+	}
+
+	@Test
+	public void piercingRangeHandlesMissingTalentAndMinimalSight() {
+		assertEquals(0, Talent.falconEyePiercingDistance(0, 8, true));
+		assertEquals(0, Talent.falconEyePiercingDistance(2, 0, true));
+		assertEquals(1, Talent.falconEyePiercingDistance(1, 1, true));
+		assertEquals(1, Talent.falconEyePiercingDistance(2, 1, true));
 	}
 
 	@Test
@@ -80,6 +98,47 @@ public class FalconEyeTalentTest {
 			level.updateFieldOfView(hero, fieldOfView);
 
 			assertTrue(fieldOfView[hero.pos]);
+		} finally {
+			Dungeon.level = previousLevel;
+			Dungeon.hero = previousHero;
+		}
+	}
+
+	@Test
+	public void highSightRevealsBehindWallsOnlyWithinThePiercingRadius() {
+		Level previousLevel = Dungeon.level;
+		Hero previousHero = Dungeon.hero;
+		try {
+			TestLevel level = new TestLevel();
+			level.blobs = new HashMap<>();
+			level.mobs = new HashSet<>();
+			level.heaps = new SparseArray<>();
+			level.setSize(45, 45);
+			Arrays.fill(level.map, Terrain.EMPTY);
+			for (int y = 0; y < level.height(); y++) {
+				level.map[23 + y * level.width()] = Terrain.WALL;
+			}
+			level.buildFlagMaps();
+			level.cleanWalls();
+			Hero hero = TestHeroFactory.create();
+			hero.HP = hero.HT = 10;
+			hero.pos = 22 + 22 * level.width();
+			hero.viewDistance = 20;
+			hero.subClass = HeroSubClass.NONE;
+			hero.mindVisionEnemies = new ArrayList<>();
+			LinkedHashMap<Talent, Integer> tier = new LinkedHashMap<>();
+			tier.put(Talent.FALCON_EYE, 2);
+			hero.talents.add(tier);
+			Dungeon.level = level;
+			Dungeon.hero = hero;
+			boolean[] fieldOfView = new boolean[level.length()];
+			level.updateFieldOfView(hero, fieldOfView);
+			assertTrue(fieldOfView[hero.pos + 15]);
+			assertFalse(fieldOfView[hero.pos + 16]);
+			tier.put(Talent.FALCON_EYE, 1);
+			level.updateFieldOfView(hero, fieldOfView);
+			assertTrue(fieldOfView[hero.pos + 10]);
+			assertFalse(fieldOfView[hero.pos + 11]);
 		} finally {
 			Dungeon.level = previousLevel;
 			Dungeon.hero = previousHero;

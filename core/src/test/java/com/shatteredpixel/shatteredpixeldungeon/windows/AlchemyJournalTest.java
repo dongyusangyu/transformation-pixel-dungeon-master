@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class AlchemyJournalTest {
@@ -51,7 +52,9 @@ public class AlchemyJournalTest {
 
 		assertTrue(quickRecipe.contains("case 9:"));
 		assertTrue(quickRecipe.contains("Recipe.weaponRecipes()"));
+		assertTrue(quickRecipe.contains("weaponCraftingGuideRecipes()"));
 		assertTrue(quickRecipe.contains("quickAlchemyEnabled = false"));
+		assertTrue(quickRecipe.contains("case 6:"));
 		assertTrue(recipes.contains("GreatGreatGreatsword.class"));
 		assertTrue(recipes.contains("Gungnir.class"));
 		assertTrue(recipes.contains("public static ArrayList<WeaponRecipe> weaponRecipes()"));
@@ -69,6 +72,16 @@ public class AlchemyJournalTest {
 		assertEquals("武器合成", chinese.getProperty(prefix + "title"));
 		assertTrue(defaults.getProperty(prefix + "body").contains("weapons"));
 		assertTrue(chinese.getProperty(prefix + "body").contains("武器"));
+		assertTrue(defaults.getProperty(prefix + "body").contains("Necronomicon"));
+		assertTrue(defaults.getProperty(prefix + "body").contains("Cursed Flame"));
+		assertTrue(chinese.getProperty(prefix + "body").contains("死灵之书"));
+		assertTrue(chinese.getProperty(prefix + "body").contains("魔焰法杖"));
+		assertFalse(loadJournalMessages("journal.properties")
+				.getProperty("journal.document.alchemy_guide.weapons.body")
+				.contains("Necronomicon"));
+		assertFalse(loadJournalMessages("journal_zh.properties")
+				.getProperty("journal.document.alchemy_guide.weapons.body")
+				.contains("死灵之书"));
 	}
 
 	private static Properties loadJournalMessages(String fileName) throws IOException {

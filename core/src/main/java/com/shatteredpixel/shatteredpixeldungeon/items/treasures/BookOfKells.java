@@ -5,6 +5,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 public class BookOfKells extends Treasures {
 
 	public BookOfKells() {
-		super(EXItemSpriteSheet.BOOK_OF_KELLS, CollectionRarity.UNCOMMON, 2500);
+		super(EXItemSpriteSheet.BOOK_OF_KELLS, CollectionRarity.COMMON, 700);
 	}
 }

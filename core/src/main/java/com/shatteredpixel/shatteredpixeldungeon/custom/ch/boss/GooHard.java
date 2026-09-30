@@ -271,7 +271,7 @@ public class GooHard extends Boss{
             Dungeon.level.drop( new GooBlob(), pos + ofs ).sprite.drop();
         }
 
-        Badges.validateBossSlain();
+        Badges.validateBossSlain(Badges.BossIdentity.GOO);
 
         yell( Messages.get(this, "defeated") );
     }

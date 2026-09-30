@@ -29,4 +29,10 @@ public class DamageIconResolverCursedFireTest {
         assertEquals(FloatingText.BURNING, DamageIconResolver.resolve(EnumSet.of(
                 DamageTag.MAGICAL, DamageTag.FIRE)));
     }
+
+    @Test
+    public void directMagicDamageUsesTheMagicIcon() {
+        assertEquals(FloatingText.MAGIC_DMG, DamageIconResolver.resolve(EnumSet.of(
+                DamageTag.MAGICAL)));
+    }
 }

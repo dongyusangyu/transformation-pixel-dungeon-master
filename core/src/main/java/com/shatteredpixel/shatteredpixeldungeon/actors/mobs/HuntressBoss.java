@@ -48,7 +48,11 @@ import com.shatteredpixel.shatteredpixeldungeon.items.armor.glyphs.Brimstone;
 import com.shatteredpixel.shatteredpixeldungeon.items.quest.MetalShard;
 import com.shatteredpixel.shatteredpixeldungeon.items.remains.BowFragment;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow;
-import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.Dart;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
+import com.shatteredpixel.shatteredpixeldungeon.effects.particles.GaleArrowParticle;
+import com.watabou.noosa.particles.Emitter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.HuntressBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.mechanics.Ballistica;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -438,15 +442,31 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	static Class<? extends Item> projectileClassFor(boolean gale) {
-		return gale ? Dart.class : SpiritBow.SpiritArrow.class;
+		return gale ? GaleArrowVFX.class : SpiritBow.SpiritArrow.class;
 	}
 
 	static Item projectileFor(boolean gale) {
 		if (gale) {
-			return new Dart();
+			return new GaleArrowVFX();
 		}
 		SpiritBow bow = new SpiritBow();
 		return bow.new SpiritArrow();
+	}
+
+	public static class GaleArrowVFX extends Item {
+		{ image = ItemSpriteSheet.SPIRIT_ARROW; }
+
+		@Override public ItemSprite.Glowing glowing() {
+			return new ItemSprite.Glowing(0x65358F, 0.15f);
+		}
+
+		@Override public Emitter emitter() {
+			Emitter result = new Emitter();
+			result.pos(5, 5, 0, 0);
+			result.fillTarget = false;
+			result.pour(GaleArrowParticle.FACTORY, 0.025f);
+			return result;
+		}
 	}
 
 	static boolean shouldDeferCustomActions(int paralysed, boolean sleeping,
@@ -875,16 +895,21 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 	}
 
 	public void finishLevelRestore(HuntressBossLevel level) {
-		validateRestoredPlantHunt();
+		validateRestoredPlantHunt(level);
 	}
 
 	private void validateRestoredPlantHunt() {
+		validateRestoredPlantHunt(null);
+	}
+
+	private void validateRestoredPlantHunt(HuntressBossLevel restoredLevel) {
 		if (!restoredPlantValidationPending) {
 			return;
 		}
 		restoredPlantValidationPending = false;
 		if (phase == Phase.WARDEN && plantHuntState == PlantHuntState.SELECTED
-				&& isMarkedPlantReachable(markedPlantCell)) {
+				&& (restoredLevel == null ? isMarkedPlantReachable(markedPlantCell)
+						: restoredLevel.isMarkedPlantReachable(this, markedPlantCell))) {
 			return;
 		}
 		plantHuntState = PlantHuntState.LOST_TRACK;
@@ -1944,7 +1969,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			Statistics.subLimation[2] = true;
 		}
 
-		Badges.validateHeroBossSlain();
+		Badges.validateHeroBossSlain(Badges.BossIdentity.HUNTRESS_HERO);
 		Statistics.bossScores[2] += 3000;
 		LloydsBeacon beacon = Dungeon.hero.belongings.getItem(LloydsBeacon.class);
 		if (beacon != null) {
@@ -2100,6 +2125,8 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 		private static final String HAWK_MODE = "hawk_mode";
 		private static final String RETREAT_TARGET_ID = "retreat_target_id";
+		private static final String PROTECTED_HITS = "protected_hits";
+		private int protectedHits = 2;
 
 		public enum HawkMode {
 			SEEKING,
@@ -2144,7 +2171,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 		{
 			spriteClass = SpiritHawk.HawkSprite.class;
-			HP = HT = 8;
+			HP = HT = 20;
 			EXP = 0;
 			defenseSkill = 18;
 			viewDistance = 8;
@@ -2162,6 +2189,19 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 
 		public DistractingHawk(Alignment huntressAlignment) {
 			alignment = huntressAlignment;
+		}
+
+		@Override
+		public void damage(int damage, Object source, DamageTag... tags) {
+			if (damage > 0 && protectedHits > 0 && isAlive()) {
+				protectedHits--;
+				if (sprite != null && sprite.visible) {
+					sprite.showStatus(CharSprite.POSITIVE,
+							Messages.get(Char.class, "invulnerable"));
+				}
+				return;
+			}
+			super.damage(damage, source, tags);
 		}
 
 		private boolean isHuntressFaction(Char target) {
@@ -2224,6 +2264,7 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 			super.storeInBundle(bundle);
 			bundle.put(HAWK_MODE, hawkMode);
 			bundle.put(RETREAT_TARGET_ID, retreatTargetId);
+			bundle.put(PROTECTED_HITS, protectedHits);
 		}
 
 		@Override
@@ -2233,6 +2274,12 @@ public class HuntressBoss extends Mob implements PhysicalRangedAttack {
 					? bundle.getEnum(HAWK_MODE, HawkMode.class) : HawkMode.SEEKING;
 			retreatTargetId = bundle.contains(RETREAT_TARGET_ID)
 					? bundle.getInt(RETREAT_TARGET_ID) : -1;
+			protectedHits = bundle.contains(PROTECTED_HITS)
+					? Math.max(0, Math.min(2, bundle.getInt(PROTECTED_HITS))) : 2;
+			if (HT == 8) {
+				HP = Math.min(20, Math.max(0, Math.round(HP * 20f / 8)));
+				HT = 20;
+			}
 		}
 
 		@Override

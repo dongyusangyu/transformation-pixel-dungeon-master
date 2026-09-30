@@ -51,6 +51,8 @@ import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfMagicMappi
 import com.shatteredpixel.shatteredpixeldungeon.items.scrolls.ScrollOfRemoveCurse;
 import com.shatteredpixel.shatteredpixeldungeon.items.spells.Alchemize;
 import com.shatteredpixel.shatteredpixeldungeon.items.stones.StoneOfAugmentation;
+import com.shatteredpixel.shatteredpixeldungeon.items.rings.Ring;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.MeleeWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.darts.TippedDart;
@@ -76,6 +78,31 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class SurfaceTownLevel extends Level {
+
+	@Override
+	public String tileName(int tile) {
+		switch (tile) {
+			case Terrain.EXIT: return Messages.get(SurfaceTownLevel.class, "dungeon_entrance_name");
+			case Terrain.ENTRANCE:
+			case Terrain.ENTRANCE_SP: return Messages.get(SurfaceTownLevel.class, "tower_entrance_name");
+			case Terrain.REGION_DECO:
+			case Terrain.REGION_DECO_ALT: return Messages.get(SurfaceTownLevel.class, "region_deco_name");
+			default: return super.tileName(tile);
+		}
+	}
+
+	@Override
+	public String tileDesc(int tile) {
+		switch (tile) {
+			case Terrain.EXIT: return Messages.get(SurfaceTownLevel.class, "dungeon_entrance_desc");
+			case Terrain.ENTRANCE:
+			case Terrain.ENTRANCE_SP: return Messages.get(SurfaceTownLevel.class, "tower_entrance_desc");
+			case Terrain.BOOKSHELF: return Messages.get(SurfaceTownLevel.class, "bookshelf_desc");
+			case Terrain.REGION_DECO:
+			case Terrain.REGION_DECO_ALT: return Messages.get(SurfaceTownLevel.class, "region_deco_desc");
+			default: return super.tileDesc(tile);
+		}
+	}
 
 	private static final int WIDTH = 46;
 	private static final int HEIGHT = 34;
@@ -691,23 +718,15 @@ public class SurfaceTownLevel extends Level {
 				Dungeon.hero == null ? null : Dungeon.hero.belongings);
 
 		MeleeWeapon weapon = Generator.randomWeapon(4);
-		weapon.enchant(null);
-		weapon.cursed = false;
-		weapon.level(0);
-		weapon.identify(false);
+		sanitizeSurfaceShopEquipment(weapon);
 		items.add(weapon);
 
 		Armor armor = Generator.randomArmor(4);
-		armor.cursed = false;
-		armor.level(0);
-		armor.identify(false);
+		sanitizeSurfaceShopEquipment(armor);
 		items.add(armor);
 
 		MissileWeapon missile = Generator.randomMissile(4);
-		missile.enchant(null);
-		missile.cursed = false;
-		missile.level(0);
-		missile.identify(false);
+		sanitizeSurfaceShopEquipment(missile);
 		items.add(missile);
 
 		items.add(TippedDart.randomTipped(2));
@@ -748,6 +767,20 @@ public class SurfaceTownLevel extends Level {
 
 		Random.shuffle(items);
 		return items;
+	}
+
+	static <T extends Item> T sanitizeSurfaceShopEquipment(T item) {
+		if (item instanceof Weapon) {
+			((Weapon) item).enchant(null);
+		} else if (item instanceof Armor) {
+			((Armor) item).inscribe(null);
+		}
+		if (item instanceof Ring || item instanceof Weapon || item instanceof Armor) {
+			item.cursed = false;
+			item.level(0);
+			item.identify(false);
+		}
+		return item;
 	}
 
 	static void appendHikingBackpackIfNeeded(ArrayList<Item> stock, Belongings belongings) {

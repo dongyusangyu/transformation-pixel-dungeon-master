@@ -971,7 +971,7 @@ public class Generator {
 			case ARTIFACT:
 				Item item = randomArtifact();
 				//if we're out of artifacts, return a ring instead.
-				return item != null ? item : random(Category.RING);
+				return item != null ? item : randomUsingDefaults(Category.RING);
 			default:
 				if (cat.defaultProbs != null && cat.seed != null){
 					Random.pushGenerator(cat.seed);

@@ -33,10 +33,24 @@ public class PalermoSwordTest {
 	@Test
 	public void fourthSuccessfulHitRefreshesBothOneShotEffects() {
 		PalermoSword.HitState state = new PalermoSword.HitState();
-		assertFalse(state.recordEnemyHit());
-		assertFalse(state.recordEnemyHit());
-		assertFalse(state.recordEnemyHit());
-		assertTrue(state.recordEnemyHit());
+		assertFalse(state.recordEnemyHit(true));
+		assertFalse(state.recordEnemyHit(true));
+		assertFalse(state.recordEnemyHit(true));
+		assertTrue(state.recordEnemyHit(true));
+		assertEquals(0, state.hitsSinceReward());
+	}
+
+	@Test
+	public void missedAttacksDoNotAdvanceTheRewardCounter() {
+		PalermoSword.HitState state = new PalermoSword.HitState();
+		assertFalse(state.recordEnemyHit(true));
+		assertFalse(state.recordEnemyHit(true));
+		assertFalse(state.recordEnemyHit(false));
+		assertEquals(2, state.hitsSinceReward());
+		assertFalse(state.recordEnemyHit(true));
+		assertFalse(state.recordEnemyHit(false));
+		assertEquals(3, state.hitsSinceReward());
+		assertTrue(state.recordEnemyHit(true));
 		assertEquals(0, state.hitsSinceReward());
 	}
 
@@ -114,6 +128,24 @@ public class PalermoSwordTest {
 	}
 
 	@Test
+	public void xiexiangIsFreeIfAccelerationWasPresentOrEarnedDuringTheSequence() {
+		assertEquals(0f, xiexiangDelay(true, false), 0f);
+		assertEquals(0f, xiexiangDelay(false, true), 0f);
+		assertEquals(1f, xiexiangDelay(false, false), 0f);
+	}
+
+	private static float xiexiangDelay(boolean acceleratedAtStart, boolean acceleratedDuringSequence) {
+		try {
+			return ((Number) PalermoSword.class.getDeclaredMethod("xiexiangDelay",
+					float.class, boolean.class, boolean.class).invoke(null, 1f,
+					acceleratedAtStart, acceleratedDuringSequence))
+					.floatValue();
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError("Xiexiang must expose its acceleration timing rule", e);
+		}
+	}
+
+	@Test
 	public void xiexiangStopsAsSoonAsTheHeroCanNoLongerAct() {
 		assertTrue(PalermoSword.xiexiangCanContinue(true, 0, false));
 		assertFalse(PalermoSword.xiexiangCanContinue(false, 0, false));
@@ -168,11 +200,11 @@ public class PalermoSwordTest {
 		String source = new String(Files.readAllBytes(sourcePath()), StandardCharsets.UTF_8);
 		int movementStart = source.indexOf("private void moveForXiexiang");
 		int movementEnd = source.indexOf("private Char findXiexiangTarget", movementStart);
-		String movement = source.substring(movementStart, movementEnd);
+		String movement = source.substring(movementStart, movementEnd).replaceAll("\\s+", "");
 
-		assertTrue(movement.contains("if (firstStrike) strikeXiexiangTarget(context, context.target);\n"
-				+ "\t\t\t\telse strikeXiexiangTarget(context, context.target);"));
-		assertFalse(movement.contains("else resolveXiexiangStrike(context);"));
+		assertTrue(movement.contains("if(firstStrike)strikeXiexiangTarget(context,context.target);"
+				+ "elsestrikeXiexiangTarget(context,context.target);"));
+		assertFalse(movement.contains("elseresolveXiexiangStrike(context)"));
 	}
 
 	private static Path sourcePath() {

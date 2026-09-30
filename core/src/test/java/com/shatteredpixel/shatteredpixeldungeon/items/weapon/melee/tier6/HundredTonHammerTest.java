@@ -56,6 +56,27 @@ public class HundredTonHammerTest {
 	}
 
 	@Test
+	public void knockbackUpgradePreviewAppearsOnlyAsAWeaponFeature() {
+		HundredTonHammer weapon = new HundredTonHammer();
+		assertEquals(1, weapon.upgradeFeatureStats(3).size());
+		assertEquals("ability_ambush_damage",
+				weapon.upgradeAbilityStats(3).get(0).type.messageKey());
+		assertEquals("21-54", weapon.upgradeAbilityStats(3).get(0).value);
+	}
+
+	@Test
+	public void ambushAbilityPreviewUsesTheSameAugmentAndBonusAsAbilityInfo() {
+		HundredTonHammer weapon = new HundredTonHammer();
+		assertEquals("13-28", weapon.upgradeAbilityStats(0).get(0).value);
+		assertEquals("16-37", weapon.upgradeAbilityStats(1).get(0).value);
+		weapon.augment = com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon.Augment.DAMAGE;
+		int bonus = weapon.augment.damageFactor(HundredTonHammer.ambushDamageBonus(3));
+		assertEquals((weapon.augment.damageFactor(weapon.min(3)) + bonus) + "-"
+				+ (weapon.augment.damageFactor(weapon.max(3)) + bonus),
+				weapon.upgradeAbilityStats(3).get(0).value);
+	}
+
+	@Test
 	public void ambushDamageAndSplashUseDocumentedFormulas() {
 		assertEquals(7, HundredTonHammer.ambushDamageBonus(0));
 		assertEquals(12, HundredTonHammer.ambushDamageBonus(3));

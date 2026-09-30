@@ -17,7 +17,6 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
-import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Bundle;
 
@@ -106,11 +105,17 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
         return Math.max(0, augment.damageFactor(max(level)) / 2);
     }
 
+    @Override
+    public int indicatorColor() {
+        return 0x3D93BB;
+    }
+
     private static boolean directAttackDamage(DamageTag... tags) {
-        boolean hasDamageType = false;
+        boolean hasPhysicalDamage = false;
         if (tags != null) {
             for (DamageTag tag : tags) {
-                if (tag == DamageTag.PHYSICAL || tag == DamageTag.MAGICAL) hasDamageType = true;
+                if (tag == DamageTag.PHYSICAL) hasPhysicalDamage = true;
+                if (tag == DamageTag.MAGICAL) return false;
                 if (tag == DamageTag.BLEEDING || tag == DamageTag.TOXIC || tag == DamageTag.CORROSION
                         || tag == DamageTag.POISON || tag == DamageTag.OOZE || tag == DamageTag.DEFERRED
                         || tag == DamageTag.HUNGER || tag == DamageTag.PLAGUE || tag == DamageTag.CURSED_FIRE) {
@@ -118,7 +123,7 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
                 }
             }
         }
-        return hasDamageType;
+        return hasPhysicalDamage;
     }
 
     public static boolean canReleaseAffect(boolean alive, boolean enemy, boolean inHeroFov) {
@@ -282,7 +287,7 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
         clearEnergy();
         syncEnergyTracker(hero);
         Invisibility.dispel(hero);
-        Sample.INSTANCE.play(Assets.Sounds.HIT_CRUSH, 1f, 0.75f);
+        Sample.INSTANCE.play(Assets.Sounds.BLAST, 1f, 0.75f);
         if (hero.sprite != null) hero.sprite.operate(hero.pos);
         hero.spendAndNext(Actor.TICK);
     }
@@ -426,15 +431,6 @@ public class MountainGuard extends Greatshield implements WeaponSpecialAction {
                     ? "desc_ready" : "desc", current);
         }
 
-        @Override
-        public void tintIcon(Image icon) {
-            MountainGuard guard = target instanceof Hero ? primaryGuard((Hero) target) : null;
-            if (guard != null && guard.isReleaseReady()) {
-                icon.tint(0x59d3dc, 0.8f);
-            } else {
-                icon.tint(0x5b6970, 0.8f);
-            }
-        }
     }
 
     public static class MountainWallCounter extends FlavourBuff {

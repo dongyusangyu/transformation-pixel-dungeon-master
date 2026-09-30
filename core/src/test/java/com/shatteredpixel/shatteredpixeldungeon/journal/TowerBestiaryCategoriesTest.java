@@ -25,6 +25,19 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.PestilenceKnig
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.GentlemanElf;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.HungerKnight;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.CursedFlameTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.AbyssExplosiveTrap;
+import com.watabou.utils.Bundle;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.DigestionTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.GrimTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.InfernalTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.MaliceTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RedCrossTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RimeTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.RoastSheepTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.SoulScorchTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.TransformationTrap;
+import com.shatteredpixel.shatteredpixeldungeon.levels.traps.WarpingTrap;
 
 import org.junit.Test;
 
@@ -48,8 +61,32 @@ public class TowerBestiaryCategoriesTest {
 	public void towerCategoriesAreTheFinalBestiaryGroups() {
 		Bestiary[] categories = Bestiary.values();
 
-		assertSame(Bestiary.TOWER_MOBS, categories[categories.length - 2]);
-		assertSame(Bestiary.TOWER_BOSSES, categories[categories.length - 1]);
+		assertSame(Bestiary.TOWER_MOBS, categories[categories.length - 3]);
+		assertSame(Bestiary.TOWER_BOSSES, categories[categories.length - 2]);
+		assertEquals("TOWER_TRAPS", categories[categories.length - 1].name());
+	}
+
+	@Test
+	public void towerTrapsHaveTheirOwnOrderedCategoryAndStayOutOfRegularTrapList() {
+		Bestiary towerTraps = null;
+		for (Bestiary category : Bestiary.values()) {
+			if ("TOWER_TRAPS".equals(category.name())) towerTraps = category;
+		}
+		assertTrue("missing tower trap category", towerTraps != null);
+		assertEquals(Arrays.asList(RoastSheepTrap.class, RedCrossTrap.class, MaliceTrap.class,
+				InfernalTrap.class, RimeTrap.class, DigestionTrap.class, TransformationTrap.class,
+				AbyssExplosiveTrap.class),
+				new ArrayList<>(towerTraps.entities()));
+		for (Class<?> trap : towerTraps.entities()) {
+			assertTrue(!Bestiary.TRAP.entities().contains(trap));
+		}
+	}
+
+	@Test
+	public void cursedFlameAndSoulScorchFollowTheirRelatedRegularTraps() {
+		ArrayList<Class<?>> traps = new ArrayList<>(Bestiary.TRAP.entities());
+		assertEquals(traps.indexOf(WarpingTrap.class) + 1, traps.indexOf(CursedFlameTrap.class));
+		assertEquals(traps.indexOf(GrimTrap.class) + 1, traps.indexOf(SoulScorchTrap.class));
 	}
 
 	@Test
@@ -383,6 +420,60 @@ public class TowerBestiaryCategoriesTest {
 				chinese.getProperty("journal.bestiary.tower_mobs.title"));
 		assertEquals("高塔 Boss",
 				chinese.getProperty("journal.bestiary.tower_bosses.title"));
+		assertEquals("tower traps", defaults.getProperty("journal.bestiary.tower_traps.title"));
+		assertEquals("高塔陷阱", chinese.getProperty("journal.bestiary.tower_traps.title"));
+	}
+
+	@Test
+	public void towerTrapDiscoveryHintsExistInDefaultAndChinese() throws IOException {
+		Properties defaults = loadLevelMessages("levels.properties");
+		Properties chinese = loadLevelMessages("levels_zh.properties");
+		String[] traps = {"roastsheeptrap", "redcrosstrap", "malicetrap", "infernaltrap",
+				"rimetrap", "digestiontrap", "transformationtrap", "abyssexplosivetrap"};
+		for (String trap : traps) {
+			assertEquals("You can randomly find this trap in the tower.",
+					defaults.getProperty("levels.traps." + trap + ".discover_hint"));
+			assertEquals("你可在高塔中随机发现该陷阱。",
+					chinese.getProperty("levels.traps." + trap + ".discover_hint"));
+		}
+	}
+
+	@Test
+	public void oldAbyssTrapDiscoveryAndEncounterCountRestoreIntoTowerCategory() {
+		Bundle original = new Bundle();
+		Bestiary.store(original);
+		Bundle legacy = new Bundle();
+		legacy.put("bestiary_classes", new Class<?>[]{AbyssExplosiveTrap.class});
+		legacy.put("bestiary_seen", new boolean[]{true});
+		legacy.put("bestiary_encounters", new int[]{7});
+		try {
+			Bestiary.restore(legacy);
+			assertTrue(Bestiary.TOWER_TRAPS.entities().contains(AbyssExplosiveTrap.class));
+			assertTrue(Bestiary.isSeen(AbyssExplosiveTrap.class));
+			assertEquals(7, Bestiary.encounterCount(AbyssExplosiveTrap.class));
+			Bundle roundTrip = new Bundle();
+			Bestiary.store(roundTrip);
+			Bestiary.restore(roundTrip);
+			assertTrue(Bestiary.isSeen(AbyssExplosiveTrap.class));
+			assertEquals(7, Bestiary.encounterCount(AbyssExplosiveTrap.class));
+		} finally {
+			legacy.put("bestiary_seen", new boolean[]{false});
+			legacy.put("bestiary_encounters", new int[]{0});
+			Bestiary.restore(legacy);
+			Bestiary.restore(original);
+		}
+	}
+
+	@Test
+	public void towerCreaturesHaveTowerDiscoveryHintsInBothLanguages() throws IOException {
+		Properties defaults = loadActorMessages("actors.properties");
+		Properties chinese = loadActorMessages("actors_zh.properties");
+		String[] keys = {"actors.mobs.tmobs.alienatedprismaticguard.discover_hint",
+				"actors.mobs.tmobs.runespinner.discover_hint", "actors.mobs.tboss.gentlemanelf.discover_hint"};
+		for (String key : keys) {
+			assertEquals("You can encounter this enemy in the tower.", defaults.getProperty(key));
+			assertEquals("你可在高塔中遭遇该敌人。", chinese.getProperty(key));
+		}
 	}
 
 	private static Properties loadJournalMessages(String fileName) throws IOException {
@@ -394,6 +485,15 @@ public class TowerBestiaryCategoriesTest {
 			messages.load(reader);
 		}
 		return messages;
+	}
+
+	private static Properties loadLevelMessages(String fileName) throws IOException {
+		Path source = coreDirectory().resolve("src/main/assets/messages/levels").resolve(fileName);
+		Properties properties = new Properties();
+		try (Reader reader = Files.newBufferedReader(source, StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
+		return properties;
 	}
 
 	private static Properties loadActorMessages(String fileName) throws IOException {

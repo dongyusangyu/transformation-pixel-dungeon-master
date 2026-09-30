@@ -659,7 +659,7 @@ public class DwarfKing extends Mob {
 			}
 		}
 
-		Badges.validateBossSlain();
+		Badges.validateBossSlain(Badges.BossIdentity.DWARF_KING);
         Badges.validatePrincessUnlock();
 		if (Statistics.qualifiedForBossChallengeBadge){
 			Badges.validateBossChallengeCompleted();

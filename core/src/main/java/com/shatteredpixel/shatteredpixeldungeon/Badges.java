@@ -329,6 +329,18 @@ public class Badges {
 			return Messages.get(this, name()+".desc");
 		}
 	}
+
+	/** Identifies the boss that was actually defeated for badge validation. */
+	public enum BossIdentity {
+		GOO,
+		TENGU,
+		DM300,
+		DWARF_KING,
+		YOG_DZEWA,
+		WARRIOR_HERO,
+		ROGUE_HERO,
+		HUNTRESS_HERO
+	}
 	
 	private static HashSet<Badge> global;
 	private static HashSet<Badge> local = new HashSet<>();
@@ -516,6 +528,12 @@ public class Badges {
 				global = new HashSet<>();
 			}
 		}
+	}
+
+	public static void reloadGlobal() {
+		global = null;
+		saveNeeded = false;
+		loadGlobal();
 	}
 
 	public static void saveGlobal(){
@@ -1076,42 +1094,17 @@ public class Badges {
         thirdBossSubclassBadges.put(HeroSubClass.PIOUS, Badge.BOSS_SLAIN_3_PIOUS);
 
 	}
-    public static void validateHeroBossSlain() {
-		validateBossSlain();
-		award(heroBossBadge(Dungeon.depth));
+	public static void validateHeroBossSlain(BossIdentity boss) {
+		validateBossSlain(boss);
+		Badge badge = heroBossBadge(boss);
+		if (badge != null) award(badge);
 	}
 	
-	public static void validateBossSlain() {
-		Badge badge = bossSlainBadge(Dungeon.depth);
-		switch (Dungeon.depth) {
-		case 5:
-			if(hero.heroClass== HeroClass.SLIMEGIRL){
-				award(Badge.HEROBOSS_COUNTER_1);
-			}
-			break;
-		case 10:
-			if(hero.heroClass== HeroClass.NINJA){
-				award(Badge.HEROBOSS_COUNTER_2);
-			}
-			break;
-		case 15:
-			if(hero.heroClass== HeroClass.DM400){
-				award(Badge.HEROBOSS_COUNTER_3);
-			}
-			break;
-		case 20:
-			if(hero.heroClass== HeroClass.PRINCESS){
-				award(Badge.HEROBOSS_COUNTER_4);
-			}
-			break;
-        case 25:
-            if(hero.heroClass== HeroClass.FRIAR){
-				award(Badge.HEROBOSS_COUNTER_5);
-            }
-            break;
-		}
+	public static void validateBossSlain(BossIdentity boss) {
+		if (boss == null) return;
 
-		
+		award(heroBossCounterBadge(boss, hero.heroClass));
+		Badge badge = bossSlainBadge(boss);
 		if (badge != null) {
 			award(badge);
 			
@@ -1165,6 +1158,49 @@ public class Badges {
 			}
 
 		}
+	}
+
+	static Badge bossSlainBadge(BossIdentity boss) {
+		switch (boss) {
+			case GOO:
+		case WARRIOR_HERO:
+				return Badge.BOSS_SLAIN_1;
+			case TENGU:
+			case ROGUE_HERO:
+				return Badge.BOSS_SLAIN_2;
+			case DM300:
+		case HUNTRESS_HERO:
+				return Badge.BOSS_SLAIN_3;
+			case DWARF_KING:
+				return Badge.BOSS_SLAIN_4;
+			case YOG_DZEWA:
+			default:
+				return null;
+		}
+	}
+
+	static Badge heroBossBadge(BossIdentity boss) {
+		switch (boss) {
+			case WARRIOR_HERO: return Badge.HEROBOSS_SLAIN_1;
+			case ROGUE_HERO: return Badge.HEROBOSS_SLAIN_2;
+			case HUNTRESS_HERO: return Badge.HEROBOSS_SLAIN_3;
+			default: return null;
+		}
+	}
+
+	static Badge heroBossCounterBadge(BossIdentity boss, HeroClass heroClass) {
+		if (boss == BossIdentity.GOO && heroClass == HeroClass.SLIMEGIRL) {
+			return Badge.HEROBOSS_COUNTER_1;
+		} else if (boss == BossIdentity.TENGU && heroClass == HeroClass.NINJA) {
+			return Badge.HEROBOSS_COUNTER_2;
+		} else if (boss == BossIdentity.DM300 && heroClass == HeroClass.DM400) {
+			return Badge.HEROBOSS_COUNTER_3;
+		} else if (boss == BossIdentity.DWARF_KING && heroClass == HeroClass.PRINCESS) {
+			return Badge.HEROBOSS_COUNTER_4;
+		} else if (boss == BossIdentity.YOG_DZEWA && heroClass == HeroClass.FRIAR) {
+			return Badge.HEROBOSS_COUNTER_5;
+		}
+		return null;
 	}
 
 	public static void validateBossChallengeCompleted(){

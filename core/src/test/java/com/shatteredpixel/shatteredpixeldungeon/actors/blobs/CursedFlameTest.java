@@ -155,10 +155,10 @@ public class CursedFlameTest {
         try {
             CursedFlame flame = Blob.seed(CENTER, 2, CursedFlame.class);
             flame.act();
-            assertEquals(2, target.hits); // environment + immediate new burn
+            assertEquals(1, target.hits); // the flame cell deals its environmental hit
             assertNotNull(target.buff(CursedBurning.class));
             flame.act();
-            assertEquals(4, target.hits); // exactly one environment and one refresh
+            assertEquals(2, target.hits); // each blob tick deals one environmental hit
         } finally { Actor.remove(target); }
     }
 

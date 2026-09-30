@@ -522,7 +522,7 @@ public class RogueBoss extends Mob implements PhysicalRangedAttack {
                 Statistics.subLimation[1] = true;
                 Dungeon.level.drop( new ScrollOfSublimation().type("ROGUE"), pos ).sprite.drop();
             }
-            Badges.validateHeroBossSlain();
+            Badges.validateHeroBossSlain(Badges.BossIdentity.ROGUE_HERO);
             if (Statistics.qualifiedForBossChallengeBadge){
                 Badges.validateBossChallengeCompleted();
             }

@@ -334,7 +334,7 @@ public class WarriorBoss extends Mob {
             level.drop( new Food(), pos + ofs ).sprite.drop( pos );
         }
 
-        Badges.validateHeroBossSlain();
+        Badges.validateHeroBossSlain(Badges.BossIdentity.WARRIOR_HERO);
         /*
         if (Statistics.qualifiedForBossChallengeBadge){
             Badges.validateBossChallengeCompleted();

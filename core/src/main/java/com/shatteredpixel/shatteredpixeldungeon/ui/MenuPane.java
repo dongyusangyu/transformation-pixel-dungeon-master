@@ -46,6 +46,7 @@ import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.DeviceCompat;
+import com.watabou.utils.RectF;
 
 public class MenuPane extends Component {
 
@@ -246,8 +247,15 @@ public class MenuPane extends Component {
         }
 
 
-		danger.setPos( x + WIDTH - danger.width(), y + bg.height + 1 );
-		danger.setSize( camera.width - danger.width(), danger.height());
+		RectF dangerBounds = dangerBounds(x, y, camera.width, bg.height);
+		danger.setRect(dangerBounds.left, dangerBounds.top,
+				dangerBounds.width(), dangerBounds.height());
+	}
+
+	static RectF dangerBounds(float x, float y, float cameraWidth, float backgroundHeight) {
+		float left = x + WIDTH - Tag.SIZE;
+		float top = y + backgroundHeight + 1;
+		return new RectF(left, top, Math.max(left + Tag.SIZE, cameraWidth), top + DangerIndicator.HEIGHT);
 	}
 
 	public void pickup(Item item, int cell) {

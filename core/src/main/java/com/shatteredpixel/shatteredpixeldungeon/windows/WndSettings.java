@@ -256,7 +256,13 @@ public class WndSettings extends WndTabbed {
 			sep1 = new ColorBlock(1, 1, 0xFF000000);
 			add(sep1);
 
-			chkFullscreen = new CheckBox( Messages.get(this, "fullscreen") ) {
+			String fullscreenText = Messages.get(this, "fullscreen");
+			if (DeviceCompat.isAndroid()) {
+				fullscreenText = Messages.get(this, "hide_navigation");
+			} else if (DeviceCompat.isiOS()) {
+				fullscreenText = Messages.get(this, "hide_gesture");
+			}
+			chkFullscreen = new CheckBox( fullscreenText ) {
 				@Override
 				protected void onClick() {
 					super.onClick();
@@ -1026,7 +1032,22 @@ public class WndSettings extends WndTabbed {
 				@Override
 				protected void onClick() {
 					super.onClick();
-					showRestoreInput();
+					if (CloudSyncService.hasPendingRestore()) {
+						ShatteredPixelDungeon.scene().addToFront(new WndOptions(
+								Icons.get(Icons.WARNING), Messages.get(DataTab.class, "sync_confirm_title"),
+								Messages.get(DataTab.class, "sync_pending_body"),
+								Messages.get(DataTab.class, "sync_confirm"),
+								Messages.get(DataTab.class, "sync_cancel")) {
+							@Override protected void onSelect(int index) {
+								if (index != 0) return;
+								btnSyncData.enable(false);
+								btnSyncData.text(Messages.get(DataTab.class, "cloud_working"));
+								CloudSyncService.resumePendingRestore(createRestoreCallback());
+							}
+						});
+					} else {
+						showRestoreInput();
+					}
 				}
 			};
 			btnSyncData.icon(Icons.get(Icons.PASTE));
@@ -1122,9 +1143,7 @@ public class WndSettings extends WndTabbed {
 			//add(btnImportData);
 
 			if (CloudSyncService.hasPendingRestore()) {
-				btnSyncData.enable(false);
-				btnSyncData.text(Messages.get(DataTab.class, "cloud_working"));
-				CloudSyncService.resumePendingRestore(createRestoreCallback());
+				btnSyncData.text(Messages.get(DataTab.class, "sync_pending"));
 			}
 		}
 
@@ -1303,6 +1322,9 @@ public class WndSettings extends WndTabbed {
 						case NETWORK:
 							message = Messages.get(DataTab.class, "sync_network_failed");
 							break;
+						case STALE:
+							message = Messages.get(DataTab.class, "sync_stale");
+							break;
 						default:
 							message = Messages.get(DataTab.class, "sync_invalid_response");
 							break;
@@ -1314,7 +1336,8 @@ public class WndSettings extends WndTabbed {
 
 		private void resetRestoreButton() {
 			btnSyncData.enable(true);
-			btnSyncData.text(Messages.get(DataTab.class, "sync_data"));
+			btnSyncData.text(Messages.get(DataTab.class,
+					CloudSyncService.hasPendingRestore() ? "sync_pending" : "sync_data"));
 		}
 
 		private void updateCloudUUIDText() {

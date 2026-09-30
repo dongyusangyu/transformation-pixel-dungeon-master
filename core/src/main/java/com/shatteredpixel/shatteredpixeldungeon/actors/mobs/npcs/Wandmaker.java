@@ -130,11 +130,7 @@ public class Wandmaker extends NPC {
 			Dungeon.level.drop(genLowValueConsumable(), Dungeon.hero.pos).sprite.drop();
 			Buff.affect(this,Talent.SuckerPunchTracker.class);
 		}
-		if (Quest.given && !Quest.active()) {
-			return true;
-		}
-
-		if (Quest.given) {
+		if (Quest.shouldHandleInteraction(Quest.given, Quest.active())) {
 			Item item = Quest.itemForQuest(Dungeon.hero.belongings.backpack, Quest.type);
 
 			if (item != null) {
@@ -286,6 +282,11 @@ public class Wandmaker extends NPC {
 			return itemClass != null && (CorpseDust.class.isAssignableFrom(itemClass)
 					|| Embers.class.isAssignableFrom(itemClass)
 					|| Rotberry.Seed.class.isAssignableFrom(itemClass));
+		}
+
+		static boolean shouldHandleInteraction(boolean questGiven, boolean encounterActive) {
+			// Encounter activity controls quest-room state and music, not NPC turn-in availability.
+			return questGiven;
 		}
 
 		static Item itemForQuest(Bag backpack, int questType) {

@@ -45,6 +45,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 
 	protected int xOffset;
 	protected int yOffset;
+	private RectF positionedSafeInsets;
 
 	protected PointerArea blocker;
 	protected ShadowBox shadow;
@@ -100,6 +101,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 		add( chrome );
 
 		RectF insets = Game.platform.getSafeInsets(PlatformSupport.INSET_BLK);
+		positionedSafeInsets = new RectF(insets);
 		int screenW = (int)(Game.width - insets.left - insets.right);
 		int screenH = (int)(Game.height - insets.top - insets.bottom);
 
@@ -132,6 +134,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 		camera.resize( (int)chrome.width, (int)chrome.height );
 
 		RectF insets = Game.platform.getSafeInsets(PlatformSupport.INSET_BLK);
+		positionedSafeInsets = new RectF(insets);
 		int screenW = (int)(Game.width - insets.left - insets.right);
 		int screenH = (int)(Game.height - insets.top - insets.bottom);
 
@@ -146,8 +149,42 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 		shadow.boxRect( camera.x / camera.zoom, camera.y / camera.zoom, chrome.width(), chrome.height );
 	}
 
+	/** Recenter an open window when system bars change, keeping its contents intact. */
+	public void onSafeInsetsChanged() {
+		onSafeInsetsChanged(Game.platform.getSafeInsets(PlatformSupport.INSET_BLK));
+	}
+
+	public void onSafeInsetsChanged(RectF insets) {
+		if (positionedSafeInsets == null) {
+			positionedSafeInsets = new RectF(insets);
+			return;
+		}
+		int screenW = (int)(Game.width - insets.left - insets.right);
+		int screenH = (int)(Game.height - insets.top - insets.bottom);
+		camera.x = (int)(screenW - camera.screenWidth()) / 2;
+		camera.x += insets.left + xOffset * camera.zoom;
+		camera.y = (int)(screenH - camera.screenHeight()) / 2;
+		camera.y += insets.top + yOffset * camera.zoom;
+		positionedSafeInsets.set(insets.left, insets.top, insets.right, insets.bottom);
+		shadow.boxRect(camera.x / camera.zoom, camera.y / camera.zoom,
+				chrome.width(), chrome.height());
+	}
+
+	static int safeCenteredX(int screenWidth, float windowWidth, RectF insets) {
+		return (int)(insets.left + (screenWidth - insets.left - insets.right - windowWidth)/2f);
+	}
+
+	static int safeCenteredY(int screenHeight, float windowHeight, RectF insets) {
+		return (int)(insets.top + (screenHeight - insets.top - insets.bottom - windowHeight)/2f);
+	}
+
 	public Point getOffset(){
 		return new Point(xOffset, yOffset);
+	}
+
+	/** Whether GameScene should inherit the previous inventory window offset. */
+	public boolean inheritsPreviousOffset() {
+		return true;
 	}
 
 	public final void offset( Point offset ){

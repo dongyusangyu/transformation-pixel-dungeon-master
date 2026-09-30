@@ -187,6 +187,14 @@ public class DemonTailWhip extends MeleeWeapon {
 	}
 
 	@Override
+	public java.util.ArrayList<UpgradeAbilityStat> upgradeFeatureStats(int level) {
+		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
+		result.add(abilityStat(UpgradeAbilityStatType.ATTACK_RANGE,
+				Integer.toString(BASE_RANGE + reachBonusForLevel(level))));
+		return result;
+	}
+
+	@Override
 	public java.util.ArrayList<UpgradeAbilityStat> upgradeAbilityStats(int level) {
 		java.util.ArrayList<UpgradeAbilityStat> result = new java.util.ArrayList<>();
 		result.add(abilityStat(UpgradeAbilityStatType.DAMAGE, upgradeAbilityStat(level)));

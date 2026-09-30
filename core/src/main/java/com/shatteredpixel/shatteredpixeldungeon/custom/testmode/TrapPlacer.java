@@ -76,11 +76,13 @@ public class TrapPlacer extends TestItem {
 
     static List<Class<? extends Trap>> trapClasses() {
         ArrayList<Class<? extends Trap>> result = new ArrayList<>();
-        for (Class<?> type : Bestiary.TRAP.entities()) {
-            if (Trap.class.isAssignableFrom(type)) {
-                @SuppressWarnings("unchecked")
-                Class<? extends Trap> trapType = (Class<? extends Trap>) type;
-                result.add(trapType);
+        for (Bestiary category : new Bestiary[]{Bestiary.TRAP, Bestiary.TOWER_TRAPS}) {
+            for (Class<?> type : category.entities()) {
+                if (Trap.class.isAssignableFrom(type)) {
+                    @SuppressWarnings("unchecked")
+                    Class<? extends Trap> trapType = (Class<? extends Trap>) type;
+                    result.add(trapType);
+                }
             }
         }
         return result;

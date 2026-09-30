@@ -155,7 +155,7 @@ public class WandOfFireblast extends DamageWand {
 				dmg=(int)(dmg*1.2f);
 			}
 			ch.damage(dmg, this, DamageTag.MAGICAL);
-			if (ch.isAlive()) {
+			if (ch.isActive()) {
 				Buff.affect(ch, Burning.class).reignite(ch);
 				switch (charge) {
 					case 1:

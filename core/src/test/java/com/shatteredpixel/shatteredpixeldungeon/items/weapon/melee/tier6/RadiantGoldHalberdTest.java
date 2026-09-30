@@ -17,7 +17,6 @@ import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 public class RadiantGoldHalberdTest {
@@ -41,11 +40,12 @@ public class RadiantGoldHalberdTest {
 		assertEquals(30, weapon.min(15));
 		assertEquals(209, weapon.max(15));
 		assertEquals(22, weapon.STRReq(0));
-		assertEquals(21, weapon.STRReq(1));
-		assertEquals(20, weapon.STRReq(3));
-		assertEquals(19, weapon.STRReq(6));
-		assertEquals(18, weapon.STRReq(10));
-		assertEquals(17, weapon.STRReq(15));
+		assertEquals(22, weapon.STRReq(1));
+		assertEquals(22, weapon.STRReq(3));
+		assertEquals(22, weapon.STRReq(6));
+		assertEquals(21, weapon.STRReq(9));
+		assertEquals(21, weapon.STRReq(10));
+		assertEquals(20, weapon.STRReq(15));
 		assertEquals(EXItemSpriteSheet.RADIANT_GOLD_HALBERD, weapon.image);
 		assertEquals(1f, weapon.actualAccuracy(), 0f);
 		assertEquals(2f, weapon.actualDelay(), 0f);
@@ -60,19 +60,16 @@ public class RadiantGoldHalberdTest {
 		assertEquals(22, weapon.STRReq(-5));
 		weapon.masteryPotionBonus = true;
 		assertEquals(20, weapon.STRReq(0));
-		assertEquals(18, weapon.STRReq(3));
-		assertEquals(15, weapon.STRReq(15));
+		assertEquals(19, weapon.STRReq(9));
+        assertEquals(19, weapon.STRReq(14));
+        assertEquals(18, weapon.STRReq(15));
 	}
 
 	@Test
-	public void usesTheCommonFalsehoodPowerEncumbranceRule() {
-		try {
-			RadiantGoldHalberd.class.getDeclaredMethod(
-					"falsehoodPowerEncumbranceReduction", Hero.class);
-			fail("RadiantGoldHalberd must use Weapon's common rule");
-		} catch (NoSuchMethodException expected) {
-			// The inherited Weapon implementation is intentionally used.
-		}
+	public void falsehoodPowerReductionIsHalvedAndFloored() {
+		assertEquals(1, RadiantGoldHalberd.halvedFalsehoodPowerReduction(3));
+		assertEquals(2, RadiantGoldHalberd.halvedFalsehoodPowerReduction(4));
+		assertEquals(0, RadiantGoldHalberd.halvedFalsehoodPowerReduction(0));
 	}
 
 	@Test
@@ -222,6 +219,7 @@ public class RadiantGoldHalberdTest {
 		int actualRange() {
 			return RCH;
 		}
+
 	}
 
 	private static class TestMob extends Mob {

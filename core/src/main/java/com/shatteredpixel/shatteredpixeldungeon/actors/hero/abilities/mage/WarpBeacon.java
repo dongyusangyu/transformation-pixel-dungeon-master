@@ -62,6 +62,10 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 
 public class WarpBeacon extends ArmorAbility {
+	private static Char markerOccupant(int marker, Hero caster){
+		Char occupant = Actor.findChar(marker);
+		return occupant == caster ? null : occupant;
+	}
 
 	{
 		baseChargeUse = 35f;
@@ -158,7 +162,8 @@ public class WarpBeacon extends ArmorAbility {
 									Sample.INSTANCE.play(Assets.Sounds.HIT_STRONG);
 								}
 
-								if (existing.isAlive()){
+								existing = markerOccupant(tracker.pos, hero);
+								if (existing != null && existing.isAlive()){
 									Char toPush = Char.hasProp(existing, Char.Property.IMMOVABLE) ? hero : existing;
 
 									ArrayList<Integer> candidates = new ArrayList<>();

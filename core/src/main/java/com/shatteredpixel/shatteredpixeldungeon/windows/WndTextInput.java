@@ -226,6 +226,14 @@ public class WndTextInput extends Window {
 		}
 	}
 
+	@Override
+	public void onSafeInsetsChanged() {
+		super.onSafeInsetsChanged();
+		if (textBox != null) {
+			textBox.setRect(textBox.left(), textBox.top(), textBox.width(), textBox.height());
+		}
+	}
+
 	public void onSelect(boolean positive, String text){ }
 
 	@Override

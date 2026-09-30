@@ -106,22 +106,22 @@ public class Messages {
 			if (bundleLocal.getLanguage().equals("id")){
 				//This is a really silly hack to fix some platforms using "id" for indonesian and some using "in" (Android 14- mostly).
 				//So if we detect "id" then we treat "###_in" as the base bundle so that it gets loaded instead of English.
-				bundles.add(I18NBundle.createBundle(Gdx.files.internal(file + "_in"), bundleLocal));
+				bundles.add(I18NBundle.createBundle(Gdx.files.internal(file + "_in"), bundleLocal, "UTF-8"));
 			} else {
-				bundles.add(I18NBundle.createBundle(Gdx.files.internal(file), bundleLocal));
+				bundles.add(I18NBundle.createBundle(Gdx.files.internal(file), bundleLocal, "UTF-8"));
 			}
 
 			if (lang == Languages.ENGLISH){
-				directBundles.add(I18NBundle.createBundle(Gdx.files.internal(file), Locale.ROOT));
+				directBundles.add(I18NBundle.createBundle(Gdx.files.internal(file), Locale.ROOT, "UTF-8"));
 			} else {
 				String directFile = file + "_" + lang.code();
 				if (Gdx.files.internal(directFile + ".properties").exists()){
-					directBundles.add(I18NBundle.createBundle(Gdx.files.internal(directFile), Locale.ROOT));
+					directBundles.add(I18NBundle.createBundle(Gdx.files.internal(directFile), Locale.ROOT, "UTF-8"));
 				} else {
 					directBundles.add(null);
 				}
 			}
-			chineseBundles.add(I18NBundle.createBundle(Gdx.files.internal(file + "_zh"), Locale.ROOT));
+			chineseBundles.add(I18NBundle.createBundle(Gdx.files.internal(file + "_zh"), Locale.ROOT, "UTF-8"));
 		}
 	}
 

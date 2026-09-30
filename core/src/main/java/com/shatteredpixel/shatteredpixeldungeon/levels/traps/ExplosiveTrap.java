@@ -24,10 +24,13 @@ package com.shatteredpixel.shatteredpixeldungeon.levels.traps;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.bombs.Bomb;
 import com.watabou.utils.PathFinder;
+
+import java.util.ArrayList;
 
 public class ExplosiveTrap extends Trap {
 
@@ -46,10 +49,19 @@ public class ExplosiveTrap extends Trap {
 			}
 		}
 
-		new Bomb().explode(pos);
+		new Bomb() {
+			@Override
+			protected void onExplosionComplete(ArrayList<Char> affectedChars) {
+				ExplosiveTrap.this.onExplosionComplete(affectedChars);
+			}
+		}.explode(pos);
 		if (reclaimed && !Dungeon.hero.isAlive()) {
 			Badges.validateDeathFromFriendlyMagic();
 		}
+	}
+
+	/** Hook for trap variants that add an effect after the bomb resolves its direct hits. */
+	protected void onExplosionComplete(ArrayList<Char> affectedChars) {
 	}
 
 }

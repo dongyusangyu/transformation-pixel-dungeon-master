@@ -1567,10 +1567,8 @@ public enum Talent {
 		if (!sighted || points <= 0 || adjustedViewDistance <= 0) {
 			return 0;
 		}
-		if (points >= 2) {
-			return Math.min(adjustedViewDistance,12);
-		}
-		return Math.min(Math.max(1, Math.round(adjustedViewDistance * 0.75f)),12);
+		float proportion = points >= 2 ? 0.75f : 0.5f;
+		return Math.max(1, Math.round(adjustedViewDistance * proportion));
 	}
 
 	public boolean isCommonTalentType() {

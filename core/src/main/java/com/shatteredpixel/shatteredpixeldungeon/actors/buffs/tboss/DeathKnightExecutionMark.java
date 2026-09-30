@@ -5,6 +5,9 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.DamageTag;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.tboss.DeathKnight;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
+import com.watabou.noosa.Image;
 import com.watabou.utils.Bundle;
 
 import java.util.HashMap;
@@ -16,6 +19,8 @@ public class DeathKnightExecutionMark extends Buff {
     private static final String STACKS = "stacks";
     private final Map<Integer, Integer> stacks = new HashMap<>();
     private transient boolean executing;
+    private volatile int displayedStacks;
+    private volatile boolean multipleOwners;
 
     {
         type = buffType.NEGATIVE;
@@ -28,6 +33,7 @@ public class DeathKnightExecutionMark extends Buff {
         DeathKnightExecutionMark mark = Buff.affect(target, DeathKnightExecutionMark.class);
         if (mark != null) {
             mark.stacks.put(ownerId, mark.stacks.getOrDefault(ownerId, 0) + 1);
+            mark.refreshDisplay();
             mark.checkExecution();
         }
         return mark;
@@ -42,6 +48,7 @@ public class DeathKnightExecutionMark extends Buff {
         DeathKnightExecutionMark mark = target == null ? null : target.buff(DeathKnightExecutionMark.class);
         if (mark == null) return;
         mark.stacks.remove(ownerId);
+        mark.refreshDisplay();
         if (mark.stacks.isEmpty()) mark.detach();
     }
 
@@ -53,6 +60,27 @@ public class DeathKnightExecutionMark extends Buff {
         int total = 0;
         for (int value : stacks.values()) total += value;
         return total;
+    }
+
+    private void refreshDisplay() {
+        // UI reads a cached maximum, never a live owner map or a combined execution threshold.
+        int highest = 0;
+        for (int count : stacks.values()) highest = Math.max(highest, count);
+        displayedStacks = highest;
+        multipleOwners = stacks.size() > 1;
+        BuffIndicator.refreshHero();
+        BuffIndicator.refreshBoss();
+    }
+
+    @Override public int icon() { return BuffIndicator.MARK; }
+
+    @Override public void tintIcon(Image icon) { icon.hardlight(0xB83B4B); }
+
+    @Override public String iconTextDisplay() { return Integer.toString(displayedStacks); }
+
+    @Override public String desc() {
+        String description = Messages.get(this, "desc", displayedStacks);
+        return multipleOwners ? description + "\n\n" + Messages.get(this, "desc_multiple") : description;
     }
 
     public boolean shouldExecute() {
@@ -108,5 +136,6 @@ public class DeathKnightExecutionMark extends Buff {
         for (int i = 0; i < Math.min(owners.length, values.length); i++) {
             if (values[i] > 0) stacks.put(owners[i], values[i]);
         }
+        refreshDisplay();
     }
 }

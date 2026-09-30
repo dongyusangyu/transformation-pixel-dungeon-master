@@ -106,7 +106,7 @@ public class HuntressBossLevelTest {
 		PathFinderState previousPathFinder = PathFinderState.capture();
 		try {
 			createSpawnTestLevel(123456L);
-			assertEquals(31 * 32, PathFinder.distance.length);
+			assertEquals(31 * 43, PathFinder.distance.length);
 		} finally {
 			Dungeon.level = previousLevel;
 			previousPathFinder.restore();
@@ -1158,7 +1158,7 @@ public class HuntressBossLevelTest {
 		assertTrue(level.triggersFightAt(level.triggerCell()));
 		assertTrue(level.vegetationCells().size() > 0);
 		PathFinder.buildDistanceMap(level.triggerCell(), level.passable);
-		assertTrue(PathFinder.distance[level.exit()] < Integer.MAX_VALUE);
+		assertEquals(Integer.MAX_VALUE, PathFinder.distance[level.exit()]);
 
 		int furrows = 0;
 		for (int cell : level.vegetationCells()) {
@@ -1193,7 +1193,7 @@ public class HuntressBossLevelTest {
 			assertTrue(heap.pos != level.entrance());
 
 			int x = heap.pos % level.width();
-			int y = heap.pos / level.width();
+			int y = heap.pos / level.width() - level.arenaOffset();
 			assertTrue(x >= 13 && x <= 17);
 			assertTrue(y >= 24 && y <= 29);
 			assertTrue(x != 15);
@@ -1222,7 +1222,7 @@ public class HuntressBossLevelTest {
 			for (int cell : cluster) {
 				assertTrue(level.isArenaCell(cell));
 				assertTrue(allCover.add(cell));
-				assertEquals(Terrain.WALL, level.map[cell]);
+				assertTrue(level.map[cell] == Terrain.WALL || level.map[cell] == Terrain.WALL_DECO);
 				assertFalse(level.isReservedEncounterCell(cell));
 			}
 		}
@@ -1291,7 +1291,7 @@ public class HuntressBossLevelTest {
 		for (Set<Integer> cluster : restored.coverClusters()) {
 			assertEquals(4, cluster.size());
 			for (int cover : cluster) {
-				assertEquals(Terrain.WALL, restored.map[cover]);
+				assertTrue(restored.map[cover] == Terrain.WALL || restored.map[cover] == Terrain.WALL_DECO);
 			}
 		}
 	}
@@ -1572,7 +1572,7 @@ public class HuntressBossLevelTest {
 			assertFalse(allFeatureCells(allocation).contains(heapCell));
 		}
 		for (int cover : coverCells) {
-			assertEquals(Terrain.WALL, level.map[cover]);
+			assertTrue(level.map[cover] == Terrain.WALL || level.map[cover] == Terrain.WALL_DECO);
 			assertFalse(allFeatureCells(allocation).contains(cover));
 		}
 		for (int reserved = 0; reserved < level.length(); reserved++) {
@@ -1864,7 +1864,7 @@ public class HuntressBossLevelTest {
 	}
 
 	private static int cell(HuntressBossLevel level, int x, int y) {
-		return x + y * level.width();
+		return x + (y + level.arenaOffset()) * level.width();
 	}
 
 	private static int firstPlantCellAtPathDistance(HuntressBossLevel level, int distance) {

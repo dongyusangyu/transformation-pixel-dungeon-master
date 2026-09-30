@@ -44,6 +44,8 @@ import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Notes;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidRun;
+import com.shatteredpixel.shatteredpixeldungeon.levels.minigame.extraction.ExtractionRaidLevel;
+import com.shatteredpixel.shatteredpixeldungeon.levels.towers.TowerLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.Chasm;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
@@ -59,6 +61,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndError;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.input.KeyEvent;
 import com.watabou.noosa.Camera;
+import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.tweeners.Tweener;
@@ -104,6 +107,7 @@ public class InterlevelScene extends PixelScene {
 	public Image background;
 
 	private RenderedTextBlock loadingText;
+	private String loadingMessage;
 
 	private RenderedTextBlock storyMessage;
 	private ShadowBox storyBG;
@@ -116,14 +120,32 @@ public class InterlevelScene extends PixelScene {
 
 	public static int lastRegion = -1;
 
+	static boolean usesBlackBackground(int depth, int branch) {
+		return (depth == 0 && branch == 0) || ExtractionRaidLevel.isRaidLocation(depth, branch);
+	}
+
 	{
 		inGameScene = true;
+	}
+
+	static String resolveLoadingMessage(Mode mode, int sourceDepth, int sourceBranch,
+			int destinationDepth, int destinationBranch) {
+		if (mode == Mode.RETURN && !ExtractionRaidLevel.isRaidLocation(sourceDepth, sourceBranch)
+				&& ExtractionRaidLevel.isRaidLocation(destinationDepth, destinationBranch)) {
+			return Messages.get(InterlevelScene.class, "raid_enter");
+		}
+		if ((mode == Mode.DESCEND || mode == Mode.ASCEND) && destinationBranch == TowerLevel.BRANCH) {
+			boolean upward = sourceBranch != TowerLevel.BRANCH || destinationDepth > sourceDepth;
+			return Messages.get(InterlevelScene.class, upward ? "tower_ascend" : "tower_descend");
+		}
+		return Messages.get(Mode.class, mode.name());
 	}
 	
 	@Override
 	public void create() {
-		String loadingAsset;
+		String loadingAsset = null;
 		int loadingDepth;
+		int loadingBranch = Dungeon.branch;
 		fadeTime = NORM_FADE;
 
 		long seed = Dungeon.seed;
@@ -133,15 +155,18 @@ public class InterlevelScene extends PixelScene {
 				break;
 			case CONTINUE:
 				loadingDepth = GamesInProgress.check(GamesInProgress.curSlot).depth;
+				loadingBranch = GamesInProgress.check(GamesInProgress.curSlot).branch;
 				seed = GamesInProgress.check(GamesInProgress.curSlot).seed;
 				break;
 			case DESCEND:
 				if (Dungeon.hero == null){
 					loadingDepth = 1;
+					loadingBranch = 0;
 					fadeTime = SLOW_FADE;
 				} else {
 					if (curTransition != null)  loadingDepth = curTransition.destDepth;
 					else                        loadingDepth = Dungeon.depth+1;
+					if (curTransition != null) loadingBranch = curTransition.destBranch;
 					if (Statistics.deepestFloor >= loadingDepth) {
 						fadeTime = FAST_FADE;
 					} else if (loadingDepth == 6 || loadingDepth == 11
@@ -157,16 +182,22 @@ public class InterlevelScene extends PixelScene {
 				fadeTime = FAST_FADE;
 				if (curTransition != null)  loadingDepth = curTransition.destDepth;
 				else                        loadingDepth = Dungeon.depth-1;
+				if (curTransition != null) loadingBranch = curTransition.destBranch;
 				break;
 			case RETURN:
 			case TEST_ARENA:
 				loadingDepth = returnDepth;
+				loadingBranch = returnBranch;
 				break;
 			case RESTART:
 				loadingDepth = 0;
+				loadingBranch = 0;
 				break;
 
 		}
+
+		// Resolve before the loading thread changes the global location; dots reuse this snapshot.
+		loadingMessage = resolveLoadingMessage(mode, Dungeon.depth, Dungeon.branch, loadingDepth, loadingBranch);
 
 		//flush the texture cache whenever moving between regions, helps reduce memory load
 		int region = (int)Math.ceil(loadingDepth / 5f);
@@ -180,61 +211,68 @@ public class InterlevelScene extends PixelScene {
 		int loadingCenter = 400;
 
 		//for portrait users, each run the splashes change what details they focus on
-		Random.pushGenerator(seed+lastRegion);
-			switch (lastRegion){
-				case 1:
-					loadingAsset = Assets.Splashes.SEWERS;
-					switch (Random.Int(2)){
-						case 0: loadingCenter = 180; break; //focus on rats and left side
-						case 1: loadingCenter = 485; break; //focus on center pipe and door
-					}
-					break;
-				case 2:
-					loadingAsset = Assets.Splashes.PRISON;
-					switch (Random.Int(3)){
-						case 0: loadingCenter = 190; break; //focus on left skeleton
-						case 1: loadingCenter = 402; break; //focus on center arch
-					}
-					break;
-				case 3:
-					loadingAsset = Assets.Splashes.CAVES;
-					switch (Random.Int(3)){
-						case 0: loadingCenter = 340; break; //focus on center gnoll groups
-						case 1: loadingCenter = 625; break; //focus on right gnoll
-					}
-					break;
-				case 4:
-					loadingAsset = Assets.Splashes.CITY;
-					switch (Random.Int(3)){
-						case 0: loadingCenter = 275; break; //focus on left bookcases
-						case 1: loadingCenter = 485; break; //focus on center pathway
-					}
-					break;
-				case 5: default:
-					loadingAsset = Assets.Splashes.HALLS;
-					switch (Random.Int(3)){
-						case 0: loadingCenter = 145; break; //focus on left arches
-						case 1: loadingCenter = 400; break; //focus on ripper demon
-					}
-					break;
-			}
-		Random.popGenerator();
+		boolean blackBackground = usesBlackBackground(loadingDepth, loadingBranch);
+		if (!blackBackground) {
+			Random.pushGenerator(seed+lastRegion);
+				switch (lastRegion){
+					case 1:
+						loadingAsset = Assets.Splashes.SEWERS;
+						switch (Random.Int(2)){
+							case 0: loadingCenter = 180; break; //focus on rats and left side
+							case 1: loadingCenter = 485; break; //focus on center pipe and door
+						}
+						break;
+					case 2:
+						loadingAsset = Assets.Splashes.PRISON;
+						switch (Random.Int(3)){
+							case 0: loadingCenter = 190; break; //focus on left skeleton
+							case 1: loadingCenter = 402; break; //focus on center arch
+						}
+						break;
+					case 3:
+						loadingAsset = Assets.Splashes.CAVES;
+						switch (Random.Int(3)){
+							case 0: loadingCenter = 340; break; //focus on center gnoll groups
+							case 1: loadingCenter = 625; break; //focus on right gnoll
+						}
+						break;
+					case 4:
+						loadingAsset = Assets.Splashes.CITY;
+						switch (Random.Int(3)){
+							case 0: loadingCenter = 275; break; //focus on left bookcases
+							case 1: loadingCenter = 485; break; //focus on center pathway
+						}
+						break;
+					case 5: default:
+						loadingAsset = Assets.Splashes.HALLS;
+						switch (Random.Int(3)){
+							case 0: loadingCenter = 145; break; //focus on left arches
+							case 1: loadingCenter = 400; break; //focus on ripper demon
+						}
+						break;
+				}
+			Random.popGenerator();
+		}
 		
 		if (DeviceCompat.isDebug()){
 			fadeTime = 0f;
 		}
 
-		background = new Image(loadingAsset);
-		background.scale.set(Camera.main.height/background.height);
-
-		if (Camera.main.width >= background.width()){
-			background.x = (Camera.main.width - background.width())/2f;
+		if (blackBackground) {
+			background = new ColorBlock(Camera.main.width, Camera.main.height, 0xFF000000);
 		} else {
-			background.x = Camera.main.width/2f - loadingCenter*background.scale.x;
-			background.x = GameMath.gate(Camera.main.width - background.width(), background.x, 0);
+			background = new Image(loadingAsset);
+			background.scale.set(Camera.main.height/background.height);
+
+			if (Camera.main.width >= background.width()){
+				background.x = (Camera.main.width - background.width())/2f;
+			} else {
+				background.x = Camera.main.width/2f - loadingCenter*background.scale.x;
+				background.x = GameMath.gate(Camera.main.width - background.width(), background.x, 0);
+			}
+			background.y = (Camera.main.height - background.height())/2f;
+			PixelScene.align(background);
 		}
-		background.y = (Camera.main.height - background.height())/2f;
-		PixelScene.align(background);
 		add(background);
 
 		Image fadeLeft, fadeRight;
@@ -267,7 +305,7 @@ public class InterlevelScene extends PixelScene {
 		im.scale.y = Camera.main.width;
 		add(im);
 
-		String text = Messages.get(Mode.class, mode.name());
+		String text = loadingMessage;
 		
 		loadingText = PixelScene.renderTextBlock( text, 9 );
 		loadingText.setPos(
@@ -277,7 +315,7 @@ public class InterlevelScene extends PixelScene {
 		align(loadingText);
 		add(loadingText);
 
-		if ((mode == Mode.DESCEND || mode == Mode.RESTART) && lastRegion <= 5 && !DeviceCompat.isDebug()){
+		if (!blackBackground && (mode == Mode.DESCEND || mode == Mode.RESTART) && lastRegion <= 5 && !DeviceCompat.isDebug()){
 			if (Dungeon.hero == null || (loadingDepth > Statistics.deepestFloor && loadingDepth % 5 == 1 || mode == Mode.RESTART)){
 					storyMessage = PixelScene.renderTextBlock(Document.INTROS.pageBody(region), 6);
 					storyMessage.maxWidth( PixelScene.landscape() ? 180 : 125);
@@ -481,7 +519,7 @@ public class InterlevelScene extends PixelScene {
 		}
 
 		if (mode != Mode.FALL && dots != Math.ceil(waitingTime / ((2*fadeTime)/3f))) {
-			String text = Messages.get(Mode.class, mode.name());
+			String text = loadingMessage;
 			dots = (int)Math.ceil(waitingTime / ((2*fadeTime)/3f))%3;
 			switch (dots){
 				case 1: default:

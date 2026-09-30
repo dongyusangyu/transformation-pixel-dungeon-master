@@ -5,6 +5,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.EXItemSpriteSheet;
 public class AlMughiraPyxis extends Treasures {
 
 	public AlMughiraPyxis() {
-		super(EXItemSpriteSheet.AL_MUGHIRA_PYXIS, CollectionRarity.COMMON, 1200);
+		super(EXItemSpriteSheet.AL_MUGHIRA_PYXIS, CollectionRarity.RARE, 4000);
 	}
 }

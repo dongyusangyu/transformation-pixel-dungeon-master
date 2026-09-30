@@ -60,14 +60,25 @@ public class RadiantGoldHalberd extends MeleeWeapon {
 	}
 
 	public static int strengthRequirementForLevel(int level) {
-		//The halberd remains two strength points heavier than a standard tier-six weapon.
-		return STRReq(TIER, level) + 2;
+		int requirement = 22;
+		if (effectiveLevel(level) >= 9) requirement--;
+		if (effectiveLevel(level) >= 15) requirement--;
+		return requirement;
 	}
 
 	@Override
 	public int STRReq(int level) {
 		int requirement = strengthRequirementForLevel(level);
 		return masteryPotionBonus ? requirement - 2 : requirement;
+	}
+
+	@Override
+	protected int falsehoodPowerEncumbranceReduction(Hero owner) {
+		return halvedFalsehoodPowerReduction(super.falsehoodPowerEncumbranceReduction(owner));
+	}
+
+	static int halvedFalsehoodPowerReduction(int commonReduction) {
+		return commonReduction / 2;
 	}
 
 	@Override
